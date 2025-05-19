@@ -9,6 +9,8 @@ const FindProperty = () => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [activeFilter, setActiveFilter] = useState("all");
     const videoRef = useRef(null);
+    const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false);
 
     // Property filters
     const filters = [
@@ -18,63 +20,46 @@ const FindProperty = () => {
         { id: "land", label: "Land & Farms" }
     ];
 
-    // Set page as loaded and force video to play
+    const backgroundVideos = [
+        "/videos/background.mp4",
+        "/videos/background-1.mp4",
+        "/videos/background-2.mp4",
+        "/videos/background-3.mp4"
+    ];
+
+    // Set page as loaded immediately
     useEffect(() => {
         setIsLoaded(true);
-        
-        // Handle video loading and force play
-        const video = videoRef.current;
-        if (video) {
-            // Add multiple event listeners to try to ensure play works
-            const playVideo = () => {
-                // Try to play the video
-                const playPromise = video.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        // Video is playing
-                        console.log("Video is playing");
-                        document.querySelector('.hero-content').classList.add('loaded');
-                    }).catch(error => {
-                        // Auto-play was prevented
-                        console.error("Autoplay prevented:", error);
-                        
-                        // Add a play button overlay that users can click
-                        const heroSection = document.querySelector('.hero-section');
-                        if (heroSection && !document.querySelector('.video-play-button')) {
-                            const playButton = document.createElement('button');
-                            playButton.className = 'video-play-button';
-                            playButton.innerHTML = '▶';
-                            playButton.onclick = () => {
-                                video.play();
-                                playButton.style.display = 'none';
-                            };
-                            heroSection.appendChild(playButton);
-                        }
-                    });
-                }
-            };
-            
-            // Try playing when data is loaded
-            video.addEventListener('loadeddata', playVideo);
-            // Also try playing when metadata is loaded
-            video.addEventListener('loadedmetadata', playVideo);
-            // Also try playing when can play
-            video.addEventListener('canplay', playVideo);
-            // Force play on window focus
-            window.addEventListener('focus', playVideo);
-            
-            // Try playing immediately
-            playVideo();
-
-            return () => {
-                video.removeEventListener('loadeddata', playVideo);
-                video.removeEventListener('loadedmetadata', playVideo);
-                video.removeEventListener('canplay', playVideo);
-                window.removeEventListener('focus', playVideo);
-            };
-        }
+        document.querySelector('.hero-content')?.classList.add('loaded');
     }, []);
+
+    // Video slideshow effect with timer and sliding animation
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (!isTransitioning) {
+                setIsTransitioning(true);
+                const video = videoRef.current;
+                if (video) {
+                    video.classList.add('slide-out');
+                    
+                    setTimeout(() => {
+                        setCurrentVideoIndex((prevIndex) => 
+                            (prevIndex + 1) % backgroundVideos.length
+                        );
+                        video.classList.remove('slide-out');
+                        video.classList.add('slide-in');
+                        
+                        setTimeout(() => {
+                            video.classList.remove('slide-in');
+                            setIsTransitioning(false);
+                        }, 800);
+                    }, 800);
+                }
+            }
+        }, 4000);
+
+        return () => clearInterval(interval);
+    }, [isTransitioning, currentVideoIndex]);
 
     // Scroll animation handler - moved from CSS
     useEffect(() => {
@@ -192,19 +177,17 @@ const FindProperty = () => {
     return (
         <div className="find-property-page">
             {/* Hero Section with Video Background */}
-            <section className="hero-section" onClick={handlePlayVideo}>
+            <section className="hero-section">
                 <div className="hero-content container">
                     <video 
                         ref={videoRef}
                         autoPlay 
-                        loop 
                         muted 
                         playsInline 
                         className="background-video"
+                        key={currentVideoIndex}
                     >
-                        <source src="/assets/background.mp4" type="video/mp4" />
-                        <source src="/assets/background.webm" type="video/webm" />
-                        <source src="/assets/background2.mp4" type="video/mp4" />
+                        <source src={backgroundVideos[currentVideoIndex]} type="video/mp4" />
                         Your browser does not support the video tag.
                     </video>
                     <div className="video-overlay"></div>
