@@ -24,7 +24,11 @@ const FindProperty = () => {
         "/videos/background.mp4",
         "/videos/background-1.mp4",
         "/videos/background-2.mp4",
-        "/videos/background-3.mp4"
+        "/videos/background-3.mp4",
+          "/videos/background-4.mp4",
+           "/videos/background-5.mp4",
+            "/videos/background-6.mp4",
+
     ];
 
     // Set page as loaded immediately
@@ -272,9 +276,15 @@ const FindProperty = () => {
             {/* Seller Call to Action */}
             <section className="seller-section">
                 <div className="container">
-                    <p className="seller-text">
-                        Are you looking to sell your property? <Link to="/login" className="seller-link">Click here</Link> to get started.
-                    </p>
+                    <div className="seller-content">
+                        <h3 className="seller-title">Own a Property?</h3>
+                        <p className="seller-text">
+                            Whether you want to sell, rent, or lease your property, we've got you covered.
+                            <Link to="/seller" className="seller-link">
+                                List Your Property <span className="arrow">→</span>
+                            </Link>
+                        </p>
+                    </div>
                 </div>
             </section>
 
