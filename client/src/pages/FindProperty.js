@@ -128,7 +128,7 @@ const FindProperty = () => {
         },
         {
             id: "farms",
-            title: "Farms, Estates & Agricultural Land",
+            title: "Farms & Agricultural Land",
             icon: <FaTree className="category-icon" />,
             path: "/farms"
         }
