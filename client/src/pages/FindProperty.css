@@ -146,8 +146,8 @@ h1, h2, h3, h4 {
     width: 100%;
     height: 100%;
     background: linear-gradient(
-        rgba(0, 0, 0, 0.4),
-        rgba(0, 0, 0, 0.3)
+        rgba(0, 0, 0, 0.3),
+        rgba(0, 0, 0, 0.2)
     );
     z-index: 1;
     transition: opacity 0.5s ease-in-out;
@@ -180,17 +180,29 @@ h1, h2, h3, h4 {
 }
 
 .hero-title {
+    font-family: 'Playfair Display', serif;
     font-size: 3.5rem;
     margin-bottom: 0.5rem;
     font-weight: 700;
     color: #ffffff;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     letter-spacing: -0.5px;
+    line-height: 1.2;
+}
+
+.hero-title .accent-text {
+    color: #3498db;
+    font-weight: 700;
+    text-shadow: none;
+    background: none;
+    -webkit-text-fill-color: #3498db;
+    text-fill-color: #3498db;
 }
 
 .hero-subtitle {
+    font-family: 'Poppins', sans-serif;
     font-size: 1.2rem;
-    font-weight: 500;
+    font-weight: 400;
     margin-bottom: 1rem;
     max-width: 800px;
     margin-left: auto;
@@ -278,6 +290,7 @@ h1, h2, h3, h4 {
 .category-icon {
     font-size: 0.9rem;
     color: #3498db;
+    transition: all 0.3s ease;
 }
 
 .category-card:hover .category-icon-container {
@@ -285,14 +298,24 @@ h1, h2, h3, h4 {
     transform: scale(1.1);
 }
 
+.category-card:hover .category-icon {
+    transform: scale(1.1);
+}
+
 .category-title {
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin:0;
+    font-family: 'Playfair Display', serif;
+    font-size: .9rem;
+    font-weight: 300;
+    margin: 0;
     transition: color 0.3s ease;
     flex: 1;
     color: #ffffff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    letter-spacing: 0.2px;
+}
+
+.category-card:hover .category-title {
+    color: #3498db;
 }
 
 /* Search Box */
@@ -401,7 +424,6 @@ h1, h2, h3, h4 {
     background-color: #ffffff;
     padding: 3rem 0;
     text-align: center;
-    
     margin: 2rem 0;
 }
 
@@ -412,27 +434,32 @@ h1, h2, h3, h4 {
 }
 
 .seller-title {
+    font-family: 'Poppins', sans-serif;
     font-size: 2rem;
     color: #2c3e50;
     margin-bottom: 1.2rem;
-    font-weight: 600;
+    font-weight: 500;
+    letter-spacing: -0.5px;
 }
 
 .seller-text {
+    font-family: 'Poppins', sans-serif;
     font-size: 1.1rem;
     color: #555;
     margin: 0;
     line-height: 1.6;
+    font-weight: 300;
 }
 
 .seller-link {
     display: inline-flex;
     align-items: center;
     color: #3498db;
-    font-weight: 600;
+    font-weight: 500;
     text-decoration: none;
     margin-left: 0.5rem;
     transition: all 0.3s ease;
+    font-family: 'Poppins', sans-serif;
 }
 
 .seller-link:hover {
