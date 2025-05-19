@@ -1,0 +1,491 @@
+.form-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px;
+  font-family:Arial, Helvetica, sans-serif;
+
+}
+.form-sale-container {
+  background-color: #ffffff;
+}
+
+/* Form Title (independent now) */
+.form-title {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* center everything first */
+  padding: 40px;
+  border-bottom: 1px solid #ccc;
+  border-radius: 2px;
+  background-color:white;
+  margin-bottom: 20px;
+  margin-top: 30px;
+  gap: 60px; /* 🔥 space between items, you can control it */
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); 
+}
+
+/* Left: PROPERTY */
+.form-title-brand {
+  font-size: 25px;
+  color: #333;
+  position: absolute;
+  left: 400px; /* 🔥 how far from left side */
+  font-family:fantasy;
+  font: bold;
+  background-color: #ffc107;
+}
+
+/* Center: ADD LISTING FOR SALE */
+.form-title-add {
+  font-size: 26px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Right: Find Property link */
+.form-title-find-link {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  right: 200px; /* 🔥 how far from right side */
+  font-size:25px;
+}
+
+.form-title-find-link li {
+  display: inline;
+}
+
+.form-title-find-link a {
+  text-decoration: none;
+  color: #007bff;
+  font-weight: 500;
+}
+
+.form-title-find-link a:hover {
+  text-decoration:wavy;
+}
+
+
+
+/* Form itself */
+.property-form {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 30px;            /* Add space inside the border */
+  border: 2px solid #ccc;    /* Border color and thickness */
+  border-radius: 8px;        /* Rounded corners (optional) */
+  background-color: #f9f9f9;;    /* White background (optional) */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Soft shadow (optional) */
+}
+
+/* Form on hover (lift effect) */
+.form-wrapper:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px); /* move up a little */
+}
+
+
+
+/* Form Group */
+.form-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.form-group label {
+  font-size:18px; 
+  font-weight: 100px;
+  font-family:'Lucida Sans Unicode', Geneva, Verdana, sans-serif;/* make label text bigger */
+}
+.form-group select,
+.form-group input {
+  font-size: 16px; /* make input and select text bigger */
+  padding: 8px;    /* add a little more space inside */
+}
+.form-sale-address {
+  padding: 9px 10px;
+  font-size: 18px;
+  font-weight: 600px;
+  background:#f6f8f9;
+  color: rgb(15, 14, 14);
+  border:2px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 20%;
+  margin-bottom: 20px;
+  margin-left: 0.5rem;
+  transition: background 0.3s, transform 0.3s;
+}
+
+.form-sale-address:hover {
+  background: #ffc107;
+  transform: translateY(-2px);
+  font-size: 15px;
+
+}
+
+.input-with-addon {
+  display: flex;
+  width: 100%;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  margin-bottom: 20px;
+}
+
+.input-with-addon input[type="text"] {
+  flex: 1;
+  padding: 12px;
+  font-size: 18px;
+  border: none;
+  outline: none;
+}
+
+.addon-box {
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-left: 2px solid #ccc;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.radio-input {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+
+.big-checkbox {
+  width: 19px;
+  height: 19px;
+  cursor: pointer;
+}
+
+.addon-label {
+  font-size: 16px;
+  font-weight: 500;
+}
+.section-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #333;
+  margin: 30px 0 20px 0; /* space before and after */
+  border-bottom:2px solid #ccc;
+  padding-bottom: 10px;
+}
+
+
+/* Two-column Layout */
+.form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.form-row .form-group {
+  flex: 1;
+  
+}
+.form-group select{
+  padding:12px;
+  font-size: 20px;
+
+  
+}
+/* Label */
+label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 19px;
+  color: #444;
+}
+
+/* Inputs and Selects */
+/* Inputs without arrow */
+input[type="text"],
+input[type="number"],
+input[type="date"] {
+  width: 100%;
+  padding: 12px;
+  font-size: 19px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  background-color: #fff;
+  appearance: none;
+  background-image: none; /* ❌ Remove arrow */
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+select {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='black' viewBox='0 0 16 16'%3E%3Cpath d='M4.646 6.646a.5.5 0 0 1 .708 0L8 9.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+
+
+/* Input focus */
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.2);
+}
+
+/* Checkbox Group */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: auto;
+}
+
+/* Submit Button */
+.submit-btn {
+  padding: 15px 19px;
+  font-size: 20px;
+  font-weight: 500;
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.4s, transform 0.3s;
+
+  /* New changes to move it to the right */
+  width: auto;          /* Let the button size itself */
+  align-self: flex-end;  /* Align right in flex container */
+  margin-right: 20px;     /* Push to the right */
+}
+
+/* Submit Hover */
+.submit-btn:hover {
+  background: linear-gradient(135deg, #1565c0, #1976d2);
+  transform: translateY(-2px);
+}
+/* AddList.css (additional styling for the new components) */
+
+/* Header styling */
+.form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+.form-header .brand {
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+.form-title {
+  font-size: 1.1rem;
+  text-align: center;
+  text-transform: uppercase;
+  flex: 1;
+}
+.form-header-link {
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: #0066cc;
+}
+
+/* Form layout and typography */
+.form-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.form-group {
+  margin-bottom: 1rem;
+}
+.form-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+.form-textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+  resize: vertical;
+}
+
+/* Upload section styles */
+.upload-section {
+  margin-top: 0.5rem;
+}
+.drop-zone {
+  width: 100%;
+  padding: 1.5rem;
+  text-align: center;
+  color: #555;
+  background: #fafafa;
+  border: 2px dashed #aaa;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.drop-zone.drag-over {
+  background: #f0f8ff;
+  border-color: #333;
+}
+.preview-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.preview-item {
+  position: relative;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+.preview-image {
+  display: block;
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+.preview-video {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  background: #eee;
+  border-radius: 4px;
+}
+.video-filename {
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 0.5rem;
+  word-break: break-all;
+}
+.remove-btn {
+  display: inline-block;
+  margin-top: 0.5rem;
+  background: #d9534f;
+  color: #fff;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+/* Action buttons at the bottom */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+}
+.btn-back {
+  text-decoration: none;
+  color: #333;
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.btn-submit {
+  background: #007bff;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-submit:hover,
+.btn-back:hover,
+.drop-zone:hover {
+  opacity: 0.9;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .form-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  .form-header .brand, 
+  .form-header-link {
+    margin: 0.5rem 0;
+  }
+  .form-actions {
+    flex-direction: column;
+  }
+  .form-actions .btn-back {
+    margin-bottom: 0.5rem;
+  }
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 30px;
+  padding: 0 20px;
+}
+
+.back-btn, .next-btn, .submit-btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-btn {
+  background-color: #f0f0f0;
+  color: #555;
+}
+
+.back-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.next-btn, .submit-btn {
+  background-color: #342fd6;
+  color: white;
+}
+
+.next-btn:hover, .submit-btn:hover {
+  background-color: #2a25ab;
+  transform: translateY(-2px);
+}
+
+.submit-btn {
+  padding: 12px 40px;
+}
+  

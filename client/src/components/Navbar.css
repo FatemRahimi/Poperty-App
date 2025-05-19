@@ -1,0 +1,321 @@
+/* Professional Navbar Styling */
+.navbar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #ffffff;
+    padding: 1rem 2rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    height: 70px;
+}
+
+.navbar-scrolled {
+    padding: 0.5rem 2rem;
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    height: 60px;
+}
+
+.navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+}
+
+/* Logo Styling */
+.navbar-logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    background-color: transparent;
+    padding: 0;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+/* Removing the underline effect since the logo has its own style */
+.navbar-logo:after {
+    content: none;
+}
+
+/* Navigation Links */
+.navbar-links {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.navbar-links li {
+    position: relative;
+}
+
+.navbar-links a {
+    display: flex;
+    align-items: center;
+    color: #555;
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    font-family: 'Open Sans', sans-serif;
+}
+
+.navbar-links a span {
+    margin-left: 6px;
+}
+
+.navbar-links a:hover {
+    color: #3498db;
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+.navbar-links a.active {
+    color: #3498db;
+    font-weight: 600;
+}
+
+.navbar-links a.active:after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0.75rem;
+    right: 0.75rem;
+    height: 2px;
+    background-color: #3498db;
+}
+
+.nav-icon {
+    font-size: 1rem;
+}
+
+/* Language Selector Styling */
+.language-selector {
+    position: relative;
+}
+
+.language-button {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    color: #555;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Open Sans', sans-serif;
+}
+
+.language-button:hover {
+    color: #3498db;
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+.language-button span {
+    margin: 0 5px;
+}
+
+.dropdown-icon {
+    font-size: 1.2rem;
+    margin-top: 2px;
+}
+
+.language-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+    z-index: 1001;
+    overflow: hidden;
+    animation: dropdownFadeIn 0.3s ease;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.language-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.language-option:hover {
+    background-color: rgba(52, 152, 219, 0.1);
+}
+
+.language-option.active {
+    background-color: rgba(52, 152, 219, 0.15);
+    font-weight: 600;
+}
+
+.lang-code {
+    font-weight: 600;
+    color: #3498db;
+}
+
+.lang-name {
+    color: #555;
+    font-size: 0.9rem;
+}
+
+/* Login Button */
+.login-button a {
+    background-color: #3498db;
+    color: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);
+}
+
+.login-button a:hover {
+    background-color: #2980b9;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.4);
+}
+
+.login-button a.active {
+    background-color: #2980b9;
+    color: white;
+}
+
+.login-button a.active:after {
+    display: none;
+}
+
+/* Hamburger Menu */
+.navbar-menu-icon {
+    display: none;
+    font-size: 1.5rem;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.navbar-menu-icon:hover {
+    color: #3498db;
+}
+
+/* Responsive Styles */
+@media (max-width: 992px) {
+    .navbar-links {
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        padding: 1rem;
+        height: 60px;
+    }
+
+    .navbar-scrolled {
+        padding: 0.5rem 1rem;
+        height: 50px;
+    }
+
+    .navbar-menu-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1001;
+    }
+
+    .navbar-links {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 250px;
+        height: 100vh;
+        flex-direction: column;
+        background-color: white;
+        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+        padding: 5rem 2rem 2rem;
+        gap: 1.5rem;
+        transition: right 0.3s ease;
+        align-items: flex-start;
+    }
+
+    .navbar-links.active {
+        right: 0;
+    }
+
+    .navbar-links a, .language-button {
+        width: 100%;
+        padding: 0.75rem;
+    }
+
+    .navbar-links a.active:after {
+        display: none;
+    }
+    
+    .navbar-links a.active {
+        background-color: rgba(52, 152, 219, 0.1);
+    }
+
+    .language-dropdown {
+        position: static;
+        width: 100%;
+        margin-top: 0.5rem;
+        box-shadow: none;
+        border: 1px solid rgba(52, 152, 219, 0.2);
+    }
+    
+    .login-button {
+        width: 100%;
+        margin-top: 1rem;
+    }
+    
+    .login-button a {
+        justify-content: center;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar-logo {
+        font-size: 1.25rem;
+    }
+    
+    .navbar-links {
+        width: 230px;
+        padding: 4rem 1.5rem 1.5rem;
+    }
+}

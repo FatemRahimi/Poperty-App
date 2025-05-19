@@ -1,0 +1,78 @@
+/* Home.css */
+
+.home-container {
+    text-align: center;
+    padding: 50px;
+    max-width: 90%;
+    margin: auto;
+}
+
+/* Heading */
+.home-heading {
+    font-size: 2.5em;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Text */
+.home-text {
+    font-size: 1.3em;
+    margin-bottom: 20px;
+}
+
+/* Button */
+.home-button {
+    padding: 12px 25px;
+    font-size: 18px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.home-button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+/* ✅ Mobile Responsive Adjustments */
+@media (max-width: 768px) {
+    .home-container {
+        padding: 30px;
+    }
+    
+    .home-heading {
+        font-size: 2em;
+    }
+    
+    .home-text {
+        font-size: 1.1em;
+    }
+    
+    .home-button {
+        padding: 10px 20px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .home-container {
+        padding: 20px;
+    }
+    
+    .home-heading {
+        font-size: 1.8em;
+    }
+    
+    .home-text {
+        font-size: 1em;
+    }
+    
+    .home-button {
+        padding: 8px 15px;
+        font-size: 14px;
+        border-radius: 6px;
+    }
+}

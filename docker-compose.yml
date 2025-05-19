@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  client:
+    image: node:18-alpine
+    working_dir: /app/client
+    volumes:
+      - ./:/app
+    ports:
+      - "3000:3000"
+    command: sh -c "npm install && npm start"
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - server
+
+  server:
+    image: node:18-alpine
+    working_dir: /app/server
+    volumes:
+      - ./:/app
+    ports:
+      - "5001:5000"
+    command: sh -c "npm install && npm start"
+    environment:
+      - NODE_ENV=development 

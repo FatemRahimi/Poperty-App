@@ -1,0 +1,168 @@
+/* ✅ Main Container */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100%;
+}
+
+.login-box {
+    display: flex;
+    width: 100%;
+    max-width: 1800px;
+    height: 70vh;
+    overflow: hidden;
+    box-shadow: 0px 5px 15px rgba(32, 28, 28, 0.2);
+    border-radius: 0px;
+    padding: 0; /* ✅ remove internal spacing */
+}
+
+/* ✅ Left Side - Video Background */
+.video-container {
+    flex: 1; /* ✅ evenly distribute width */
+    position: relative;
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    overflow: hidden;
+}
+
+
+.backgroundlogin-video {
+    width: 70%;          /* ✅ stretch to full container */
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;     /* ✅ remove radius so it touches the login box */
+}
+
+/* ✅ Right Side - Login Form */
+.login-form-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #fff;
+    margin: 20 200px 10px 20;
+    padding: 1.5rem;
+
+
+}
+
+.error-box {
+
+    color: #d10000;
+
+
+  }
+  
+
+/* ✅ Login Form */
+.login-form {
+    width: 100%;
+    max-width: 600px;
+    padding: 100px;
+    background: white;
+    border-radius: 8px;
+    text-align: center;
+}
+/* Make the H2 heading bigger and add space below it */
+
+    .login-form h2 {
+        font-size: 2rem;      /* Larger heading */
+        font-weight: 700;     /* Bold */
+        text-align: left;     /* Align to the left */
+        margin-bottom: 3.5rem; /* Space between the heading and the form inputs */
+      }
+
+  
+  /* Style all inputs inside the login form */
+  .login-form input[type="email"],
+  .login-form input[type="password"] {
+    font-size: 1.3rem;         /* Bigger text inside inputs */
+    padding: 0.75rem 1rem;     /* More padding for height */
+    width: 100%;
+    max-width: 700px;          /* Keep it from getting too wide */
+    margin: 0 auto 1.5rem auto;/* Center + spacing between inputs */
+    display: block;
+    border-radius: 8px;
+    border: 1px solid #966464;
+  }
+  
+  /* Style the labels */
+  .login-form label {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+    text-align: left;
+  }
+  
+  /* Style the submit button */
+  .login-form .sign-in-btn {
+    font-size: 1.1rem;
+    padding: 0.95rem;
+    max-width: 900px;
+    margin: 50 auto;
+    display: block;
+    border-radius: 8px;
+  }
+/* ✅ Divider */
+.divider {
+    font-size: 16px;
+    color: #777;
+    margin: 19px 0;
+    text-transform: uppercase;
+}
+
+/* ✅ Input Fields */
+.login-form input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+}
+
+
+
+/* ✅ Sign In Button */
+.sign-in-btn {
+    background-color: #0c0c0c;
+    color: white;
+    border: none;
+    padding: 12px;
+    margin-top: 50px;
+    width: 100%;
+    border-radius: 12px;
+    font-size: 18px;
+    cursor: pointer;
+    max-width: 1200px;
+    height:50px;
+}
+.sign-in-btn:hover {
+    background-color: #121316;
+}
+
+
+/* ✅ RESPONSIVENESS */
+@media (max-width: 768px) {
+    .login-box {
+        flex-direction: column;
+        height: auto;
+    }
+    .login-form {
+        padding: 60px;}
+
+    .video-container {
+        height: 40vh;
+    }
+}
+@media (max-width: 480px) {
+    .google-login {
+        padding: 12px;
+        font-size: 15px;
+    }
+    .login-form {
+        padding: 60px;}
+}

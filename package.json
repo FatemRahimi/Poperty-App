@@ -1,0 +1,16 @@
+{
+  "name": "ai-investor",
+  "version": "1.0.0",
+  "description": "AI Investor Project",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"cd server && npm start\" \"cd client && npm start\"",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "nodemailer": "^7.0.2"
+  }
+}

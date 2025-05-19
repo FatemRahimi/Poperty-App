@@ -1,0 +1,193 @@
+/* ✅ Main Container */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100%;
+}
+
+.login-box {
+    display: flex;
+    width: 100%;
+    max-width: 1800px;
+    height: 70vh;
+    overflow: hidden;
+    box-shadow: 0px 5px 15px rgba(32, 28, 28, 0.2);
+    border-radius: 0px;
+    padding: 0; /* ✅ remove internal spacing */
+}
+
+/* ✅ Left Side - Video Background */
+.video-container {
+    flex: 1; /* ✅ evenly distribute width */
+    position: relative;
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    overflow: hidden;
+}
+
+
+.backgroundlogin-video {
+    width: 70%;          /* ✅ stretch to full container */
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;     /* ✅ remove radius so it touches the login box */
+}
+
+/* ✅ Right Side - Login Form */
+.login-form-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #fff;
+    margin: 0 200px 10px 0;
+
+
+}
+
+/* ✅ Login Form */
+.login-form {
+    width: 100%;
+    max-width: 600px;
+    padding: 60px;
+    background: white;
+    border-radius: 8px;
+    text-align: center;
+}
+
+
+/* ✅ Google Login Button */
+.google-login {
+    display: flex;
+    align-items: center;
+    justify-content:justify;
+    background-color: white;
+    border: 2px solid #7c8eb1;
+    padding: 12px 20px;
+    border-radius: 15px;
+    font-size: 18px;
+    font-weight: 500;
+    color: #3c4043;
+    cursor: pointer;
+    gap: 10px;
+    transition: background-color 0.2s;
+    max-width: 1000px;
+    margin-bottom: 30px;
+    border-width:2px;
+}
+
+.google-login:hover {
+    background-color: #f7f8f9;
+}
+
+.google-icon {
+    width: 25px;
+    height: 28px;
+}
+.apple-login {
+    display: flex;
+    align-items: center;
+    justify-content:justify;
+    background-color: white;
+    border: 2px solid #7c8eb1;
+    padding: 12px 20px;
+    border-radius: 15px;
+    font-size: 18px;
+    font-weight: 500;
+    color: #3c4043;
+    cursor: pointer;
+    gap: 10px;
+    transition: background-color 0.2s;
+    max-width: 1000px;
+    
+}
+.apple-icon{
+    width: 25px;
+    height: 25px;
+}
+
+
+.google-login svg {
+    margin-right: 10px;
+}
+
+/* ✅ Divider */
+.divider {
+    font-size: 16px;
+    color: #777;
+    margin: 19px 0;
+    text-transform: uppercase;
+}
+
+/* ✅ Input Fields */
+.login-form input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+}
+
+/* ✅ Forgot Password */
+.forgot {
+    float: right;
+    font-size: 14px;
+    color: #007bff;
+    cursor: pointer;
+}
+.forgot:hover {
+    text-decoration: underline;
+}
+
+/* ✅ Sign In Button */
+.sign-in-btn {
+    background-color: #000;
+    color: white;
+    border: none;
+    padding: 12px;
+    margin-top: 50px;
+    width: 100%;
+    border-radius: 12px;
+    font-size: 18px;
+    cursor: pointer;
+    max-width: 1000px;
+    height:50px;
+}
+.sign-in-btn:hover {
+    background-color: #aea6a6;
+}
+
+/* ✅ Sign Up Link */
+.signup-text {
+    font-size: 15px;
+    margin-top: 10px;
+}
+.signup-text a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+}
+.signup-text a:hover {
+    text-decoration: underline;
+}
+
+/* ✅ RESPONSIVENESS */
+@media (max-width: 768px) {
+    .login-box {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .video-container {
+        height: 40vh;
+    }
+}
+@media (max-width: 480px) {
+    .google-login {
+        padding: 12px;
+        font-size: 15px;
+    }
+}

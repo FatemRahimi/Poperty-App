@@ -1,0 +1,133 @@
+/* Container Styles */
+.seller-form-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background-color: #f8f9fa;
+}
+
+.seller-form-content {
+  max-width: 1600px;
+  width: 100%;
+  text-align: center;
+}
+
+/* Title Styles */
+.seller-form-title {
+  background: none;
+  border: none;
+
+  font-weight: bold;
+  color: #342fd6;
+  cursor: pointer;
+  padding: 0;
+  font-size:3rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  animation: sellerText 2s infinite alternate;
+  margin-bottom: 9rem;
+}
+
+@keyframes sellerText {
+  0% {
+      color: #d84747;
+      text-shadow: 0 0 5px rgba(79, 134, 193, 0.3);
+  }
+  100% {
+      color: #ecea71;
+      text-shadow: 0 0 10px rgba(215, 84, 204, 0.7);
+      transform: scale(1.05);
+  }
+}
+/* Grid Layout */
+.seller-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 3rem;
+  justify-items: center;
+  padding: 0 1rem;
+}
+
+/* Card Styles */
+.seller-form-card-link {
+  text-decoration: none;
+  color: inherit;
+  width: 100%;
+  max-width: 500px;
+}
+
+.seller-form-card {
+  background-color: #fff;
+  border-radius: 20px;
+  padding: 4rem 6rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+}
+
+.seller-form-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+}
+
+.seller-form-card-image {
+  width: 240px;
+  height: 240px;
+  object-fit: contain;
+  margin-bottom: 2.5rem;
+}
+
+.seller-form-card-title {
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Loading Styles */
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .seller-form-container {
+    padding: 3rem 1rem;
+  }
+
+  .seller-form-title {
+    font-size: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .seller-form-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+  .seller-form-card {
+    padding: 3rem 4rem;
+    min-height: 400px;
+}
+
+  .seller-form-card-image {
+    width: 180px;
+    height: 180px;
+    margin-bottom: 2rem;
+  }
+
+  .seller-form-card-title {
+    font-size: 1.75rem;
+  }
+}

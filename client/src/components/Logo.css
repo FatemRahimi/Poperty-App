@@ -1,0 +1,24 @@
+.logo-container {
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.logo-container:hover {
+  transform: scale(1.02);
+}
+
+/* For smaller screens */
+@media (max-width: 768px) {
+  .logo-container svg {
+    width: 100px;
+    height: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-container svg {
+    width: 90px;
+    height: 30px;
+  }
+} 

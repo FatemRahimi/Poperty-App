@@ -1,0 +1,302 @@
+/* ✅ Full Page Styling */
+.find-property-page {
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* ✅ Hero Section */
+.hero-section {
+    position: relative;
+    width: 100%;
+    height: 60vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    text-align: center;
+    overflow: hidden;
+    padding-bottom: 20px;
+}
+
+/* ✅ Video Background */
+.background-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 90%;
+    object-fit: cover;
+    z-index: -1;
+}
+
+/* ✅ Overlay */
+.overlay {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* Moves content closer to search bar */
+    align-items: center;
+    color: white;
+    padding: 30px;
+}
+
+/* ✅ Hero Title */
+.hero-title {
+    font-size: 2.5em;
+    font-weight: bold;
+    margin-bottom: 5px; /* Closer to categories */
+    font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    color:rgb(236, 232, 221);
+}
+
+/* ✅ Property Categories */
+.categories {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 180px;
+    font-family:monospace;
+    color:rgb(12, 158, 61) 
+
+
+}
+.category-link{
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    color:rgb(228, 183, 21);
+    margin-top:20px;
+
+}
+
+/* ✅ Search Bar (Aligned & Styled) */
+.search-bar {
+    position: absolute;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1000px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 20px 15px rgba(206, 115, 115, 0.1); /* ✅ Default box-shadow */
+    transition: box-shadow 0.4s ease-out-in; /* ✅ Smooth transition effect */
+}
+
+/* ✅ Hover Effect - Change Shadow Color */
+.search-bar:hover {
+    box-shadow: 20px 15px 15px rgba(190, 140, 90, 0.6); /* ✅ Yellow glow effect */
+}
+
+
+/* ✅ Search Options (Buy/Rent) */
+.search-options {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: black;
+    width: auto;
+    font-family: serif;
+}
+
+/* ✅ Search Input */
+.search-bar input {
+    flex: 1;
+    padding: 12px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+}
+
+/* ✅ Search Button */
+.search-bar button {
+    padding: 12px 20px;
+    font-size: 16px;
+    background-color: #ffc107;
+    color: black;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.search-bar button:hover {
+    background-color: #e0a800;
+}
+
+/* ✅ Seller Text (Centered Below Image) */
+.seller-text {
+    text-align: center;
+    font-size: 28px;
+    font-weight:lighter;
+    font-family: sans-serif;
+    margin-bottom: auto;
+}
+
+/* ✅ Seller Link */
+.seller-link {
+    color: #ffc107;
+    text-decoration: none;
+    font-weight:bold;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+/* ✅ Seller Link Hover Effect */
+.seller-link:hover {
+    text-decoration: underline;
+}
+
+/* ✅ New Section: Looking for the Right Place */
+.right-place {
+    width: 100%;
+    text-align: center; /* ✅ Centers text */
+    margin-top: 50px; /* ✅ Creates space from previous section */
+    padding: 40px 20px; /* ✅ Adds padding for spacing */
+    background-color: #f8f9fa; /* ✅ Light background for contrast */
+}
+
+/* ✅ Heading */
+.header-place {
+    font-size: 3em;
+    font-weight:lighter;
+    color: #484646; /* ✅ Darker color for readability */
+    margin-bottom: 35px;
+    font-family: Gotham, sans-serif;
+}
+
+/* ✅ Paragraph */
+.text-place {
+    font-size: 1.5rem;
+    line-height: 1.9;
+    color: #555; /* ✅ Slightly lighter color for balance */
+    max-width: 1500px; /* ✅ Limits text width for better readability */
+    margin: 0 auto; /* ✅ Centers content horizontally */
+    font-family: sans-serif;
+    text-align: justify;
+    hyphens: auto;
+    font-weight:lighter;
+}
+/* ✅ Grid Layout Section */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* ✅ 3 Columns */
+    gap: 20px;
+    margin: 50px auto;
+    max-width: 1200px;
+    padding: 20px;
+}
+
+/* ✅ Grid Items */
+.grid-item {
+    background: rgba(43, 134, 159, 0.9); /* Dark Overlay Effect */
+    padding: 40px;
+    border-radius: 10px;
+    text-align: center;
+    color: white;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+/* ✅ Hover Effect */
+.grid-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+}
+
+/* ✅ Grid Category Title */
+.grid-category {
+    font-size: 14px;
+    font-weight: bold;
+    color: #ffcc00; /* Yellow Accent */
+    text-transform: uppercase;
+}
+
+/* ✅ Grid Property Title */
+.grid-content h3 {
+    font-size: 1.8em;
+    margin: 10px 0;
+}
+
+/* ✅ Grid Description */
+.grid-description {
+    font-size: 1em;
+    color: #ddd;
+}
+
+/* ✅ Grid "Find Out More" Link */
+.grid-item a {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 15px;
+    background: #ffcc00;
+    color: black;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+
+
+
+/* ✅ Responsive Adjustments */
+@media (max-width: 768px) {
+    .header-place {
+        font-size: 2em;
+    }
+
+    .text-place {
+        font-size: 1em;
+        max-width: 90%; /* ✅ Adjusts for smaller screens */
+    }
+}
+
+
+
+/* ✅ Mobile Adjustments */
+@media (max-width: 768px) {
+    .hero-section {
+        height: 55vh;
+    }
+
+    .hero-title {
+        font-size: 1.5em;
+        margin-bottom: 3px;
+    }
+
+    .categories {
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 3px;
+    }
+
+    .search-bar {
+        flex-direction: column;
+        align-items: center;
+        width: 95%;
+        bottom: 10px;
+        gap: 10px;
+    }
+
+    .search-options {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .search-bar input,
+    .search-bar button {
+        width: 100%;
+    }
+}
+
+/* ✅ Desktop Layout Remains Unchanged */
+@media (min-width: 1024px) {
+    .hero-section {
+        height: 70vh;
+    }
+}

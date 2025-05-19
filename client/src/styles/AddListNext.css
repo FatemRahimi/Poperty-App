@@ -1,0 +1,220 @@
+/* ADDLIST2 CSS based on ADDLIST1 but with unique classes */
+
+.addlist2-wrapper {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  
+  .addlist2-container {
+    background-color: #ffffff;
+  }
+  
+  /* Title Section */
+  .addlist2-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    border-bottom: 1px solid #ccc;
+    border-radius: 2px;
+    background-color: white;
+    margin-bottom: 20px;
+    margin-top: 30px;
+    gap: 60px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .addlist2-title-brand {
+    font-size: 25px;
+    color: #333;
+    position: absolute;
+    left: 400px;
+    font-family: fantasy;
+    font-weight: bold;
+    background-color: #ffc107;
+  }
+  
+  .addlist2-title-add {
+    font-size: 26px;
+    font-weight: 600;
+    text-align: center;
+  }
+  
+  .addlist2-title-find-link {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    right: 200px;
+    font-size: 25px;
+  }
+  
+  .addlist2-title-find-link li {
+    display: inline;
+  }
+  
+  .addlist2-title-find-link a {
+    text-decoration: none;
+    color: #007bff;
+    font-weight: 500;
+  }
+  
+  .addlist2-title-find-link a:hover {
+    text-decoration: wavy;
+  }
+  
+  /* Form */
+  .addlist2-form {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 30px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Form on hover */
+  .addlist2-wrapper:hover {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px);
+  }
+  
+  /* Form Group */
+  .addlist2-form-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .addlist2-form-group label {
+    font-size: 18px;
+    font-family: 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #444;
+  }
+  
+  .addlist2-form-group select,
+  .addlist2-form-group input {
+    font-size: 16px;
+    padding: 12px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+  }
+  
+  /* Row Layout */
+  .addlist2-form-row {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap; /* important if needed for responsiveness */
+    gap: 20px; /* the space between fields */
+  }
+  
+  .addlist2-form-row .form-group {
+    flex: 1 1 0;  /* 💥 critical: grow and shrink equally */
+    min-width: 0; /* prevents overflow */
+  }
+  
+  /* Input focus */
+  input:focus,
+  select:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.2);
+  }
+  
+  /* Special Title */
+  .addlist2-section-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #333;
+    margin: 30px 0 20px 0;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 10px;
+  }
+  
+  /* Submit Button */
+  .addlist2-submit-btn {
+    padding: 14px 19px;
+    font-size: 20px;
+    font-weight: 500;
+    background: linear-gradient(135deg, #1976d2, #1565c0);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: auto;
+    align-self: flex-end;
+    margin-right: 20px;
+    transition: background 0.4s, transform 0.3s;
+  }
+  
+  .addlist2-submit-btn:hover {
+    background: linear-gradient(135deg, #1565c0, #1976d2);
+    transform: translateY(-2px);
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;             /* Space between checkbox and label */
+            /* Top and bottom margin for spacing from other sections */
+    }
+    
+    .checkbox-row input[type="checkbox"] {
+      width:18px;           /* Bigger checkbox */
+      height: 18px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    
+    .checkbox-row label {
+      font-size: 19px;       /* Label size */
+      font-weight: 500;
+      color: #333;
+      margin-left:5px;
+    }
+    .section-submit {
+      display: flex;
+      justify-content: space-between; /* Put them on opposite sides */
+      align-items: center;
+      margin-top: 30px;
+      padding: 10px 0;
+    }
+    
+    /* Previous Link */
+    .linkto-previous {
+      font-size: 25px;
+      font-weight: 500;
+      color: #007bff;
+      text-decoration: underline; /* Underline */
+      cursor: pointer;
+      margin-left: 50px;
+    }
+    
+    .linkto-previous:hover {
+      color: #0056b3;
+    }
+    .submit-btn {
+      padding: 14px 19px;
+      font-size: 20px;
+      font-weight: 500;
+      background: linear-gradient(135deg, #1976d2, #1565c0);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.4s, transform 0.3s;
+    }
+    
+    .submit-btn:hover {
+      background: linear-gradient(135deg, #1565c0, #1976d2);
+      transform: translateY(-2px);
+    }

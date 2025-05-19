@@ -1,0 +1,587 @@
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import SelectInput from "../components/inputs/SelectInput";
+import TextInput from "../components/inputs/TextInput";
+import "../styles/AddList.css"; // reusing the AddList CSS
+import useSessionStorage from "../Utils/useSessionStorage";
+import { useAuth } from "../context/AuthContext";
+
+// Property type options
+const propertyTypeOptions = [
+  { value: "flat", label: "Flat" },
+  { value: "house", label: "House" },
+  { value: "studio", label: "Studio" },
+  { value: "bungalow", label: "Bungalow" },
+  { value: "maisonette", label: "Maisonette" },
+  { value: "duplex", label: "Duplex" },
+  { value: "other", label: "Other" }
+];
+
+// Bedroom options
+const bedroomOptions = [
+  { value: "0", label: "Studio" },
+  { value: "1", label: "1" },
+  { value: "2", label: "2" },
+  { value: "3", label: "3" },
+  { value: "4", label: "4" },
+  { value: "5", label: "5" },
+  { value: "6+", label: "6+" }
+];
+
+// Bathroom options
+const bathroomOptions = [
+  { value: "1", label: "1" },
+  { value: "2", label: "2" },
+  { value: "3", label: "3" },
+  { value: "4+", label: "4+" }
+];
+
+// Furnished status options
+const furnishedOptions = [
+  { value: "furnished", label: "Furnished" },
+  { value: "partFurnished", label: "Part-Furnished" },
+  { value: "unfurnished", label: "Unfurnished" }
+];
+
+// Tenancy length options
+const tenancyLengthOptions = [
+  { value: "6", label: "6 months" },
+  { value: "12", label: "12 months" },
+  { value: "18", label: "18 months" },
+  { value: "24", label: "24 months" },
+  { value: "flexible", label: "Flexible" }
+];
+
+// Council tax band options
+const councilTaxOptions = [
+  { value: "A", label: "Band A" },
+  { value: "B", label: "Band B" },
+  { value: "C", label: "Band C" },
+  { value: "D", label: "Band D" },
+  { value: "E", label: "Band E" },
+  { value: "F", label: "Band F" },
+  { value: "G", label: "Band G" },
+  { value: "H", label: "Band H" }
+];
+
+// EPC rating options
+const epcRatingOptions = [
+  { value: "A", label: "A" },
+  { value: "B", label: "B" },
+  { value: "C", label: "C" },
+  { value: "D", label: "D" },
+  { value: "E", label: "E" },
+  { value: "F", label: "F" },
+  { value: "G", label: "G" }
+];
+
+const AddRent = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated, loading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [currentSection, setCurrentSection] = useState(1);
+  const [formData, setFormData] = useSessionStorage("addRentForm", {
+    // Property Details
+    propertyTitle: "",
+    propertyType: "",
+    bedrooms: "",
+    bathrooms: "",
+    furnishedStatus: "",
+    rentalPrice: "",
+    depositAmount: "",
+    availableFrom: "",
+    tenancyLength: "",
+    councilTaxBand: "",
+    
+    // Location Information
+    postcode: "",
+    streetAddress: "",
+    city: "",
+    region: "",
+    
+    // Property Features
+    garden: false,
+    parking: false,
+    balconyTerrace: false,
+    billsIncluded: false,
+    petsAllowed: false,
+    ensuiteBathroom: false,
+    liftAccess: false,
+    epcRating: "",
+    
+    // Photos (will store URLs)
+    photos: []
+  });
+  
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
+
+  useEffect(() => {
+    if (!isAuthenticated && !loading) {
+      // Store the current path to redirect back after login
+      sessionStorage.setItem('redirectAfterLogin', '/addrent');
+      navigate("/login");
+    }
+  }, [isAuthenticated, loading, navigate]);
+
+  const handleChange = (e) => {
+    const { name, type, value, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handlePhotoChange = (e) => {
+    const files = Array.from(e.target.files);
+    
+    // Limit to 10 photos
+    if (photoFiles.length + files.length > 10) {
+      alert("You can upload a maximum of 10 photos");
+      return;
+    }
+    
+    setPhotoFiles((prevFiles) => [...prevFiles, ...files]);
+    
+    // Create preview URLs
+    const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+    setPhotoPreviewUrls((prevUrls) => [...prevUrls, ...newPreviewUrls]);
+  };
+
+  const removePhoto = (index) => {
+    const newPhotoFiles = [...photoFiles];
+    const newPhotoPreviewUrls = [...photoPreviewUrls];
+    
+    // Revoke the object URL to avoid memory leaks
+    URL.revokeObjectURL(photoPreviewUrls[index]);
+    
+    newPhotoFiles.splice(index, 1);
+    newPhotoPreviewUrls.splice(index, 1);
+    
+    setPhotoFiles(newPhotoFiles);
+    setPhotoPreviewUrls(newPhotoPreviewUrls);
+  };
+
+  const nextSection = () => {
+    // Validate current section
+    if (currentSection === 1) {
+      if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
+          !formData.bathrooms || !formData.furnishedStatus || !formData.rentalPrice || 
+          !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
+          !formData.councilTaxBand) {
+        alert("Please fill in all required fields before continuing.");
+        return;
+      }
+    } else if (currentSection === 2) {
+      if (!formData.postcode || !formData.streetAddress || !formData.city) {
+        alert("Please fill in all required location fields before continuing.");
+        return;
+      }
+    }
+    
+    setCurrentSection(prev => prev + 1);
+  };
+
+  const prevSection = () => {
+    setCurrentSection(prev => prev - 1);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Final validation
+    if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
+        !formData.bathrooms || !formData.furnishedStatus || !formData.rentalPrice || 
+        !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
+        !formData.councilTaxBand || !formData.postcode || !formData.streetAddress || 
+        !formData.city) {
+      alert("Please fill in all required fields before submitting.");
+      return;
+    }
+    
+    setError("");
+    setIsLoading(true);
+
+    try {
+      // Here you would make an API call to save the property data
+      // For example:
+      // const response = await axios.post("/api/properties/rent", { ...formData, userId: user.id });
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setSuccess("Property added successfully!");
+      // navigate("/dashboard"); // Redirect after successful submission
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to add property");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Display UI based on current section
+  const renderSection = () => {
+    switch(currentSection) {
+      case 1:
+        return (
+          <div className="form-section">
+            <h3 className="section-title">Property Details</h3>
+            
+            <TextInput
+              label="Property Title"
+              name="propertyTitle"
+              value={formData.propertyTitle}
+              onChange={handleChange}
+              placeholder="e.g. Modern 2-Bed Flat in Central London"
+            />
+            
+            <SelectInput
+              label="Property Type"
+              name="propertyType"
+              value={formData.propertyType}
+              onChange={handleChange}
+              options={propertyTypeOptions}
+              required
+            />
+            
+            <div className="form-row">
+              <SelectInput
+                label="Bedrooms"
+                name="bedrooms"
+                value={formData.bedrooms}
+                onChange={handleChange}
+                options={bedroomOptions}
+                required
+              />
+              
+              <SelectInput
+                label="Bathrooms"
+                name="bathrooms"
+                value={formData.bathrooms}
+                onChange={handleChange}
+                options={bathroomOptions}
+                required
+              />
+            </div>
+            
+            <SelectInput
+              label="Furnished Status"
+              name="furnishedStatus"
+              value={formData.furnishedStatus}
+              onChange={handleChange}
+              options={furnishedOptions}
+              required
+            />
+            
+            <div className="form-row">
+              <TextInput
+                label="Rental Price per Month (£)"
+                name="rentalPrice"
+                value={formData.rentalPrice}
+                onChange={handleChange}
+                type="number"
+                required
+              />
+              
+              <TextInput
+                label="Deposit Amount (£)"
+                name="depositAmount"
+                value={formData.depositAmount}
+                onChange={handleChange}
+                type="number"
+                required
+              />
+            </div>
+            
+            <div className="form-row">
+              <TextInput
+                label="Available From"
+                name="availableFrom"
+                value={formData.availableFrom}
+                onChange={handleChange}
+                type="date"
+                required
+              />
+              
+              <SelectInput
+                label="Tenancy Length"
+                name="tenancyLength"
+                value={formData.tenancyLength}
+                onChange={handleChange}
+                options={tenancyLengthOptions}
+                required
+              />
+            </div>
+            
+            <SelectInput
+              label="Council Tax Band"
+              name="councilTaxBand"
+              value={formData.councilTaxBand}
+              onChange={handleChange}
+              options={councilTaxOptions}
+              required
+            />
+          </div>
+        );
+      
+      case 2:
+        return (
+          <div className="form-section">
+            <h3 className="section-title">Location Information</h3>
+            
+            <TextInput
+              label="Postcode"
+              name="postcode"
+              value={formData.postcode}
+              onChange={handleChange}
+              required
+            />
+            
+            <TextInput
+              label="Street Address"
+              name="streetAddress"
+              value={formData.streetAddress}
+              onChange={handleChange}
+              required
+            />
+            
+            <div className="form-row">
+              <TextInput
+                label="City/Town"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                required
+              />
+              
+              <TextInput
+                label="Region (Optional)"
+                name="region"
+                value={formData.region}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+        );
+      
+      case 3:
+        return (
+          <div className="form-section">
+            <h3 className="section-title">Property Features</h3>
+            
+            <div className="property-features">
+              <div className="feature-item">
+                <input 
+                  type="checkbox" 
+                  id="garden" 
+                  name="garden" 
+                  checked={formData.garden}
+                  onChange={handleChange}
+                />
+                <label htmlFor="garden">Garden</label>
+              </div>
+              
+              <div className="feature-item">
+                <input 
+                  type="checkbox" 
+                  id="parking" 
+                  name="parking" 
+                  checked={formData.parking}
+                  onChange={handleChange}
+                />
+                <label htmlFor="parking">Parking</label>
+              </div>
+              
+              <div className="feature-item">
+                <input 
+                  type="checkbox" 
+                  id="balconyTerrace" 
+                  name="balconyTerrace" 
+                  checked={formData.balconyTerrace}
+                  onChange={handleChange}
+                />
+                <label htmlFor="balconyTerrace">Balcony/Terrace</label>
+              </div>
+              
+              <div className="feature-item">
+                <input 
+                  type="checkbox" 
+                  id="billsIncluded" 
+                  name="billsIncluded" 
+                  checked={formData.billsIncluded}
+                  onChange={handleChange}
+                />
+                <label htmlFor="billsIncluded">Bills Included</label>
+              </div>
+              
+              <div className="feature-item">
+                <input 
+                  type="checkbox" 
+                  id="petsAllowed" 
+                  name="petsAllowed" 
+                  checked={formData.petsAllowed}
+                  onChange={handleChange}
+                />
+                <label htmlFor="petsAllowed">Pets Allowed</label>
+              </div>
+              
+              <div className="feature-item">
+                <input 
+                  type="checkbox" 
+                  id="ensuiteBathroom" 
+                  name="ensuiteBathroom" 
+                  checked={formData.ensuiteBathroom}
+                  onChange={handleChange}
+                />
+                <label htmlFor="ensuiteBathroom">Ensuite Bathroom</label>
+              </div>
+              
+              <div className="feature-item">
+                <input 
+                  type="checkbox" 
+                  id="liftAccess" 
+                  name="liftAccess" 
+                  checked={formData.liftAccess}
+                  onChange={handleChange}
+                />
+                <label htmlFor="liftAccess">Lift Access</label>
+              </div>
+            </div>
+            
+            <SelectInput
+              label="EPC Rating"
+              name="epcRating"
+              value={formData.epcRating}
+              onChange={handleChange}
+              options={epcRatingOptions}
+            />
+          </div>
+        );
+      
+      case 4:
+        return (
+          <div className="form-section">
+            <h3 className="section-title">Upload Photos/Videos</h3>
+            
+            <div className="photo-upload-section">
+              <div className="photo-upload-container">
+                <label htmlFor="photoUpload" className="photo-upload-label">
+                  <span className="upload-icon">+</span>
+                  <span>Upload Photos</span>
+                  <small>Up to 10 images</small>
+                </label>
+                <input
+                  type="file"
+                  id="photoUpload"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoChange}
+                  style={{ display: 'none' }}
+                />
+              </div>
+              
+              {photoPreviewUrls.length > 0 && (
+                <div className="photo-previews">
+                  {photoPreviewUrls.map((url, index) => (
+                    <div key={index} className="photo-preview-item">
+                      <img src={url} alt={`Preview ${index + 1}`} />
+                      <button 
+                        type="button" 
+                        className="remove-photo-btn"
+                        onClick={() => removePhoto(index)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="photo-count">
+                {photoFiles.length} of 10 photos selected
+              </div>
+            </div>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="form-sale-container">
+      {/* Title Section */}
+      <div className="form-title">
+        <div className="form-title-brand">Sh.R.Property</div>
+        <div className="form-title-add">ADD PROPERTY FOR RENT</div>
+        <ul className="form-title-find-link">
+          <li><Link to="/seller">Back to Add Listing</Link></li>
+        </ul>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="form-progress">
+        <div className={`progress-step ${currentSection >= 1 ? 'active' : ''}`}>1</div>
+        <div className={`progress-line ${currentSection >= 2 ? 'active' : ''}`}></div>
+        <div className={`progress-step ${currentSection >= 2 ? 'active' : ''}`}>2</div>
+        <div className={`progress-line ${currentSection >= 3 ? 'active' : ''}`}></div>
+        <div className={`progress-step ${currentSection >= 3 ? 'active' : ''}`}>3</div>
+        <div className={`progress-line ${currentSection >= 4 ? 'active' : ''}`}></div>
+        <div className={`progress-step ${currentSection >= 4 ? 'active' : ''}`}>4</div>
+      </div>
+
+      {/* Form Section */}
+      <div className="form-wrapper">
+        <form onSubmit={handleSubmit} className="property-form">
+          {error && <div className="alert alert-danger">{error}</div>}
+          {success && <div className="alert alert-success">{success}</div>}
+          
+          {renderSection()}
+
+          {/* Navigation Buttons */}
+          <div className="form-buttons">
+            {currentSection > 1 ? (
+              <button 
+                type="button" 
+                className="back-btn"
+                onClick={prevSection}
+                disabled={isLoading}
+              >
+                Back
+              </button>
+            ) : (
+              <button 
+                type="button" 
+                className="back-btn"
+                onClick={() => navigate('/seller')}
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+            )}
+            
+            {currentSection < 4 ? (
+              <button 
+                type="button" 
+                className="next-btn"
+                onClick={nextSection}
+                disabled={isLoading}
+              >
+                Continue
+              </button>
+            ) : (
+              <button type="submit" className="submit-btn" disabled={isLoading}>
+                {isLoading ? "Saving..." : "Submit Listing"}
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default AddRent; 
