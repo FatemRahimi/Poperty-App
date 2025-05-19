@@ -33,30 +33,31 @@ const FindProperty = () => {
         document.querySelector('.hero-content')?.classList.add('loaded');
     }, []);
 
-    // Video slideshow effect with timer and sliding animation
+    // Video slideshow effect with continuous sliding animation
     useEffect(() => {
         const interval = setInterval(() => {
             if (!isTransitioning) {
                 setIsTransitioning(true);
                 const video = videoRef.current;
                 if (video) {
+                    // Start sliding out
                     video.classList.add('slide-out');
                     
+                    // Immediately start sliding in the next video
+                    setCurrentVideoIndex((prevIndex) => 
+                        (prevIndex + 1) % backgroundVideos.length
+                    );
+                    video.classList.remove('slide-out');
+                    video.classList.add('slide-in');
+                    
+                    // Remove transition classes after animation completes
                     setTimeout(() => {
-                        setCurrentVideoIndex((prevIndex) => 
-                            (prevIndex + 1) % backgroundVideos.length
-                        );
-                        video.classList.remove('slide-out');
-                        video.classList.add('slide-in');
-                        
-                        setTimeout(() => {
-                            video.classList.remove('slide-in');
-                            setIsTransitioning(false);
-                        }, 800);
+                        video.classList.remove('slide-in');
+                        setIsTransitioning(false);
                     }, 800);
                 }
             }
-        }, 4000);
+        }, 3000); // Reduced interval for more frequent transitions
 
         return () => clearInterval(interval);
     }, [isTransitioning, currentVideoIndex]);
