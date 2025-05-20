@@ -11,6 +11,21 @@ const FindProperty = () => {
     const videoRef = useRef(null);
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
+    const inputRef = useRef(null);
+
+    // Debug mount and state changes
+    useEffect(() => {
+        console.log('Component mounted');
+        console.log('Initial search type:', searchType);
+        console.log('Initial search query:', searchQuery);
+        
+        // Check if input is accessible
+        if (inputRef.current) {
+            console.log('Input element exists:', inputRef.current);
+            console.log('Input is disabled:', inputRef.current.disabled);
+            console.log('Input is readOnly:', inputRef.current.readOnly);
+        }
+    }, []);
 
     // Property filters
     const filters = [
@@ -179,6 +194,18 @@ const FindProperty = () => {
         }
     };
 
+    const handleSearchTypeChange = (type) => {
+        setSearchType(type);
+    };
+
+    const handleSearchInput = (e) => {
+        setSearchQuery(e.target.value);
+    };
+
+    const handleSearch = () => {
+        console.log('Search:', searchQuery, searchType);
+    };
+
     return (
         <div className="find-property-page">
             {/* Hero Section with Video Background */}
@@ -234,20 +261,23 @@ const FindProperty = () => {
                         <div className="search-box">
                             <div className="search-options">
                                 <button 
+                                    type="button"
                                     className={`option-btn ${searchType === "buy" ? "active" : ""}`}
-                                    onClick={() => setSearchType("buy")}
+                                    onClick={() => handleSearchTypeChange("buy")}
                                 >
                                     Buy
                                 </button>
                                 <button 
+                                    type="button"
                                     className={`option-btn ${searchType === "rent" ? "active" : ""}`}
-                                    onClick={() => setSearchType("rent")}
+                                    onClick={() => handleSearchTypeChange("rent")}
                                 >
                                     Rent
                                 </button>
                                 <button 
+                                    type="button"
                                     className={`option-btn ${searchType === "invest" ? "active" : ""}`}
-                                    onClick={() => setSearchType("invest")}
+                                    onClick={() => handleSearchTypeChange("invest")}
                                 >
                                     Invest
                                 </button>
@@ -261,10 +291,15 @@ const FindProperty = () => {
                                         className="search-input"
                                         placeholder="Search by location, postcode, or property name..."
                                         value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onChange={handleSearchInput}
+                                        ref={inputRef}
                                     />
                                 </div>
-                                <button className="search-button">
+                                <button 
+                                    type="button"
+                                    className="search-button"
+                                    onClick={handleSearch}
+                                >
                                     <FaSearch className="btn-icon" /> Search
                                 </button>
                             </div>
