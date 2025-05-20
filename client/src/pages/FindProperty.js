@@ -8,6 +8,7 @@ const FindProperty = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [isLoaded, setIsLoaded] = useState(false);
     const [activeFilter, setActiveFilter] = useState("all");
+    const [selectedCategory, setSelectedCategory] = useState("residential");
     const videoRef = useRef(null);
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -110,7 +111,7 @@ const FindProperty = () => {
     const animationClasses = {
         textContent: "text-content animate-on-scroll",
         categoriesContainer: "categories-container",
-        categoryCard: "category-card animate-on-scroll",
+        categoryCard: "category-card",
         searchContainer: "search-container animate-on-scroll",
         propertiesGrid: "properties-grid",
         propertyCard: "property-card animate-on-scroll",
@@ -206,6 +207,49 @@ const FindProperty = () => {
         console.log('Search:', searchQuery, searchType);
     };
 
+    // Category-specific search options
+    const getSearchOptions = (category) => {
+        switch(category) {
+            case "commercial":
+                return [
+                    { value: "lease", label: "Lease" },
+                    { value: "purchase", label: "Purchase" },
+                    { value: "invest", label: "Invest" }
+                ];
+            case "farms":
+                return [
+                    { value: "buy", label: "Buy" },
+                    { value: "lease", label: "Lease" },
+                    { value: "invest", label: "Invest" }
+                ];
+            default: // residential
+                return [
+                    { value: "buy", label: "Buy" },
+                    { value: "rent", label: "Rent" },
+                    { value: "invest", label: "Invest" }
+                ];
+        }
+    };
+
+    const handleCategoryClick = (categoryId) => {
+        setSelectedCategory(categoryId);
+        
+        // Set default search type based on category
+        switch(categoryId) {
+            case "residential":
+                setSearchType("buy");
+                break;
+            case "commercial":
+                setSearchType("purchase");
+                break;
+            case "farms":
+                setSearchType("invest");
+                break;
+            default:
+                setSearchType("buy");
+        }
+    };
+
     return (
         <div className="find-property-page">
             {/* Hero Section with Video Background */}
@@ -234,53 +278,37 @@ const FindProperty = () => {
                     </div>
 
                     {/* Property Categories */}
-                    <div 
-                        className={animationClasses.categoriesContainer}
-                    >
+                    <div className={animationClasses.categoriesContainer}>
                         {categories.map((category, index) => (
                             <div 
                                 key={category.id} 
-                                className={animationClasses.categoryCard}
-                                style={{ animationDelay: `${index * 0.2}s` }}
+                                className={`${animationClasses.categoryCard} ${selectedCategory === category.id ? 'active' : ''}`}
+                                onClick={() => handleCategoryClick(category.id)}
                             >
-                                <Link to={category.path} className="category-link">
+                                <div className="category-link">
                                     <div className="category-icon-container">
                                         {category.icon}
                                     </div>
                                     <h3 className="category-title">{category.title}</h3>
-                                </Link>
+                                </div>
                             </div>
                         ))}
                     </div>
 
                     {/* Advanced Search Bar */}
-                    <div 
-                        className={animationClasses.searchContainer}
-                        style={{ animationDelay: "0.8s" }}
-                    >
+                    <div className={animationClasses.searchContainer} style={{ animationDelay: "0.8s" }}>
                         <div className="search-box">
                             <div className="search-options">
-                                <button 
-                                    type="button"
-                                    className={`option-btn ${searchType === "buy" ? "active" : ""}`}
-                                    onClick={() => handleSearchTypeChange("buy")}
-                                >
-                                    Buy
-                                </button>
-                                <button 
-                                    type="button"
-                                    className={`option-btn ${searchType === "rent" ? "active" : ""}`}
-                                    onClick={() => handleSearchTypeChange("rent")}
-                                >
-                                    Rent
-                                </button>
-                                <button 
-                                    type="button"
-                                    className={`option-btn ${searchType === "invest" ? "active" : ""}`}
-                                    onClick={() => handleSearchTypeChange("invest")}
-                                >
-                                    Invest
-                                </button>
+                                {getSearchOptions(selectedCategory).map((option) => (
+                                    <button 
+                                        key={option.value}
+                                        type="button"
+                                        className={`option-btn ${searchType === option.value ? "active" : ""}`}
+                                        onClick={() => handleSearchTypeChange(option.value)}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
                             </div>
                             
                             <div className="search-input-container">
@@ -289,7 +317,7 @@ const FindProperty = () => {
                                     <input
                                         type="text"
                                         className="search-input"
-                                        placeholder="Search by location, postcode, or property name..."
+                                        placeholder={`Search ${selectedCategory} properties...`}
                                         value={searchQuery}
                                         onChange={handleSearchInput}
                                         ref={inputRef}
