@@ -1,5 +1,5 @@
 /* Professional FindProperty Page Styling */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
 
 /* Global Styles */
 .find-property-page {
@@ -132,10 +132,23 @@ h1, h2, h3, h4 {
     gap: .4rem;
     margin: 0.1rem 0;
     pointer-events: none;
+    transition: color 0.3s ease;
+}
+
+.category-card:hover .category-link {
+    color: #3498db;
 }
 
 .category-card.active .category-link {
     color: #3498db;
+}
+
+.category-card:not(.active):hover .category-link {
+    color: #3498db;
+}
+
+.category-card:not(.active) .category-link {
+    color: white;
 }
 
 .category-card.active .category-icon-container {
@@ -335,18 +348,25 @@ h1, h2, h3, h4 {
 
 .category-title {
     font-family: 'Playfair Display', serif;
-    font-size: .9rem;
-    font-weight: 300;
+    font-size: 0.85rem;
+    font-weight: 500;
     margin: 0;
     transition: color 0.3s ease;
     flex: 1;
     color: #ffffff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     letter-spacing: 0.2px;
+    line-height: 1.2;
 }
 
 .category-card:hover .category-title {
     color: #3498db;
+    font-weight: 600;
+}
+
+.category-card.active .category-title {
+    color: #3498db;
+    font-weight: 600;
 }
 
 /* Search Box */
@@ -414,7 +434,7 @@ h1, h2, h3, h4 {
     color: #aaa;
     font-size: 1rem;
     pointer-events: none;
-    z-index: 4; /* Ensure icon is above input */
+    z-index: 4;
 }
 
 .search-input {
@@ -626,6 +646,12 @@ h1, h2, h3, h4 {
     margin-bottom: 0.75rem;
 }
 
+.property-location svg {
+    color: #3498db;
+    font-size: 1.1rem;
+    min-width: 1.2rem;
+}
+
 .property-price {
     color: #3498db;
     font-size: 1.4rem;
@@ -648,6 +674,13 @@ h1, h2, h3, h4 {
     gap: 0.4rem;
     color: #666;
     font-size: 0.9rem;
+}
+
+.property-details span i,
+.property-details span svg {
+    font-size: 1.1rem;
+    color: #3498db;
+    min-width: 1.2rem;
 }
 
 .view-details-btn {
@@ -866,6 +899,15 @@ h1, h2, h3, h4 {
     .seller-title {
         font-size: 1.8rem;
     }
+    
+    .search-icon {
+        left: 1rem;
+    }
+    
+    .search-input {
+        padding: 0.5rem 0.8rem 0.5rem 3.5rem;
+        font-size: 0.85rem;
+    }
 }
 
 @media (max-width: 576px) {
@@ -912,6 +954,15 @@ h1, h2, h3, h4 {
     
     .search-container {
         max-width: 95%;
+    }
+    
+    .search-icon {
+        left: 0.8rem;
+    }
+    
+    .search-input {
+        padding: 0.5rem 0.6rem 0.5rem 3.2rem;
+        font-size: 0.8rem;
     }
 }
 
@@ -982,127 +1033,144 @@ h1, h2, h3, h4 {
 
 /* Property Owner Section */
 .owner-options-section {
-    background-color: #f8f9fa;
-    padding: 2rem 0;
+    
+    padding: 4rem 0;
     text-align: center;
-    border-top: 1px solid #eee;
-    border-bottom: 1px solid #eee;
+    margin: 2rem 0;
 }
 
 .owner-content {
     max-width: 800px;
     margin: 0 auto;
-    padding: 0 1rem;
+    padding: 0 2rem;
 }
 
 .owner-title {
-    font-size: 1.8rem;
+    font-size: 2.5rem;
     color: #2c3e50;
-    margin-bottom: 1rem;
-    font-weight: 600;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
 }
 
 .owner-text {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: #555;
-    margin: 0;
+    margin-bottom: 2rem;
     line-height: 1.6;
 }
 
 .owner-link {
     display: inline-flex;
     align-items: center;
-    color: #3498db;
+    background: #3498db;
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 30px;
     font-weight: 600;
     text-decoration: none;
-    margin-left: 0.5rem;
     transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
 }
 
 .owner-link:hover {
-    color: #2980b9;
-    transform: translateX(5px);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
 }
 
-.owner-link .arrow {
-    margin-left: 0.3rem;
-    transition: transform 0.3s ease;
+/* Featured Properties Section */
+.featured-properties-section {
+    padding: 4rem 0;
+    background: #ffffff;
 }
 
-.owner-link:hover .arrow {
-    transform: translateX(3px);
-}
-
-@media (max-width: 768px) {
-    .owner-options {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .owner-option {
-        width: 100%;
-        max-width: 400px;
-    }
-    
-    .owner-title {
-        font-size: 1.8rem;
-    }
-}
-
-/* Seller Section */
-.seller-section {
-    background-color: #ffffff;
-    padding: 3rem 0;
+.section-header {
     text-align: center;
-    margin: 2rem 0;
+    margin-bottom: 3rem;
 }
 
-.seller-content {
-    max-width: 800px;
+.section-title {
+    font-size: 2.5rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.section-subtitle {
+    font-size: 1.2rem;
+    color: #666;
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* All Properties Section */
+.all-properties-section {
+    padding: 4rem 0;
+    background: #f8f9fa;
+}
+
+.property-categories {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 0 2rem;
 }
 
-.seller-title {
-    font-family: 'Poppins', sans-serif;
-    font-size: 2rem;
-    color: #2c3e50;
-    margin-bottom: 1.2rem;
-    font-weight: 500;
-    letter-spacing: -0.5px;
-}
-
-.seller-text {
-    font-family: 'Poppins', sans-serif;
-    font-size: 1.1rem;
-    color: #555;
-    margin: 0;
-    line-height: 1.6;
-    font-weight: 300;
-}
-
-.seller-link {
-    display: inline-flex;
-    align-items: center;
-    color: #3498db;
-    font-weight: 500;
-    text-decoration: none;
-    margin-left: 0.5rem;
+.category-item {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
     transition: all 0.3s ease;
-    font-family: 'Poppins', sans-serif;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
 }
 
-.seller-link:hover {
-    color: #2980b9;
-    transform: translateX(5px);
+.category-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-.seller-link .arrow {
-    margin-left: 0.3rem;
-    transition: transform 0.3s ease;
+.category-item h3 {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
 }
 
-.seller-link:hover .arrow {
-    transform: translateX(3px);
+.category-item p {
+    color: #666;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+}
+
+.property-count {
+    display: inline-block;
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .owner-title {
+        font-size: 2rem;
+    }
+    
+    .section-title {
+        font-size: 2rem;
+    }
+    
+    .property-categories {
+        grid-template-columns: 1fr;
+        padding: 0 1rem;
+    }
+    
+    .category-item {
+        padding: 1.5rem;
+    }
 }
 

@@ -317,7 +317,7 @@ const FindProperty = () => {
                                     <input
                                         type="text"
                                         className="search-input"
-                                        placeholder={`Search ${selectedCategory} properties...`}
+                                        placeholder={`Search ${selectedCategory} properties by location or postcode...`}
                                         value={searchQuery}
                                         onChange={handleSearchInput}
                                         ref={inputRef}
@@ -336,83 +336,115 @@ const FindProperty = () => {
                 </div>
             </section>
 
-            {/* Seller Call to Action */}
-            <section className="seller-section">
-                <div className="container">
-                    <div className="seller-content">
-                        <h3 className="seller-title">Own a Property?</h3>
-                        <p className="seller-text">
-                            Whether you want to sell, rent, or lease your property, we've got you covered.
-                            <Link to="/seller" className="seller-link">
-                                List Your Property <span className="arrow">→</span>
-                            </Link>
-                        </p>
-                    </div>
+            {/* Property Owner Section */}
+            <section className="owner-options-section">
+                <div className="owner-content">
+                    <h2 className="owner-title">Ready to List Your Property?</h2>
+                    <p className="owner-text">
+                        Join thousands of successful property owners who trust us with their listings. 
+                        Get started in minutes and reach potential buyers and tenants today.
+                    </p>
+                    <Link to="/seller" className="owner-link">
+                        Start Listing Now <span className="arrow">→</span>
+                    </Link>
                 </div>
             </section>
 
             {/* Featured Properties Section */}
-            <section className="featured-section">
-                <div className="container">
-                    <div className="section-header">
-                        <h2 className="section-title">Featured Properties</h2>
-                        <p className="section-subtitle">
-                            Discover our selection of premium properties across various categories
-                        </p>
-                    </div>
-
-                    <div className="filter-tabs">
-                        {filters.map(filter => (
-                            <button 
-                                key={filter.id}
-                                className={`filter-btn ${activeFilter === filter.id ? 'active' : ''}`}
-                                onClick={() => setActiveFilter(filter.id)}
-                            >
-                                {filter.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div 
-                        className={animationClasses.propertiesGrid}
-                    >
-                        {filteredProperties.map((property, index) => (
-                            <div 
-                                key={property.id} 
-                                className={animationClasses.propertyCard}
-                                style={{ animationDelay: `${index * 0.2}s` }}
-                            >
-                                <div className="property-image">
-                                    <img src={property.image} alt={property.title} />
-                                    <div className="property-badge">{property.type}</div>
-                                    <button className="favorite-btn">♡</button>
-                                </div>
-                                <div className="property-content">
-                                    <h3 className="property-title">{property.title}</h3>
-                                    <p className="property-location">
-                                        <FaMapMarkerAlt /> {property.location}
-                                    </p>
-                                    <p className="property-price">{property.price}</p>
-                                    <div className="property-details">
-                                        {property.bedrooms && (
-                                            <span><FaHome /> {property.bedrooms} bd</span>
-                                        )}
-                                        {property.bathrooms && (
-                                            <span><i className="fa fa-bath"></i> {property.bathrooms} ba</span>
-                                        )}
-                                        {property.sqft && (
-                                            <span><FaRegBuilding /> {property.sqft} sqft</span>
-                                        )}
-                                        {property.acres && (
-                                            <span><FaTree /> {property.acres} acres</span>
-                                        )}
-                                    </div>
-                                    <Link to={`/property/${property.id}`} className="view-details-btn">
-                                        View Details
-                                    </Link>
-                                </div>
+            <section className="featured-properties-section">
+                <div className="section-header">
+                    <h2 className="section-title">Featured Properties</h2>
+                    <p className="section-subtitle">
+                        Explore our handpicked selection of exceptional properties, 
+                        each offering unique features and prime locations
+                    </p>
+                </div>
+                <div className="filter-tabs">
+                    {filters.map(filter => (
+                        <button 
+                            key={filter.id}
+                            className={`filter-btn ${activeFilter === filter.id ? 'active' : ''}`}
+                            onClick={() => setActiveFilter(filter.id)}
+                        >
+                            {filter.label}
+                        </button>
+                    ))}
+                </div>
+                <div 
+                    className={animationClasses.propertiesGrid}
+                >
+                    {filteredProperties.map((property, index) => (
+                        <div 
+                            key={property.id} 
+                            className={animationClasses.propertyCard}
+                            style={{ animationDelay: `${index * 0.2}s` }}
+                        >
+                            <div className="property-image">
+                                <img src={property.image} alt={property.title} />
+                                <div className="property-badge">{property.type}</div>
+                                <button className="favorite-btn">♡</button>
                             </div>
-                        ))}
+                            <div className="property-content">
+                                <h3 className="property-title">{property.title}</h3>
+                                <p className="property-location">
+                                    <FaMapMarkerAlt /> {property.location}
+                                </p>
+                                <p className="property-price">{property.price}</p>
+                                <div className="property-details">
+                                    {property.bedrooms && (
+                                        <span><FaHome /> {property.bedrooms} bd</span>
+                                    )}
+                                    {property.bathrooms && (
+                                        <span><i className="fa fa-bath"></i> {property.bathrooms} ba</span>
+                                    )}
+                                    {property.sqft && (
+                                        <span><FaRegBuilding /> {property.sqft} sqft</span>
+                                    )}
+                                    {property.acres && (
+                                        <span><FaTree /> {property.acres} acres</span>
+                                    )}
+                                </div>
+                                <Link to={`/property/${property.id}`} className="view-details-btn">
+                                    View Details
+                                </Link>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* All Properties Section */}
+            <section className="all-properties-section">
+                <div className="section-header">
+                    <h2 className="section-title">Browse All Properties</h2>
+                    <p className="section-subtitle">
+                        Find your perfect property from our extensive collection
+                    </p>
+                </div>
+                <div className="property-categories">
+                    <div className="category-item">
+                        <div className="category-icon">
+                            <i className="fas fa-home"></i>
+                        </div>
+                        <h3>Residential</h3>
+                        <p>Homes, Apartments, Condos</p>
+                        <span className="property-count">2,500+ Properties</span>
+                    </div>
+                    <div className="category-item">
+                        <div className="category-icon">
+                            <i className="fas fa-building"></i>
+                        </div>
+                        <h3>Commercial</h3>
+                        <p>Offices, Retail, Industrial</p>
+                        <span className="property-count">1,200+ Properties</span>
+                    </div>
+                    <div className="category-item">
+                        <div className="category-icon">
+                            <i className="fas fa-tree"></i>
+                        </div>
+                        <h3>Land & Farms</h3>
+                        <p>Agricultural, Development</p>
+                        <span className="property-count">800+ Properties</span>
                     </div>
                 </div>
             </section>
