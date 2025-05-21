@@ -367,8 +367,8 @@ const FindProperty = () => {
             {/* Property Owner Section */}
             <section className="owner-options-section">
                 <div className="owner-content">
-                    <h2 className="owner-title">Ready to List Your Property?</h2>
-                    <p className="owner-text">
+                    <h2 className="owner-title animate-on-scroll">Ready to List Your Property?</h2>
+                    <p className="owner-text animate-on-scroll">
                         Join thousands of successful property owners who trust us with their listings. 
                         Get started in minutes and reach potential buyers and tenants today.
                     </p>
@@ -396,28 +396,33 @@ const FindProperty = () => {
             <section className="services-section">
                 <div className="container">
                     <div className="section-header">
-                        <h2 className="section-title">Looking for the right place or space?</h2>
-                        <p className="section-subtitle">
-                        Find the property that brings your vision to life. Tell us your wants, needs and aspirations and we won’t stop until we’ve found you the right fit. From first homes to rural land and commercial opportunities, we have a specialist expert that knows the market inside out. 
+                        <h2 className="section-title animate-on-scroll">Looking for the right place or space?</h2>
+                        <p className="section-subtitle animate-on-scroll">
+                            Find the property that brings your vision to life. Tell us your wants, needs and aspirations and we won't stop until we've found you the right fit. From first homes to rural land and commercial opportunities, we have a specialist expert that knows the market inside out. 
                         </p>
                     </div>
 
-                    <div 
-                        className={animationClasses.servicesGrid}
-                    >
+                    <div className={animationClasses.servicesGrid}>
                         {[
                             { title: "Buy a residential property", desc: "From flats to houses, downsizing to upsizing, our local agents can guide you through the process." },
                             { title: "Buy a commercial property", desc: "Unlock commercial value with our expert team covering retail, industrial, and office spaces." },
                             { title: "Buy a farm or rural land", desc: "Specialists in rural land and farm investment, helping you uncover the best opportunities." },
                             { title: "Rent a residential property", desc: "From viewings to applications, we'll support you at every step of renting a home." },
                             { title: "Lease a commercial property", desc: "Expert advice on all market sectors for leasing commercial spaces." },
-                            { title: "Buy a new-build home", desc: "Guidance on upcoming developments and new home purchases." }
+                            { title: "Buy a new-build home", desc: "Guidance on upcoming developments and new home purchases." },
+                            { title: "Buy an international property", desc: "With international reach, we help you find and buy property abroad with confidence." },
+                            { title: "Rent an international property", desc: "Access a world of rental opportunities with our global property network." },
+                            { title: "Buy a property at auction", desc: "After securing your finance, we'll show you what's available through the process of buying at auction." }
                         ].map((service, index) => (
                             <div 
                                 key={index} 
-                                className={animationClasses.serviceCard}
-                                style={{ animationDelay: `${index * 0.2}s` }}
+                                className={`${animationClasses.serviceCard} service-card-bg`}
+                                style={{
+                                    animationDelay: `${index * 0.2}s`,
+                                    backgroundImage: `url(/assets/bg-${index + 1}.jpg)`
+                                }}
                             >
+                                <div className="service-card-overlay"></div>
                                 <div className="service-content">
                                     <p className="service-badge">SERVICE</p>
                                     <h3 className="service-title">{service.title}</h3>
@@ -437,6 +442,39 @@ const FindProperty = () => {
                     </div>
                 </div>
             </section>
+
+            <footer className="footer-section">
+                <div className="footer-container">
+                    <div className="footer-brand">
+                        <h3>Sh.R Property</h3>
+                        <p>Your trusted partner in real estate. Discover, buy, rent, or sell with confidence.</p>
+                    </div>
+                    <div className="footer-links">
+                        <h4>Quick Links</h4>
+                        <ul>
+                            <li><Link to="/">Home</Link></li>
+                            <li><Link to="/buy">Buy</Link></li>
+                            <li><Link to="/rent">Rent</Link></li>
+                            <li><Link to="/services">Services</Link></li>
+                            <li><Link to="/contact">Contact</Link></li>
+                        </ul>
+                    </div>
+                    <div className="footer-contact">
+                        <h4>Contact Us</h4>
+                        <p>Email: info@propertypro.com</p>
+                        <p>Phone: +1 234 567 890</p>
+                        <div className="footer-social">
+                            <a href="#" aria-label="Facebook"><i className="fab fa-facebook-f"></i></a>
+                            <a href="#" aria-label="Twitter"><i className="fab fa-twitter"></i></a>
+                            <a href="#" aria-label="Instagram"><i className="fab fa-instagram"></i></a>
+                            <a href="#" aria-label="LinkedIn"><i className="fab fa-linkedin-in"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div className="footer-bottom">
+                    <p>&copy; {new Date().getFullYear()} PropertyPro. All rights reserved.</p>
+                </div>
+            </footer>
         </div>
     );
 };
