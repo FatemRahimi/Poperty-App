@@ -191,6 +191,7 @@ h1, h2, h3, h4 {
     opacity: 1;
     visibility: visible;
     gap: .1rem;
+   
 }
 
 .hero-content.loaded {
@@ -263,7 +264,7 @@ h1, h2, h3, h4 {
 }
 
 .hero-title {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Gotham', 'Montserrat', Arial, sans-serif;
     font-size: 3.5rem;
     margin-bottom: 0.5rem;
     font-weight: 700;
@@ -283,7 +284,7 @@ h1, h2, h3, h4 {
 }
 
 .hero-subtitle {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Gotham', 'Montserrat', Arial, sans-serif;
     font-size: 1.2rem;
     font-weight: 400;
     margin-bottom: 1rem;
@@ -1059,10 +1060,9 @@ h1, h2, h3, h4 {
 
 /* Property Owner Section */
 .owner-options-section {
-    
-    padding: 4rem 0;
+    padding: 3rem 0 2rem 0;
     text-align: center;
-    margin: 2rem 0;
+    margin: 0 0 1rem 0;
 }
 
 .owner-content {
@@ -1073,7 +1073,7 @@ h1, h2, h3, h4 {
 
 .owner-title {
     font-size: 2.5rem;
-    color: #2c3e50;
+    color:  #43464a;
     margin-bottom: 1.5rem;
     font-weight: 700;
 }
@@ -1213,7 +1213,7 @@ h1, h2, h3, h4 {
 }
 
 .expert-cta {
-  color: #b31b1b;
+  color: #3498db;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;

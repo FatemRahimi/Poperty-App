@@ -396,9 +396,9 @@ const FindProperty = () => {
             <section className="services-section">
                 <div className="container">
                     <div className="section-header">
-                        <h2 className="section-title">Our Property Services</h2>
+                        <h2 className="section-title">Looking for the right place or space?</h2>
                         <p className="section-subtitle">
-                            From finding your dream home to securing commercial investments, we have expertise across all property sectors
+                        Find the property that brings your vision to life. Tell us your wants, needs and aspirations and we won’t stop until we’ve found you the right fit. From first homes to rural land and commercial opportunities, we have a specialist expert that knows the market inside out. 
                         </p>
                     </div>
 
