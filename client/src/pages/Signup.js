@@ -80,19 +80,18 @@ const Signup = () => {
             </div>
 
             {/* Password Input */}
-            <div className="mb-3 text-start">
-              <label className="form-label"><strong>Enter Password</strong></label>
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">Password</label>
               <input
                 type="password"
                 className="form-control"
-                placeholder="Enter your password"
+                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength="8"
               />
-              <small className="form-text text-muted">
-                Password must be at least 8 characters long.
+              <small className="form-text text-danger">
+                 Password must be at least 8 characters long
               </small>
             </div>
             

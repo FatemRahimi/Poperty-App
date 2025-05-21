@@ -14,7 +14,7 @@ const PasswordReset = () => {
   return (
     <div className="auth-password-container">
       {/* Left Side - Video Background */}
-      <div className="auth-box row w-100">
+      <div className="auth-box">
             <div className="col-md-4 d-none d-md-block video-container-auth">
              <video autoPlay loop muted playsInline className="backgroundlogin-video">
               <source src="/assets/background2.mp4" type="video/mp4" />

@@ -58,15 +58,15 @@ const Login = () => {
     };
     
     return (
-        <div className="login-container container-fluid d-flex align-items-center justify-content-center">
-            <div className="login-box">
-                <div className="video-container">
-                    <video autoPlay loop muted playsInline className="backgroundlogin-video">
+        <div className="login-page-container container-fluid d-flex align-items-center justify-content-center">
+            <div className="login-page-box">
+                <div className="login-video-container">
+                    <video autoPlay loop muted playsInline className="login-background-video">
                         <source src="/assets/background2.mp4" type="video/mp4" />
                         Your browser does not support the video tag.
                     </video>
                 </div>
-                <div className="login-form-container">
+                <div className="col-md-6 d-flex align-items-center login-form-container">
                     <form className="login-form text-center" onSubmit={handleLogin}>
                         <h2>Sign in to your account</h2>
 
@@ -111,7 +111,12 @@ const Login = () => {
                         
                         {/* Password Input */}
                         <div className="mb-3 text-start">
-                            <label className="form-label"><strong>Password</strong></label>
+                            <div className="password-header">
+                                <label className="form-label"><strong>Password</strong></label>
+                                <Link to="/password" className="forgot-link">
+                                    Forgot 
+                                </Link>
+                            </div>
                             <input 
                                 type="password" 
                                 className="form-control" 
@@ -120,11 +125,6 @@ const Login = () => {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required 
                             />
-                            <div className="d-flex justify-content-end mt-1">
-                                <Link to="/password" className="text-decoration-none">
-                                    <small>Forgot Password?</small>
-                                </Link>
-                            </div>
                         </div>
                         
                         {/* Submit Button */}
