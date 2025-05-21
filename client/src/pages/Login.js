@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import "./Signup.css"; // Reusing the same CSS
+import "./Login.css"; // Reusing the same CSS
 import { useAuth } from "../context/AuthContext"; // Assuming you have AuthContext
 
 const Login = () => {
@@ -59,18 +59,14 @@ const Login = () => {
     
     return (
         <div className="login-container container-fluid d-flex align-items-center justify-content-center">
-            <div className="login-box row w-100">
-                
-                {/* Left Side - Video Background */}
-                <div className="col-md-4 d-none d-md-block video-container">
+            <div className="login-box">
+                <div className="video-container">
                     <video autoPlay loop muted playsInline className="backgroundlogin-video">
                         <source src="/assets/background2.mp4" type="video/mp4" />
                         Your browser does not support the video tag.
                     </video>
                 </div>
-
-                {/* Right Side - Login Form */}
-                <div className="col-md-6 d-flex align-items-center login-form-container">
+                <div className="login-form-container">
                     <form className="login-form text-center" onSubmit={handleLogin}>
                         <h2>Sign in to your account</h2>
 
@@ -85,6 +81,20 @@ const Login = () => {
                                 This email is already registered. Please log in.
                             </div>
                         )}
+
+                        {/* Google OAuth Button - moved here */}
+                        <button 
+                            type="button" 
+                            className="google-login"
+                            onClick={handleGoogleLogin}
+                        >
+                            <img src="/assets/google-logo.svg" alt="Google" className="google-icon" width="24" />
+                            Continue with Google
+                        </button>
+
+                        <div className="divider my-4">
+                            <span>OR</span>
+                        </div>
 
                         {/* Email Input */}
                         <div className="mb-3 text-start">
@@ -132,20 +142,6 @@ const Login = () => {
                             {isLoading ? "Signing in..." : "Sign in"}
                         </button>
 
-                        <div className="separator my-4">
-                            <span>OR</span>
-                        </div>
-
-                        {/* OAuth Buttons */}
-                        <button 
-                            type="button" 
-                            className="google-btn btn w-100 py-2 mb-3"
-                            onClick={handleGoogleLogin}
-                        >
-                            <img src="/assets/google-icon.png" alt="Google" className="me-2" width="20" />
-                            Continue with Google
-                        </button>
-                        
                         <p className="login-text mt-4">
                             Don't have an account? <Link to="/signup">Sign up</Link>
                         </p>

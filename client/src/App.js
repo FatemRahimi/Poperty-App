@@ -2,9 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import Navbar from "./components/Navbar.js";
-import PropertyDetails from "./pages/PropertyDetails";
 import Search from "./pages/Search.js";
-import Dashboard from "./pages/Dashboard.js";
 import FindProperty from "./pages/FindProperty";
 import Login from "./pages/Login.js";
 import PasswordReset from "./pages/PasswordReset";
@@ -36,7 +34,6 @@ function Layout() {
                 <Route path="/password" element={<PasswordReset />} />
                 <Route path="/" element={<Home />} />
                 <Route path="/search" element={<Search />} />
-                <Route path="/property/:id" element={<PropertyDetails />} />
                 <Route path="/find" element={<FindProperty />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/auth/callback" element={<OAuthCallback />} />
@@ -45,12 +42,7 @@ function Layout() {
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
                 
                 {/* Protected Routes - Require Authentication */}
-                <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                        <Dashboard />
-                    </ProtectedRoute>
-                } />
-                
+         
                 <Route path="/seller" element={
                     <ProtectedRoute>
                         <SellerForm />

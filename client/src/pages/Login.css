@@ -5,32 +5,34 @@
     align-items: center;
     height: 100vh;
     width: 100%;
+    background: #f6f8fa;
 }
 
 .login-box {
-    display: flex;
+    display: grid;
+    grid-template-columns: 35% 65%;
     width: 100%;
-    max-width: 1800px;
-    height: 70vh;
+    max-width: 900px;
+    min-height: 500px;
+    box-shadow: 0 8px 32px rgba(52, 152, 219, 0.10), 0 2px 8px rgba(44, 62, 80, 0.08);
+    background: #fff;
     overflow: hidden;
-    box-shadow: 0px 5px 15px rgba(32, 28, 28, 0.2);
-    border-radius: 0px;
-    padding: 0; /* ✅ remove internal spacing */
+    border-radius: 0;
 }
 
 /* ✅ Left Side - Video Background */
 .video-container {
-    flex: 1; /* ✅ evenly distribute width */
-    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #eaf1fa;
     display: flex;
-    align-items: end;
+    align-items: flex-end;
     justify-content: center;
-    overflow: hidden;
+    border-radius: 0;
 }
 
-
 .backgroundlogin-video {
-    width: 70%;          /* ✅ stretch to full container */
+    width: 100%;
     height: 100%;
     object-fit: cover;
     border-radius: 0;     /* ✅ remove radius so it touches the login box */
@@ -38,53 +40,60 @@
 
 /* ✅ Right Side - Login Form */
 .login-form-container {
+    width: 100%;
+    height: 100%;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     background: #fff;
-    margin: 0 200px 10px 0;
-
-
+    padding: 2.5rem 2rem;
+    border-radius: 16px 0 0 16px;
 }
 
 /* ✅ Login Form */
 .login-form {
     width: 100%;
-    max-width: 600px;
-    padding: 60px;
+    max-width: 400px;
+    padding: 0;
     background: white;
     border-radius: 8px;
     text-align: center;
 }
 
+.login-form h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 2rem;
+}
 
 /* ✅ Google Login Button */
 .google-login {
     display: flex;
     align-items: center;
-    justify-content:justify;
-    background-color: white;
-    border: 2px solid #7c8eb1;
-    padding: 12px 20px;
-    border-radius: 15px;
-    font-size: 18px;
-    font-weight: 500;
-    color: #3c4043;
+    justify-content: center;
+    background: #fff;
+    border: 2px solid #4285f4;
+    color: #23262a;
+    padding: 14px 0;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
     cursor: pointer;
-    gap: 10px;
-    transition: background-color 0.2s;
-    max-width: 1000px;
-    margin-bottom: 30px;
-    border-width:2px;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.08);
+    transition: background 0.2s, border 0.2s, box-shadow 0.2s;
+    width: 100%;
+    margin-bottom: 1.5rem;
 }
-
 .google-login:hover {
-    background-color: #f7f8f9;
+    background: #f1f8ff;
+    border-color: #174ea6;
+    box-shadow: 0 4px 16px rgba(66, 133, 244, 0.15);
 }
-
 .google-icon {
-    width: 25px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
 }
 .apple-login {
     display: flex;
@@ -108,7 +117,6 @@
     height: 25px;
 }
 
-
 .google-login svg {
     margin-right: 10px;
 }
@@ -119,16 +127,45 @@
     color: #777;
     margin: 19px 0;
     text-transform: uppercase;
+    text-align: center;
+    position: relative;
+}
+.divider span {
+    background: #fff;
+    padding: 0 1rem;
+    position: relative;
+    z-index: 2;
+}
+.divider:before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: 50%;
+    height: 1px;
+    background: #e0e0e0;
+    z-index: 1;
 }
 
 /* ✅ Input Fields */
-.login-form input {
-    width: 100%;
-    padding: 12px;
-    margin: 10px 0;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
+.form-label {
+    color: #23262a;
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+}
+
+.form-control {
+    border-radius: 6px;
+    border: 1.5px solid #e0e0e0;
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+    color: #23262a;
+    background: #f9fafd;
+    margin-bottom: 0.7rem;
+    transition: border 0.2s;
+}
+.form-control:focus {
+    border: 1.5px solid #3498db;
+    outline: none;
+    background: #fff;
 }
 
 /* ✅ Forgot Password */
@@ -144,50 +181,59 @@
 
 /* ✅ Sign In Button */
 .sign-in-btn {
-    background-color: #000;
-    color: white;
+    background: #3498db;
+    color: #fff;
     border: none;
-    padding: 12px;
-    margin-top: 50px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    padding: 0.7rem 0;
+    margin-top: 0.5rem;
+    margin-bottom: 0.7rem;
     width: 100%;
-    border-radius: 12px;
-    font-size: 18px;
-    cursor: pointer;
-    max-width: 1000px;
-    height:50px;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.07);
+    transition: background 0.2s, box-shadow 0.2s;
 }
 .sign-in-btn:hover {
-    background-color: #aea6a6;
+    background: #217dbb;
+    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.13);
 }
 
 /* ✅ Sign Up Link */
-.signup-text {
-    font-size: 15px;
-    margin-top: 10px;
+.login-text {
+    color: #23262a;
+    font-size: 1rem;
 }
-.signup-text a {
-    color: #007bff;
+.login-text a {
+    color: #3498db;
     text-decoration: none;
-    font-weight: bold;
+    font-weight: 600;
 }
-.signup-text a:hover {
+.login-text a:hover {
     text-decoration: underline;
 }
 
 /* ✅ RESPONSIVENESS */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .login-box {
-        flex-direction: column;
-        height: auto;
+        grid-template-columns: 1fr;
+        max-width: 98vw;
     }
-
-    .video-container {
-        height: 40vh;
+    .login-form-container {
+        border-radius: 0 0 16px 16px;
     }
 }
-@media (max-width: 480px) {
+@media (max-width: 600px) {
+    .login-box {
+        padding: 1.2rem 0.5rem;
+        max-width: 98vw;
+    }
+    .login-form h2 {
+        font-size: 1.15rem;
+    }
     .google-login {
-        padding: 12px;
-        font-size: 15px;
+        font-size: 0.95rem;
+        padding: 0.6rem 0;
     }
 }
+
