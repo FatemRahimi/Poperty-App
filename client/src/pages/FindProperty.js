@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import "./FindProperty.css";
-import { FaSearch, FaHome, FaBuilding, FaTree, FaMapMarkerAlt, FaRegBuilding } from "react-icons/fa";
+import { FaSearch, FaHome, FaBuilding, FaTree, FaMapMarkerAlt, FaRegBuilding, FaChevronLeft, FaChevronRight, FaBath } from "react-icons/fa";
 
 const FindProperty = () => {
     const [searchType, setSearchType] = useState("buy");
@@ -13,6 +13,8 @@ const FindProperty = () => {
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const inputRef = useRef(null);
+    const propertiesGridRef = useRef(null);
+    const [favorites, setFavorites] = useState([]);
 
     // Debug mount and state changes
     useEffect(() => {
@@ -250,6 +252,32 @@ const FindProperty = () => {
         }
     };
 
+    const scrollLeft = () => {
+        if (propertiesGridRef.current) {
+            propertiesGridRef.current.scrollBy({
+                left: -400,
+                behavior: 'smooth'
+            });
+        }
+    };
+
+    const scrollRight = () => {
+        if (propertiesGridRef.current) {
+            propertiesGridRef.current.scrollBy({
+                left: 400,
+                behavior: 'smooth'
+            });
+        }
+    };
+
+    const handleFavoriteClick = (propertyId) => {
+        setFavorites(prev => 
+            prev.includes(propertyId) 
+                ? prev.filter(id => id !== propertyId)
+                : [...prev, propertyId]
+        );
+    };
+
     return (
         <div className="find-property-page">
             {/* Hero Section with Video Background */}
@@ -349,103 +377,18 @@ const FindProperty = () => {
                     </Link>
                 </div>
             </section>
-
-            {/* Featured Properties Section */}
-            <section className="featured-properties-section">
-                <div className="section-header">
-                    <h2 className="section-title">Featured Properties</h2>
-                    <p className="section-subtitle">
-                        Explore our handpicked selection of exceptional properties, 
-                        each offering unique features and prime locations
+           {/*put your home in expert hands*/}
+            <section className="expert-section animate-on-scroll">
+                <div className="expert-content">
+                    <h2 className="expert-title">Put your home in expert hands</h2>
+                    <p className="expert-desc">
+                        Moving with us means local insight, honest advice and exceptional service – every step of the way.<br />
+                        Let our clients tell you why they recommend a move with Savills.
                     </p>
+                    <a href="#" className="expert-cta">FIND OUT MORE <span>&#9654;</span></a>
                 </div>
-                <div className="filter-tabs">
-                    {filters.map(filter => (
-                        <button 
-                            key={filter.id}
-                            className={`filter-btn ${activeFilter === filter.id ? 'active' : ''}`}
-                            onClick={() => setActiveFilter(filter.id)}
-                        >
-                            {filter.label}
-                        </button>
-                    ))}
-                </div>
-                <div 
-                    className={animationClasses.propertiesGrid}
-                >
-                    {filteredProperties.map((property, index) => (
-                        <div 
-                            key={property.id} 
-                            className={animationClasses.propertyCard}
-                            style={{ animationDelay: `${index * 0.2}s` }}
-                        >
-                            <div className="property-image">
-                                <img src={property.image} alt={property.title} />
-                                <div className="property-badge">{property.type}</div>
-                                <button className="favorite-btn">♡</button>
-                            </div>
-                            <div className="property-content">
-                                <h3 className="property-title">{property.title}</h3>
-                                <p className="property-location">
-                                    <FaMapMarkerAlt /> {property.location}
-                                </p>
-                                <p className="property-price">{property.price}</p>
-                                <div className="property-details">
-                                    {property.bedrooms && (
-                                        <span><FaHome /> {property.bedrooms} bd</span>
-                                    )}
-                                    {property.bathrooms && (
-                                        <span><i className="fa fa-bath"></i> {property.bathrooms} ba</span>
-                                    )}
-                                    {property.sqft && (
-                                        <span><FaRegBuilding /> {property.sqft} sqft</span>
-                                    )}
-                                    {property.acres && (
-                                        <span><FaTree /> {property.acres} acres</span>
-                                    )}
-                                </div>
-                                <Link to={`/property/${property.id}`} className="view-details-btn">
-                                    View Details
-                                </Link>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* All Properties Section */}
-            <section className="all-properties-section">
-                <div className="section-header">
-                    <h2 className="section-title">Browse All Properties</h2>
-                    <p className="section-subtitle">
-                        Find your perfect property from our extensive collection
-                    </p>
-                </div>
-                <div className="property-categories">
-                    <div className="category-item">
-                        <div className="category-icon">
-                            <i className="fas fa-home"></i>
-                        </div>
-                        <h3>Residential</h3>
-                        <p>Homes, Apartments, Condos</p>
-                        <span className="property-count">2,500+ Properties</span>
-                    </div>
-                    <div className="category-item">
-                        <div className="category-icon">
-                            <i className="fas fa-building"></i>
-                        </div>
-                        <h3>Commercial</h3>
-                        <p>Offices, Retail, Industrial</p>
-                        <span className="property-count">1,200+ Properties</span>
-                    </div>
-                    <div className="category-item">
-                        <div className="category-icon">
-                            <i className="fas fa-tree"></i>
-                        </div>
-                        <h3>Land & Farms</h3>
-                        <p>Agricultural, Development</p>
-                        <span className="property-count">800+ Properties</span>
-                    </div>
+                <div className="expert-image">
+                    <img src="/assets/pexels-a-darmel-7641857 (1).jpg" alt="Happy clients" />
                 </div>
             </section>
 
