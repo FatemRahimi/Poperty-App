@@ -115,8 +115,8 @@
 }
 
 /* ✅ Caution Text */
-.form-text.text-danger {
-    color: #5a7ca7;
+.text-danger {
+    color: #71a75a;
     font-weight: 400;
     display: flex;
     align-items: center;

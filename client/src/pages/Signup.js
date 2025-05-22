@@ -45,10 +45,10 @@ const Signup = () => {
   };
   
   return (
-    <div className="login-container container-fluid d-flex align-items-center justify-content-center">
-      <div className="login-box row w-100">
+    <div className="login-container">
+      <div className="login-box">
         {/* Left Side - Video Background */}
-        <div className="col-md-4 d-none d-md-block video-container">
+        <div className="video-container">
           <video autoPlay loop muted playsInline className="backgroundlogin-video">
             <source src="/assets/background2.mp4" type="video/mp4" />
             Your browser does not support the video tag.
@@ -56,7 +56,7 @@ const Signup = () => {
         </div>
 
         {/* Right Side - Signup Form */}
-        <div className="col-md-6 d-flex align-items-center login-form-container">
+        <div className="login-form-container">
           <form className="login-form text-center" onSubmit={handleSignup}>
             <h2>Sign up with Email</h2>
 
@@ -80,7 +80,7 @@ const Signup = () => {
             </div>
 
             {/* Password Input */}
-            <div className="form-group">
+            <div className="form-group1">
               <label htmlFor="password" className="form-label signup-label">Password</label>
               <input
                 type="password"
