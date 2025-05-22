@@ -232,3 +232,12 @@
     margin-bottom: 0.3rem;
     text-align: left;
 }
+
+.login-form .form-text.text-danger {
+    color: #5a7ca7 !important;
+}
+
+.custom-warning {
+    color: #5a7ca7;
+    /* ...other styles... */
+}
