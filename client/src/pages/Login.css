@@ -104,7 +104,7 @@
     font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
-    gap: 10px;
+    gap: 5px;
     box-shadow: 0 2px 6px rgba(66, 133, 244, 0.08);
     transition: all 0.2s ease;
     width: 100%;
@@ -310,6 +310,9 @@
 
 /* ✅ RESPONSIVENESS */
 @media (max-width: 900px) {
+    .login-video-container {
+        display: none;
+    }
     .login-page-box {
         flex-direction: column;
         height: auto;

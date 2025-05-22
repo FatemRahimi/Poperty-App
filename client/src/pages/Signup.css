@@ -204,6 +204,9 @@
 
 /* ✅ RESPONSIVENESS */
 @media (max-width: 900px) {
+    .video-container {
+        display: none;
+    }
     .login-box {
         flex-direction: column;
         height: auto;
