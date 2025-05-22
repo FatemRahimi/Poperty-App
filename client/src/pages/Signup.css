@@ -116,13 +116,14 @@
 
 /* ✅ Caution Text */
 .form-text.text-danger {
-    color: #dc3545;
+    color: #5a7ca7;
     font-weight: 400;
     display: flex;
     align-items: center;
     gap: 0.3rem;
-    margin-top: 0.3rem;
-    margin-bottom: 0.8rem;
+    margin-top: 0.1rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.8rem;
 }
 
 .form-text.text-danger::before {
@@ -221,4 +222,13 @@
     .login-form h2 {
         font-size: 1.15rem;
     }
+}
+
+.signup-label {
+    font-size: 0.8rem;
+    font-weight: 300;
+    color: #23262a;
+    letter-spacing: 0.1px;
+    margin-bottom: 0.3rem;
+    text-align: left;
 }

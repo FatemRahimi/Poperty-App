@@ -310,115 +310,26 @@
 
 /* ✅ RESPONSIVENESS */
 @media (max-width: 900px) {
-    .login-box {
+    .login-page-box {
         flex-direction: column;
         height: auto;
-        max-width: 100%;
-        min-height: 100vh;
-        border-radius: 0;
-        box-shadow: none;
-        background: #f6f8fa;
+        max-width: 98vw;
     }
-
-    .login-video-container {
-        display: none;
-    }
-
-    .login-form-container {
-        flex: 1;
-        width: 100%;
-        padding: 1.5rem 1rem;
-        background: #f6f8fa;
-    }
-
     .login-form {
-        max-width: 100%;
-        padding: 0;
-        background: transparent;
-    }
-
-    .login-form h2 {
-        font-size: 1.4rem;
-        margin-bottom: 1.2rem;
-    }
-
-    .google-login {
-        padding: 0.8rem 0;
-        font-size: 0.9rem;
+        max-width: 98vw;
     }
 }
-
 @media (max-width: 600px) {
-    .login-box {
-        padding: 0;
+    .login-page-box {
+        padding: 1.2rem 0.5rem;
+        max-width: 98vw;
     }
-
-    .login-form-container {
-        padding: 1.2rem 0.8rem;
-    }
-
     .login-form h2 {
-        font-size: 1.2rem;
-        margin-bottom: 1rem;
+        font-size: 1.15rem;
     }
-
-    .form-label {
-        font-size: 0.8rem;
-        margin-bottom: 0.3rem;
-    }
-
-    .form-control {
-        padding: 0.5rem 0.7rem;
-        font-size: 0.85rem;
-        margin-bottom: 0.6rem;
-    }
-
-    .sign-in-btn {
+    .google-login {
+        font-size: 0.95rem;
         padding: 0.6rem 0;
-        font-size: 0.85rem;
-        margin-top: 0.3rem;
-        margin-bottom: 0.6rem;
-    }
-
-    .login-text {
-        font-size: 0.8rem;
-        margin-top: 0.6rem;
-    }
-
-    .forgot-link {
-        font-size: 0.75rem;
-    }
-
-    .divider {
-        margin: 1rem 0;
-        font-size: 0.8rem;
-    }
-
-    .alert {
-        padding: 0.6rem 0.8rem;
-        font-size: 0.8rem;
-        margin-bottom: 0.8rem;
-    }
-}
-
-/* Extra small devices */
-@media (max-width: 360px) {
-    .login-form-container {
-        padding: 1rem 0.6rem;
-    }
-
-    .login-form h2 {
-        font-size: 1.1rem;
-    }
-
-    .form-control {
-        padding: 0.45rem 0.6rem;
-        font-size: 0.8rem;
-    }
-
-    .sign-in-btn {
-        padding: 0.5rem 0;
-        font-size: 0.8rem;
     }
 }
 

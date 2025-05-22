@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./PasswordReset.css";
+import { Link } from "react-router-dom";
 
 const PasswordReset = () => {
   const [email, setEmail] = useState("");
@@ -49,6 +50,10 @@ const PasswordReset = () => {
                         </fieldset>
                          <input className="button form-sub" type="submit" value="Send Reset Instructions" />
                       </form>
+                      <div className="back-to-signin">
+                        <span>Remembered your password? </span>
+                        <Link to="/login">Back to Sign In</Link>
+                      </div>
                   </div>
             </div>
         </div>

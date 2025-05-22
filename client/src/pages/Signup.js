@@ -68,7 +68,7 @@ const Signup = () => {
 
             {/* Email Input */}
             <div className="mb-3 text-start">
-              <label className="form-label"><strong>Enter Email</strong></label>
+              <label className="form-label signup-label">Enter Email</label>
               <input
                 type="email"
                 className="form-control"
@@ -81,7 +81,7 @@ const Signup = () => {
 
             {/* Password Input */}
             <div className="form-group">
-              <label htmlFor="password" className="form-label">Password</label>
+              <label htmlFor="password" className="form-label signup-label">Password</label>
               <input
                 type="password"
                 className="form-control"
