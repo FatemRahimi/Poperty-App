@@ -6,16 +6,15 @@ const User = require('../models/User');
 
 // Google Strategy
 passport.use(new GoogleStrategy({
-    clientID: authConfig.google.clientID,
-    clientSecret: authConfig.google.clientSecret,
-    callbackURL: authConfig.google.callbackURL
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: '/api/auth/google/callback'
   },
-  async function(accessToken, refreshToken, profile, done) {
+  async (accessToken, refreshToken, profile, done) => {
     try {
       const user = await User.createOrUpdateFromGoogle(profile);
       return done(null, user);
     } catch (error) {
-      console.error('Google Strategy Error:', error);
       return done(error, null);
     }
   }
@@ -37,29 +36,17 @@ passport.use(new AppleStrategy({
 
 // Serialize user into the session
 passport.serializeUser((user, done) => {
-  // Store the entire user object in the session
-  done(null, user);
+  done(null, user.id);
 });
 
 // Deserialize user from the session
-passport.deserializeUser(async (user, done) => {
+passport.deserializeUser(async (id, done) => {
   try {
-    // If we already have the user object, use it
-    if (user && user.id) {
-      return done(null, user);
-    }
-    
-    // If we only have an ID, try to find the user
-    if (user && typeof user === 'string') {
-      const foundUser = await User.findById(user);
-      if (foundUser) {
-        return done(null, foundUser);
-      }
-    }
-    
-    return done(new Error('User not found'), null);
+    const user = await User.findById(id);
+    done(null, user);
   } catch (error) {
-    console.error('Deserialize Error:', error);
     done(error, null);
   }
-}); 
+});
+
+module.exports = passport; 

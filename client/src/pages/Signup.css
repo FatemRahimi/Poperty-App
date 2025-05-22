@@ -114,9 +114,17 @@
     font-weight: 300;
 }
 
+/* ✅ Password Requirement Message */
+.form-group1 .form-text {
+    color: #5a7ca7 !important;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+    margin-bottom: 0.8rem;
+}
+
 /* ✅ Caution Text */
 .text-danger {
-    color: #71a75a;
+    color: #dc3545;
     font-weight: 400;
     display: flex;
     align-items: center;
