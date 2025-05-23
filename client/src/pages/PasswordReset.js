@@ -30,9 +30,9 @@ const PasswordReset = () => {
                    <p>
                      Please enter the email address associated with your account. We'll send you a link to reset your password and regain access.
                    </p>
-                   <p>
+                    <p>
                      For your security, we never store or send your password by email. If you need further assistance, please contact our support team.
-                   </p>
+                    </p>
                  </div>
            
 

@@ -1,14 +1,14 @@
 const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const AppleStrategy = require('passport-apple').Strategy;
-const authConfig = require('./auth');
+const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
+const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
 const User = require('../models/User');
+const authConfig = require('./auth.config');
 
 // Google Strategy
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/api/auth/google/callback'
+    clientID: authConfig.google.clientID,
+    clientSecret: authConfig.google.clientSecret,
+    callbackURL: authConfig.google.callbackURL
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
@@ -20,32 +20,39 @@ passport.use(new GoogleStrategy({
   }
 ));
 
-// Apple Strategy
-passport.use(new AppleStrategy({
-    clientID: authConfig.apple.clientID,
-    teamID: authConfig.apple.teamID,
-    keyID: authConfig.apple.keyID,
-    privateKeyPath: authConfig.apple.privateKeyPath,
-    callbackURL: authConfig.apple.callbackURL,
-    scope: ['name', 'email']
+// JWT Strategy
+passport.use(new JwtStrategy({
+    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: authConfig.jwt.secret
   },
-  function(accessToken, refreshToken, profile, done) {
-    return done(null, profile);
+  async (jwtPayload, done) => {
+    try {
+      const user = await User.findByEmail(jwtPayload.email);
+      if (user) {
+        return done(null, user);
+      }
+      return done(null, false);
+    } catch (error) {
+      return done(error, false);
+    }
   }
 ));
 
-// Serialize user into the session
+// Serialize user
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
-// Deserialize user from the session
+// Deserialize user
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);
-    done(null, user);
+    if (!user) {
+      return done(null, false);
+    }
+    return done(null, user);
   } catch (error) {
-    done(error, null);
+    return done(error, null);
   }
 });
 

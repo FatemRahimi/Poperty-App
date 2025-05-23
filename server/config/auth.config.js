@@ -10,5 +10,12 @@ module.exports = {
     keyID: process.env.APPLE_KEY_ID,
     privateKeyPath: process.env.APPLE_PRIVATE_KEY_PATH,
     callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5050'}/api/auth/apple/callback`
+  },
+  jwt: {
+    secret: process.env.JWT_SECRET,
+    expiresIn: '24h'
+  },
+  session: {
+    secret: process.env.SESSION_SECRET
   }
 }; 

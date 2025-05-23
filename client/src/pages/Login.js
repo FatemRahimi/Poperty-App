@@ -54,7 +54,7 @@ const Login = () => {
 
     // Google OAuth login
     const handleGoogleLogin = () => {
-        window.location.href = '/api/auth/google';
+        window.location.href = 'http://localhost:5050/api/auth/google';
     };
     
     return (

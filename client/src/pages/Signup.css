@@ -65,15 +65,15 @@
     margin: 0 auto;
 }
 
-.login-form h2 {
+    .login-form h2 {
     font-size: 1.3rem;
     font-weight: 400;
     text-align: center;
     margin-bottom: 1.2rem;
     color: #23262a;
     letter-spacing: 0.2px;
-}
-
+      }
+  
 /* ✅ Input Fields */
 .form-label {
     display: block;
@@ -102,8 +102,8 @@
     outline: none;
     background: #fff;
     box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
-}
-
+  }
+  
 /* ✅ Form Text */
 .form-text {
     font-size: 0.75rem;
@@ -112,15 +112,15 @@
     margin-bottom: 0.8rem;
     text-align: left;
     font-weight: 300;
-}
-
+  }
+  
 /* ✅ Password Requirement Message */
 .form-group1 .form-text {
     color: #5a7ca7 !important;
     font-size: 0.8rem;
     margin-top: 0.3rem;
     margin-bottom: 0.8rem;
-}
+  }
 
 /* ✅ Caution Text */
 .text-danger {

@@ -1,122 +1,154 @@
-const mongoose = require('mongoose');
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true
-  },
-  password: {
-    type: String,
-    required: function() {
-      return !this.googleId; // Password is required only if not using Google auth
-    }
-  },
-  first_name: {
-    type: String,
-    trim: true
-  },
-  last_name: {
-    type: String,
-    trim: true
-  },
-  googleId: {
-    type: String,
-    unique: true,
-    sparse: true
-  },
-  picture: {
-    type: String
-  },
-  isVerified: {
-    type: Boolean,
-    default: false
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
 });
 
-// Static method to create or update user from Google profile
-userSchema.statics.createOrUpdateFromGoogle = async function(profile) {
-  try {
-    const { id, displayName, emails, photos } = profile;
-    const email = emails[0].value;
-    const picture = photos[0].value;
-    
-    // Split display name into first and last name
-    const nameParts = displayName.split(' ');
-    const first_name = nameParts[0];
-    const last_name = nameParts.slice(1).join(' ');
+class User {
+  static async createTable() {
+    const query = `
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255),
+        first_name VARCHAR(255),
+        last_name VARCHAR(255),
+        google_id VARCHAR(255) UNIQUE,
+        picture VARCHAR(255),
+        is_verified BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    try {
+      await pool.query(query);
+      console.log('Users table created successfully');
+    } catch (error) {
+      console.error('Error creating users table:', error);
+      throw error;
+    }
+  }
 
-    // Find or create user
-    let user = await this.findOne({ googleId: id });
-    
-    if (!user) {
-      // Check if user exists with same email
-      user = await this.findOne({ email });
+  static async findById(id) {
+    try {
+      const result = await pool.query(
+        'SELECT * FROM users WHERE id = $1',
+        [id]
+      );
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error in findById:', error);
+      throw error;
+    }
+  }
+
+  static async createOrUpdateFromGoogle(profile) {
+    try {
+      const { id, displayName, emails, photos } = profile;
+      const email = emails[0].value;
+      const picture = photos[0].value;
       
-      if (user) {
-        // Update existing user with Google info
-        user.googleId = id;
-        user.picture = picture;
-        user.first_name = first_name;
-        user.last_name = last_name;
-        user.isVerified = true;
-      } else {
-        // Create new user
-        user = new this({
-          email,
-          googleId: id,
-          first_name,
-          last_name,
-          picture,
-          isVerified: true
-        });
+      // Split display name into first and last name
+      const nameParts = displayName.split(' ');
+      const first_name = nameParts[0];
+      const last_name = nameParts.slice(1).join(' ');
+
+      // Check if user exists with Google ID
+      let result = await pool.query(
+        'SELECT * FROM users WHERE google_id = $1',
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        // Check if user exists with same email
+        result = await pool.query(
+          'SELECT * FROM users WHERE email = $1',
+          [email]
+        );
+
+        if (result.rows.length > 0) {
+          // Update existing user with Google info
+          result = await pool.query(
+            `UPDATE users 
+             SET google_id = $1, picture = $2, first_name = $3, last_name = $4, 
+                 is_verified = true, updated_at = CURRENT_TIMESTAMP
+             WHERE email = $5
+             RETURNING *`,
+            [id, picture, first_name, last_name, email]
+          );
+        } else {
+          // Create new user
+          result = await pool.query(
+            `INSERT INTO users 
+             (email, google_id, first_name, last_name, picture, is_verified)
+             VALUES ($1, $2, $3, $4, $5, true)
+             RETURNING *`,
+            [email, id, first_name, last_name, picture]
+          );
+        }
       }
+
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error in createOrUpdateFromGoogle:', error);
+      throw error;
     }
-
-    await user.save();
-    return user;
-  } catch (error) {
-    console.error('Error in createOrUpdateFromGoogle:', error);
-    throw error;
   }
-};
 
-// Method to verify user
-userSchema.statics.verifyById = async function(userId) {
-  const user = await this.findById(userId);
-  if (!user) {
-    throw new Error('User not found');
+  static async verifyById(userId) {
+    try {
+      const result = await pool.query(
+        `UPDATE users 
+         SET is_verified = true, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1
+         RETURNING *`,
+        [userId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error('User not found');
+      }
+
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error in verifyById:', error);
+      throw error;
+    }
   }
-  user.isVerified = true;
-  await user.save();
-  return user;
-};
 
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (this.isModified('password')) {
-    this.password = await bcrypt.hash(this.password, 10);
+  static async findByEmail(email) {
+    try {
+      const result = await pool.query(
+        'SELECT * FROM users WHERE email = $1',
+        [email]
+      );
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error in findByEmail:', error);
+      throw error;
+    }
   }
-  this.updatedAt = Date.now();
-  next();
-});
 
-// Method to compare password
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
+  static async create(email, password, first_name, last_name) {
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const result = await pool.query(
+        `INSERT INTO users (email, password, first_name, last_name)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [email, hashedPassword, first_name, last_name]
+      );
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error in create:', error);
+      throw error;
+    }
+  }
 
-const User = mongoose.model('User', userSchema);
+  static async comparePassword(plainPassword, hashedPassword) {
+    return bcrypt.compare(plainPassword, hashedPassword);
+  }
+}
 
 module.exports = User; 

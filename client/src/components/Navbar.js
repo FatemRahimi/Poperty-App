@@ -75,9 +75,9 @@ const Navbar = () => {
     return (
         <nav className={`navbar ${scrolled ? "navbar-scrolled" : ""}`}>
             <div className="navbar-container">
-                <Link to="/" className="navbar-logo">
+                <div className="navbar-logo">
                     <Logo />
-                </Link>
+                </div>
 
                 <div className="navbar-menu-icon" onClick={() => setMenuOpen(!menuOpen)}>
                     {menuOpen ? <FaTimes /> : <FaBars />}
