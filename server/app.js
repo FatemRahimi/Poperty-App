@@ -13,6 +13,7 @@ app.use(cors({
   credentials: true
 }));
 
+// Body parser middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

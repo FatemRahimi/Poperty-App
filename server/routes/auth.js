@@ -3,8 +3,14 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const authConfig = require('../config/auth.config');
+const config = require('../config/config');
 
 const router = express.Router();
+
+// Get the client URL from environment or use default
+const getClientUrl = () => {
+  return config.frontend.baseUrl;
+};
 
 // Regular login
 router.post('/login', async (req, res) => {
@@ -81,7 +87,7 @@ router.post('/register', async (req, res) => {
 
 // Google OAuth routes
 router.get('/google', (req, res, next) => {
-  const redirectTo = req.query.redirectTo || '/dashboard';
+  const redirectTo = req.query.redirectTo || '/find';
   passport.authenticate('google', {
     scope: ['profile', 'email'],
     state: JSON.stringify({ redirectTo })
@@ -90,13 +96,13 @@ router.get('/google', (req, res, next) => {
 
 router.get('/google/callback',
   passport.authenticate('google', {
-    failureRedirect: `${process.env.CLIENT_URL}/login?error=authentication_failed`
+    failureRedirect: `${getClientUrl()}/login?error=authentication_failed`
   }),
-  (req, res) => {
+  async (req, res) => {
     try {
       // Get the redirect path from the state parameter
       const state = JSON.parse(req.query.state || '{}');
-      const redirectPath = state.redirectTo || '/dashboard';
+      const redirectPath = state.redirectTo || '/find';
       
       // Create a JWT token
       const token = jwt.sign(
@@ -116,15 +122,16 @@ router.get('/google/callback',
       };
       
       // Redirect to frontend with token and user data
+      const clientUrl = getClientUrl();
       res.redirect(
-        `${process.env.CLIENT_URL}/auth/callback?` +
+        `${clientUrl}/auth/callback?` +
         `token=${encodeURIComponent(token)}&` +
         `user=${encodeURIComponent(JSON.stringify(userData))}&` +
         `redirectTo=${encodeURIComponent(redirectPath)}`
       );
     } catch (error) {
       console.error('Error in Google callback:', error);
-      res.redirect(`${process.env.CLIENT_URL}/login?error=authentication_failed`);
+      res.redirect(`${getClientUrl()}/login?error=authentication_failed`);
     }
   }
 );

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./FindProperty.css";
 import { FaSearch, FaHome, FaBuilding, FaTree, FaMapMarkerAlt, FaRegBuilding, FaChevronLeft, FaChevronRight, FaBath } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
 
 const FindProperty = () => {
     const [searchType, setSearchType] = useState("buy");
@@ -15,6 +16,8 @@ const FindProperty = () => {
     const inputRef = useRef(null);
     const propertiesGridRef = useRef(null);
     const [favorites, setFavorites] = useState([]);
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
 
     // Debug mount and state changes
     useEffect(() => {
@@ -278,6 +281,16 @@ const FindProperty = () => {
         );
     };
 
+    const handleStartListing = () => {
+        if (isAuthenticated) {
+            // If authenticated, go directly to seller page
+            navigate('/seller');
+        } else {
+            // If not authenticated, redirect to login with return path
+            navigate('/login', { state: { from: '/seller' } });
+        }
+    };
+
     return (
         <div className="find-property-page">
             {/* Hero Section with Video Background */}
@@ -372,9 +385,12 @@ const FindProperty = () => {
                         Join thousands of successful property owners who trust us with their listings. 
                         Get started in minutes and reach potential buyers and tenants today.
                     </p>
-                    <Link to="/seller" className="owner-link">
-                        Start Listing Now <span className="arrow">→</span>
-                    </Link>
+                    <button 
+                        className="start-listing-btn"
+                        onClick={handleStartListing}
+                    >
+                        Start Listing Now
+                    </button>
                 </div>
             </section>
            {/*put your home in expert hands*/}
