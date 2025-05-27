@@ -1,27 +1,28 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children, redirectPath = '/login' }) => {
-  const { user, loading } = useAuth();
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading, validateToken } = useAuth();
   const location = useLocation();
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = sessionStorage.getItem('token');
+      if (token) {
+        await validateToken(token);
+      }
+    };
+    checkAuth();
+  }, [validateToken]);
+
   if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
-  if (!user) {
-    // Store the current path for redirect after login
-    sessionStorage.setItem('redirectAfterLogin', location.pathname);
-    
-    // Redirect to login page with the attempted url in state
-    return <Navigate to={redirectPath} state={{ from: location }} replace />;
+  if (!isAuthenticated) {
+    // Save the attempted URL for redirecting after login
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
   return children;

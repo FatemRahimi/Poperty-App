@@ -1,75 +1,104 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Function to validate token
+  const validateToken = async (token) => {
+    try {
+      const response = await axios.get('/api/auth/verify', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data.user;
+    } catch (error) {
+      console.error('Token validation error:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
-    // Check if user is logged in
-    const token = sessionStorage.getItem('token');
-    const userData = sessionStorage.getItem('user');
-    
-    if (token && userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        // Add a name property for convenience in UI components
-        if (parsedUser && !parsedUser.name) {
-          parsedUser.name = getDisplayName(parsedUser);
+    const checkAuth = async () => {
+      const token = sessionStorage.getItem('token');
+      const userData = sessionStorage.getItem('user');
+      
+      if (token && userData) {
+        try {
+          // Validate token with server
+          const validatedUser = await validateToken(token);
+          
+          if (validatedUser) {
+            const parsedUser = JSON.parse(userData);
+            setUser(parsedUser);
+            setIsAuthenticated(true);
+          } else {
+            // Token is invalid, clear storage
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('user');
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        } catch (error) {
+          console.error("Error validating token:", error);
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          setUser(null);
+          setIsAuthenticated(false);
         }
-        setUser(parsedUser);
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('user');
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
-  // Helper function to get display name
-  const getDisplayName = (userData) => {
-    if (!userData) return 'User';
-    
-    // If user already has a name property, use it
-    if (userData.name) return userData.name;
-    
-    // Try to construct from first_name and last_name
-    if (userData.first_name || userData.last_name) {
-      return `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+  const login = async (userData, token) => {
+    try {
+      // Store token and user data
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(userData));
+      
+      // Update state
+      setUser(userData);
+      setIsAuthenticated(true);
+      return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    
-    // Fall back to email
-    if (userData.email) {
-      return userData.email.split('@')[0];
-    }
-    
-    // Last resort
-    return 'User';
   };
 
-  const login = (userData, token) => {
-    // Add a name property for convenience in UI components
-    if (userData && !userData.name) {
-      userData.name = getDisplayName(userData);
+  const logout = async () => {
+    try {
+      // Call logout endpoint
+      await axios.get('/api/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear storage and state
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      setUser(null);
+      setIsAuthenticated(false);
     }
-    
-    sessionStorage.setItem('token', token);
-    sessionStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
   };
-
-  const logout = () => {
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    setUser(null);
-  };
-
-  const isAuthenticated = !!user;
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, isAuthenticated }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      loading, 
+      isAuthenticated,
+      validateToken 
+    }}>
       {children}
     </AuthContext.Provider>
   );

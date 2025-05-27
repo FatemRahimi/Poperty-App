@@ -11,40 +11,36 @@ const OAuthCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        console.log('OAuth Callback URL:', window.location.href);
-        console.log('Search params:', location.search);
-        
         // Get the user data from the URL parameters
         const params = new URLSearchParams(location.search);
         const userData = params.get('user');
         const token = params.get('token');
         const redirectTo = params.get('redirectTo') || '/find';
-
-        console.log('Token:', token ? 'Present' : 'Missing');
-        console.log('User Data:', userData ? 'Present' : 'Missing');
-        console.log('Redirect To:', redirectTo);
-
+        
         if (userData && token) {
           try {
             // Parse the user data
             const parsedUser = JSON.parse(decodeURIComponent(userData));
-            console.log('Parsed User:', parsedUser);
             
             // Store the token and user data in sessionStorage
             sessionStorage.setItem('token', token);
             sessionStorage.setItem('user', JSON.stringify(parsedUser));
             
             // Call the login function from AuthContext
-            login(parsedUser, token);
+            const loginSuccess = await login(parsedUser, token);
             
-            // Clear any existing error and navigate
-            setError(null);
-            
-            // Small delay to ensure state updates before navigation
-            setTimeout(() => {
-              // Redirect to the intended page
-              navigate(redirectTo, { replace: true });
-            }, 100);
+            if (loginSuccess) {
+              // Clear any existing error and navigate
+              setError(null);
+              
+              // Small delay to ensure state updates before navigation
+              setTimeout(() => {
+                // Redirect to the intended page
+                navigate(redirectTo, { replace: true });
+              }, 100);
+            } else {
+              throw new Error('Login failed');
+            }
           } catch (parseError) {
             console.error('Error parsing user data:', parseError);
             setError('Failed to parse user data');

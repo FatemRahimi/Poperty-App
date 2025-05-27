@@ -12,10 +12,10 @@ class User {
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255),
-        first_name VARCHAR(255),
-        last_name VARCHAR(255),
+        first_name VARCHAR(100),
+        last_name VARCHAR(100),
         google_id VARCHAR(255) UNIQUE,
-        picture VARCHAR(255),
+        picture TEXT,
         is_verified BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -32,10 +32,7 @@ class User {
 
   static async findById(id) {
     try {
-      const result = await pool.query(
-        'SELECT * FROM users WHERE id = $1',
-        [id]
-      );
+      const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
       return result.rows[0];
     } catch (error) {
       console.error('Error in findById:', error);
@@ -119,10 +116,7 @@ class User {
 
   static async findByEmail(email) {
     try {
-      const result = await pool.query(
-        'SELECT * FROM users WHERE email = $1',
-        [email]
-      );
+      const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
       return result.rows[0];
     } catch (error) {
       console.error('Error in findByEmail:', error);

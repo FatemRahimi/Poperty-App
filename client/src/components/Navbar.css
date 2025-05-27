@@ -195,29 +195,30 @@
 }
 
 /* Login Button */
-.login-button a {
-    background-color: #3498db;
+.login-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: #4285f4;
     color: white;
-    padding: 0.5rem 1.25rem;
-    border-radius: 30px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);
+    text-decoration: none;
 }
 
-.login-button a:hover {
-    background-color: #2980b9;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.4);
+.login-button:hover {
+    background-color: #357abd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.login-button a.active {
-    background-color: #2980b9;
-    color: white;
-}
-
-.login-button a.active:after {
-    display: none;
+.login-button .nav-icon {
+    font-size: 1.1rem;
 }
 
 /* Hamburger Menu */
@@ -318,4 +319,126 @@
         width: 230px;
         padding: 4rem 1.5rem 1.5rem;
     }
+}
+
+/* Login Success Message */
+.login-success-message {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background-color: #2ecc71;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease-out;
+    z-index: 1001;
+}
+
+.success-icon {
+    font-size: 1.2rem;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Profile Info Styling */
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-left: 8px;
+}
+
+.profile-name {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.profile-id {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+/* Profile Container */
+.profile-container {
+    position: relative;
+}
+
+.profile-button {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.profile-button:hover {
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+.profile-picture {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-picture-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #3498db;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+/* Profile Dropdown */
+.profile-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    min-width: 200px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 8px 0;
+    margin-top: 8px;
+    z-index: 1001;
+}
+
+.profile-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    color: #2c3e50;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.profile-option:hover {
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+.profile-icon {
+    font-size: 1.1rem;
+    color: #7f8c8d;
 }

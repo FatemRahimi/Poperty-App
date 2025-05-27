@@ -13,3 +13,4 @@ CREATE TABLE IF NOT EXISTS users (
 ALTER TABLE users 
 ADD COLUMN reset_token VARCHAR(255), 
 ADD COLUMN reset_token_expiry TIMESTAMP;
+NSERT INTO users (email, first_name, last_name) VALUES ('test@example.com', 'Test', 'User');

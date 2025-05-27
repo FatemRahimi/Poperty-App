@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./Navbar.css";
-import { FaBars, FaTimes, FaSearchLocation, FaChartLine, FaInfoCircle, FaUser, FaGlobe, FaSignOutAlt } from "react-icons/fa";
+import { FaBars, FaTimes, FaSearchLocation, FaChartLine, FaInfoCircle, FaUser, FaGlobe, FaSignOutAlt, FaCheckCircle } from "react-icons/fa";
 import { IoMdArrowDropdown } from "react-icons/io";
 import Logo from "./Logo";
 import "./Logo.css";
@@ -13,6 +13,7 @@ const Navbar = () => {
     const [langMenuOpen, setLangMenuOpen] = useState(false);
     const [currentLang, setCurrentLang] = useState("EN");
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout, isAuthenticated } = useAuth();
@@ -24,6 +25,17 @@ const Navbar = () => {
         { code: "DE", name: "Deutsch" },
         { code: "ES", name: "Español" }
     ];
+
+    // Show success message when user logs in
+    useEffect(() => {
+        if (isAuthenticated && location.pathname === '/') {
+            setShowSuccessMessage(true);
+            const timer = setTimeout(() => {
+                setShowSuccessMessage(false);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [isAuthenticated, location]);
 
     // Close menus when route changes
     useEffect(() => {
@@ -67,13 +79,23 @@ const Navbar = () => {
         // Here you would add logic to actually change the application language
     };
 
-    const handleLogout = () => {
-        logout();
-        navigate('/');
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate('/find');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
     };
 
     return (
         <nav className={`navbar ${scrolled ? "navbar-scrolled" : ""}`}>
+            {showSuccessMessage && (
+                <div className="login-success-message">
+                    <FaCheckCircle className="success-icon" />
+                    <span>Successfully logged out!</span>
+                </div>
+            )}
             <div className="navbar-container">
                 <div className="navbar-logo">
                     <Logo />
@@ -133,42 +155,13 @@ const Navbar = () => {
                         )}
                     </li>
                     
-                    {/* Auth Button/Profile */}
+                    {/* Auth Button */}
                     <li className="auth-button">
                         {isAuthenticated ? (
-                            <div className="profile-container">
-                                <button 
-                                    className="profile-button"
-                                    onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                                >
-                                    {user.picture ? (
-                                        <img 
-                                            src={user.picture} 
-                                            alt={user.name} 
-                                            className="profile-picture"
-                                        />
-                                    ) : (
-                                        <div className="profile-picture-placeholder">
-                                            {user.name?.charAt(0).toUpperCase()}
-                                        </div>
-                                    )}
-                                    <span className="profile-name">{user.name}</span>
-                                    <IoMdArrowDropdown className="dropdown-icon" />
-                                </button>
-                                
-                                {profileMenuOpen && (
-                                    <div className="profile-dropdown">
-                                        <Link to="/profile" className="profile-option">
-                                            <FaUser className="profile-icon" />
-                                            <span>Profile</span>
-                                        </Link>
-                                        <button onClick={handleLogout} className="profile-option">
-                                            <FaSignOutAlt className="profile-icon" />
-                                            <span>Logout</span>
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                            <button onClick={handleLogout} className="nav-link">
+                                <FaSignOutAlt className="nav-icon" />
+                                <span>Logout</span>
+                            </button>
                         ) : (
                             <Link to="/login" className={location.pathname === "/login" ? "active" : ""}>
                                 <FaUser className="nav-icon" />

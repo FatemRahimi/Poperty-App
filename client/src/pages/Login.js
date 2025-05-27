@@ -13,12 +13,23 @@ const Login = () => {
     const params = new URLSearchParams(location.search);
     const error = params.get('error');
     const signupSuccess = params.get('signup');
-    const { login } = useAuth(); // Assuming useAuth hook exists
+    const { login, isAuthenticated } = useAuth(); // Fixed typo in comment
+    
+
+    // Get the redirect path from location state or default to /find
+    const from = location.state?.from?.pathname || "/find";
 
     useEffect(() => {
         // Clear any previous error when component mounts or URL params change
         setErrorMsg("");
     }, [location]);
+
+    useEffect(() => {
+        // If user is already authenticated, redirect to the intended page or home
+        if (isAuthenticated || (sessionStorage.getItem('token') && sessionStorage.getItem('user'))) {
+            navigate(from, { replace: true });
+        }
+    }, [isAuthenticated, navigate, location]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -39,9 +50,8 @@ const Login = () => {
                 // Login successful
                 login(data); // Update auth context with user data
                 
-                // Redirect to dashboard or the page user was trying to access
-                const from = location.state?.from?.pathname || "/dashboard";
-                navigate(from);
+                // Redirect to the page user was trying to access
+                navigate(from, { replace: true });
             } else {
                 setErrorMsg(data.error || 'Invalid email or password');
                 setIsLoading(false);
@@ -54,7 +64,10 @@ const Login = () => {
 
     // Google OAuth login
     const handleGoogleLogin = () => {
-        window.location.href = 'http://localhost:5050/api/auth/google';
+        const from = location.state?.from || '/find';
+        // Use the backend URL from environment variable or default
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050';
+        window.location.href = `${backendUrl}/api/auth/google?redirectTo=${encodeURIComponent(from)}`;
     };
     
     return (
