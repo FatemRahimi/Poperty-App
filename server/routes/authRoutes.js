@@ -33,8 +33,13 @@ router.get('/google/callback',
       
       // Create a JWT token
       const token = jwt.sign(
-        { id: req.user.id, email: req.user.email },
-        process.env.JWT_SECRET,
+        { 
+          id: req.user.id, 
+          email: req.user.email,
+          first_name: req.user.first_name,
+          last_name: req.user.last_name
+        },
+        config.auth.jwt.secret,
         { expiresIn: '24h' }
       );
       
@@ -65,6 +70,7 @@ router.get('/google/callback',
 );
 
 // Apple authentication routes
+/* APPLE LOGIN ROUTES - COMMENTED FOR FUTURE USE
 router.get('/apple', (req, res, next) => {
   const redirectTo = req.query.redirectTo || config.frontend.defaultRedirectPath;
   passport.authenticate('apple', {
@@ -82,6 +88,7 @@ router.post('/apple/callback',
     res.redirect(`${config.frontend.baseUrl}${redirectPath}`);
   }
 );
+*/
 
 // Check authentication status
 router.get('/check', (req, res) => {
@@ -91,12 +98,64 @@ router.get('/check', (req, res) => {
       user: {
         id: req.user.id,
         email: req.user.email,
-        first_name: req.user.first_name || '',
-        last_name: req.user.last_name || ''
+        first_name: req.user.first_name,
+        last_name: req.user.last_name
       }
     });
   } else {
-    res.json({ isAuthenticated: false });
+    res.json({ isAuthenticated: false, user: null });
+  }
+});
+
+// JWT Token verification route
+router.get('/verify-token', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    
+    // Verify JWT token
+    const decoded = jwt.verify(token, config.auth.jwt.secret);
+    
+    // Check if user still exists in database
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ error: 'User no longer exists' });
+    }
+
+    // Return user data if valid
+    res.json({ 
+      valid: true, 
+      user: {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name
+      }
+    });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired' });
+    }
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+// Email verification route
+router.get('/verify', async (req, res) => {
+  const { token } = req.query;
+  try {
+    const payload = jwt.verify(token, config.auth.jwt.secret);
+    await User.verifyById(payload.userId);
+    // Redirect to login page with success message
+    res.redirect(`${config.frontend.url}/login?verified=success`);
+  } catch (err) {
+    console.error('Verification error:', err);
+    res.redirect(`${config.frontend.url}/login?verified=error`);
   }
 });
 
@@ -109,20 +168,6 @@ router.get('/logout', (req, res) => {
     }
     res.redirect(`${config.frontend.baseUrl}${config.frontend.loginPath}`);
   });
-});
-
-// Email verification route
-router.get('/verify', async (req, res) => {
-  const { token } = req.query;
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    await User.verifyById(payload.userId);
-    // Redirect to login page with success message
-    res.redirect(`${config.frontend.url}/login?verified=success`);
-  } catch (err) {
-    console.error('Verification error:', err);
-    res.redirect(`${config.frontend.url}/login?verified=error`);
-  }
 });
 
 module.exports = router;

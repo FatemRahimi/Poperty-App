@@ -1,59 +1,66 @@
 const passport = require('passport');
-const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
-const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+// const AppleStrategy = require('passport-apple').Strategy; /* APPLE LOGIN - COMMENTED FOR FUTURE USE */
+const config = require('./config');
 const User = require('../models/User');
-const authConfig = require('./auth.config');
 
 // Google Strategy
 passport.use(new GoogleStrategy({
-    clientID: authConfig.google.clientID,
-    clientSecret: authConfig.google.clientSecret,
-    callbackURL: authConfig.google.callbackURL
+    clientID: config.auth.google.clientID,
+    clientSecret: config.auth.google.clientSecret,
+    callbackURL: config.auth.google.callbackURL
   },
-  async (accessToken, refreshToken, profile, done) => {
+  async function(accessToken, refreshToken, profile, done) {
     try {
       const user = await User.createOrUpdateFromGoogle(profile);
       return done(null, user);
     } catch (error) {
+      console.error('Google Strategy Error:', error);
       return done(error, null);
     }
   }
 ));
 
-// JWT Strategy
-passport.use(new JwtStrategy({
-    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: authConfig.jwt.secret
+/* APPLE STRATEGY - COMMENTED FOR FUTURE USE
+passport.use(new AppleStrategy({
+    clientID: process.env.APPLE_CLIENT_ID,
+    teamID: process.env.APPLE_TEAM_ID,
+    keyID: process.env.APPLE_KEY_ID,
+    privateKeyPath: process.env.APPLE_PRIVATE_KEY_PATH,
+    callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5050'}/api/auth/apple/callback`,
+    scope: ['name', 'email']
   },
-  async (jwtPayload, done) => {
-    try {
-      const user = await User.findByEmail(jwtPayload.email);
-      if (user) {
-        return done(null, user);
-      }
-      return done(null, false);
-    } catch (error) {
-      return done(error, false);
-    }
+  function(accessToken, refreshToken, profile, done) {
+    return done(null, profile);
   }
 ));
+*/
 
-// Serialize user
+// Serialize user into the session
 passport.serializeUser((user, done) => {
-  done(null, user.id);
+  // Store the entire user object in the session
+  done(null, user);
 });
 
-// Deserialize user
-passport.deserializeUser(async (id, done) => {
+// Deserialize user from the session
+passport.deserializeUser(async (user, done) => {
   try {
-    const user = await User.findById(id);
-    if (!user) {
-      return done(null, false);
+    // If we already have the user object, use it
+    if (user && user.id) {
+      return done(null, user);
     }
-    return done(null, user);
+    
+    // If we only have an ID, try to find the user
+    if (user && typeof user === 'string') {
+      const foundUser = await User.findById(user);
+      if (foundUser) {
+        return done(null, foundUser);
+      }
+    }
+    
+    return done(new Error('User not found'), null);
   } catch (error) {
-    return done(error, null);
+    console.error('Deserialize Error:', error);
+    done(error, null);
   }
-});
-
-module.exports = passport; 
+}); 
