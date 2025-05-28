@@ -1,6 +1,10 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 
+// Configure axios defaults
+axios.defaults.baseURL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050';
+axios.defaults.withCredentials = true;
+
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -11,7 +15,7 @@ export const AuthProvider = ({ children }) => {
   // Function to validate token
   const validateToken = async (token) => {
     try {
-      const response = await axios.get('/api/auth/verify', {
+      const response = await axios.get('/api/auth/verify-token', {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data.user;
@@ -23,37 +27,47 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = sessionStorage.getItem('token');
-      const userData = sessionStorage.getItem('user');
-      
-      if (token && userData) {
-        try {
-          // Validate token with server
-          const validatedUser = await validateToken(token);
-          
-          if (validatedUser) {
-            const parsedUser = JSON.parse(userData);
-            setUser(parsedUser);
-            setIsAuthenticated(true);
-          } else {
-            // Token is invalid, clear storage
+      try {
+        const token = sessionStorage.getItem('token');
+        const userData = sessionStorage.getItem('user');
+        
+        console.log('Checking auth:', { token, userData }); // Debug log
+        
+        if (token && userData) {
+          try {
+            // Validate token with server
+            const validatedUser = await validateToken(token);
+            console.log('Validated user:', validatedUser); // Debug log
+            
+            if (validatedUser) {
+              const parsedUser = JSON.parse(userData);
+              setUser(parsedUser);
+              setIsAuthenticated(true);
+            } else {
+              // Token is invalid, clear storage
+              sessionStorage.removeItem('token');
+              sessionStorage.removeItem('user');
+              setUser(null);
+              setIsAuthenticated(false);
+            }
+          } catch (error) {
+            console.error("Error validating token:", error);
             sessionStorage.removeItem('token');
             sessionStorage.removeItem('user');
             setUser(null);
             setIsAuthenticated(false);
           }
-        } catch (error) {
-          console.error("Error validating token:", error);
-          sessionStorage.removeItem('token');
-          sessionStorage.removeItem('user');
+        } else {
           setUser(null);
           setIsAuthenticated(false);
         }
-      } else {
+      } catch (error) {
+        console.error('Error in checkAuth:', error);
         setUser(null);
         setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     checkAuth();
@@ -61,13 +75,39 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (userData, token) => {
     try {
-      // Store token and user data
-      sessionStorage.setItem('token', token);
-      sessionStorage.setItem('user', JSON.stringify(userData));
+      console.log('Login called with:', { userData, token }); // Debug log
       
-      // Update state
-      setUser(userData);
-      setIsAuthenticated(true);
+      if (!userData || !token) {
+        console.error('Missing userData or token in login function');
+        return false;
+      }
+
+      // Store token and user data
+      try {
+        sessionStorage.setItem('token', token);
+        sessionStorage.setItem('user', JSON.stringify(userData));
+        console.log('Stored in sessionStorage:', {
+          token: sessionStorage.getItem('token'),
+          user: sessionStorage.getItem('user')
+        });
+      } catch (storageError) {
+        console.error('Error storing in sessionStorage:', storageError);
+        return false;
+      }
+      
+      // Update state and wait for it to complete
+      await new Promise(resolve => {
+        setUser(userData);
+        setIsAuthenticated(true);
+        resolve();
+      });
+      
+      // Verify the state was updated
+      console.log('Auth state updated:', {
+        user: userData,
+        isAuthenticated: true
+      });
+      
       return true;
     } catch (error) {
       console.error('Login error:', error);
