@@ -13,6 +13,9 @@ const Signup = () => {
   const params = new URLSearchParams(location.search);
   const error = params.get('error');
 
+  // Get the redirect path from location state
+  const from = location.state?.from?.pathname || "/find";
+
   const handleSignup = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -27,12 +30,16 @@ const Signup = () => {
       const data = await response.json();
       
       if (response.ok) {
-        // Signup successful, redirect to login with success message
-        navigate('/login?signup=success');
+        // Signup successful, redirect to login with success message AND preserve redirect path
+        navigate('/login?signup=success', { 
+          state: { from: { pathname: from } } 
+        });
       } else {
-        // If user already exists, redirect to login
+        // If user already exists, redirect to login AND preserve redirect path
         if (data.error === 'User already exists') {
-          navigate('/login?error=user_exists');
+          navigate('/login?error=user_exists', { 
+            state: { from: { pathname: from } } 
+          });
         } else {
           setErrorMsg(data.error);
           setIsLoading(false);
@@ -111,7 +118,12 @@ const Signup = () => {
             </button>
             
             <p className="login-text mt-4">
-              Already have an account? <Link to="/login">Sign in</Link>
+              Already have an account? <Link 
+                to="/login" 
+                state={{ from: { pathname: from } }}
+              >
+                Sign in
+              </Link>
             </p>
           </form>
         </div>

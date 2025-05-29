@@ -17,13 +17,15 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // Insert user as unverified
+    // Insert user as verified for testing (temporarily)
     const insertResult = await pool.query(
-      "INSERT INTO users (email, password, verified) VALUES ($1, $2, $3) RETURNING id",
-      [email, hashed, false]
+      "INSERT INTO users (email, password, is_verified) VALUES ($1, $2, $3) RETURNING id",
+      [email, hashed, true] // Set to true for testing
     );
     const userId = insertResult.rows[0].id;
 
+    // Temporarily disable email verification for testing
+    /*
     // Generate verification token
     const verificationToken = jwt.sign(
       { userId },
@@ -34,8 +36,9 @@ exports.signup = async (req, res) => {
 
     // Send verification email
     await sendVerificationEmail(email, verificationLink);
+    */
 
-    return res.status(201).json({ message: "Sign up successful! Please check your email to verify your account." });
+    return res.status(201).json({ message: "Sign up successful! You can now log in." });
   } catch (err) {
     console.error("❌ Signup failed:", err);
     return res.status(500).json({ message: "Signup error", error: err.message });
@@ -45,23 +48,91 @@ exports.signup = async (req, res) => {
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
+  // Input validation
+  if (!email || !password) {
+    return res.status(400).json({ 
+      error: "Email and password are required",
+      field: email ? "password" : "email"
+    });
+  }
+
+  // Email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ 
+      error: "Please enter a valid email address",
+      field: "email"
+    });
+  }
+
   try {
     const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-    if (result.rows.length === 0) return res.status(401).json({ message: "Invalid credentials" });
-
-    const user = result.rows[0];
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
-
-    // Prevent login if not verified
-    if (!user.verified) {
-      return res.status(403).json({ message: "Please verify your email before logging in." });
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({ 
+        error: "No account found with this email. Do you need to sign up?",
+        field: "email",
+        action: "suggest_signup"
+      });
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1d" });
-    return res.json({ token, user: { email: user.email } });
+    const user = result.rows[0];
+    
+    // Check if user has a password (might be Google-only user)
+    if (!user.password) {
+      return res.status(401).json({ 
+        error: "This account uses Google Sign-In. Please use the 'Continue with Google' button.",
+        field: "email",
+        action: "use_google"
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ 
+        error: "Incorrect password. Please try again.",
+        field: "password"
+      });
+    }
+
+    // Prevent login if not verified
+    if (!user.is_verified) {
+      return res.status(403).json({ 
+        error: "Please verify your email before logging in. Check your inbox for a verification link.",
+        field: "email",
+        action: "resend_verification"
+      });
+    }
+
+    // Create JWT token with consistent secret
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name
+      }, 
+      config.auth.jwt.secret, 
+      { expiresIn: "24h" }
+    );
+
+    // Return success response with user data
+    return res.json({ 
+      token, 
+      user: { 
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        verified: user.is_verified
+      }
+    });
   } catch (err) {
-    return res.status(500).json({ message: "Login error", error: err });
+    console.error("❌ Login error:", err);
+    return res.status(500).json({ 
+      error: "An error occurred during login. Please try again.",
+      field: null
+    });
   }
 };
 

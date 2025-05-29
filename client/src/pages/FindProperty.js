@@ -404,7 +404,7 @@ const FindProperty = () => {
                     <a href="#" className="expert-cta">FIND OUT MORE <span>&#9654;</span></a>
                 </div>
                 <div className="expert-image">
-                    <img src="/assets/pexels-a-darmel-7641857 (1).jpg" alt="Happy clients" />
+                    <img src="/assets/pexels-a-darmel-7641857.jpg" alt="Happy clients" />
                 </div>
             </section>
 
@@ -477,8 +477,8 @@ const FindProperty = () => {
                     </div>
                     <div className="footer-contact">
                         <h4>Contact Us</h4>
-                        <p>Email: info@propertypro.com</p>
-                        <p>Phone: +1 234 567 890</p>
+                        <p>Email: info@ShProperty.com</p>
+                        <p>Phone: +44 7398593360</p>
                         <div className="footer-social">
                             <a href="#" aria-label="Facebook"><i className="fab fa-facebook-f"></i></a>
                             <a href="#" aria-label="Twitter"><i className="fab fa-twitter"></i></a>
@@ -488,7 +488,7 @@ const FindProperty = () => {
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    <p>&copy; {new Date().getFullYear()} PropertyPro. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} SH.RProperty. All rights reserved.</p>
                 </div>
             </footer>
         </div>
