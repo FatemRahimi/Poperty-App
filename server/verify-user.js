@@ -7,7 +7,7 @@ async function verifyUser(email) {
   try {
     console.log('Looking for user with email:', email);
     
-    const results = await pool.query('SELECT id, email, verified FROM users WHERE email = $1', [email]);
+    const results = await pool.query('SELECT id, email, is_verified FROM users WHERE email = $1', [email]);
     
     if (results.rows.length === 0) {
       console.log('User not found');
@@ -16,15 +16,15 @@ async function verifyUser(email) {
     
     console.log('User found:', results.rows[0]);
     
-    if (results.rows[0].verified) {
+    if (results.rows[0].is_verified) {
       console.log('User is already verified.');
       return;
     }
     
-    await pool.query('UPDATE users SET verified = TRUE WHERE email = $1', [email]);
+    await pool.query('UPDATE users SET is_verified = TRUE WHERE email = $1', [email]);
     console.log('User verified successfully!');
     
-    const newResults = await pool.query('SELECT id, email, verified FROM users WHERE email = $1', [email]);
+    const newResults = await pool.query('SELECT id, email, is_verified FROM users WHERE email = $1', [email]);
     console.log('Updated user:', newResults.rows[0]);
   } catch (error) {
     console.error('Error verifying user:', error);

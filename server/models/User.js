@@ -27,12 +27,13 @@ class User {
   }
 
   static async create(userData) {
-    const { email, password, verified = false } = userData;
     try {
+      const { email, password, is_verified = false } = userData;
       const hashedPassword = await bcrypt.hash(password, 10);
+      
       const result = await pool.query(
-        'INSERT INTO users (email, password, verified) VALUES ($1, $2, $3) RETURNING *',
-        [email, hashedPassword, verified]
+        'INSERT INTO users (email, password, is_verified) VALUES ($1, $2, $3) RETURNING *',
+        [email, hashedPassword, is_verified]
       );
       return result.rows[0];
     } catch (error) {
@@ -56,7 +57,7 @@ class User {
   static async verify(userId) {
     try {
       const result = await pool.query(
-        'UPDATE users SET verified = TRUE WHERE id = $1 RETURNING *',
+        'UPDATE users SET is_verified = TRUE WHERE id = $1 RETURNING *',
         [userId]
       );
       return result.rows[0];
