@@ -4,12 +4,40 @@ import { Link } from "react-router-dom";
 
 const PasswordReset = () => {
   const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate API call or navigate to next step
-    console.log("Reset instructions sent to:", email);
-    // You can add actual logic here using fetch/Axios to talk to your backend
+    setIsLoading(true);
+    setMessage("");
+    
+    try {
+      const response = await fetch("http://localhost:5050/api/auth/password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setIsSuccess(true);
+        setMessage("Password reset instructions have been sent to your email address.");
+      } else {
+        setIsSuccess(false);
+        setMessage(data.message || "Failed to send reset instructions. Please try again.");
+      }
+    } catch (error) {
+      console.error("Password reset error:", error);
+      setIsSuccess(false);
+      setMessage("Network error. Please check your connection and try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -35,6 +63,19 @@ const PasswordReset = () => {
                     </p>
                  </div>
            
+                  {/* Message Display */}
+                  {message && (
+                    <div className={`message ${isSuccess ? 'success-message' : 'error-message'}`} style={{
+                      padding: '12px',
+                      marginBottom: '20px',
+                      borderRadius: '4px',
+                      backgroundColor: isSuccess ? '#d4edda' : '#f8d7da',
+                      color: isSuccess ? '#155724' : '#721c24',
+                      border: `1px solid ${isSuccess ? '#c3e6cb' : '#f5c6cb'}`
+                    }}>
+                      {message}
+                    </div>
+                  )}
 
                   <div className="auth-form forgot-password-form">
                       <form onSubmit={handleSubmit}>
@@ -46,9 +87,16 @@ const PasswordReset = () => {
                               id="email"
                               className="text-input"
                                value={email}
-                               onChange={(e) => setEmail(e.target.value)} required/>
+                               onChange={(e) => setEmail(e.target.value)} 
+                               disabled={isLoading}
+                               required/>
                         </fieldset>
-                         <input className="button form-sub" type="submit" value="Send Reset Instructions" />
+                         <input 
+                           className="button form-sub" 
+                           type="submit" 
+                           value={isLoading ? "Sending..." : "Send Reset Instructions"}
+                           disabled={isLoading}
+                         />
                       </form>
                       <div className="back-to-signin">
                         <span>Remembered your password? </span>

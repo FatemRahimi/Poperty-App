@@ -20,9 +20,9 @@ const Login = () => {
 
     useEffect(() => {
         // Read URL parameters for errors and success messages
-        const params = new URLSearchParams(location.search);
-        const error = params.get('error');
-        const signupSuccess = params.get('signup');
+    const params = new URLSearchParams(location.search);
+    const error = params.get('error');
+    const signupSuccess = params.get('signup');
         
         // Set URL-based messages in state
         setUrlMessages({
@@ -313,7 +313,7 @@ const Login = () => {
                         {/* Password Input */}
                         <div className="mb-3 text-start">
                             <div className="password-header">
-                                <label className="form-label"><strong>Password</strong></label>
+                            <label className="form-label"><strong>Password</strong></label>
                                 <Link to="/password" className="forgot-link">
                                     Forgot 
                                 </Link>
@@ -332,7 +332,7 @@ const Login = () => {
                             {errors.password && (
                                 <div className="field-error">
                                     {errors.password}
-                                </div>
+                            </div>
                             )}
                         </div>
                         
@@ -349,7 +349,7 @@ const Login = () => {
                                 </span>
                             ) : "Sign in"}
                         </button>
-
+                        
                         <p className="login-text mt-4">
                             Don't have an account? <Link 
                                 to="/signup" 

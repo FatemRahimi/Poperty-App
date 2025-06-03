@@ -28,19 +28,19 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = sessionStorage.getItem('token');
-        const userData = sessionStorage.getItem('user');
+    const token = sessionStorage.getItem('token');
+    const userData = sessionStorage.getItem('user');
         
         console.log('Checking auth:', { token, userData }); // Debug log
-        
-        if (token && userData) {
-          try {
+    
+    if (token && userData) {
+      try {
             // Validate token with server
             const validatedUser = await validateToken(token);
             console.log('Validated user:', validatedUser); // Debug log
             
             if (validatedUser) {
-              const parsedUser = JSON.parse(userData);
+        const parsedUser = JSON.parse(userData);
               setUser(parsedUser);
               setIsAuthenticated(true);
             } else {
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }) => {
             sessionStorage.removeItem('user');
             setUser(null);
             setIsAuthenticated(false);
-          }
+        }
         } else {
           setUser(null);
           setIsAuthenticated(false);
@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setIsAuthenticated(false);
       } finally {
-        setLoading(false);
+    setLoading(false);
       }
     };
 
@@ -123,9 +123,9 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       // Clear storage and state
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      setUser(null);
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    setUser(null);
       setIsAuthenticated(false);
     }
   };
