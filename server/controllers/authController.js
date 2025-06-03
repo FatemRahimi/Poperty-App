@@ -171,13 +171,22 @@ exports.forgotPassword = async (req, res) => {
     const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
     console.log("Generated Reset URL:", resetUrl);
     
-    // Send email
-    await sendPasswordResetEmail(email, resetUrl);
-    console.log("Password reset email sent to:", email);
-    
-    return res.status(200).json({ 
-      message: "Password reset link sent! Please check your email." 
-    });
+    // Try to send email, but don't fail if email sending fails
+    try {
+      await sendPasswordResetEmail(email, resetUrl);
+      console.log("Password reset email sent to:", email);
+      return res.status(200).json({ 
+        message: "Password reset link sent! Please check your email." 
+      });
+    } catch (emailError) {
+      console.log("❌ Email sending failed:", emailError.message);
+      console.log("🔗 Reset URL for manual use:", resetUrl);
+      // Still return success but mention email issue
+      return res.status(200).json({ 
+        message: "Password reset link generated! (Email sending temporarily unavailable - check server console for reset link)",
+        resetUrl: resetUrl // Include URL for testing
+      });
+    }
   } catch (err) {
     console.error("❌ Forgot password error:", err);
     return res.status(500).json({ 
