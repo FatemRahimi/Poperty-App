@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import SelectInput from "../components/inputs/SelectInput";
 import TextInput from "../components/inputs/TextInput";
 import CheckboxInput from "../components/inputs/CheckboxInput";
-import "../styles/AddLease.css";
+import Logo from "../components/Logo";
+import "../styles/AddList.css";
 import { useNavigate, Link } from "react-router-dom";
 import useSessionStorage from "../Utils/useSessionStorage";
 
@@ -84,20 +85,22 @@ const AddLease = () => {
   };
 
   return (
-    <div className="addleasing-container">
+    <div className="form-sale-container">
       <div className="form-title">
-        <div className="form-title-brand">Sh.R.Property</div>
+        <div className="form-title-brand">
+          <Logo />
+        </div>
         <div className="form-title-add">ADD LISTING FOR LEASE</div>
         <ul className="form-title-find-link">
           <li><Link to="/seller">BACK TO ADD LISTING</Link></li>
         </ul>
       </div>
 
-      <div className="addleasing-wrapper">
-        <form onSubmit={handleSubmit} className="addleasing-form">
+      <div className="form-wrapper">
+        <form onSubmit={handleSubmit} className="property-form">
           <h3 className="section-title">Basic Space Info</h3>
 
-          <div className="addleasing-form-row">
+          <div className="form-row">
             <SelectInput label="Space Type*" name="spaceType" value={formData.spaceType} onChange={handleChange} options={spaceTypeOptions} />
             <TextInput label="Space Subtypes*" name="spaceSubtypes" value={formData.spaceSubtypes} onChange={handleChange} />
           </div>
@@ -112,37 +115,39 @@ const AddLease = () => {
 
           {showAddress && (
             <>
-              <div className="addleasing-form-row">
-                <TextInput label="Country" name="country" value={formData.country} onChange={handleChange} disabled />
-                <TextInput label="City" name="city" value={formData.city} onChange={handleChange} />
+              <div className="form-row">
+                <TextInput label="Address*" name="address" value={formData.address} onChange={handleChange} />
+                <TextInput label="Postal Code" name="postalCode" value={formData.postalCode} onChange={handleChange} />
               </div>
-              <TextInput label="Postal Code" name="postalCode" value={formData.postalCode} onChange={handleChange} />
-              <TextInput label="Address*" name="address" value={formData.address} onChange={handleChange} />
+              <div className="form-row">
+                <TextInput label="City" name="city" value={formData.city} onChange={handleChange} />
+                <TextInput label="Country" name="country" value={formData.country} onChange={handleChange} disabled />
+              </div>
             </>
           )}
 
           <h3 className="section-title">Building Details</h3>
-          <div className="addleasing-form-row">
+          <div className="form-row">
             <TextInput label="Building Size (sqft)*" name="buildingSize" value={formData.buildingSize} onChange={handleChange} type="number" />
             <TextInput label="Min Divisible (sqft)" name="minDivisible" value={formData.minDivisible} onChange={handleChange} type="number" />
             <TextInput label="Vacant SQFT*" name="vacantSQFT" value={formData.vacantSQFT} onChange={handleChange} type="number" />
           </div>
 
-          <div className="addleasing-form-row">
+          <div className="form-row">
             <TextInput label="Land Acres" name="landAcres" value={formData.landAcres} onChange={handleChange} type="number" />
             <TextInput label="Lot Size" name="lotSize" value={formData.lotSize} onChange={handleChange} type="number" />
             <SelectInput label="Lot Size Unit" name="lotSizeUnit" value={formData.lotSizeUnit} onChange={handleChange} options={lotSizeUnitOptions} />
           </div>
 
           <h3 className="section-title">Building Specs</h3>
-          <div className="addleasing-form-row">
+          <div className="form-row">
             <TextInput label="Taxes (per sqft)" name="taxesPerSQFT" value={formData.taxesPerSQFT} onChange={handleChange} type="number" />
             <TextInput label="Parking Spaces" name="parkingSpaces" value={formData.parkingSpaces} onChange={handleChange} type="number" />
             <TextInput label="Power" name="power" value={formData.power} onChange={handleChange} />
           </div>
 
           <h3 className="section-title">Location Info</h3>
-          <div className="addleasing-form-row">
+          <div className="form-row">
             <TextInput label="Zoning (Use Class)" name="zoning" value={formData.zoning} onChange={handleChange} />
           </div>
 
