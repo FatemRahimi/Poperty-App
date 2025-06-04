@@ -74,6 +74,23 @@
     font-family: 'Open Sans', sans-serif;
 }
 
+/* Special styling for Find Property link to always look prominent */
+.navbar-links a[href="/find"] {
+    color: #3498db;
+    font-weight: 600;
+    position: relative;
+}
+
+.navbar-links a[href="/find"]:after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0.75rem;
+    right: 0.75rem;
+    height: 2px;
+    background-color: #3498db;
+}
+
 .navbar-links a span {
     margin-left: 6px;
 }

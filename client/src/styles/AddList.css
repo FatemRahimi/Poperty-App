@@ -1,7 +1,7 @@
 .form-wrapper {
   width: 100%;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 3rem auto;
   padding: 60px;
   font-family:Arial, Helvetica, sans-serif;
 
@@ -21,7 +21,7 @@
   border-bottom: 1px solid #ccc;
   border-radius: 2px;
   background-color:white;
-  margin-bottom: 10px; /* Reduced from 20px */
+  margin-bottom: 40px; /* Increased from 10px to create more distance */
   margin-top: 30px;
   gap: 60px; /* 🔥 space between items, you can control it */
   position: relative;
@@ -36,7 +36,13 @@
   left: 400px; /* 🔥 how far from left side */
   font-family:fantasy;
   font: bold;
-  background-color: #ffc107;
+}
+
+/* Make logo bigger in form pages */
+.form-title-brand svg {
+  width: 150px;
+  height: 50px;
+  transform: scale(1.2);
 }
 
 /* Center: ADD LISTING FOR SALE */
@@ -128,6 +134,25 @@
   transform: translateY(-2px);
   font-size: 15px;
 
+}
+
+/* Mobile responsive for address button */
+@media (max-width: 767px) {
+  .form-sale-address {
+    font-size: 14px;
+    padding: 8px;
+    width: auto;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 575px) {
+  .form-sale-address {
+    font-size: 12px;
+    padding: 6px 8px;
+    width: auto;
+    margin-left: 0;
+  }
 }
 
 .input-with-addon {
@@ -529,5 +554,265 @@ select:focus {
 
 .progress-line.active {
   background-color: #1976d2;
+}
+
+/* Responsive Design - Media Queries */
+
+/* Large Desktop (1200px and up) */
+@media (min-width: 1200px) {
+  .form-wrapper {
+    max-width: 1200px;
+    padding: 60px;
+  }
+  .form-title {
+    padding: 40px;
+  }
+  .form-title-brand, .form-title-find-link {
+    font-size: 25px;
+  }
+  .form-title-add {
+    font-size: 26px;
+  }
+}
+
+/* Desktop (992px to 1199px) */
+@media (max-width: 1199px) and (min-width: 992px) {
+  .form-wrapper {
+    max-width: 1000px;
+    padding: 50px;
+  }
+  .form-title {
+    padding: 35px;
+  }
+  .form-title-brand, .form-title-find-link {
+    font-size: 22px;
+  }
+  .form-title-add {
+    font-size: 24px;
+  }
+}
+
+/* Tablet (768px to 991px) */
+@media (max-width: 991px) and (min-width: 768px) {
+  .form-wrapper {
+    max-width: 95%;
+    padding: 40px 30px;
+  }
+  
+  .form-title {
+    padding: 30px 20px;
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+  
+  .form-title-brand, .form-title-find-link {
+    position: static;
+    font-size: 20px;
+    margin: 10px 0;
+  }
+  
+  .form-title-add {
+    font-size: 22px;
+    margin: 10px 0;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .section-title {
+    font-size: 20px;
+  }
+  
+  input, select {
+    font-size: 16px;
+    padding: 12px;
+  }
+  
+  label {
+    font-size: 17px;
+  }
+  
+  .progress-step {
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
+  }
+  
+  .progress-line {
+    width: 80px;
+  }
+}
+
+/* Mobile Large (576px to 767px) */
+@media (max-width: 767px) and (min-width: 576px) {
+  .form-sale-container {
+    padding: 10px;
+  }
+  
+  .form-wrapper {
+    max-width: 100%;
+    padding: 25px 20px;
+  }
+  
+  .form-title {
+    padding: 20px 15px;
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .form-title-brand {
+    position: static;
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  
+  .form-title-add {
+    font-size: 20px;
+    margin: 10px 0;
+  }
+  
+  .form-title-find-link {
+    position: static;
+    font-size: 16px;
+    margin-top: 10px;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .section-title {
+    font-size: 18px;
+    margin: 20px 0 15px;
+  }
+  
+  input, select {
+    font-size: 16px;
+    padding: 14px;
+  }
+  
+  label {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+  
+  .submit-btn, .next-btn, .back-btn {
+    font-size: 16px;
+    padding: 12px 25px;
+  }
+  
+  .form-buttons {
+    flex-direction: column;
+    gap: 15px;
+    padding: 0 10px;
+  }
+  
+  .progress-step {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+  
+  .progress-line {
+    width: 60px;
+  }
+  
+  .form-progress {
+    padding: 15px;
+    margin: 10px 0 15px 0;
+  }
+}
+
+/* Mobile Small (up to 575px) */
+@media (max-width: 575px) {
+  .form-sale-container {
+    padding: 5px;
+  }
+  
+  .form-wrapper {
+    max-width: 100%;
+    padding: 20px 15px;
+  }
+  
+  .form-title {
+    padding: 15px 10px;
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  
+  .form-title-brand {
+    position: static;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  
+  .form-title-add {
+    font-size: 18px;
+    margin: 8px 0;
+  }
+  
+  .form-title-find-link {
+    position: static;
+    font-size: 14px;
+    margin-top: 8px;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .section-title {
+    font-size: 16px;
+    margin: 15px 0 12px;
+  }
+  
+  input, select {
+    font-size: 16px;
+    padding: 12px;
+  }
+  
+  label {
+    font-size: 15px;
+    margin-bottom: 5px;
+  }
+  
+  .submit-btn, .next-btn, .back-btn {
+    font-size: 15px;
+    padding: 12px 20px;
+    width: 100%;
+  }
+  
+  .form-buttons {
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 5px;
+  }
+  
+  .progress-step {
+    width: 25px;
+    height: 25px;
+    font-size: 11px;
+  }
+  
+  .progress-line {
+    width: 40px;
+  }
+  
+  .form-progress {
+    padding: 10px;
+    margin: 8px 0 12px 0;
+  }
+  
+  .property-form {
+    gap: 3px;
+    padding: 20px 10px;
+  }
 }
   

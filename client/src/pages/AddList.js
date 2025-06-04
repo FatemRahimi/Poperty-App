@@ -4,6 +4,7 @@ import SelectInput from "../components/inputs/SelectInput";
 import TextInput from "../components/inputs/TextInput";
 import EarnestDepositSection from "../components/formSections/EarnestDepositSection";
 import CheckboxInput from "../components/inputs/CheckboxInput";
+import Logo from "../components/Logo";
 import "../styles/AddList.css"; // your custom CSS file
 import useSessionStorage from "../Utils/useSessionStorage";
 
@@ -480,7 +481,9 @@ const AddList = () => {
     <div className="form-sale-container">
       {/* Title Section */}
       <div className="form-title">
-        <div className="form-title-brand">Sh.R.Property</div>
+        <div className="form-title-brand">
+          <Logo />
+        </div>
         <div className="form-title-add">ADD LISTING FOR SALE</div>
         <ul className="form-title-find-link">
           <li><Link to="/seller">BACK TO ADD LISTING</Link></li>

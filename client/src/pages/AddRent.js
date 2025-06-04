@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SelectInput from "../components/inputs/SelectInput";
 import TextInput from "../components/inputs/TextInput";
+import Logo from "../components/Logo";
 import "../styles/AddList.css"; // reusing the AddList CSS
 import useSessionStorage from "../Utils/useSessionStorage";
 import { useAuth } from "../context/AuthContext";
@@ -515,7 +516,9 @@ const AddRent = () => {
     <div className="form-sale-container">
       {/* Title Section */}
       <div className="form-title">
-        <div className="form-title-brand">Sh.R.Property</div>
+        <div className="form-title-brand">
+          <Logo />
+        </div>
         <div className="form-title-add">ADD PROPERTY FOR RENT</div>
         <ul className="form-title-find-link">
           <li><Link to="/seller">Back to Add Listing</Link></li>
