@@ -3,8 +3,11 @@
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  padding: 4rem 2rem;
+  padding: 6rem 2rem 4rem 2rem;
   background-color: #f8f9fa;
+  margin-top: 70px; /* Account for navbar height */
+  
+  
 }
 
 .seller-form-content {
@@ -26,7 +29,7 @@
   font-family: inherit;
   transition: all 0.3s ease;
   animation: sellerText 2s infinite alternate;
-  margin-bottom: 9rem;
+  margin-bottom: 5rem;
 }
 
 @keyframes sellerText {
