@@ -1,12 +1,34 @@
 /* AddLease.css */
 
 .addleasing-container {
-    background-color: #fff;
+    background-color: #ffffff;
     font-family: Arial, Helvetica, sans-serif;
-    padding: 40px 20px;
-  }
-  
-  /* Form Title (independent now) */
+    padding:0px 0px;
+}
+
+.addleasing-wrapper {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px;
+    background-color: #f9f9f9;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.addleasing-wrapper:hover {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px);
+}
+
+.addleasing-form {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+/* Form Title (independent now) */
 .form-title {
     display: flex;
     align-items: center;
@@ -15,15 +37,15 @@
     border-bottom: 1px solid #ccc;
     border-radius: 2px;
     background-color:white;
-    margin-bottom: 20px;
+    margin-bottom: 60px;
     margin-top: 30px;
     gap: 60px; /* 🔥 space between items, you can control it */
     position: relative;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); 
-  }
-  
-  /* Left: PROPERTY */
-  .form-title-brand {
+}
+
+/* Left: PROPERTY */
+.form-title-brand {
     font-size: 25px;
     color: #333;
     position: absolute;
@@ -31,137 +53,115 @@
     font-family:fantasy;
     font: bold;
     background-color: #ffc107;
-  }
-  
-  /* Center: ADD LISTING FOR SALE */
-  .form-title-add {
+}
+
+/* Center: ADD LISTING FOR SALE */
+.form-title-add {
     font-size: 26px;
     font-weight: 600;
     text-align: center;
-  }
-  
-  /* Right: Find Property link */
-  .form-title-find-link {
+}
+
+/* Right: Find Property link */
+.form-title-find-link {
     list-style: none;
     margin: 0;
     padding: 0;
     position: absolute;
     right: 200px; /* 🔥 how far from right side */
     font-size:25px;
-  }
-  
-  .form-title-find-link li {
+}
+
+.form-title-find-link li {
     display: inline;
-  }
-  
-  .form-title-find-link a {
+}
+
+.form-title-find-link a {
     text-decoration: none;
     color: #007bff;
     font-weight: 500;
-  }
-  
-  .form-title-find-link a:hover {
+}
+
+.form-title-find-link a:hover {
     text-decoration:wavy;
-  }
-  
-  
-  .addleasing-wrapper {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 50px;
-    background-color: #ffffff;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  .addleasing-wrapper:hover {
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
-    transform: translateY(-5px);
-  }
-  
-  .addleasing-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .section-title {
+}
+
+.section-title {
     font-size: 22px;
     font-weight: 600;
     color: #333;
     margin: 30px 0 20px;
     border-bottom: 2px solid #ccc;
     padding-bottom: 10px;
-  }
-  
-  .addleasing-form-row {
+}
+
+.addleasing-form-row {
     display: flex;
     gap: 20px;
-  }
-  
-  .addleasing-form-row > div {
+}
+
+.addleasing-form-row > div {
     flex: 1;
-  }
-  
-  .form-group label {
+}
+
+.form-group label {
     margin-bottom: 8px;
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 100;
     color: #444;
     display: block;
-   
+    font-family: 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
 
-  }
-  input[type="checkbox"] + label {
+input[type="checkbox"] + label {
     margin-left: 10px; /* or more if needed */
-  }
-  input[type="checkbox"] {
+}
+
+input[type="checkbox"] {
     width: 20px;
     height: 20px;
     cursor: pointer;
-  }
-  
-  input[type="text"],
-  input[type="number"],
-  input[type="date"],
-  select {
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select {
     width: 100%;
-    padding: 12px;
+    padding: 8px;
     font-size: 16px;
     border: 2px solid #ccc;
     border-radius: 8px;
     background-color: #fff;
     transition: border-color 0.3s, box-shadow 0.3s;
-  }
-  
-  input:focus,
-  select:focus {
+}
+
+input:focus,
+select:focus {
     outline: none;
     border-color: #d21919;
     box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.2);
-  }
-  
-  .checkbox-group {
+}
+
+.checkbox-group {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-top: 10px;
-  }
-  
-  .checkbox-group input[type="checkbox"] {
+}
+
+.checkbox-group input[type="checkbox"] {
     width: 20px;
     height: 20px;
     cursor: pointer;
-  }
-  
-  .checkbox-group label {
+}
+
+.checkbox-group label {
     font-size: 20px;
     font-weight: 500;
-  
-  }
-  
-  .submit-btn {
+}
+
+.submit-btn {
     padding: 14px 19px;
     font-size: 20px;
     font-weight: 500;
@@ -173,44 +173,44 @@
     transition: background 0.4s, transform 0.3s;
     align-self: flex-end;
     margin-top: 20px;
-  }
-  
-  .submit-btn:hover {
+}
+
+.submit-btn:hover {
     background: linear-gradient(135deg, #1565c0, #1976d2);
     transform: translateY(-2px);
-  }
-  .checkbox-group {
+}
+
+.checkbox-group {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
     margin-top: 10px;
-  }
-  
-  .checkbox-group > div {
+}
+
+.checkbox-group > div {
     flex: 1 1 200px;
-  }
-  
-  .addleasing-form-row {
+}
+
+.addleasing-form-row {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-  }
-  
-  .addleasing-form-row > div {
-    flex: 1;
-  }
+}
 
-  .security-access-group {
+.addleasing-form-row > div {
+    flex: 1;
+}
+
+.security-access-group {
     display: flex;
     flex-direction: column; /* 🔥 Stacks items vertically */
     gap: 10px;              /* ✅ Space between checkboxes */
     margin-top: 10px;
-  }
-  
-  .security-access-group label {
-   
+}
+
+.security-access-group label {
     font-size: 20px;
     font-weight: 500;
     width: 250px;           /* 👈 Ensure same label width */
-  }
+}
   

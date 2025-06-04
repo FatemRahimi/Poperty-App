@@ -14,4 +14,10 @@ ALTER TABLE users
 ADD COLUMN reset_token VARCHAR(255), 
 ADD COLUMN reset_token_expiry TIMESTAMP;
 
+-- Add picture column
+ALTER TABLE users ADD COLUMN picture text;
+
+-- Add is_verified column
+ALTER TABLE users ADD COLUMN is_verified boolean DEFAULT false;
+
 INSERT INTO users (email, first_name, last_name) VALUES ('test@example.com', 'Test', 'User');
