@@ -461,11 +461,11 @@ const FindProperty = () => {
 
             <footer className="footer-section">
                 <div className="footer-container">
-                    <div className="footer-brand">
+                    <div className="footer-brand animate-on-scroll">
                         <h3>Sh.R Property</h3>
                         <p>Your trusted partner in real estate. Discover, buy, rent, or sell with confidence.</p>
                     </div>
-                    <div className="footer-links">
+                    <div className="footer-links animate-on-scroll">
                         <h4>Quick Links</h4>
                         <ul>
                             <li><Link to="/">Home</Link></li>
@@ -475,7 +475,7 @@ const FindProperty = () => {
                             <li><Link to="/contact">Contact</Link></li>
                         </ul>
                     </div>
-                    <div className="footer-contact">
+                    <div className="footer-contact animate-on-scroll">
                         <h4>Contact Us</h4>
                         <p>Email: info@ShProperty.com</p>
                         <p>Phone: +44 7398593360</p>
@@ -487,7 +487,7 @@ const FindProperty = () => {
                         </div>
                     </div>
                 </div>
-                <div className="footer-bottom">
+                <div className="footer-bottom animate-on-scroll">
                     <p>&copy; {new Date().getFullYear()} SH.RProperty. All rights reserved.</p>
                 </div>
             </footer>
