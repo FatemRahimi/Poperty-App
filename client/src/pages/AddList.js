@@ -42,6 +42,9 @@ const AddList = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [showAddressForm, setShowAddressForm] = useState(false);
+  const [mediaFiles, setMediaFiles] = useState([]);
+  const [mediaPreviewUrls, setMediaPreviewUrls] = useState([]);
+  
   const [formData, setFormData] = useSessionStorage("propertyListingForm", {
     // Step 1: Basic Property Information
     propertyType: "",
@@ -81,10 +84,9 @@ const AddList = () => {
     mortgageEstimate: "",
     
     // Step 3: Additional Information
-    // Add any fields from AdditionalListing component
     description: "",
     features: [],
-    photos: []
+    mediaFiles: []
   });
 
   useEffect(() => {
@@ -99,6 +101,44 @@ const AddList = () => {
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  // Media handling functions
+  const handleMediaChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      const newMediaFiles = [...mediaFiles, ...files];
+      setMediaFiles(newMediaFiles);
+      
+      // Generate preview URLs
+      const newPreviewUrls = files.map(file => ({
+        url: URL.createObjectURL(file),
+        type: file.type,
+        name: file.name
+      }));
+      setMediaPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+      
+      // Update form data
+      setFormData(prev => ({
+        ...prev,
+        mediaFiles: newMediaFiles
+      }));
+    }
+  };
+
+  const removeMedia = (index) => {
+    const newMediaFiles = mediaFiles.filter((_, i) => i !== index);
+    const newPreviewUrls = mediaPreviewUrls.filter((_, i) => i !== index);
+    
+    // Revoke the URL to free memory
+    URL.revokeObjectURL(mediaPreviewUrls[index].url);
+    
+    setMediaFiles(newMediaFiles);
+    setMediaPreviewUrls(newPreviewUrls);
+    setFormData(prev => ({
+      ...prev,
+      mediaFiles: newMediaFiles
     }));
   };
 
@@ -154,8 +194,7 @@ const AddList = () => {
   };
 
   const validateStep3 = () => {
-    // Add validation for step 3 fields
-    if (!formData.description) {
+    if (!formData.description.trim()) {
       alert("❌ Please provide a property description before submitting.");
       return false;
     }
@@ -428,7 +467,7 @@ const AddList = () => {
       <>
         <h3 className="section-title">Property Description</h3>
         <div className="form-group">
-          <label htmlFor="description">Description</label>
+          <label htmlFor="description">Description*</label>
           <textarea
             id="description"
             name="description"
@@ -437,29 +476,114 @@ const AddList = () => {
             className="form-textarea"
             rows="6"
             placeholder="Provide a detailed description of your property..."
+            required
           ></textarea>
         </div>
 
-        <h3 className="section-title">Upload Photos</h3>
-        <div className="upload-section">
-          <label htmlFor="photosUpload" className="drop-zone">
-            Click or drag photos here to upload
+        <h4 className="subsection-title">Upload Photos & Videos</h4>
+        
+        <div className="media-upload-section">
+          <div className="upload-area">
+            <label htmlFor="media-upload" className="upload-label">
+              <div className="upload-content">
+                <div className="upload-icon">📷🎥</div>
+                <div className="upload-text">
+                  <span>Drag & drop or click to upload</span>
+                  <small>Photos & videos • Up to 10 files • Max 50MB each</small>
+                </div>
+              </div>
+            </label>
             <input
+              id="media-upload"
               type="file"
-              id="photosUpload"
               multiple
-              accept="image/*"
+              accept="image/*,video/*"
+              onChange={handleMediaChange}
               style={{ display: 'none' }}
-              onChange={(e) => {
-                // Handle photo uploads
-                console.log("Photos selected:", e.target.files);
-                // In a real implementation, you would process and upload these files
-              }}
             />
-          </label>
+          </div>
+
+          {mediaPreviewUrls.length > 0 && (
+            <>
+              <div className="media-grid">
+                {mediaPreviewUrls.map((media, index) => (
+                  <div key={index} className="media-item">
+                    <div className="media-content">
+                      {media.type.startsWith('video/') ? (
+                        <div className="video-container">
+                          <video src={media.url} controls>
+                            Your browser does not support the video tag.
+                          </video>
+                          <div className="media-type-badge">Video</div>
+                        </div>
+                      ) : media.type.startsWith('image/') ? (
+                        <div className="image-container">
+                          <img src={media.url} alt={`Preview ${index + 1}`} />
+                          <div className="media-type-badge">Photo</div>
+                        </div>
+                      ) : (
+                        <div className="file-container">
+                          <div className="file-icon">📄</div>
+                          <div className="file-name">{media.name}</div>
+                          <div className="media-type-badge">File</div>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="remove-media-btn"
+                      onClick={() => removeMedia(index)}
+                      title="Remove file"
+                    >
+                      <span>×</span>
+                    </button>
+                    <div className="media-info">
+                      <span className="media-name">{media.name}</span>
+                      <span className="media-size">{(media.size / 1024 / 1024).toFixed(2)} MB</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="media-summary">
+                <span className="file-count">{mediaFiles.length} file(s) selected</span>
+                <span className="total-size">
+                  Total: {(mediaFiles.reduce((total, file) => total + (file?.size || 0), 0) / 1024 / 1024).toFixed(2)} MB
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* You can add more fields specific to the AdditionalListing component here */}
+        <h3 className="section-title">Additional Features</h3>
+        <div className="form-group">
+          <label>Property Highlights (Optional)</label>
+          <div className="checkbox-group">
+            <CheckboxInput 
+              label="New Build" 
+              name="newBuild" 
+              checked={formData.newBuild || false} 
+              onChange={handleChange} 
+            />
+            <CheckboxInput 
+              label="Recently Renovated" 
+              name="renovated" 
+              checked={formData.renovated || false} 
+              onChange={handleChange} 
+            />
+            <CheckboxInput 
+              label="Historic Property" 
+              name="historic" 
+              checked={formData.historic || false} 
+              onChange={handleChange} 
+            />
+            <CheckboxInput 
+              label="Investment Opportunity" 
+              name="investment" 
+              checked={formData.investment || false} 
+              onChange={handleChange} 
+            />
+          </div>
+        </div>
       </>
     );
   };

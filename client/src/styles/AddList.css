@@ -4,12 +4,15 @@
   margin: 3rem auto;
   padding: 60px;
   font-family:Arial, Helvetica, sans-serif;
-
+  box-sizing: border-box;
 }
 .form-sale-container {
   background-color: #ffffff;
   font-family: Arial, Helvetica, sans-serif;
   padding:0px 0px;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* Form Title (independent now) */
@@ -285,13 +288,14 @@ select:focus {
 /* Checkbox Group */
 .checkbox-group {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 10px;
 }
 
-.checkbox-group input[type="checkbox"] {
-  width: auto;
+.checkbox-group .form-group {
+  margin-bottom: 10px;
+  flex: 0 0 auto;
 }
 
 /* Submit Button */
@@ -556,10 +560,38 @@ select:focus {
   background-color: #1976d2;
 }
 
-/* Responsive Design - Media Queries */
+/* Responsive Design - Enhanced Media Queries */
 
-/* Large Desktop (1200px and up) */
-@media (min-width: 1200px) {
+/* Extra Large Desktop (1400px and up) */
+@media (min-width: 1400px) {
+  .form-wrapper {
+    max-width: 1400px;
+    padding: 80px;
+  }
+  .form-title {
+    padding: 50px;
+  }
+  .form-title-brand, .form-title-find-link {
+    font-size: 28px;
+  }
+  .form-title-add {
+    font-size: 30px;
+  }
+  .photo-previews {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+  }
+  .photo-preview-item img,
+  .video-preview video {
+    height: 150px;
+  }
+  .file-preview {
+    height: 150px;
+  }
+}
+
+/* Large Desktop (1200px to 1399px) */
+@media (max-width: 1399px) and (min-width: 1200px) {
   .form-wrapper {
     max-width: 1200px;
     padding: 60px;
@@ -590,10 +622,178 @@ select:focus {
   .form-title-add {
     font-size: 24px;
   }
+  .photo-previews {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
 }
 
-/* Tablet (768px to 991px) */
-@media (max-width: 991px) and (min-width: 768px) {
+/* iPad Pro & Large Tablets (1024px to 1366px) */
+@media (max-width: 1366px) and (min-width: 1024px) {
+  .form-wrapper {
+    max-width: 95%;
+    padding: 45px 35px;
+  }
+  
+  .form-title {
+    padding: 30px 25px;
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+  
+  .form-title-brand {
+    position: static;
+    font-size: 22px;
+    margin: 0;
+  }
+  
+  .form-title-brand svg {
+    width: 140px;
+    height: 45px;
+    transform: scale(1.1);
+  }
+  
+  .form-title-find-link {
+    position: static;
+    font-size: 18px;
+    margin: 0;
+  }
+  
+  .form-title-add {
+    font-size: 24px;
+    margin: 10px 0;
+    order: -1; /* Move title to top */
+  }
+  
+  .photo-upload-label, .upload-label {
+    width: 250px;
+    height: 160px;
+  }
+  
+  .photo-previews, .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 18px;
+  }
+  
+  .photo-preview-item img,
+  .video-preview video,
+  .media-content {
+    height: 140px;
+  }
+  
+  .file-preview {
+    height: 140px;
+  }
+  
+  input, select {
+    font-size: 17px;
+    padding: 14px;
+  }
+  
+  label {
+    font-size: 18px;
+  }
+  
+  .section-title {
+    font-size: 21px;
+  }
+  
+  .form-row {
+    gap: 18px;
+  }
+  
+  .input-with-addon {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .input-with-addon input[type="text"] {
+    width: 100%;
+  }
+  
+  .addon-box {
+    width: 100%;
+    justify-content: center;
+    border-left: none;
+    border-top: 2px solid #ccc;
+    padding: 10px;
+  }
+}
+
+/* Better iPad Pro Targeting - All iPad Pro Models */
+@media only screen 
+  and (min-width: 1024px) 
+  and (max-width: 1366px)
+  and (-webkit-min-device-pixel-ratio: 1.5) {
+  
+  .form-sale-container .form-title {
+    padding: 40px 30px !important;
+    flex-direction: row !important;
+    gap: 25px !important;
+    text-align: center !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+  
+  .form-sale-container .form-title-brand {
+    position: static !important;
+    font-size: 26px !important;
+    margin: 0 !important;
+    left: auto !important;
+    right: auto !important;
+    flex: 0 0 auto !important;
+  }
+  
+  .form-sale-container .form-title-brand svg {
+    width: 160px !important;
+    height: 52px !important;
+    transform: scale(1.2) !important;
+  }
+  
+  .form-sale-container .form-title-add {
+    font-size: 28px !important;
+    margin: 0 !important;
+    order: 0 !important;
+    flex: 1 !important;
+    text-align: center !important;
+  }
+  
+  .form-sale-container .form-title-find-link {
+    position: static !important;
+    font-size: 22px !important;
+    margin: 0 !important;
+    left: auto !important;
+    right: auto !important;
+    flex: 0 0 auto !important;
+  }
+}
+
+/* iPad Pro 11" and 12.9" Specific */
+@media only screen 
+  and (min-width: 1024px) 
+  and (max-width: 1366px)
+  and (min-height: 1366px) {
+  
+  .form-sale-container .form-title {
+    padding: 45px 35px !important;
+    gap: 30px !important;
+  }
+  
+  .form-sale-container .form-title-brand {
+    font-size: 28px !important;
+  }
+  
+  .form-sale-container .form-title-add {
+    font-size: 30px !important;
+  }
+  
+  .form-sale-container .form-title-find-link {
+    font-size: 24px !important;
+  }
+}
+
+/* iPad & Standard Tablets (768px to 1023px) */
+@media (max-width: 1023px) and (min-width: 768px) {
   .form-wrapper {
     max-width: 95%;
     padding: 40px 30px;
@@ -601,20 +801,38 @@ select:focus {
   
   .form-title {
     padding: 30px 20px;
-    flex-direction: column;
+    flex-direction: row;
     gap: 20px;
     text-align: center;
+    justify-content: space-between;
+    align-items: center;
   }
   
-  .form-title-brand, .form-title-find-link {
+  .form-title-brand {
     position: static;
     font-size: 20px;
-    margin: 10px 0;
+    margin: 0;
+    flex: 0 0 auto;
+  }
+  
+  .form-title-brand svg {
+    width: 130px;
+    height: 42px;
+    transform: scale(1.0);
+  }
+  
+  .form-title-find-link {
+    position: static;
+    font-size: 18px;
+    margin: 0;
+    flex: 0 0 auto;
   }
   
   .form-title-add {
     font-size: 22px;
-    margin: 10px 0;
+    margin: 0;
+    flex: 1;
+    text-align: center;
   }
   
   .form-row {
@@ -644,6 +862,46 @@ select:focus {
   .progress-line {
     width: 80px;
   }
+  
+  .photo-upload-label, .upload-label {
+    width: 100%;
+    height: 140px;
+  }
+  
+  .photo-previews, .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+  }
+  
+  .photo-preview-item img,
+  .video-preview video,
+  .media-content {
+    height: 120px;
+  }
+  
+  .file-preview {
+    height: 120px;
+  }
+  
+  .checkbox-group {
+    justify-content: center;
+    gap: 20px;
+  }
+  
+  .form-buttons {
+    padding: 0 15px;
+  }
+  
+  .submit-btn, .next-btn, .back-btn {
+    padding: 14px 30px;
+    font-size: 16px;
+  }
+  
+  .form-textarea {
+    font-size: 16px;
+    padding: 14px;
+    min-height: 100px;
+  }
 }
 
 /* Mobile Large (576px to 767px) */
@@ -659,26 +917,39 @@ select:focus {
   
   .form-title {
     padding: 20px 15px;
-    flex-direction: column;
+    flex-direction: row;
     gap: 15px;
     text-align: center;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
   }
   
   .form-title-brand {
     position: static;
-    font-size: 18px;
-    margin-bottom: 10px;
+    font-size: 16px;
+    margin: 0;
+    flex: 0 0 auto;
+  }
+  
+  .form-title-brand svg {
+    width: 100px;
+    height: 32px;
+    transform: scale(0.9);
   }
   
   .form-title-add {
-    font-size: 20px;
-    margin: 10px 0;
+    font-size: 18px;
+    margin: 0;
+    flex: 1;
+    text-align: center;
   }
   
   .form-title-find-link {
     position: static;
-    font-size: 16px;
-    margin-top: 10px;
+    font-size: 14px;
+    margin: 0;
+    flex: 0 0 auto;
   }
   
   .form-row {
@@ -694,6 +965,7 @@ select:focus {
   input, select {
     font-size: 16px;
     padding: 14px;
+    min-height: 48px; /* Better touch targets */
   }
   
   label {
@@ -701,9 +973,53 @@ select:focus {
     margin-bottom: 6px;
   }
   
+  .form-sale-address {
+    width: 60%;
+    font-size: 14px;
+    padding: 12px 15px;
+    min-height: 48px;
+  }
+  
+  .photo-upload-label, .upload-label {
+    width: 100%;
+    height: 120px;
+    font-size: 14px;
+  }
+  
+  .upload-icon {
+    font-size: 20px;
+  }
+  
+  .photo-previews, .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+  }
+  
+  .photo-preview-item img,
+  .video-preview video,
+  .media-content {
+    height: 100px;
+  }
+  
+  .file-preview {
+    height: 100px;
+  }
+  
+  .video-filename {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  
+  .checkbox-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
   .submit-btn, .next-btn, .back-btn {
     font-size: 16px;
-    padding: 12px 25px;
+    padding: 14px 25px;
+    min-height: 48px; /* Better touch targets */
   }
   
   .form-buttons {
@@ -726,6 +1042,17 @@ select:focus {
     padding: 15px;
     margin: 10px 0 15px 0;
   }
+  
+  .form-textarea {
+    font-size: 16px;
+    padding: 14px;
+    min-height: 100px;
+  }
+  
+  .property-features {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }
 
 /* Mobile Small (up to 575px) */
@@ -744,12 +1071,19 @@ select:focus {
     flex-direction: column;
     gap: 12px;
     text-align: center;
+    margin-bottom: 20px;
   }
   
   .form-title-brand {
     position: static;
     font-size: 16px;
     margin-bottom: 8px;
+  }
+  
+  .form-title-brand svg {
+    width: 100px;
+    height: 35px;
+    transform: scale(0.9);
   }
   
   .form-title-add {
@@ -776,6 +1110,7 @@ select:focus {
   input, select {
     font-size: 16px;
     padding: 12px;
+    min-height: 48px; /* iOS recommended touch target */
   }
   
   label {
@@ -783,10 +1118,82 @@ select:focus {
     margin-bottom: 5px;
   }
   
-  .submit-btn, .next-btn, .back-btn {
-    font-size: 15px;
-    padding: 12px 20px;
+  .form-sale-address {
     width: 100%;
+    font-size: 14px;
+    padding: 12px 15px;
+    margin-left: 0;
+    min-height: 48px;
+  }
+  
+  .photo-upload-label, .upload-label {
+    width: 100%;
+    height: 100px;
+    font-size: 12px;
+  }
+  
+  .upload-icon {
+    font-size: 18px;
+    margin-bottom: 5px;
+  }
+  
+  .upload-text span {
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+  
+  .upload-text small {
+    font-size: 11px;
+  }
+  
+  .photo-previews, .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+  }
+  
+  .photo-preview-item img,
+  .video-preview video,
+  .media-content {
+    height: 80px;
+  }
+  
+  .file-preview {
+    height: 80px;
+  }
+  
+  .file-icon {
+    font-size: 16px;
+    margin-bottom: 3px;
+  }
+  
+  .file-name {
+    font-size: 9px;
+  }
+  
+  .video-filename {
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+  
+  .remove-photo-btn, .remove-media-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    top: 3px;
+    right: 3px;
+  }
+  
+  .checkbox-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .submit-btn, .next-btn, .back-btn {
+    font-size: 16px;
+    padding: 14px 20px;
+    width: 100%;
+    min-height: 48px;
   }
   
   .form-buttons {
@@ -796,9 +1203,9 @@ select:focus {
   }
   
   .progress-step {
-    width: 25px;
-    height: 25px;
-    font-size: 11px;
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
   }
   
   .progress-line {
@@ -813,6 +1220,1052 @@ select:focus {
   .property-form {
     gap: 3px;
     padding: 20px 10px;
+  }
+  
+  .form-textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px;
+    min-height: 100px;
+  }
+  
+  .property-features {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .media-info {
+    padding: 8px;
+  }
+  
+  .media-name {
+    font-size: 11px;
+  }
+  
+  .media-size {
+    font-size: 10px;
+  }
+  
+  .media-summary {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .total-size {
+    font-size: 11px;
+  }
+}
+
+/* iPad Specific Orientations */
+@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) and (orientation: portrait) {
+  .form-wrapper {
+    padding: 40px 25px;
+  }
+  
+  .form-title {
+    padding: 30px 20px;
+    flex-direction: row !important;
+    gap: 20px !important;
+    text-align: center !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+  
+  .form-title-brand {
+    position: static !important;
+    font-size: 20px !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+  }
+  
+  .form-title-brand svg {
+    width: 120px !important;
+    height: 38px !important;
+    transform: scale(1.0) !important;
+  }
+  
+  .form-title-add {
+    font-size: 22px !important;
+    margin: 0 !important;
+    order: 0 !important;
+    flex: 1 !important;
+    text-align: center !important;
+  }
+  
+  .form-title-find-link {
+    position: static !important;
+    font-size: 16px !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+  }
+  
+  .photo-previews, .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  }
+}
+
+@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) and (orientation: landscape) {
+  .form-wrapper {
+    padding: 30px 40px;
+  }
+  
+  .form-title {
+    padding: 25px 30px;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 30px !important;
+  }
+  
+  .form-title-brand {
+    position: static !important;
+    font-size: 18px !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+  }
+  
+  .form-title-brand svg {
+    width: 110px !important;
+    height: 36px !important;
+    transform: scale(1.0) !important;
+  }
+  
+  .form-title-add {
+    font-size: 20px !important;
+    margin: 0 !important;
+    flex: 1 !important;
+    text-align: center !important;
+    order: 0 !important;
+  }
+  
+  .form-title-find-link {
+    position: static !important;
+    font-size: 14px !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+  }
+  
+  .photo-previews, .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+  
+  .form-row {
+    flex-direction: row;
+    gap: 20px;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .photo-upload-label {
+    padding: 20px;
+    min-height: 120px;
+  }
+  
+  button, .photo-upload-label, .remove-photo-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  input, select, textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .form-sale-address:hover {
+    transform: none; /* Disable hover effects on touch devices */
+  }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .photo-preview-item img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .form-progress,
+  .form-buttons,
+  .photo-upload-section {
+    display: none;
+  }
+  
+  .form-wrapper {
+    box-shadow: none;
+    padding: 20px 0;
+  }
+  
+  .form-title {
+    border-bottom: 2px solid #000;
+    box-shadow: none;
+  }
+}
+
+/* Checkbox Styling - Improved Layout */
+.checkbox-only {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 24px;
+}
+
+.checkbox-only input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checkbox-only label {
+  margin: 0;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.4;
+  user-select: none;
+}
+
+/* AddRent specific checkbox styling */
+.property-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 15px 0;
+  padding: 10px 0;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 24px;
+}
+
+.feature-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.feature-item label {
+  margin: 0;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.4;
+  user-select: none;
+}
+
+/* Checkbox Group */
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.checkbox-group .form-group {
+  margin-bottom: 10px;
+  flex: 0 0 auto;
+}
+
+/* Legacy checkbox support */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.checkbox-row .checkbox-only {
+  margin-bottom: 0;
+}
+
+.big-checkbox {
+  width: 19px;
+  height: 19px;
+  cursor: pointer;
+}
+
+.addon-label {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Additional Features Checkbox Group Specific */
+.form-group .checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 0;
+}
+
+/* Responsive checkbox adjustments */
+@media (max-width: 768px) {
+  .checkbox-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .form-group .checkbox-group {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .property-features {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .checkbox-only {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .checkbox-only label,
+  .feature-item label {
+    font-size: 15px;
+  }
+  
+  .checkbox-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 575px) {
+  .checkbox-only,
+  .feature-item {
+    gap: 6px;
+    min-height: 20px;
+  }
+  
+  .checkbox-only input[type="checkbox"],
+  .feature-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .checkbox-only label,
+  .feature-item label {
+    font-size: 14px;
+  }
+  
+  .form-group .checkbox-group,
+  .property-features {
+    gap: 8px;
+    padding: 8px 0;
+  }
+}
+
+/* Enhanced Media Upload Styling */
+.media-upload-section,
+.photo-upload-section {
+  margin: 20px 0;
+}
+
+.upload-area,
+.photo-upload-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.upload-label,
+.photo-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 150px;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-label:hover,
+.photo-upload-label:hover {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+}
+
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+}
+
+.upload-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.upload-label:hover .upload-icon,
+.photo-upload-label:hover .upload-icon {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.upload-text {
+  text-align: center;
+}
+
+.upload-text span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.upload-text small {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* Media Grid - Enhanced Layout */
+.media-grid,
+.photo-previews {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.media-item,
+.photo-preview-item {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.media-item:hover,
+.photo-preview-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: #3b82f6;
+}
+
+.media-content {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  overflow: hidden;
+}
+
+.image-container img,
+.video-container video,
+.photo-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.media-item:hover .image-container img,
+.media-item:hover .video-container video,
+.photo-preview-item:hover img {
+  transform: scale(1.05);
+}
+
+.video-container {
+  position: relative;
+  background: #1f2937;
+}
+
+.media-type-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Enhanced Remove Button */
+.remove-media-btn,
+.remove-photo-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.remove-media-btn:hover,
+.remove-photo-btn:hover {
+  background: rgba(220, 38, 38, 1);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.remove-media-btn span,
+.remove-photo-btn span {
+  line-height: 1;
+}
+
+/* Media Info */
+.media-info {
+  padding: 12px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.media-name {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.media-size {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Media Summary */
+.media-summary,
+.photo-count {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-radius: 8px;
+  margin-top: 16px;
+  border: 1px solid #d1d5db;
+}
+
+.file-count,
+.photo-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.total-size {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Subsection Title */
+.subsection-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+  margin: 24px 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* Form Textarea Enhanced */
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  background-color: #ffffff;
+  font-family: inherit;
+  color: #374151;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 120px;
+  transition: all 0.3s ease;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-textarea::placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Responsive Media Upload */
+@media (max-width: 768px) {
+  .media-grid,
+  .photo-previews {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  
+  .media-content {
+    height: 120px;
+  }
+  
+  .upload-label,
+  .photo-upload-label {
+    min-height: 120px;
+  }
+  
+  .upload-icon {
+    font-size: 28px;
+  }
+  
+  .upload-text span {
+    font-size: 14px;
+  }
+  
+  .upload-text small {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 575px) {
+  .media-grid,
+  .photo-previews {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  
+  .media-content {
+    height: 100px;
+  }
+  
+  .upload-label,
+  .photo-upload-label {
+    min-height: 100px;
+  }
+  
+  .upload-icon {
+    font-size: 24px;
+  }
+  
+  .remove-media-btn,
+  .remove-photo-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    top: 6px;
+    right: 6px;
+  }
+  
+  .media-info {
+    padding: 8px;
+  }
+  
+  .media-name {
+    font-size: 11px;
+  }
+  
+  .media-size {
+    font-size: 10px;
+  }
+  
+  .media-summary,
+  .photo-count {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .total-size {
+    font-size: 11px;
+  }
+}
+
+/* Enhanced Responsive Design - Additional Breakpoints */
+
+/* Ultra-wide screens (1600px and up) */
+@media (min-width: 1600px) {
+  .form-wrapper {
+    max-width: 1500px;
+    padding: 100px 80px;
+  }
+  
+  .form-title {
+    padding: 60px 50px;
+  }
+  
+  .form-title-brand {
+    left: 350px;
+    font-size: 30px;
+  }
+  
+  .form-title-find-link {
+    right: 200px;
+    font-size: 24px;
+  }
+  
+  .form-title-add {
+    font-size: 32px;
+  }
+  
+  input, select, .form-textarea {
+    font-size: 18px;
+    padding: 16px;
+  }
+  
+  label {
+    font-size: 20px;
+  }
+  
+  .section-title {
+    font-size: 26px;
+  }
+}
+
+/* Medium Desktop (1024px to 1199px) - Better optimization */
+@media (max-width: 1199px) and (min-width: 1024px) {
+  .form-wrapper {
+    max-width: 95%;
+    padding: 45px 40px;
+  }
+  
+  .form-title {
+    padding: 35px 30px;
+    gap: 30px;
+  }
+  
+  .form-title-brand {
+    left: 200px;
+    font-size: 22px;
+  }
+  
+  .form-title-find-link {
+    right: 120px;
+    font-size: 20px;
+  }
+  
+  .form-title-add {
+    font-size: 24px;
+  }
+  
+  .section-title {
+    font-size: 22px;
+  }
+  
+  input, select {
+    font-size: 16px;
+    padding: 13px;
+  }
+  
+  .form-textarea {
+    font-size: 16px;
+    padding: 13px;
+  }
+  
+  .photo-previews, .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 16px;
+  }
+  
+  .media-content {
+    height: 130px;
+  }
+}
+
+/* Small Laptop / Large Tablet (900px to 1023px) */
+@media (max-width: 1023px) and (min-width: 900px) {
+  .form-title-brand {
+    left: 150px;
+  }
+  
+  .form-title-find-link {
+    right: 80px;
+  }
+  
+  .form-row {
+    gap: 16px;
+  }
+  
+  .photo-previews, .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  }
+}
+
+/* iPad Mini and small tablets (480px to 767px) */
+@media (max-width: 767px) and (min-width: 480px) {
+  .form-wrapper {
+    padding: 30px 25px;
+  }
+  
+  .form-title {
+    padding: 25px 20px;
+    margin-bottom: 30px;
+  }
+  
+  .section-title {
+    font-size: 19px;
+    margin: 25px 0 18px;
+  }
+  
+  .form-sale-address {
+    width: 70%;
+    font-size: 15px;
+  }
+  
+  .photo-previews, .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+  }
+  
+  .media-content {
+    height: 110px;
+  }
+}
+
+/* Very small phones (320px to 479px) */
+@media (max-width: 479px) {
+  .form-wrapper {
+    padding: 15px 10px;
+  }
+  
+  .form-title {
+    padding: 12px 8px;
+    margin-bottom: 15px;
+  }
+  
+  .form-title-add {
+    font-size: 16px;
+  }
+  
+  .section-title {
+    font-size: 15px;
+    margin: 12px 0 10px;
+  }
+  
+  input, select {
+    font-size: 16px;
+    padding: 10px;
+  }
+  
+  .form-textarea {
+    font-size: 16px;
+    padding: 10px;
+    min-height: 80px;
+  }
+  
+  .photo-previews, .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 6px;
+  }
+  
+  .media-content {
+    height: 70px;
+  }
+  
+  .progress-step {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+  
+  .progress-line {
+    width: 30px;
+  }
+}
+
+/* Additional Responsive Enhancements for Better UX */
+
+/* Ensure form container never overflows on any screen */
+.form-wrapper {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Better checkbox responsiveness */
+@media (max-width: 768px) {
+  .checkbox-only, .feature-item {
+    min-height: 44px; /* WCAG recommended touch target */
+    padding: 5px 0;
+  }
+  
+  .checkbox-only input[type="checkbox"],
+  .feature-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Enhanced button responsiveness */
+@media (max-width: 576px) {
+  .submit-btn, .next-btn, .back-btn {
+    width: 100%;
+    margin: 8px 0;
+    padding: 16px 20px;
+    font-size: 17px;
+    border-radius: 8px;
+  }
+  
+  .form-buttons {
+    width: 100%;
+    padding: 0;
+  }
+}
+
+/* Progress bar better responsiveness */
+@media (max-width: 480px) {
+  .form-progress {
+    padding: 8px;
+    margin: 5px 0 10px 0;
+  }
+  
+  .progress-step {
+    width: 22px;
+    height: 22px;
+    font-size: 9px;
+  }
+  
+  .progress-line {
+    width: 25px;
+    height: 1px;
+  }
+}
+
+/* Form section spacing improvements */
+@media (max-width: 768px) {
+  .form-section {
+    padding: 15px 0;
+  }
+  
+  .subsection-title {
+    font-size: 16px;
+    margin: 20px 0 12px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-section {
+    padding: 10px 0;
+  }
+  
+  .subsection-title {
+    font-size: 15px;
+    margin: 15px 0 10px 0;
+  }
+}
+
+/* Media upload area better responsiveness */
+@media (max-width: 576px) {
+  .upload-area {
+    margin-bottom: 15px;
+  }
+  
+  .upload-label, .photo-upload-label {
+    min-height: 80px;
+    padding: 15px;
+  }
+  
+  .upload-content {
+    gap: 8px;
+  }
+}
+
+/* Landscape phone optimization */
+@media (max-height: 500px) and (orientation: landscape) {
+  .form-title {
+    padding: 15px 20px;
+    margin-bottom: 15px;
+  }
+  
+  .form-wrapper {
+    padding: 20px;
+  }
+  
+  .section-title {
+    font-size: 16px;
+    margin: 15px 0 10px;
+  }
+  
+  .form-progress {
+    margin: 5px 0 10px 0;
+  }
+}
+
+/* Enhanced Print optimizations */
+@media print {
+  .form-progress,
+  .form-buttons,
+  .photo-upload-section,
+  .media-upload-section {
+    display: none;
+  }
+  
+  .form-wrapper {
+    box-shadow: none;
+    padding: 20px 0;
+  }
+  
+  .form-title {
+    border-bottom: 2px solid #000;
+    box-shadow: none;
+    page-break-after: avoid;
+  }
+  
+  .form-section {
+    page-break-inside: avoid;
+  }
+  
+  .form-row {
+    display: block;
+  }
+  
+  .form-row .form-group {
+    margin-bottom: 15px;
+  }
+  
+  .form-sale-container {
+    background: white;
+    padding: 0;
   }
 }
   
