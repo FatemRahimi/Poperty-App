@@ -112,7 +112,8 @@ const AddRent = () => {
     liftAccess: false,
     epcRating: "",
     
-    // Photos (will store URLs)
+    // Description & Media
+    description: "",
     photos: []
   });
   
@@ -197,7 +198,7 @@ const AddRent = () => {
         !formData.bathrooms || !formData.furnishedStatus || !formData.rentalPrice || 
         !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
         !formData.councilTaxBand || !formData.postcode || !formData.streetAddress || 
-        !formData.city) {
+        !formData.city || !formData.description?.trim()) {
       alert("Please fill in all required fields before submitting.");
       return;
     }
@@ -213,8 +214,11 @@ const AddRent = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      setSuccess("Property added successfully!");
-      // navigate("/dashboard"); // Redirect after successful submission
+      console.log("✅ Rent Property Submitted:", formData);
+      
+      // Clear form data and redirect to dashboard
+      sessionStorage.removeItem("addRentForm");
+      navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to add property");
     } finally {
@@ -333,14 +337,6 @@ const AddRent = () => {
             <h3 className="section-title">Location Information</h3>
             
             <TextInput
-              label="Postcode"
-              name="postcode"
-              value={formData.postcode}
-              onChange={handleChange}
-              required
-            />
-            
-            <TextInput
               label="Street Address"
               name="streetAddress"
               value={formData.streetAddress}
@@ -364,6 +360,14 @@ const AddRent = () => {
                 onChange={handleChange}
               />
             </div>
+            
+            <TextInput
+              label="Postcode"
+              name="postcode"
+              value={formData.postcode}
+              onChange={handleChange}
+              required
+            />
           </div>
         );
       
@@ -464,19 +468,39 @@ const AddRent = () => {
       case 4:
         return (
           <div className="form-section">
-            <h3 className="section-title">Upload Photos/Videos</h3>
+            <h3 className="section-title">Property Description & Media</h3>
             
-            <div className="photo-upload-section">
-              <div className="photo-upload-container">
-                <label htmlFor="photoUpload" className="photo-upload-label">
-                  <span className="upload-icon">+</span>
-                  <span>Upload Photos</span>
-                  <small>Up to 10 images</small>
+            <div className="form-group">
+              <label htmlFor="description">Property Description*</label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description || ''}
+                onChange={handleChange}
+                className="form-textarea"
+                rows="6"
+                placeholder="Provide a detailed description of your property..."
+                required
+              ></textarea>
+            </div>
+            
+            <h4 className="subsection-title">Upload Photos & Videos</h4>
+            
+            <div className="media-upload-section">
+              <div className="upload-area">
+                <label htmlFor="photoUpload" className="upload-label">
+                  <div className="upload-content">
+                    <div className="upload-icon">📷🎥</div>
+                    <div className="upload-text">
+                      <span>Drag & drop or click to upload</span>
+                      <small>Photos & videos • Up to 10 files • Max 50MB each</small>
+                    </div>
+                  </div>
                 </label>
                 <input
                   type="file"
                   id="photoUpload"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   multiple
                   onChange={handlePhotoChange}
                   style={{ display: 'none' }}
@@ -484,25 +508,48 @@ const AddRent = () => {
               </div>
               
               {photoPreviewUrls.length > 0 && (
-                <div className="photo-previews">
-                  {photoPreviewUrls.map((url, index) => (
-                    <div key={index} className="photo-preview-item">
-                      <img src={url} alt={`Preview ${index + 1}`} />
-                      <button 
-                        type="button" 
-                        className="remove-photo-btn"
-                        onClick={() => removePhoto(index)}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                <>
+                  <div className="media-grid">
+                    {photoPreviewUrls.map((url, index) => (
+                      <div key={index} className="media-item">
+                        <div className="media-content">
+                          {photoFiles[index]?.type?.startsWith('video/') ? (
+                            <div className="video-container">
+                              <video src={url} controls>
+                                Your browser does not support the video tag.
+                              </video>
+                              <div className="media-type-badge">Video</div>
+                            </div>
+                          ) : (
+                            <div className="image-container">
+                              <img src={url} alt={`Preview ${index + 1}`} />
+                              <div className="media-type-badge">Photo</div>
+                            </div>
+                          )}
+                        </div>
+                        <button 
+                          type="button" 
+                          className="remove-media-btn"
+                          onClick={() => removePhoto(index)}
+                          title="Remove file"
+                        >
+                          <span>×</span>
+                        </button>
+                        <div className="media-info">
+                          <span className="media-name">{photoFiles[index]?.name}</span>
+                          <span className="media-size">{(photoFiles[index]?.size / 1024 / 1024).toFixed(2)} MB</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="media-summary">
+                    <span className="file-count">{photoFiles.length} file(s) selected</span>
+                    <span className="total-size">
+                      Total: {(photoFiles.reduce((total, file) => total + (file?.size || 0), 0) / 1024 / 1024).toFixed(2)} MB
+                    </span>
+                  </div>
+                </>
               )}
-              
-              <div className="photo-count">
-                {photoFiles.length} of 10 photos selected
-              </div>
             </div>
           </div>
         );

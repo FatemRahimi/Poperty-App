@@ -218,39 +218,78 @@ select:focus {
     transform: translateY(-1px);
 }
 
+/* Checkbox Styling - Improved Layout */
+.checkbox-only {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 24px;
+}
+
+.checkbox-only input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checkbox-only label {
+  margin: 0;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.4;
+  user-select: none;
+}
+
+/* Legacy checkbox support */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.checkbox-row .checkbox-only {
+  margin-bottom: 0;
+}
+
 /* Modern Checkbox Groups */
 .checkbox-group {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-top: 12px;
-    padding: 16px;
-    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-    border-radius: 10px;
-    border: 1px solid var(--border-color);
-    flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 15px 0;
+  padding: 10px 0;
 }
 
 .checkbox-group > div {
-    flex: 1 1 200px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
 }
 
 .checkbox-group input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    accent-color: var(--primary-color);
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .checkbox-group label {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
+  margin: 0;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.4;
+  user-select: none;
 }
 
 /* Modern Submit Button */
@@ -350,20 +389,38 @@ select:focus {
   
   .form-title {
     padding: 30px 20px;
-    flex-direction: column;
+    flex-direction: row;
     gap: 20px;
     text-align: center;
+    justify-content: space-between;
+    align-items: center;
   }
   
-  .form-title-brand, .form-title-find-link {
+  .form-title-brand {
     position: static;
     font-size: 20px;
-    margin: 10px 0;
+    margin: 0;
+    flex: 0 0 auto;
+  }
+  
+  .form-title-brand svg {
+    width: 130px;
+    height: 42px;
+    transform: scale(1.0);
+  }
+  
+  .form-title-find-link {
+    position: static;
+    font-size: 18px;
+    margin: 0;
+    flex: 0 0 auto;
   }
   
   .form-title-add {
     font-size: 22px;
-    margin: 10px 0;
+    margin: 0;
+    flex: 1;
+    text-align: center;
   }
   
   .addleasing-form-row {
@@ -385,6 +442,78 @@ select:focus {
   }
 }
 
+/* Better iPad Pro Targeting for AddLease - All iPad Pro Models */
+@media only screen 
+  and (min-width: 1024px) 
+  and (max-width: 1366px)
+  and (-webkit-min-device-pixel-ratio: 1.5) {
+  
+  .addleasing-container .form-title {
+    padding: 40px 30px !important;
+    flex-direction: row !important;
+    gap: 25px !important;
+    text-align: center !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+  
+  .addleasing-container .form-title-brand {
+    position: static !important;
+    font-size: 26px !important;
+    margin: 0 !important;
+    left: auto !important;
+    right: auto !important;
+    flex: 0 0 auto !important;
+  }
+  
+  .addleasing-container .form-title-brand svg {
+    width: 160px !important;
+    height: 52px !important;
+    transform: scale(1.2) !important;
+  }
+  
+  .addleasing-container .form-title-add {
+    font-size: 28px !important;
+    margin: 0 !important;
+    order: 0 !important;
+    flex: 1 !important;
+    text-align: center !important;
+  }
+  
+  .addleasing-container .form-title-find-link {
+    position: static !important;
+    font-size: 22px !important;
+    margin: 0 !important;
+    left: auto !important;
+    right: auto !important;
+    flex: 0 0 auto !important;
+  }
+}
+
+/* iPad Pro 11" and 12.9" Specific for AddLease */
+@media only screen 
+  and (min-width: 1024px) 
+  and (max-width: 1366px)
+  and (min-height: 1366px) {
+  
+  .addleasing-container .form-title {
+    padding: 45px 35px !important;
+    gap: 30px !important;
+  }
+  
+  .addleasing-container .form-title-brand {
+    font-size: 28px !important;
+  }
+  
+  .addleasing-container .form-title-add {
+    font-size: 30px !important;
+  }
+  
+  .addleasing-container .form-title-find-link {
+    font-size: 24px !important;
+  }
+}
+
 /* Mobile Large (576px to 767px) */
 @media (max-width: 767px) and (min-width: 576px) {
   .addleasing-container {
@@ -398,26 +527,38 @@ select:focus {
   
   .form-title {
     padding: 20px 15px;
-    flex-direction: column;
+    flex-direction: row;
     gap: 15px;
     text-align: center;
+    justify-content: space-between;
+    align-items: center;
   }
   
   .form-title-brand {
     position: static;
-    font-size: 18px;
-    margin-bottom: 10px;
+    font-size: 16px;
+    margin: 0;
+    flex: 0 0 auto;
+  }
+  
+  .form-title-brand svg {
+    width: 100px;
+    height: 32px;
+    transform: scale(0.9);
   }
   
   .form-title-add {
-    font-size: 20px;
-    margin: 10px 0;
+    font-size: 18px;
+    margin: 0;
+    flex: 1;
+    text-align: center;
   }
   
   .form-title-find-link {
     position: static;
-    font-size: 16px;
-    margin-top: 10px;
+    font-size: 14px;
+    margin: 0;
+    flex: 0 0 auto;
   }
   
   .addleasing-form-row {
@@ -534,6 +675,141 @@ select:focus {
   .security-access-group label {
     font-size: 15px;
     width: 100%;
+  }
+}
+
+/* Responsive checkbox adjustments */
+@media (max-width: 768px) {
+  .checkbox-group {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .checkbox-only {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .checkbox-only label {
+    font-size: 15px;
+  }
+  
+  .checkbox-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 575px) {
+  .checkbox-only {
+    gap: 6px;
+    min-height: 20px;
+  }
+  
+  .checkbox-only input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .checkbox-only label {
+    font-size: 14px;
+  }
+  
+  .checkbox-group {
+    gap: 8px;
+    padding: 8px 0;
+  }
+}
+
+/* iPad Specific Orientations for AddLease */
+@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) and (orientation: portrait) {
+  .addleasing-wrapper {
+    padding: 40px 25px;
+  }
+  
+  .form-title {
+    padding: 30px 20px;
+    flex-direction: row !important;
+    gap: 20px !important;
+    text-align: center !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+  
+  .form-title-brand {
+    position: static !important;
+    font-size: 20px !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+  }
+  
+  .form-title-brand svg {
+    width: 120px !important;
+    height: 38px !important;
+    transform: scale(1.0) !important;
+  }
+  
+  .form-title-add {
+    font-size: 22px !important;
+    margin: 0 !important;
+    order: 0 !important;
+    flex: 1 !important;
+    text-align: center !important;
+  }
+  
+  .form-title-find-link {
+    position: static !important;
+    font-size: 16px !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+  }
+}
+
+@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) and (orientation: landscape) {
+  .addleasing-wrapper {
+    padding: 30px 40px;
+  }
+  
+  .form-title {
+    padding: 25px 30px;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 30px !important;
+  }
+  
+  .form-title-brand {
+    position: static !important;
+    font-size: 18px !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+  }
+  
+  .form-title-brand svg {
+    width: 110px !important;
+    height: 36px !important;
+    transform: scale(1.0) !important;
+  }
+  
+  .form-title-add {
+    font-size: 20px !important;
+    margin: 0 !important;
+    flex: 1 !important;
+    text-align: center !important;
+    order: 0 !important;
+  }
+  
+  .form-title-find-link {
+    position: static !important;
+    font-size: 14px !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+  }
+  
+  .addleasing-form-row {
+    flex-direction: row;
+    gap: 20px;
   }
 }
   
