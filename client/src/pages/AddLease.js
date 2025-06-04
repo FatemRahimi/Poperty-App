@@ -89,7 +89,7 @@ const AddLease = () => {
         <div className="form-title-brand">Sh.R.Property</div>
         <div className="form-title-add">ADD LISTING FOR LEASE</div>
         <ul className="form-title-find-link">
-          <li><Link to="/seller">Add for Sale</Link></li>
+          <li><Link to="/seller">BACK TO ADD LISTING</Link></li>
         </ul>
       </div>
 
