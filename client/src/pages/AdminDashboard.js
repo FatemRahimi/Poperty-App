@@ -1,0 +1,353 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import './AdminDashboard.css';
+
+const AdminDashboard = () => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalAdmins: 0,
+    totalProperties: 0,
+    recentActivity: []
+  });
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if not admin
+  useEffect(() => {
+    if (!user || !['admin', 'super_admin'].includes(user.role)) {
+      navigate('/admin-sh');
+      return;
+    }
+    loadDashboardData();
+  }, [user, navigate]);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load dashboard stats
+      const statsResponse = await fetch('/api/admin/stats', {
+        headers: {
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        }
+      });
+      
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        setStats(statsData);
+      }
+
+      // Load admin users
+      const adminsResponse = await fetch('/api/admin/users?role=admin', {
+        headers: {
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        }
+      });
+
+      if (adminsResponse.ok) {
+        const adminsData = await adminsResponse.json();
+        setAdminUsers(adminsData);
+      }
+
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const StatCard = ({ title, value, icon, color = 'primary' }) => (
+    <div className={`stat-card stat-card-${color}`}>
+      <div className="stat-icon">
+        <i className={`fas ${icon}`}></i>
+      </div>
+      <div className="stat-content">
+        <h3>{value}</h3>
+        <p>{title}</p>
+      </div>
+    </div>
+  );
+
+  const AdminCard = ({ admin }) => (
+    <div className="admin-card">
+      <div className="admin-avatar">
+        <i className="fas fa-user-shield"></i>
+      </div>
+      <div className="admin-info">
+        <h5>{admin.first_name} {admin.last_name}</h5>
+        <p className="admin-email">{admin.email}</p>
+        <span className={`admin-role ${admin.role}`}>
+          {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+        </span>
+      </div>
+      <div className="admin-status">
+        <span className="status-online">
+          <i className="fas fa-circle"></i> Online
+        </span>
+      </div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="admin-loading">
+        <div className="spinner-border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p>Loading Admin Dashboard...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-dashboard">
+      {/* Header */}
+      <div className="admin-header">
+        <div className="admin-header-left">
+          <h1>
+            <i className="fas fa-tachometer-alt me-3"></i>
+            Admin Dashboard
+          </h1>
+          <p>Property Management System</p>
+        </div>
+        <div className="admin-header-right">
+          <div className="admin-user-info">
+            <span className="admin-welcome">
+              Welcome, <strong>{user?.first_name} {user?.last_name}</strong>
+            </span>
+            <span className="admin-role-badge">
+              {user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+            </span>
+          </div>
+          <button className="btn btn-outline-danger" onClick={handleLogout}>
+            <i className="fas fa-sign-out-alt me-2"></i>
+            Logout
+          </button>
+        </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="admin-nav">
+        <div className="nav nav-tabs">
+          <button 
+            className={`nav-link ${activeTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveTab('overview')}
+          >
+            <i className="fas fa-chart-line me-2"></i>
+            Overview
+          </button>
+          <button 
+            className={`nav-link ${activeTab === 'admins' ? 'active' : ''}`}
+            onClick={() => setActiveTab('admins')}
+          >
+            <i className="fas fa-users-cog me-2"></i>
+            Admin Management
+          </button>
+          <button 
+            className={`nav-link ${activeTab === 'users' ? 'active' : ''}`}
+            onClick={() => setActiveTab('users')}
+          >
+            <i className="fas fa-users me-2"></i>
+            User Management
+          </button>
+          <button 
+            className={`nav-link ${activeTab === 'properties' ? 'active' : ''}`}
+            onClick={() => setActiveTab('properties')}
+          >
+            <i className="fas fa-building me-2"></i>
+            Properties
+          </button>
+          <button 
+            className={`nav-link ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+          >
+            <i className="fas fa-cogs me-2"></i>
+            Settings
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="admin-content">
+        {activeTab === 'overview' && (
+          <div className="overview-tab">
+            <div className="stats-grid">
+              <StatCard 
+                title="Total Users" 
+                value={stats.totalUsers} 
+                icon="fa-users" 
+                color="primary" 
+              />
+              <StatCard 
+                title="Admin Users" 
+                value={stats.totalAdmins} 
+                icon="fa-user-shield" 
+                color="success" 
+              />
+              <StatCard 
+                title="Properties" 
+                value={stats.totalProperties} 
+                icon="fa-building" 
+                color="info" 
+              />
+              <StatCard 
+                title="Active Today" 
+                value="12" 
+                icon="fa-chart-line" 
+                color="warning" 
+              />
+            </div>
+
+            <div className="dashboard-sections">
+              <div className="section">
+                <h4><i className="fas fa-clock me-2"></i>Recent Activity</h4>
+                <div className="activity-list">
+                  <div className="activity-item">
+                    <i className="fas fa-user-plus text-success"></i>
+                    <span>New user registered: john.doe@example.com</span>
+                    <small>2 hours ago</small>
+                  </div>
+                  <div className="activity-item">
+                    <i className="fas fa-building text-info"></i>
+                    <span>New property listing added</span>
+                    <small>4 hours ago</small>
+                  </div>
+                  <div className="activity-item">
+                    <i className="fas fa-sign-in-alt text-primary"></i>
+                    <span>Admin login: support@property.com</span>
+                    <small>6 hours ago</small>
+                  </div>
+                </div>
+              </div>
+
+              <div className="section">
+                <h4><i className="fas fa-chart-bar me-2"></i>Quick Stats</h4>
+                <div className="quick-stats">
+                  <div className="quick-stat">
+                    <span className="stat-label">Today's Signups</span>
+                    <span className="stat-value">3</span>
+                  </div>
+                  <div className="quick-stat">
+                    <span className="stat-label">Active Sessions</span>
+                    <span className="stat-value">27</span>
+                  </div>
+                  <div className="quick-stat">
+                    <span className="stat-label">Properties Views</span>
+                    <span className="stat-value">156</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'admins' && (
+          <div className="admins-tab">
+            <div className="section-header">
+              <h4><i className="fas fa-users-cog me-2"></i>Admin Management</h4>
+              <button className="btn btn-primary">
+                <i className="fas fa-plus me-2"></i>
+                Add Admin
+              </button>
+            </div>
+
+            <div className="admins-grid">
+              {adminUsers.map((admin) => (
+                <AdminCard key={admin.id} admin={admin} />
+              ))}
+            </div>
+
+            <div className="admin-info-section">
+              <h5>Current Admin Accounts</h5>
+              <div className="admin-credentials">
+                <div className="credential-item">
+                  <strong>Main Admin:</strong> admin@property.com
+                </div>
+                <div className="credential-item">
+                  <strong>Property Manager:</strong> manager@property.com
+                </div>
+                <div className="credential-item">
+                  <strong>Sales Director:</strong> sales@property.com
+                </div>
+                <div className="credential-item">
+                  <strong>Support Lead:</strong> support@property.com
+                </div>
+                <div className="credential-item">
+                  <strong>System Admin:</strong> sysadmin@property.com
+                </div>
+                <div className="credential-note">
+                  <i className="fas fa-info-circle me-2"></i>
+                  All admin accounts use the password: <code>SecureAdminPass2024!</code>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'users' && (
+          <div className="users-tab">
+            <div className="section-header">
+              <h4><i className="fas fa-users me-2"></i>User Management</h4>
+              <div className="section-actions">
+                <input 
+                  type="text" 
+                  placeholder="Search users..." 
+                  className="form-control search-input"
+                />
+                <button className="btn btn-primary">
+                  <i className="fas fa-search"></i>
+                </button>
+              </div>
+            </div>
+            <div className="coming-soon">
+              <i className="fas fa-tools mb-3"></i>
+              <h5>User Management Coming Soon</h5>
+              <p>This section will allow you to manage all registered users.</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'properties' && (
+          <div className="properties-tab">
+            <div className="section-header">
+              <h4><i className="fas fa-building me-2"></i>Property Management</h4>
+              <button className="btn btn-success">
+                <i className="fas fa-plus me-2"></i>
+                Add Property
+              </button>
+            </div>
+            <div className="coming-soon">
+              <i className="fas fa-tools mb-3"></i>
+              <h5>Property Management Coming Soon</h5>
+              <p>This section will allow you to manage all property listings.</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="settings-tab">
+            <div className="section-header">
+              <h4><i className="fas fa-cogs me-2"></i>System Settings</h4>
+            </div>
+            <div className="coming-soon">
+              <i className="fas fa-tools mb-3"></i>
+              <h5>Settings Panel Coming Soon</h5>
+              <p>This section will allow you to configure system settings.</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard; 

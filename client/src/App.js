@@ -19,12 +19,14 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ResetPassword from "./pages/ResetPassword";
 import AddRent from "./pages/AddRent";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function Layout() {
     const location = useLocation();
 
-    // Hide Navbar only on the login, password, signup pages
-    const hideNavbar = ["/login", "/password", "/signup", "/addlist", "/addlistnext", "/addlease", "/additional-listing/sale", "/additional-listing/lease", "/addleasenext", "/addrent"].includes(location.pathname);
+    // Hide Navbar on login, password, signup pages, admin login, and admin dashboard
+    const hideNavbar = ["/login", "/password", "/signup", "/addlist", "/addlistnext", "/addlease", "/additional-listing/sale", "/additional-listing/lease", "/addleasenext", "/addrent", "/admin-x9k7m2p5q8", "/admin/dashboard"].includes(location.pathname);
 
     return (
         <div>
@@ -40,6 +42,12 @@ function Layout() {
                 <Route path="/signup" element={<Signup/>}/>
                 <Route path="/logout" element={<Logout />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
+                
+                {/* Secure Admin Route */}
+                <Route path="/admin-x9k7m2p5q8" element={<AdminLogin />} />
+                
+                {/* Admin Dashboard - Protected Route */}
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
                 
                 {/* Protected Routes - Require Authentication */}
          
