@@ -114,7 +114,8 @@ const AddRent = () => {
     
     // Description & Media
     description: "",
-    photos: []
+    photos: [],
+    contactPhone: ""
   });
   
   const [photoFiles, setPhotoFiles] = useState([]);
@@ -198,7 +199,7 @@ const AddRent = () => {
         !formData.bathrooms || !formData.furnishedStatus || !formData.rentalPrice || 
         !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
         !formData.councilTaxBand || !formData.postcode || !formData.streetAddress || 
-        !formData.city || !formData.description?.trim()) {
+        !formData.city || !formData.description?.trim() || !formData.contactPhone?.trim()) {
       alert("Please fill in all required fields before submitting.");
       return;
     }
@@ -550,6 +551,21 @@ const AddRent = () => {
                   </div>
                 </>
               )}
+            </div>
+            
+            <h3 className="section-title">Contact Information</h3>
+            <div className="form-group">
+              <label htmlFor="contactPhone">Contact Phone Number*</label>
+              <input
+                type="tel"
+                id="contactPhone"
+                name="contactPhone"
+                value={formData.contactPhone}
+                onChange={handleChange}
+                placeholder="+44 7xxx xxx xxx"
+                required
+              />
+              <small>Potential tenants will use this number to contact you about viewings</small>
             </div>
           </div>
         );
