@@ -86,7 +86,8 @@ const AddList = () => {
     // Step 3: Additional Information
     description: "",
     features: [],
-    mediaFiles: []
+    mediaFiles: [],
+    contactPhone: ""
   });
 
   useEffect(() => {
@@ -196,6 +197,10 @@ const AddList = () => {
   const validateStep3 = () => {
     if (!formData.description.trim()) {
       alert("❌ Please provide a property description before submitting.");
+      return false;
+    }
+    if (!formData.contactPhone.trim()) {
+      alert("❌ Please provide a contact phone number before submitting.");
       return false;
     }
     return true;
@@ -583,6 +588,21 @@ const AddList = () => {
               onChange={handleChange} 
             />
           </div>
+        </div>
+
+        <h3 className="section-title">Contact Information</h3>
+        <div className="form-group">
+          <label htmlFor="contactPhone">Contact Phone Number*</label>
+          <input
+            type="tel"
+            id="contactPhone"
+            name="contactPhone"
+            value={formData.contactPhone}
+            onChange={handleChange}
+            placeholder="+44 7xxx xxx xxx"
+            required
+          />
+          <small>Potential buyers will use this number to contact you about viewings</small>
         </div>
       </>
     );

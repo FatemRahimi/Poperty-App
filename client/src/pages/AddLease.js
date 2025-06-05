@@ -106,6 +106,7 @@ const AddLease = () => {
     // Step 3: Description & Photos
     description: "",
     files: [],
+    contactPhone: ""
   });
 
   const handleChange = (e) => {
@@ -196,6 +197,10 @@ const AddLease = () => {
   const validateStep3 = () => {
     if (!formData.description.trim()) {
       alert("❌ Please provide a property description");
+      return false;
+    }
+    if (!formData.contactPhone.trim()) {
+      alert("❌ Please provide a contact phone number");
       return false;
     }
     return true;
@@ -450,6 +455,21 @@ const AddLease = () => {
             </div>
           </>
         )}
+      </div>
+
+      <h3 className="section-title">Contact Information</h3>
+      <div className="form-group">
+        <label htmlFor="contactPhone">Contact Phone Number*</label>
+        <input
+          type="tel"
+          id="contactPhone"
+          name="contactPhone"
+          value={formData.contactPhone}
+          onChange={handleChange}
+          placeholder="+44 7xxx xxx xxx"
+          required
+        />
+        <small>Potential tenants will use this number to contact you about lease inquiries</small>
       </div>
     </>
   );
