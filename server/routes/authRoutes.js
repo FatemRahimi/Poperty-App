@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const passport = require('passport');
 const config = require('../config/config');
-const { signup, login, forgotPassword, resetPassword } = require("../controllers/authController");
+const { signup, login, adminLogin, forgotPassword, resetPassword, updateAdminPassword, updateAdminEmail, getAdminStats, getAdminUsers } = require("../controllers/authController");
+const { adminSecurityMiddleware } = require('../middleware/adminSecurity');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
@@ -11,6 +12,9 @@ router.post("/signup", signup);
 router.post("/login", login);
 router.post("/password", forgotPassword);
 router.post("/reset-password", resetPassword);
+
+// Admin authentication route with security middleware
+router.post("/admin-login", adminSecurityMiddleware, adminLogin);
 
 // Google authentication routes
 router.get('/google', (req, res, next) => {
@@ -169,5 +173,37 @@ router.get('/logout', (req, res) => {
     res.redirect(`${config.frontend.baseUrl}${config.frontend.loginPath}`);
   });
 });
+
+// JWT Authentication Middleware for Admin Routes
+const authenticateAdminJWT = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Admin access token required' });
+  }
+
+  const token = authHeader.substring(7);
+  
+  try {
+    const decoded = jwt.verify(token, config.auth.jwt.secret);
+    
+    // Check if this is an admin token
+    if (!decoded.role || !['admin', 'super_admin'].includes(decoded.role)) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid or expired admin token' });
+  }
+};
+
+// Admin Management Routes (Protected)
+router.put('/admin/password', authenticateAdminJWT, updateAdminPassword);
+router.put('/admin/email', authenticateAdminJWT, updateAdminEmail);
+
+// Admin API Routes
+router.get('/admin/stats', authenticateAdminJWT, getAdminStats);
+router.get('/admin/users', authenticateAdminJWT, getAdminUsers);
 
 module.exports = router;

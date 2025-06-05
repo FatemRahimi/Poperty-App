@@ -6,6 +6,8 @@ const jwt = require("jsonwebtoken");
 const { sendVerificationEmail, sendPasswordResetEmail } = require("../utils/email");
 const crypto = require('crypto');
 const config = require('../config/config');
+const adminConfig = require('../config/admin.config');
+const { recordFailedAttempt, clearFailedAttempts } = require('../middleware/adminSecurity');
 
 exports.signup = async (req, res) => {
   const { email, password } = req.body;
@@ -110,7 +112,8 @@ exports.login = async (req, res) => {
         id: user.id, 
         email: user.email,
         first_name: user.first_name,
-        last_name: user.last_name
+        last_name: user.last_name,
+        role: user.role || 'user'
       }, 
       config.auth.jwt.secret, 
       { expiresIn: "24h" }
@@ -124,13 +127,106 @@ exports.login = async (req, res) => {
         email: user.email,
         first_name: user.first_name || '',
         last_name: user.last_name || '',
-        verified: user.is_verified
+        verified: user.is_verified,
+        role: user.role || 'user'
       }
     });
   } catch (err) {
     console.error("❌ Login error:", err);
     return res.status(500).json({ 
       error: "An error occurred during login. Please try again.",
+      field: null
+    });
+  }
+};
+
+exports.adminLogin = async (req, res) => {
+  const { email, password } = req.body;
+
+  // Input validation
+  if (!email || !password) {
+    recordFailedAttempt(req);
+    return res.status(400).json({ 
+      error: "Email and password are required",
+      field: email ? "password" : "email"
+    });
+  }
+
+  // Email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    recordFailedAttempt(req);
+    return res.status(400).json({ 
+      error: "Please enter a valid email address",
+      field: "email"
+    });
+  }
+
+  try {
+    // Check against admins table instead of users table
+    const result = await pool.query("SELECT * FROM admins WHERE email = $1 AND is_active = true", [email]);
+    
+    if (result.rows.length === 0) {
+      recordFailedAttempt(req);
+      return res.status(401).json({ 
+        error: "Invalid admin credentials.",
+        field: "email"
+      });
+    }
+
+    const admin = result.rows[0];
+    
+    // Check password
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) {
+      recordFailedAttempt(req);
+      return res.status(401).json({ 
+        error: "Invalid admin credentials.",
+        field: "password"
+      });
+    }
+
+    // Clear failed attempts on successful login
+    clearFailedAttempts(req);
+
+    // Update last login timestamp
+    await pool.query("UPDATE admins SET last_login = NOW() WHERE id = $1", [admin.id]);
+
+    // Log successful admin login
+    console.log(`✅ Admin login successful: ${email} (${admin.role}) from IP: ${req.adminSecurity?.clientIP || 'unknown'}`);
+
+    // Create JWT token with admin role and shorter expiration for security
+    const token = jwt.sign(
+      { 
+        id: admin.id, 
+        email: admin.email,
+        first_name: admin.first_name,
+        last_name: admin.last_name,
+        role: admin.role,
+        loginTime: Date.now(),
+        adminTable: true // Flag to indicate this is from admins table
+      }, 
+      config.auth.jwt.secret, 
+      { expiresIn: "8h" } // Shorter session for admin security
+    );
+
+    // Return success response with admin user data
+    return res.json({ 
+      token, 
+      user: { 
+        id: admin.id,
+        email: admin.email,
+        first_name: admin.first_name || '',
+        last_name: admin.last_name || '',
+        role: admin.role,
+        lastLogin: admin.last_login
+      }
+    });
+  } catch (err) {
+    console.error("❌ Admin login error:", err);
+    recordFailedAttempt(req);
+    return res.status(500).json({ 
+      error: "An error occurred during admin login. Please try again.",
       field: null
     });
   }
@@ -230,6 +326,171 @@ exports.resetPassword = async (req, res) => {
     return res.status(500).json({ 
       message: "Password reset failed", 
       error: err.message 
+    });
+  }
+};
+
+// Admin credential management functions
+exports.updateAdminPassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const adminId = req.user.id; // From JWT token
+
+  // Validation
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ 
+      error: "Current password and new password are required" 
+    });
+  }
+
+  if (newPassword.length < 8) {
+    return res.status(400).json({ 
+      error: "New password must be at least 8 characters long" 
+    });
+  }
+
+  try {
+    // Get current admin
+    const result = await pool.query("SELECT * FROM admins WHERE id = $1", [adminId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+
+    const admin = result.rows[0];
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, admin.password);
+    if (!isMatch) {
+      return res.status(401).json({ 
+        error: "Current password is incorrect",
+        field: "currentPassword"
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await pool.query(
+      "UPDATE admins SET password = $1, password_changed_at = NOW(), updated_at = NOW() WHERE id = $2", 
+      [hashedPassword, adminId]
+    );
+
+    console.log(`✅ Admin password updated: ${admin.email}`);
+
+    return res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    console.error("❌ Update admin password error:", err);
+    return res.status(500).json({ 
+      error: "Failed to update password" 
+    });
+  }
+};
+
+exports.updateAdminEmail = async (req, res) => {
+  const { password, newEmail } = req.body;
+  const adminId = req.user.id; // From JWT token
+
+  // Validation
+  if (!password || !newEmail) {
+    return res.status(400).json({ 
+      error: "Password and new email are required" 
+    });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(newEmail)) {
+    return res.status(400).json({ 
+      error: "Please enter a valid email address",
+      field: "newEmail"
+    });
+  }
+
+  try {
+    // Get current admin
+    const result = await pool.query("SELECT * FROM admins WHERE id = $1", [adminId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+
+    const admin = result.rows[0];
+
+    // Verify password
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) {
+      return res.status(401).json({ 
+        error: "Password is incorrect",
+        field: "password"
+      });
+    }
+
+    // Check if new email already exists
+    const emailExists = await pool.query("SELECT id FROM admins WHERE email = $1 AND id != $2", [newEmail, adminId]);
+    if (emailExists.rows.length > 0) {
+      return res.status(400).json({ 
+        error: "Email already in use by another admin",
+        field: "newEmail"
+      });
+    }
+
+    // Update email
+    const oldEmail = admin.email;
+    await pool.query(
+      "UPDATE admins SET email = $1, updated_at = NOW() WHERE id = $2", 
+      [newEmail, adminId]
+    );
+
+    console.log(`✅ Admin email updated: ${oldEmail} → ${newEmail}`);
+
+    return res.json({ 
+      message: "Email updated successfully",
+      newEmail: newEmail
+    });
+  } catch (err) {
+    console.error("❌ Update admin email error:", err);
+    return res.status(500).json({ 
+      error: "Failed to update email" 
+    });
+  }
+};
+
+exports.getAdminStats = async (req, res) => {
+  try {
+    // Get user count
+    const userCount = await pool.query("SELECT COUNT(*) as count FROM users");
+    
+    // Get admin count
+    const adminCount = await pool.query("SELECT COUNT(*) as count FROM admins WHERE is_active = true");
+    
+    // Mock data for now (can be extended)
+    const stats = {
+      totalUsers: parseInt(userCount.rows[0].count),
+      totalAdmins: parseInt(adminCount.rows[0].count),
+      totalProperties: 0, // TODO: Implement when properties table exists
+      recentActivity: []
+    };
+
+    return res.json(stats);
+  } catch (err) {
+    console.error("❌ Get admin stats error:", err);
+    return res.status(500).json({ 
+      error: "Failed to fetch admin statistics" 
+    });
+  }
+};
+
+exports.getAdminUsers = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, email, first_name, last_name, role, is_active, last_login, created_at FROM admins WHERE is_active = true ORDER BY created_at ASC"
+    );
+
+    return res.json(result.rows);
+  } catch (err) {
+    console.error("❌ Get admin users error:", err);
+    return res.status(500).json({ 
+      error: "Failed to fetch admin users" 
     });
   }
 };
