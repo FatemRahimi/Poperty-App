@@ -38,8 +38,8 @@
       text-shadow: 0 0 5px rgba(79, 134, 193, 0.3);
   }
   100% {
-      color: #ecea71;
-      text-shadow: 0 0 10px rgba(215, 84, 204, 0.7);
+      color: #71b3ec;
+      text-shadow: 0 0 10px rgba(134, 145, 201, 0.7);
       transform: scale(1.05);
   }
 }
