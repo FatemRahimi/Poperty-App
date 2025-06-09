@@ -28,35 +28,46 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-    const token = sessionStorage.getItem('token');
-    const userData = sessionStorage.getItem('user');
+        // Migration: Move data from sessionStorage to localStorage if it exists
+        const sessionToken = sessionStorage.getItem('token');
+        const sessionUser = sessionStorage.getItem('user');
+        if (sessionToken && sessionUser && !localStorage.getItem('token')) {
+          localStorage.setItem('token', sessionToken);
+          localStorage.setItem('user', sessionUser);
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          console.log('Migrated authentication data from sessionStorage to localStorage');
+        }
+
+        const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('user');
         
         console.log('Checking auth:', { token, userData }); // Debug log
     
-    if (token && userData) {
-      try {
+        if (token && userData) {
+          try {
             // Validate token with server
             const validatedUser = await validateToken(token);
             console.log('Validated user:', validatedUser); // Debug log
             
             if (validatedUser) {
-        const parsedUser = JSON.parse(userData);
+              const parsedUser = JSON.parse(userData);
               setUser(parsedUser);
               setIsAuthenticated(true);
             } else {
               // Token is invalid, clear storage
-              sessionStorage.removeItem('token');
-              sessionStorage.removeItem('user');
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
               setUser(null);
               setIsAuthenticated(false);
             }
           } catch (error) {
             console.error("Error validating token:", error);
-            sessionStorage.removeItem('token');
-            sessionStorage.removeItem('user');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
             setUser(null);
             setIsAuthenticated(false);
-        }
+          }
         } else {
           setUser(null);
           setIsAuthenticated(false);
@@ -66,7 +77,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setIsAuthenticated(false);
       } finally {
-    setLoading(false);
+        setLoading(false);
       }
     };
 
@@ -84,14 +95,15 @@ export const AuthProvider = ({ children }) => {
 
       // Store token and user data
       try {
-        sessionStorage.setItem('token', token);
-        sessionStorage.setItem('user', JSON.stringify(userData));
-        console.log('Stored in sessionStorage:', {
-          token: sessionStorage.getItem('token'),
-          user: sessionStorage.getItem('user')
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('loginTime', Date.now().toString()); // Add login timestamp
+        console.log('Stored in localStorage:', {
+          token: localStorage.getItem('token'),
+          user: localStorage.getItem('user')
         });
       } catch (storageError) {
-        console.error('Error storing in sessionStorage:', storageError);
+        console.error('Error storing in localStorage:', storageError);
         return false;
       }
       
@@ -123,9 +135,10 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       // Clear storage and state
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    setUser(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('loginTime'); // Clean up login timestamp
+      setUser(null);
       setIsAuthenticated(false);
     }
   };

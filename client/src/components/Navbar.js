@@ -14,6 +14,7 @@ const Navbar = () => {
     const [currentLang, setCurrentLang] = useState("EN");
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
     const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+    const [hasShownLoginMessage, setHasShownLoginMessage] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout, isAuthenticated } = useAuth();
@@ -26,16 +27,35 @@ const Navbar = () => {
         { code: "ES", name: "Español" }
     ];
 
-    // Show success message when user logs in
+    // Show success message only on actual login, not when just visiting home page while authenticated
     useEffect(() => {
-        if (isAuthenticated && location.pathname === '/') {
-            setShowSuccessMessage(true);
-            const timer = setTimeout(() => {
-                setShowSuccessMessage(false);
-            }, 3000);
-            return () => clearTimeout(timer);
+        // Only show message if user just became authenticated and we haven't shown it yet
+        if (isAuthenticated && !hasShownLoginMessage && location.pathname === '/') {
+            // Check if this is from a recent login (within the last 5 seconds)
+            const loginTime = localStorage.getItem('loginTime');
+            const now = Date.now();
+            
+            if (loginTime && (now - parseInt(loginTime)) < 5000) {
+                setShowSuccessMessage(true);
+                setHasShownLoginMessage(true);
+                
+                const timer = setTimeout(() => {
+                    setShowSuccessMessage(false);
+                    localStorage.removeItem('loginTime'); // Clean up
+                }, 3000);
+                
+                return () => clearTimeout(timer);
+            }
         }
-    }, [isAuthenticated, location]);
+    }, [isAuthenticated, location, hasShownLoginMessage]);
+
+    // Reset the login message flag when user logs out
+    useEffect(() => {
+        if (!isAuthenticated) {
+            setHasShownLoginMessage(false);
+            setShowSuccessMessage(false);
+        }
+    }, [isAuthenticated]);
 
     // Close menus when route changes
     useEffect(() => {
@@ -93,7 +113,7 @@ const Navbar = () => {
             {showSuccessMessage && (
                 <div className="login-success-message">
                     <FaCheckCircle className="success-icon" />
-                    <span>Successfully logged out!</span>
+                    <span>Successfully logged in!</span>
                 </div>
             )}
             <div className="navbar-container">

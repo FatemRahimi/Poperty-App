@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SelectInput from "../components/inputs/SelectInput";
 import TextInput from "../components/inputs/TextInput";
 import CheckboxInput from "../components/inputs/CheckboxInput";
@@ -6,6 +6,7 @@ import Logo from "../components/Logo";
 import "../styles/AddList.css";
 import { useNavigate, Link } from "react-router-dom";
 import useSessionStorage from "../Utils/useSessionStorage";
+import { useAuth } from "../context/AuthContext";
 
 const leaseTypeOptions = [
   { value: "full-service", label: "Full-Service" },
@@ -48,10 +49,14 @@ const useClassOptions = [
 
 const AddLease = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated, loading } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [showAddress, setShowAddress] = useState(false);
   const [photoFiles, setPhotoFiles] = useState([]);
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState("");
 
   const [formData, setFormData] = useSessionStorage("addLeaseCompleteForm", {
     // Step 1: Basic Space Info
@@ -108,6 +113,14 @@ const AddLease = () => {
     files: [],
     contactPhone: ""
   });
+
+  useEffect(() => {
+    if (!isAuthenticated && !loading) {
+      // Store the current path to redirect back after login
+      sessionStorage.setItem('redirectAfterLogin', '/addlease');
+      navigate("/login");
+    }
+  }, [isAuthenticated, loading, navigate]);
 
   const handleChange = (e) => {
     const { name, type, value, checked } = e.target;
@@ -236,16 +249,72 @@ const AddLease = () => {
   };
 
   // Final form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (validateStep3()) {
-      console.log("✅ Complete Lease Form Submitted:", formData);
-      alert("Lease listing submitted successfully!");
+    if (!validateStep3()) {
+      return;
+    }
+    
+    setError("");
+    setIsLoading(true);
+
+    try {
+      // Create FormData to handle file uploads
+      const submitFormData = new FormData();
       
-      // Clear form data and redirect
-      sessionStorage.removeItem("addLeaseCompleteForm");
-      navigate("/dashboard");
+      // Add all form fields
+      Object.keys(formData).forEach(key => {
+        if (key === 'utilities') {
+          // Handle utilities object
+          submitFormData.append('utilities', JSON.stringify(formData.utilities));
+        } else if (key !== 'photos') {
+          submitFormData.append(key, formData[key]);
+        }
+      });
+      
+      // Add user information
+      submitFormData.append('userEmail', user.email);
+      submitFormData.append('userId', user.id);
+      submitFormData.append('listingType', 'lease');
+      
+      // Add photos if any
+      photoFiles.forEach((file, index) => {
+        submitFormData.append('photos', file);
+      });
+      
+      console.log('Submitting lease property data...');
+      
+      // Make API call to submit property
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/submit`, {
+        method: 'POST',
+        body: submitFormData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit property');
+      }
+      
+      const result = await response.json();
+      console.log("✅ Lease Property Submitted Successfully:", result);
+      
+      setSuccess("Property submitted successfully! You will receive a confirmation email shortly.");
+      
+      // Clear form data and redirect to dashboard after short delay
+      setTimeout(() => {
+        sessionStorage.removeItem("addLeaseCompleteForm");
+        navigate("/dashboard");
+      }, 2000);
+      
+    } catch (err) {
+      console.error('Submission error:', err);
+      setError(err.message || "Failed to submit property. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -511,6 +580,9 @@ const AddLease = () => {
 
       {/* Form Section */}
       <div className="form-wrapper">
+        {error && <div className="alert alert-danger">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
+        
         <form onSubmit={handleSubmit} className="property-form">
           {renderCurrentStep()}
 
@@ -546,8 +618,9 @@ const AddLease = () => {
               <button 
                 type="submit" 
                 className="submit-btn"
+                disabled={isLoading}
               >
-                Submit Listing
+                {isLoading ? 'Submitting...' : 'Submit Listing'}
               </button>
             )}
           </div>

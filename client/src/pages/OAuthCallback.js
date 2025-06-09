@@ -22,9 +22,10 @@ const OAuthCallback = () => {
             // Parse the user data
             const parsedUser = JSON.parse(decodeURIComponent(userData));
             
-            // Store the token and user data in sessionStorage
-            sessionStorage.setItem('token', token);
-            sessionStorage.setItem('user', JSON.stringify(parsedUser));
+            // Store the token and user data in localStorage
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(parsedUser));
+            localStorage.setItem('loginTime', Date.now().toString());
             
             // Call the login function from AuthContext
             const loginSuccess = await login(parsedUser, token);

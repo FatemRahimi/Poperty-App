@@ -43,7 +43,7 @@ const UserDashboard = () => {
       // Load user's properties
       const propertiesResponse = await fetch('/api/properties/my-properties', {
         headers: {
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       
@@ -59,7 +59,7 @@ const UserDashboard = () => {
         console.error('Failed to load dashboard data:', propertiesResponse.status);
         // Optionally show error message to user
         if (propertiesResponse.status === 401) {
-          sessionStorage.removeItem('token');
+          localStorage.removeItem('token');
           navigate('/login');
         }
       }
@@ -223,6 +223,25 @@ const UserDashboard = () => {
       {/* Header */}
       <div className="dashboard-header">
         <div className="header-left">
+          <div className="site-navigation">
+            <button 
+              className="btn btn-link site-nav-btn"
+              onClick={() => navigate('/')}
+              title="Go to Home"
+            >
+              <i className="fas fa-home me-2"></i>
+              Home
+            </button>
+            <span className="nav-separator">|</span>
+            <button 
+              className="btn btn-link site-nav-btn"
+              onClick={() => navigate('/find')}
+              title="Find Properties"
+            >
+              <i className="fas fa-search me-2"></i>
+              Find Properties
+            </button>
+          </div>
           <h1>
             <i className="fas fa-tachometer-alt me-3"></i>
             My Dashboard
