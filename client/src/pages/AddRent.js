@@ -211,10 +211,70 @@ const AddRent = () => {
       // Create FormData to handle file uploads
       const submitFormData = new FormData();
       
-      // Add all form fields
-      Object.keys(formData).forEach(key => {
-        if (key !== 'photos') {
-          submitFormData.append(key, formData[key]);
+      // Map AddRent form fields to backend expected fields
+      const fieldMapping = {
+        // Basic property info
+        title: formData.propertyTitle, // Map propertyTitle to title for backend
+        propertyTitle: formData.propertyTitle, // Alternative field name
+        description: formData.description,
+        property_type: 'rent', // Set type as rent
+        propertyType: 'rent',
+        
+        // Address fields
+        address_line1: formData.streetAddress,
+        streetAddress: formData.streetAddress,
+        city: formData.city,
+        state: formData.region, // Map region to state
+        region: formData.region, 
+        zip_code: formData.postcode,
+        postcode: formData.postcode,
+        country: 'UK', // Default for UK properties
+        
+        // Property details
+        bedrooms: formData.bedrooms,
+        bathrooms: formData.bathrooms,
+        furnished: formData.furnishedStatus === 'furnished',
+        furnishedStatus: formData.furnishedStatus,
+        
+        // Rental-specific fields
+        monthly_rent: formData.rentalPrice,
+        rentalPrice: formData.rentalPrice,
+        deposit_amount: formData.depositAmount,
+        depositAmount: formData.depositAmount,
+        availability_date: formData.availableFrom,
+        availableFrom: formData.availableFrom,
+        lease_term: formData.tenancyLength,
+        tenancyLength: formData.tenancyLength,
+        
+        // Contact information
+        contact_phone: formData.contactPhone,
+        contactPhone: formData.contactPhone,
+        contact_email: user.email,
+        contactEmail: user.email,
+        contact_name: `${user.first_name} ${user.last_name}`,
+        contactName: `${user.first_name} ${user.last_name}`,
+        
+        // Property features
+        has_garden: formData.garden,
+        garden: formData.garden,
+        parking_spaces: formData.parking ? 1 : 0,
+        parkingAvailable: formData.parking,
+        pets_allowed: formData.petsAllowed,
+        petsAllowed: formData.petsAllowed,
+        
+        // Additional rental fields
+        councilTaxBand: formData.councilTaxBand,
+        balconyTerrace: formData.balconyTerrace,
+        billsIncluded: formData.billsIncluded,
+        ensuiteBathroom: formData.ensuiteBathroom,
+        liftAccess: formData.liftAccess,
+        epcRating: formData.epcRating
+      };
+      
+      // Add all mapped fields to FormData
+      Object.keys(fieldMapping).forEach(key => {
+        if (fieldMapping[key] !== undefined && fieldMapping[key] !== null && fieldMapping[key] !== '') {
+          submitFormData.append(key, fieldMapping[key]);
         }
       });
       

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
 const {
   submitProperty,
   getUserProperties,
@@ -8,6 +9,53 @@ const {
   updatePropertyStatus,
   getDashboardStats
 } = require('../controllers/propertyController');
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage(); // Store files in memory for processing
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB limit per file (increased from 50MB)
+    files: 10 // Maximum 10 files
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept images and videos
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image and video files are allowed'), false);
+    }
+  }
+});
+
+// Multer error handling middleware
+const handleMulterError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'File too large. Maximum file size is 100MB per file.'
+      });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        success: false,
+        message: 'Too many files. Maximum 10 files allowed.'
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: 'File upload error: ' + err.message
+    });
+  }
+  if (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message || 'File upload error'
+    });
+  }
+  next();
+};
 
 // JWT Authentication middleware
 const authenticateJWT = (req, res, next) => {
@@ -40,7 +88,8 @@ const requireAdmin = (req, res, next) => {
 };
 
 // Property submission routes (protected - user must be authenticated)
-router.post('/submit', authenticateJWT, submitProperty);
+// Use multer to handle FormData with file uploads
+router.post('/submit', authenticateJWT, upload.array('photos', 10), handleMulterError, submitProperty);
 router.get('/my-properties', authenticateJWT, getUserProperties);
 
 // Admin routes (protected - admin only)
