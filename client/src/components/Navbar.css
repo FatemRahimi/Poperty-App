@@ -153,6 +153,60 @@
     margin-top: 2px;
 }
 
+/* Auth Button (Login/Logout) Styling */
+.auth-button {
+    position: relative;
+}
+
+.auth-button .nav-link,
+.auth-button button.nav-link {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    color: #555;
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Open Sans', sans-serif;
+}
+
+.auth-button .nav-link:hover,
+.auth-button button.nav-link:hover {
+    color: #e74c3c;
+    background-color: rgba(231, 76, 60, 0.05);
+}
+
+.auth-button .nav-link span,
+.auth-button button.nav-link span {
+    margin-left: 6px;
+}
+
+/* Login link styling */
+.auth-button a.nav-link:hover {
+    color: #3498db;
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+.auth-button a.nav-link.active {
+    color: #3498db;
+    font-weight: 600;
+}
+
+.auth-button a.nav-link.active:after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0.75rem;
+    right: 0.75rem;
+    height: 2px;
+    background-color: #3498db;
+}
+
 .language-dropdown {
     position: absolute;
     top: 100%;
@@ -207,37 +261,10 @@
 }
 
 .lang-name {
-    color: #555;
     font-size: 0.9rem;
 }
 
 /* Login Button */
-.login-button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background-color: #4285f4;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-}
-
-.login-button:hover {
-    background-color: #357abd;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.login-button .nav-icon {
-    font-size: 1.1rem;
-}
-
 /* Hamburger Menu */
 .navbar-menu-icon {
     display: none;
@@ -300,11 +327,22 @@
         padding: 0.75rem;
     }
 
+    .auth-button .nav-link,
+    .auth-button button.nav-link {
+        width: 100%;
+        padding: 0.75rem;
+        justify-content: flex-start;
+    }
+
     .navbar-links a.active:after {
         display: none;
     }
 
     .navbar-links a.active {
+        background-color: rgba(52, 152, 219, 0.1);
+    }
+
+    .auth-button a.nav-link.active {
         background-color: rgba(52, 152, 219, 0.1);
     }
 
@@ -316,14 +354,9 @@
         border: 1px solid rgba(52, 152, 219, 0.2);
     }
 
-    .login-button {
+    .auth-button {
         width: 100%;
         margin-top: 1rem;
-    }
-    
-    .login-button a {
-        justify-content: center;
-        width: 100%;
     }
 }
 

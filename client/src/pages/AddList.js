@@ -91,9 +91,11 @@ const AddList = () => {
   });
 
   useEffect(() => {
-    const isLoggedIn = sessionStorage.getItem("token");
+    const isLoggedIn = localStorage.getItem("token");
     if (!isLoggedIn) {
-      navigate("/login"); // Redirect to login if not authenticated
+      alert("❌ Please log in to submit a property.");
+      navigate("/login");
+      return;
     }
   }, [navigate]);
 
@@ -243,8 +245,16 @@ const AddList = () => {
     }
 
     try {
+      // Check authentication
+      const isLoggedIn = localStorage.getItem("token");
+      if (!isLoggedIn) {
+        alert("❌ Please log in to submit a property.");
+        navigate("/login");
+        return;
+      }
+
       // Get auth token
-      const token = sessionStorage.getItem("token");
+      const token = localStorage.getItem("token");
       if (!token) {
         alert("❌ Please log in to submit a property.");
         navigate("/login");

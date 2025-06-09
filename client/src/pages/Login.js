@@ -45,9 +45,10 @@ const Login = () => {
     }, [location.search]);
 
     useEffect(() => {
-        // If user is already authenticated, redirect to the intended page or home
-        if (isAuthenticated || (sessionStorage.getItem('token') && sessionStorage.getItem('user'))) {
-            navigate(from, { replace: true });
+        // Redirect if already authenticated
+        if (isAuthenticated || (localStorage.getItem('token') && localStorage.getItem('user'))) {
+            const redirectPath = location.state?.from || '/dashboard';
+            navigate(redirectPath, { replace: true });
         }
     }, [isAuthenticated, navigate, location]);
 

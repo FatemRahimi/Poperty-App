@@ -208,20 +208,56 @@ const AddRent = () => {
     setIsLoading(true);
 
     try {
-      // Here you would make an API call to save the property data
-      // For example:
-      // const response = await axios.post("/api/properties/rent", { ...formData, userId: user.id });
+      // Create FormData to handle file uploads
+      const submitFormData = new FormData();
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Add all form fields
+      Object.keys(formData).forEach(key => {
+        if (key !== 'photos') {
+          submitFormData.append(key, formData[key]);
+        }
+      });
       
-      console.log("✅ Rent Property Submitted:", formData);
+      // Add user information
+      submitFormData.append('userEmail', user.email);
+      submitFormData.append('userId', user.id);
+      submitFormData.append('listingType', 'rent');
       
-      // Clear form data and redirect to dashboard
-      sessionStorage.removeItem("addRentForm");
-      navigate("/dashboard");
+      // Add photos if any
+      photoFiles.forEach((file, index) => {
+        submitFormData.append('photos', file);
+      });
+      
+      console.log('Submitting rent property data...');
+      
+      // Make API call to submit property
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/submit`, {
+        method: 'POST',
+        body: submitFormData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit property');
+      }
+      
+      const result = await response.json();
+      console.log('✅ Rent Property Submitted Successfully:', result);
+      
+      setSuccess("Property submitted successfully! You will receive a confirmation email shortly.");
+      
+      // Clear form data and redirect to dashboard after short delay
+      setTimeout(() => {
+        sessionStorage.removeItem("addRentForm");
+        navigate("/dashboard");
+      }, 2000);
+      
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to add property");
+      console.error('Submission error:', err);
+      setError(err.message || "Failed to submit property. Please try again.");
     } finally {
       setIsLoading(false);
     }

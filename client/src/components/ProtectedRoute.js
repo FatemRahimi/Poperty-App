@@ -8,7 +8,7 @@ const ProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = sessionStorage.getItem('token');
+      const token = localStorage.getItem('token');
       if (token) {
         await validateToken(token);
       }
