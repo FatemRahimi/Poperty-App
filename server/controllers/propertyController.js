@@ -16,6 +16,11 @@ const transporter = nodemailer.createTransport({
 
 // Generate unique slug for property
 const generateSlug = (title) => {
+  // Handle undefined, null, or empty title
+  if (!title || typeof title !== 'string') {
+    title = 'property-listing'; // Fallback title
+  }
+  
   return title
     .toLowerCase()
     .replace(/[^a-z0-9 -]/g, '')
@@ -64,14 +69,102 @@ const submitProperty = async (req, res) => {
     await client.query('BEGIN');
     
     const {
-      title, description, property_type, property_category,
-      address_line1, address_line2, city, state, zip_code, country,
-      bedrooms, bathrooms, square_feet, lot_size, year_built,
-      price, monthly_rent, lease_term, deposit_amount,
-      parking_spaces, has_garage, has_pool, has_garden, furnished, pets_allowed,
-      availability_date, contact_name, contact_phone, contact_email,
-      amenities = [], images = []
+      title: providedTitle,
+      propertyTitle, // Alternative field name from frontend
+      description, 
+      property_type, 
+      propertyType, // Alternative field name from frontend
+      property_category,
+      address_line1, 
+      streetAddress, // Alternative field name from frontend
+      address_line2, 
+      city, 
+      state, 
+      region, // Alternative field name from frontend
+      zip_code, 
+      postcode, // Alternative field name from frontend
+      country,
+      bedrooms, 
+      bathrooms, 
+      square_feet, 
+      lot_size, 
+      year_built,
+      price, 
+      askingPrice, // Alternative field name from frontend
+      monthly_rent, 
+      rentalPrice, // Alternative field name from frontend
+      lease_term, 
+      tenancyLength, // Alternative field name from frontend
+      deposit_amount,
+      depositAmount, // Alternative field name from frontend
+      parking_spaces, 
+      has_garage, 
+      has_pool, 
+      has_garden, 
+      furnished, 
+      furnishedStatus, // Alternative field name from frontend
+      pets_allowed,
+      availability_date, 
+      availableFrom, // Alternative field name from frontend
+      contact_name, 
+      contactName, // Alternative field name from frontend
+      contact_phone, 
+      contactPhone, // Alternative field name from frontend
+      contact_email, 
+      contactEmail, // Alternative field name from frontend
+      amenities = [], 
+      images = []
     } = req.body;
+
+    // Map frontend field names to backend field names
+    const title = providedTitle || propertyTitle;
+    const property_type_mapped = property_type || propertyType;
+    const address_line1_mapped = address_line1 || streetAddress;
+    const state_mapped = state || region;
+    const zip_code_mapped = zip_code || postcode;
+    const price_mapped = price || askingPrice;
+    const monthly_rent_mapped = monthly_rent || rentalPrice;
+    const lease_term_mapped = lease_term || tenancyLength;
+    const deposit_amount_mapped = deposit_amount || depositAmount;
+    const furnished_mapped = furnished || (furnishedStatus === 'furnished');
+    const availability_date_mapped = availability_date || availableFrom;
+    const contact_name_mapped = contact_name || contactName;
+    const contact_phone_mapped = contact_phone || contactPhone;
+    const contact_email_mapped = contact_email || contactEmail || req.user?.email;
+
+    // Debug logging for property submission
+    console.log('🔍 Property submission debug:');
+    console.log('📋 Raw request body keys:', Object.keys(req.body));
+    console.log('📋 Uploaded files count:', req.files ? req.files.length : 0);
+    console.log('📋 providedTitle:', providedTitle);
+    console.log('📋 propertyTitle:', propertyTitle);
+    console.log('📋 Final title value:', title);
+    console.log('📋 Is title truthy?', !!title);
+    console.log('📋 property_type_mapped:', property_type_mapped);
+    console.log('📋 city:', city);
+
+    // Validate required fields
+    if (!title) {
+      console.log('❌ Title validation failed - title is:', title);
+      return res.status(400).json({
+        success: false,
+        message: 'Property title is required'
+      });
+    }
+
+    if (!property_type_mapped) {
+      return res.status(400).json({
+        success: false,
+        message: 'Property type is required'
+      });
+    }
+
+    if (!city) {
+      return res.status(400).json({
+        success: false,
+        message: 'City is required'
+      });
+    }
 
     const user_id = req.user.id;
     const slug = generateSlug(title);
@@ -90,19 +183,36 @@ const submitProperty = async (req, res) => {
         $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
       ) RETURNING *`,
       [
-        user_id, title, description, property_type, property_category,
-        address_line1, address_line2, city, state, zip_code, country || 'USA',
+        user_id, title, description, property_type_mapped, property_category,
+        address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
         bedrooms, bathrooms, square_feet, lot_size, year_built,
-        price, monthly_rent, lease_term, deposit_amount,
+        price_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
         parking_spaces || 0, has_garage || false, has_pool || false, 
-        has_garden || false, furnished || false, pets_allowed || false,
-        availability_date, contact_name, contact_phone, contact_email, slug
+        has_garden || false, furnished_mapped || false, pets_allowed || false,
+        availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, slug
       ]
     );
 
     const property = propertyResult.rows[0];
 
-    // Insert property images
+    // Handle uploaded files from multer
+    if (req.files && req.files.length > 0) {
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        
+        // In a production environment, you would upload these files to a cloud storage service
+        // For now, we'll create a placeholder URL
+        const imageUrl = `/uploads/${property.id}_${i}_${file.originalname}`;
+        
+        await client.query(
+          `INSERT INTO property_images (property_id, image_url, image_type, image_order, alt_text)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [property.id, imageUrl, file.mimetype.startsWith('video/') ? 'video' : 'image', i, title]
+        );
+      }
+    }
+
+    // Insert property images (legacy support for image URLs from frontend)
     if (images && images.length > 0) {
       for (let i = 0; i < images.length; i++) {
         const image = images[i];
@@ -147,9 +257,9 @@ const submitProperty = async (req, res) => {
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="color: #667eea; margin-top: 0;">${title}</h3>
-          <p><strong>Type:</strong> ${property_type.charAt(0).toUpperCase() + property_type.slice(1)}</p>
-          <p><strong>Address:</strong> ${address_line1}, ${city}, ${state} ${zip_code}</p>
-          <p><strong>Price:</strong> $${price ? price.toLocaleString() : monthly_rent?.toLocaleString() + '/month'}</p>
+          <p><strong>Type:</strong> ${property_type_mapped.charAt(0).toUpperCase() + property_type_mapped.slice(1)}</p>
+          <p><strong>Address:</strong> ${address_line1_mapped}, ${city}, ${state_mapped} ${zip_code_mapped}</p>
+          <p><strong>Price:</strong> $${price_mapped ? price_mapped.toLocaleString() : monthly_rent_mapped?.toLocaleString() + '/month'}</p>
           <p><strong>Status:</strong> Pending Review</p>
           <p><strong>Submitted:</strong> ${new Date().toLocaleDateString()}</p>
         </div>
@@ -183,14 +293,14 @@ const submitProperty = async (req, res) => {
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="color: #667eea; margin-top: 0;">${title}</h3>
           <p><strong>Submitted by:</strong> ${user.first_name} ${user.last_name} (${user.email})</p>
-          <p><strong>Type:</strong> ${property_type.charAt(0).toUpperCase() + property_type.slice(1)}</p>
-          <p><strong>Address:</strong> ${address_line1}, ${city}, ${state} ${zip_code}</p>
-          <p><strong>Price:</strong> $${price ? price.toLocaleString() : monthly_rent?.toLocaleString() + '/month'}</p>
+          <p><strong>Type:</strong> ${property_type_mapped.charAt(0).toUpperCase() + property_type_mapped.slice(1)}</p>
+          <p><strong>Address:</strong> ${address_line1_mapped}, ${city}, ${state_mapped} ${zip_code_mapped}</p>
+          <p><strong>Price:</strong> $${price_mapped ? price_mapped.toLocaleString() : monthly_rent_mapped?.toLocaleString() + '/month'}</p>
           <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.CLIENT_URL}/admin/dashboard" style="background: #e74c3c; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Review Property</a>
+          <a href="${process.env.CLIENT_URL}/admin-x9k7m2p5q8" style="background: #e74c3c; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Review Property</a>
         </div>
       </div>
     `;

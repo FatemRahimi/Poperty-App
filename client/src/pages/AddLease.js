@@ -263,13 +263,91 @@ const AddLease = () => {
       // Create FormData to handle file uploads
       const submitFormData = new FormData();
       
-      // Add all form fields
-      Object.keys(formData).forEach(key => {
-        if (key === 'utilities') {
-          // Handle utilities object
-          submitFormData.append('utilities', JSON.stringify(formData.utilities));
-        } else if (key !== 'photos') {
-          submitFormData.append(key, formData[key]);
+      // Map AddLease form fields to backend expected fields
+      const fieldMapping = {
+        // Basic property info
+        title: formData.spaceName, // Map spaceName to title for backend
+        propertyTitle: formData.spaceName, // Alternative field name
+        description: formData.description,
+        property_type: 'lease', // Set type as lease
+        propertyType: 'lease',
+        
+        // Address fields
+        address_line1: formData.address,
+        streetAddress: formData.address,
+        city: formData.city,
+        state: '', // Not collected in lease form
+        region: '', 
+        zip_code: formData.postalCode,
+        postcode: formData.postalCode,
+        country: formData.country,
+        
+        // Lease-specific fields
+        monthly_rent: formData.rentPerMonth,
+        rentalPrice: formData.rentPerMonth,
+        lease_term: formData.leaseLength,
+        tenancyLength: formData.leaseLength,
+        deposit_amount: formData.depositAmount,
+        depositAmount: formData.depositAmount,
+        
+        // Building details
+        square_feet: formData.buildingSize,
+        lot_size: formData.lotSize,
+        parking_spaces: formData.parkingSpaces,
+        
+        // Contact information
+        contact_phone: formData.contactPhone,
+        contactPhone: formData.contactPhone,
+        contact_email: user.email,
+        contactEmail: user.email,
+        contact_name: `${user.first_name} ${user.last_name}`,
+        contactName: `${user.first_name} ${user.last_name}`,
+        
+        // Additional lease fields
+        spaceType: formData.spaceType,
+        spaceSubtypes: formData.spaceSubtypes,
+        leaseType: formData.leaseType,
+        useClass: formData.useClass,
+        minDivisible: formData.minDivisible,
+        vacantSQFT: formData.vacantSQFT,
+        landAcres: formData.landAcres,
+        lotSizeUnit: formData.lotSizeUnit,
+        taxesPerSQFT: formData.taxesPerSQFT,
+        power: formData.power,
+        zoning: formData.zoning,
+        serviceCharge: formData.serviceCharge,
+        businessRates: formData.businessRates,
+        floorLoadCapacity: formData.floorLoadCapacity,
+        heatingCooling: formData.heatingCooling,
+        toiletKitchen: formData.toiletKitchen,
+        openingHours: formData.openingHours,
+        
+        // Boolean fields
+        isMultipleTenancy: formData.isMultipleTenancy,
+        breakClause: formData.breakClause,
+        depositRequired: formData.depositRequired,
+        parkingAvailable: formData.parkingAvailable,
+        disabilityAccess: formData.disabilityAccess,
+        signageAllowed: formData.signageAllowed,
+        
+        // JSON fields
+        utilities: JSON.stringify(formData.utilities),
+        security: JSON.stringify(formData.security)
+      };
+      
+      // Debug logging
+      console.log('🔍 Form Data before mapping:', {
+        spaceName: formData.spaceName,
+        description: formData.description,
+        contactPhone: formData.contactPhone
+      });
+      console.log('🔍 Field mapping title value:', fieldMapping.title);
+      console.log('🔍 Is title value truthy?', !!fieldMapping.title);
+      
+      // Add all mapped fields to FormData
+      Object.keys(fieldMapping).forEach(key => {
+        if (fieldMapping[key] !== undefined && fieldMapping[key] !== null && fieldMapping[key] !== '') {
+          submitFormData.append(key, fieldMapping[key]);
         }
       });
       
