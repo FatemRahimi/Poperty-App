@@ -1,0 +1,185 @@
+const express = require('express');
+const router = express.Router();
+const jwt = require('jsonwebtoken');
+const {
+  submitProperty,
+  getUserProperties,
+  getAllProperties,
+  updatePropertyStatus,
+  getDashboardStats
+} = require('../controllers/propertyController');
+
+// JWT Authentication middleware
+const authenticateJWT = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Access token required' });
+  }
+
+  const token = authHeader.substring(7);
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+  }
+};
+
+// Admin authorization middleware
+const requireAdmin = (req, res, next) => {
+  if (!req.user || !['admin', 'super_admin'].includes(req.user.role)) {
+    return res.status(403).json({ 
+      success: false, 
+      message: 'Admin access required' 
+    });
+  }
+  next();
+};
+
+// Property submission routes (protected - user must be authenticated)
+router.post('/submit', authenticateJWT, submitProperty);
+router.get('/my-properties', authenticateJWT, getUserProperties);
+
+// Admin routes (protected - admin only)
+router.get('/admin/all', authenticateJWT, requireAdmin, getAllProperties);
+router.put('/admin/:id/status', authenticateJWT, requireAdmin, updatePropertyStatus);
+router.get('/admin/stats', authenticateJWT, requireAdmin, getDashboardStats);
+
+// Public routes (for viewing approved properties)
+router.get('/public', async (req, res) => {
+  try {
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL || 'postgres://fatemehrahimi@localhost:5432/propertydb'
+    });
+
+    const { page = 1, limit = 12, type, city, min_price, max_price, bedrooms } = req.query;
+    const offset = (page - 1) * limit;
+
+    let whereClause = "WHERE p.status = 'approved'";
+    let queryParams = [];
+    let paramCount = 0;
+
+    if (type) {
+      paramCount++;
+      whereClause += ` AND p.property_type = $${paramCount}`;
+      queryParams.push(type);
+    }
+
+    if (city) {
+      paramCount++;
+      whereClause += ` AND p.city ILIKE $${paramCount}`;
+      queryParams.push(`%${city}%`);
+    }
+
+    if (min_price) {
+      paramCount++;
+      whereClause += ` AND (p.price >= $${paramCount} OR p.monthly_rent >= $${paramCount})`;
+      queryParams.push(min_price);
+    }
+
+    if (max_price) {
+      paramCount++;
+      whereClause += ` AND (p.price <= $${paramCount} OR p.monthly_rent <= $${paramCount})`;
+      queryParams.push(max_price);
+    }
+
+    if (bedrooms) {
+      paramCount++;
+      whereClause += ` AND p.bedrooms >= $${paramCount}`;
+      queryParams.push(bedrooms);
+    }
+
+    const query = `
+      SELECT 
+        p.*,
+        ARRAY_AGG(
+          CASE WHEN pi.id IS NOT NULL 
+          THEN json_build_object('id', pi.id, 'url', pi.image_url, 'type', pi.image_type)
+          ELSE NULL END
+        ) FILTER (WHERE pi.id IS NOT NULL) as images
+      FROM properties p
+      LEFT JOIN property_images pi ON p.id = pi.property_id
+      ${whereClause}
+      GROUP BY p.id
+      ORDER BY p.created_at DESC
+      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
+    `;
+
+    queryParams.push(limit, offset);
+
+    const result = await pool.query(query, queryParams);
+
+    res.json({
+      success: true,
+      properties: result.rows
+    });
+
+  } catch (error) {
+    console.error('Get public properties error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch properties',
+      error: error.message
+    });
+  }
+});
+
+// Get single property by slug (public)
+router.get('/property/:slug', async (req, res) => {
+  try {
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL || 'postgres://fatemehrahimi@localhost:5432/propertydb'
+    });
+
+    const { slug } = req.params;
+
+    const query = `
+      SELECT 
+        p.*,
+        ARRAY_AGG(
+          CASE WHEN pi.id IS NOT NULL 
+          THEN json_build_object('id', pi.id, 'url', pi.image_url, 'type', pi.image_type, 'alt_text', pi.alt_text)
+          ELSE NULL END
+        ) FILTER (WHERE pi.id IS NOT NULL) as images,
+        ARRAY_AGG(
+          CASE WHEN pa.id IS NOT NULL 
+          THEN json_build_object('name', pa.amenity_name, 'category', pa.amenity_category)
+          ELSE NULL END
+        ) FILTER (WHERE pa.id IS NOT NULL) as amenities
+      FROM properties p
+      LEFT JOIN property_images pi ON p.id = pi.property_id
+      LEFT JOIN property_amenities pa ON p.id = pa.property_id
+      WHERE p.slug = $1 AND p.status = 'approved'
+      GROUP BY p.id
+    `;
+
+    const result = await pool.query(query, [slug]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Property not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      property: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Get property by slug error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch property',
+      error: error.message
+    });
+  }
+});
+
+module.exports = router; 

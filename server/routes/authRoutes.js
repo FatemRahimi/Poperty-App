@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const passport = require('passport');
 const config = require('../config/config');
-const { signup, login, adminLogin, forgotPassword, resetPassword, updateAdminPassword, updateAdminEmail, getAdminStats, getAdminUsers } = require("../controllers/authController");
+const { signup, login, adminLogin, forgotPassword, resetPassword, getAdminStats, getAdminUsers } = require("../controllers/authController");
 const { adminSecurityMiddleware } = require('../middleware/adminSecurity');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
@@ -197,10 +197,6 @@ const authenticateAdminJWT = (req, res, next) => {
     return res.status(401).json({ error: 'Invalid or expired admin token' });
   }
 };
-
-// Admin Management Routes (Protected)
-router.put('/admin/password', authenticateAdminJWT, updateAdminPassword);
-router.put('/admin/email', authenticateAdminJWT, updateAdminEmail);
 
 // Admin API Routes
 router.get('/admin/stats', authenticateAdminJWT, getAdminStats);

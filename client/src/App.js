@@ -21,12 +21,13 @@ import ResetPassword from "./pages/ResetPassword";
 import AddRent from "./pages/AddRent";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import UserDashboard from "./pages/UserDashboard";
 
 function Layout() {
     const location = useLocation();
 
     // Hide Navbar on login, password, signup pages, admin login, and admin dashboard
-    const hideNavbar = ["/login", "/password", "/signup", "/addlist", "/addlistnext", "/addlease", "/additional-listing/sale", "/additional-listing/lease", "/addleasenext", "/addrent", "/admin-x9k7m2p5q8", "/admin/dashboard"].includes(location.pathname);
+    const hideNavbar = ["/login", "/password", "/signup", "/addlist", "/addlistnext", "/addlease", "/additional-listing/sale", "/additional-listing/lease", "/addleasenext", "/addrent", "/admin-x9k7m2p5q8", "/admin/dashboard", "/dashboard"].includes(location.pathname);
 
     return (
         <div>
@@ -54,6 +55,12 @@ function Layout() {
                 <Route path="/seller" element={
                     <ProtectedRoute>
                         <SellerForm />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                        <UserDashboard />
                     </ProtectedRoute>
                 } />
                 

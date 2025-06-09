@@ -34,10 +34,128 @@ ALTER TABLE users ADD COLUMN picture text;
 -- Add is_verified column
 ALTER TABLE users ADD COLUMN is_verified boolean DEFAULT false;
 
--- Add role column for admin functionality (keeping for backward compatibility)
+-- Add role column for admin functionality
 ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user';
 
 INSERT INTO users (email, first_name, last_name) VALUES ('test@example.com', 'Test', 'User');
+
+-- Create admin user (password: admin123)
+INSERT INTO users (email, password, first_name, last_name, role, is_verified) 
+VALUES ('admin@property.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'User', 'admin', true) 
+ON CONFLICT (email) DO NOTHING;
+
+-- Properties table for all property types (sale, rent, lease)
+CREATE TABLE IF NOT EXISTS properties (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  property_type VARCHAR(50) NOT NULL, -- 'sale', 'rent', 'lease'
+  property_category VARCHAR(50), -- 'residential', 'commercial', 'land'
+  
+  -- Address information
+  address_line1 VARCHAR(255),
+  address_line2 VARCHAR(255),
+  city VARCHAR(100),
+  state VARCHAR(100),
+  zip_code VARCHAR(20),
+  country VARCHAR(100) DEFAULT 'USA',
+  
+  -- Property details
+  bedrooms INTEGER,
+  bathrooms DECIMAL(3,1),
+  square_feet INTEGER,
+  lot_size DECIMAL(10,2),
+  year_built INTEGER,
+  
+  -- Financial information
+  price DECIMAL(12,2),
+  monthly_rent DECIMAL(10,2), -- for rent properties
+  lease_term INTEGER, -- for lease properties (months)
+  deposit_amount DECIMAL(10,2),
+  
+  -- Property features
+  parking_spaces INTEGER DEFAULT 0,
+  has_garage BOOLEAN DEFAULT false,
+  has_pool BOOLEAN DEFAULT false,
+  has_garden BOOLEAN DEFAULT false,
+  furnished BOOLEAN DEFAULT false,
+  pets_allowed BOOLEAN DEFAULT false,
+  
+  -- Status and workflow
+  status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'approved', 'rejected', 'archived'
+  featured BOOLEAN DEFAULT false,
+  availability_date DATE,
+  
+  -- Contact information
+  contact_name VARCHAR(255),
+  contact_phone VARCHAR(20),
+  contact_email VARCHAR(255),
+  
+  -- SEO and metadata
+  slug VARCHAR(255) UNIQUE,
+  meta_keywords TEXT,
+  
+  -- Timestamps
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  approved_at TIMESTAMP,
+  approved_by INTEGER REFERENCES users(id)
+);
+
+-- Property images table
+CREATE TABLE IF NOT EXISTS property_images (
+  id SERIAL PRIMARY KEY,
+  property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
+  image_url VARCHAR(500) NOT NULL,
+  image_type VARCHAR(50), -- 'main', 'interior', 'exterior', 'floorplan'
+  image_order INTEGER DEFAULT 0,
+  alt_text VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Property amenities table
+CREATE TABLE IF NOT EXISTS property_amenities (
+  id SERIAL PRIMARY KEY,
+  property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
+  amenity_name VARCHAR(100) NOT NULL,
+  amenity_category VARCHAR(50), -- 'interior', 'exterior', 'community', 'nearby'
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Property submissions tracking
+CREATE TABLE IF NOT EXISTS property_submissions (
+  id SERIAL PRIMARY KEY,
+  property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  submission_type VARCHAR(50), -- 'new', 'edit', 'resubmission'
+  admin_notes TEXT,
+  rejection_reason TEXT,
+  reviewed_by INTEGER REFERENCES users(id),
+  reviewed_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Email notifications log
+CREATE TABLE IF NOT EXISTS email_notifications (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  property_id INTEGER REFERENCES properties(id),
+  notification_type VARCHAR(50), -- 'submission_confirm', 'admin_alert', 'approval', 'rejection'
+  email_subject VARCHAR(255),
+  email_body TEXT,
+  sent_to VARCHAR(255),
+  sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  status VARCHAR(20) DEFAULT 'sent' -- 'sent', 'failed', 'pending'
+);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_properties_user_id ON properties(user_id);
+CREATE INDEX IF NOT EXISTS idx_properties_status ON properties(status);
+CREATE INDEX IF NOT EXISTS idx_properties_type ON properties(property_type);
+CREATE INDEX IF NOT EXISTS idx_properties_created_at ON properties(created_at);
+CREATE INDEX IF NOT EXISTS idx_property_images_property_id ON property_images(property_id);
+CREATE INDEX IF NOT EXISTS idx_property_amenities_property_id ON property_amenities(property_id);
 
 -- Create initial super admin using ENV variables
 -- This will be handled by the setup script

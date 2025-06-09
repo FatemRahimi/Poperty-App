@@ -9,10 +9,23 @@ const AdminDashboard = () => {
     totalUsers: 0,
     totalAdmins: 0,
     totalProperties: 0,
+    pendingApproval: 0,
     recentActivity: []
   });
   const [adminUsers, setAdminUsers] = useState([]);
+  const [properties, setProperties] = useState([]);
+  const [filteredProperties, setFilteredProperties] = useState([]);
+  const [propertyFilters, setPropertyFilters] = useState({
+    status: 'all',
+    type: 'all'
+  });
   const [loading, setLoading] = useState(true);
+  const [reviewModal, setReviewModal] = useState({ show: false, property: null });
+  const [reviewData, setReviewData] = useState({
+    status: '',
+    admin_notes: '',
+    rejection_reason: ''
+  });
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -25,12 +38,27 @@ const AdminDashboard = () => {
     loadDashboardData();
   }, [user, navigate]);
 
+  // Filter properties when filters change
+  useEffect(() => {
+    let filtered = [...properties];
+    
+    if (propertyFilters.status !== 'all') {
+      filtered = filtered.filter(p => p.status === propertyFilters.status);
+    }
+    
+    if (propertyFilters.type !== 'all') {
+      filtered = filtered.filter(p => p.property_type === propertyFilters.type);
+    }
+    
+    setFilteredProperties(filtered);
+  }, [properties, propertyFilters]);
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       
       // Load dashboard stats
-      const statsResponse = await fetch('/api/admin/stats', {
+      const statsResponse = await fetch('/api/properties/admin/stats', {
         headers: {
           'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         }
@@ -38,19 +66,19 @@ const AdminDashboard = () => {
       
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
-        setStats(statsData);
+        setStats(statsData.stats || {});
       }
 
-      // Load admin users
-      const adminsResponse = await fetch('/api/admin/users?role=admin', {
+      // Load all properties for admin review
+      const propertiesResponse = await fetch('/api/properties/admin/all', {
         headers: {
           'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         }
       });
 
-      if (adminsResponse.ok) {
-        const adminsData = await adminsResponse.json();
-        setAdminUsers(adminsData);
+      if (propertiesResponse.ok) {
+        const propertiesData = await propertiesResponse.json();
+        setProperties(propertiesData.properties || []);
       }
 
     } catch (error) {
@@ -60,9 +88,110 @@ const AdminDashboard = () => {
     }
   };
 
+  const handlePropertyAction = async (propertyId, action) => {
+    if (action === 'review') {
+      const property = properties.find(p => p.id === propertyId);
+      setReviewModal({ show: true, property });
+      setReviewData({ status: '', admin_notes: '', rejection_reason: '' });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/properties/admin/${propertyId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ status: action })
+      });
+
+      if (response.ok) {
+        alert(`Property ${action} successfully!`);
+        loadDashboardData(); // Refresh data
+      } else {
+        throw new Error(`Failed to ${action} property`);
+      }
+    } catch (error) {
+      console.error(`Error ${action} property:`, error);
+      alert(`Error: ${error.message}`);
+    }
+  };
+
+  const handleReviewSubmit = async () => {
+    if (!reviewData.status) {
+      alert('Please select a status');
+      return;
+    }
+
+    if (reviewData.status === 'rejected' && !reviewData.rejection_reason.trim()) {
+      alert('Please provide a reason for rejection');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/properties/admin/${reviewModal.property.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        },
+        body: JSON.stringify(reviewData)
+      });
+
+      if (response.ok) {
+        alert(`Property ${reviewData.status} successfully!`);
+        setReviewModal({ show: false, property: null });
+        loadDashboardData(); // Refresh data
+      } else {
+        throw new Error(`Failed to update property status`);
+      }
+    } catch (error) {
+      console.error('Error updating property:', error);
+      alert(`Error: ${error.message}`);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatPrice = (property) => {
+    if (property.property_type === 'sale' && property.price) {
+      return `$${Number(property.price).toLocaleString()}`;
+    } else if (property.monthly_rent) {
+      return `$${Number(property.monthly_rent).toLocaleString()}/month`;
+    }
+    return 'Price not set';
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'approved': return 'success';
+      case 'pending': return 'warning';
+      case 'rejected': return 'danger';
+      default: return 'secondary';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'approved': return 'fa-check-circle';
+      case 'pending': return 'fa-clock';
+      case 'rejected': return 'fa-times-circle';
+      default: return 'fa-question-circle';
+    }
   };
 
   const StatCard = ({ title, value, icon, color = 'primary' }) => (
@@ -71,7 +200,7 @@ const AdminDashboard = () => {
         <i className={`fas ${icon}`}></i>
       </div>
       <div className="stat-content">
-        <h3>{value}</h3>
+        <h3>{value || 0}</h3>
         <p>{title}</p>
       </div>
     </div>
@@ -83,16 +212,59 @@ const AdminDashboard = () => {
         <i className="fas fa-user-shield"></i>
       </div>
       <div className="admin-info">
-        <h5>{admin.first_name} {admin.last_name}</h5>
-        <p className="admin-email">{admin.email}</p>
-        <span className={`admin-role ${admin.role}`}>
-          {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+        <h6>{admin.first_name} {admin.last_name}</h6>
+        <p>{admin.email}</p>
+        <span className="admin-role">{admin.role}</span>
+      </div>
+    </div>
+  );
+
+  const PropertyCard = ({ property }) => (
+    <div className="admin-property-card">
+      <div className="property-header">
+        <h5>{property.title}</h5>
+        <span className={`status-badge status-${property.status}`}>
+          <i className={`fas ${getStatusIcon(property.status)}`}></i>
+          {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
         </span>
       </div>
-      <div className="admin-status">
-        <span className="status-online">
-          <i className="fas fa-circle"></i> Online
-        </span>
+      
+      <div className="property-info">
+        <p><strong>Type:</strong> {property.property_type} - {property.property_category}</p>
+        <p><strong>Price:</strong> {formatPrice(property)}</p>
+        <p><strong>Address:</strong> {property.address_line1}, {property.city}</p>
+        <p><strong>Submitted:</strong> {formatDate(property.created_at)}</p>
+        <p><strong>Submitted by:</strong> {property.user_email}</p>
+        {property.bedrooms && <p><strong>Bed/Bath:</strong> {property.bedrooms} bed, {property.bathrooms} bath</p>}
+      </div>
+
+      <div className="property-actions">
+        <button 
+          className="btn btn-sm btn-info"
+          onClick={() => handlePropertyAction(property.id, 'review')}
+          title="Review & Action"
+        >
+          <i className="fas fa-eye"></i> Review
+        </button>
+        
+        {property.status === 'pending' && (
+          <>
+            <button 
+              className="btn btn-sm btn-success"
+              onClick={() => handlePropertyAction(property.id, 'approved')}
+              title="Quick Approve"
+            >
+              <i className="fas fa-check"></i> Approve
+            </button>
+            <button 
+              className="btn btn-sm btn-danger"
+              onClick={() => handlePropertyAction(property.id, 'rejected')}
+              title="Quick Reject"
+            >
+              <i className="fas fa-times"></i> Reject
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -319,17 +491,44 @@ const AdminDashboard = () => {
         {activeTab === 'properties' && (
           <div className="properties-tab">
             <div className="section-header">
-              <h4><i className="fas fa-building me-2"></i>Property Management</h4>
-              <button className="btn btn-success">
-                <i className="fas fa-plus me-2"></i>
-                Add Property
-              </button>
+              <h4><i className="fas fa-building me-2"></i>Property Management ({filteredProperties.length})</h4>
+              <div className="properties-filters">
+                <select 
+                  value={propertyFilters.status}
+                  onChange={(e) => setPropertyFilters({...propertyFilters, status: e.target.value})}
+                  className="form-select"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending Review</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <select 
+                  value={propertyFilters.type}
+                  onChange={(e) => setPropertyFilters({...propertyFilters, type: e.target.value})}
+                  className="form-select"
+                >
+                  <option value="all">All Types</option>
+                  <option value="sale">For Sale</option>
+                  <option value="rent">For Rent</option>
+                  <option value="lease">For Lease</option>
+                </select>
+              </div>
             </div>
-            <div className="coming-soon">
-              <i className="fas fa-tools mb-3"></i>
-              <h5>Property Management Coming Soon</h5>
-              <p>This section will allow you to manage all property listings.</p>
-            </div>
+
+            {filteredProperties.length === 0 ? (
+              <div className="coming-soon">
+                <i className="fas fa-home mb-3"></i>
+                <h5>No Properties Found</h5>
+                <p>No properties match your current filters, or no properties have been submitted yet.</p>
+              </div>
+            ) : (
+              <div className="properties-grid">
+                {filteredProperties.map(property => (
+                  <PropertyCard key={property.id} property={property} />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -346,6 +545,105 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Review Modal */}
+      {reviewModal.show && (
+        <div className="modal-overlay" onClick={() => setReviewModal({ show: false, property: null })}>
+          <div className="review-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h4>Review Property: {reviewModal.property?.title}</h4>
+              <button 
+                className="close-btn"
+                onClick={() => setReviewModal({ show: false, property: null })}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="property-details-review">
+                <div className="detail-row">
+                  <strong>Type:</strong> {reviewModal.property?.property_type} - {reviewModal.property?.property_category}
+                </div>
+                <div className="detail-row">
+                  <strong>Price:</strong> {reviewModal.property && formatPrice(reviewModal.property)}
+                </div>
+                <div className="detail-row">
+                  <strong>Address:</strong> {reviewModal.property?.address_line1}, {reviewModal.property?.city}
+                </div>
+                <div className="detail-row">
+                  <strong>Submitted by:</strong> {reviewModal.property?.user_email}
+                </div>
+                <div className="detail-row">
+                  <strong>Submitted:</strong> {reviewModal.property && formatDate(reviewModal.property.created_at)}
+                </div>
+                {reviewModal.property?.description && (
+                  <div className="detail-row">
+                    <strong>Description:</strong>
+                    <p className="description-text">{reviewModal.property.description}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="review-form">
+                <div className="form-group">
+                  <label>Action:</label>
+                  <select 
+                    value={reviewData.status}
+                    onChange={(e) => setReviewData({...reviewData, status: e.target.value})}
+                    className="form-control"
+                  >
+                    <option value="">Select Action</option>
+                    <option value="approved">Approve Property</option>
+                    <option value="rejected">Reject Property</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Admin Notes (Optional):</label>
+                  <textarea
+                    value={reviewData.admin_notes}
+                    onChange={(e) => setReviewData({...reviewData, admin_notes: e.target.value})}
+                    className="form-control"
+                    rows="3"
+                    placeholder="Add any internal notes about this property..."
+                  />
+                </div>
+
+                {reviewData.status === 'rejected' && (
+                  <div className="form-group">
+                    <label>Rejection Reason (Required):</label>
+                    <textarea
+                      value={reviewData.rejection_reason}
+                      onChange={(e) => setReviewData({...reviewData, rejection_reason: e.target.value})}
+                      className="form-control"
+                      rows="3"
+                      placeholder="Explain why this property is being rejected. This will be sent to the user."
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setReviewModal({ show: false, property: null })}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={handleReviewSubmit}
+                disabled={!reviewData.status}
+              >
+                Submit Review
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
