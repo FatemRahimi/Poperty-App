@@ -235,21 +235,104 @@ const AddList = () => {
     window.scrollTo(0, 0); // Scroll to top for better UX
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (validateStep3()) {
-      // Submit all data to backend
-      console.log("✅ Complete Form Submitted:", formData);
-      
-      // Here you would make your API call to submit the data
-      // Example: axios.post('/api/properties', formData)
-      
-      alert("Property listing submitted successfully!");
-      
-      // Clear form data and redirect to dashboard
-      sessionStorage.removeItem("propertyListingForm");
-      navigate("/dashboard");
+    if (!validateStep3()) {
+      return;
+    }
+
+    try {
+      // Get auth token
+      const token = sessionStorage.getItem("token");
+      if (!token) {
+        alert("❌ Please log in to submit a property.");
+        navigate("/login");
+        return;
+      }
+
+      // Map form data to backend format
+      const propertyData = {
+        title: formData.propertyName,
+        description: formData.description,
+        property_type: "sale", // Since this is AddList for sale
+        property_category: formData.propertyType,
+        
+        // Address information
+        address_line1: formData.streetAddress,
+        city: formData.city,
+        zip_code: formData.postalCode,
+        country: "USA",
+        
+        // Property details
+        bedrooms: parseInt(formData.bedrooms) || 0,
+        bathrooms: parseFloat(formData.bathrooms) || 0,
+        square_feet: parseInt(formData.floorArea) || 0,
+        year_built: parseInt(formData.builtYear) || null,
+        
+        // Financial information
+        price: formData.unpriced ? null : parseFloat(formData.askingPrice?.replace(/[^0-9.]/g, '')) || 0,
+        deposit_amount: parseFloat(formData.earnestDepositAmount?.replace(/[^0-9.]/g, '')) || 0,
+        
+        // Property features
+        parking_spaces: formData.parking === "garage" ? 1 : 0,
+        has_garage: formData.parking === "garage",
+        has_garden: formData.garden,
+        furnished: formData.furnished === "furnished",
+        
+        // Contact information
+        contact_phone: formData.contactPhone,
+        
+        // Additional data specific to this form
+        features: formData.features || [],
+        metadata: {
+          propertySubtype: formData.propertySubtype,
+          dueDiligencePeriod: formData.dueDiligencePeriod,
+          closingPeriod: formData.closingPeriod,
+          expirationDate: formData.expirationDate,
+          reminderDays: formData.reminderDays,
+          earnestDepositType: formData.earnestDepositType,
+          loiRequired: formData.loiRequired,
+          receptionRooms: formData.receptionRooms,
+          tenure: formData.tenure,
+          chainFree: formData.chainFree,
+          epcRating: formData.epcRating,
+          councilTaxBand: formData.councilTaxBand,
+          nearestStation: formData.nearestStation,
+          primarySchoolNearby: formData.primarySchoolNearby,
+          secondarySchoolNearby: formData.secondarySchoolNearby,
+          interestRate: formData.interestRate,
+          mortgageEstimate: formData.mortgageEstimate
+        }
+      };
+
+      console.log("Submitting property data:", propertyData);
+
+      // Make API call to submit property
+      const response = await fetch('/api/properties/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(propertyData)
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        alert("✅ Property listing submitted successfully! You will receive a confirmation email shortly.");
+        
+        // Clear form data and redirect to dashboard
+        sessionStorage.removeItem("propertyListingForm");
+        navigate("/dashboard");
+      } else {
+        throw new Error(result.message || 'Failed to submit property');
+      }
+
+    } catch (error) {
+      console.error('Property submission error:', error);
+      alert(`❌ Failed to submit property: ${error.message}`);
     }
   };
 

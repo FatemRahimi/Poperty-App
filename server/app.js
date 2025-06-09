@@ -5,6 +5,7 @@ const passport = require('passport');
 const config = require('./config/config');
 require('./config/passport');
 const authRoutes = require("./routes/authRoutes");
+const propertyRoutes = require("./routes/propertyRoutes");
 
 const app = express();
 
@@ -29,6 +30,8 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/properties", propertyRoutes);
 
 module.exports = app;
