@@ -13,11 +13,47 @@
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   border-bottom: 3px solid #667eea;
 }
 
-.admin-dashboard .admin-header-left h1 {
+/* Breadcrumb Navigation for Admin */
+.admin-dashboard .breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.admin-dashboard .breadcrumb-link {
+  color: #667eea;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.admin-dashboard .breadcrumb-link:hover {
+  background-color: rgba(102, 126, 234, 0.1);
+  color: #5a67d8;
+}
+
+.admin-dashboard .breadcrumb-separator {
+  color: #cbd5e0;
+  font-size: 0.7rem;
+}
+
+.admin-dashboard .breadcrumb-current {
+  color: #4a5568;
+  font-weight: 500;
+}
+
+/* Admin Title */
+.admin-dashboard .admin-title h1 {
   color: #2d3748;
   font-size: 1.8rem;
   font-weight: 700;
@@ -26,12 +62,12 @@
   align-items: center;
 }
 
-.admin-dashboard .admin-header-left h1 i {
+.admin-dashboard .admin-title h1 i {
   color: #667eea;
   margin-right: 0.75rem;
 }
 
-.admin-dashboard .admin-header-left p {
+.admin-dashboard .admin-title p {
   color: #718096;
   margin: 0.25rem 0 0 0;
   font-size: 0.9rem;
@@ -43,18 +79,97 @@
   gap: 1.5rem;
 }
 
-.admin-dashboard .admin-user-info {
+/* Admin Profile Dropdown */
+.admin-dashboard .admin-profile-dropdown .admin-profile-btn {
+  border: none;
+  background: none;
+  padding: 0.75rem;
+  border-radius: 12px;
+  color: #4a5568;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.admin-dashboard .admin-profile-dropdown .admin-profile-btn:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+}
+
+.admin-dashboard .admin-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.1rem;
+}
+
+.admin-dashboard .admin-info {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.25rem;
 }
 
-.admin-dashboard .admin-welcome {
+.admin-dashboard .admin-name {
+  font-weight: 600;
   color: #2d3748;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
+.admin-dashboard .admin-role {
+  font-size: 0.8rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.admin-dashboard .admin-profile-dropdown .dropdown-menu {
+  border: none;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  border-radius: 12px;
+  padding: 0.5rem;
+  min-width: 250px;
+}
+
+.admin-dashboard .admin-profile-dropdown .dropdown-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 0.5rem;
+}
+
+.admin-dashboard .admin-profile-dropdown .dropdown-item {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  color: #4a5568;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.admin-dashboard .admin-profile-dropdown .dropdown-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  transform: translateX(2px);
+}
+
+.admin-dashboard .admin-profile-dropdown .dropdown-item.text-danger:hover {
+  background: rgba(245, 101, 101, 0.1);
+  color: #e53e3e;
+}
+
+.admin-dashboard .admin-profile-dropdown .dropdown-divider {
+  margin: 0.5rem 0;
+  border-color: #e2e8f0;
+}
+
+/* Updated admin role badge in dropdown */
 .admin-dashboard .admin-role-badge {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -64,6 +179,14 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  margin-top: 0.5rem;
+  display: inline-block;
+}
+
+/* Remove old user info styles */
+.admin-dashboard .admin-user-info,
+.admin-dashboard .admin-welcome {
+  display: none;
 }
 
 /* Navigation Tabs - Only within admin dashboard */

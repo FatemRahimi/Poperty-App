@@ -110,6 +110,7 @@ const AddRent = () => {
     petsAllowed: false,
     ensuiteBathroom: false,
     liftAccess: false,
+    studentHousing: false,
     epcRating: "",
     
     // Description & Media
@@ -268,6 +269,7 @@ const AddRent = () => {
         billsIncluded: formData.billsIncluded,
         ensuiteBathroom: formData.ensuiteBathroom,
         liftAccess: formData.liftAccess,
+        studentHousing: formData.studentHousing,
         epcRating: formData.epcRating
       };
       
@@ -549,6 +551,17 @@ const AddRent = () => {
                   onChange={handleChange}
                 />
                 <label htmlFor="liftAccess">Lift Access</label>
+              </div>
+              
+              <div className="feature-item">
+                <input 
+                  type="checkbox" 
+                  id="studentHousing" 
+                  name="studentHousing" 
+                  checked={formData.studentHousing}
+                  onChange={handleChange}
+                />
+                <label htmlFor="studentHousing">Suitable for Students</label>
               </div>
             </div>
             

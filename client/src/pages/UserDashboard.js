@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './UserDashboard.css';
@@ -8,12 +8,23 @@ const UserDashboard = () => {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showAddListingDropdown, setShowAddListingDropdown] = useState(false);
   const [filters, setFilters] = useState({
     status: 'all',
     type: 'all'
   });
+  const [profileData, setProfileData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    created_at: ''
+  });
+  const [isEditing, setIsEditing] = useState(false);
+  
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const profileFormRef = useRef(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -22,9 +33,16 @@ const UserDashboard = () => {
       return;
     }
     loadDashboardData();
+    setProfileData({
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      created_at: user?.created_at || ''
+    });
   }, [user, navigate]);
 
-  // Refresh data when component gains focus (user returns from another page)
+  // Refresh data when component gains focus
   useEffect(() => {
     const handleFocus = () => {
       if (user) {
@@ -36,11 +54,56 @@ const UserDashboard = () => {
     return () => window.removeEventListener('focus', handleFocus);
   }, [user]);
 
+  // Handle click outside profile form to cancel editing
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isEditing && profileFormRef.current && !profileFormRef.current.contains(event.target)) {
+        setIsEditing(false);
+        // Reset form data to original user data
+        setProfileData({
+          first_name: user?.first_name || '',
+          last_name: user?.last_name || '',
+          email: user?.email || '',
+          phone: user?.phone || '',
+          created_at: user?.created_at || ''
+        });
+      }
+    };
+
+    if (isEditing) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isEditing, user]);
+
+  // Handle click outside add listing dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showAddListingDropdown && !event.target.closest('.add-listing-dropdown-container')) {
+        setShowAddListingDropdown(false);
+      }
+    };
+
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && showAddListingDropdown) {
+        setShowAddListingDropdown(false);
+      }
+    };
+
+    if (showAddListingDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscKey);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleEscKey);
+      };
+    }
+  }, [showAddListingDropdown]);
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       
-      // Load user's properties
       const propertiesResponse = await fetch('/api/properties/my-properties', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -49,15 +112,12 @@ const UserDashboard = () => {
       
       if (propertiesResponse.ok) {
         const propertiesData = await propertiesResponse.json();
-        console.log('Dashboard data loaded:', propertiesData); // Debug log
         setProperties(propertiesData.properties || []);
         
-        // Calculate stats from properties
         const userStats = calculateStats(propertiesData.properties || []);
         setStats(userStats);
       } else {
         console.error('Failed to load dashboard data:', propertiesResponse.status);
-        // Optionally show error message to user
         if (propertiesResponse.status === 401) {
           localStorage.removeItem('token');
           navigate('/login');
@@ -77,9 +137,6 @@ const UserDashboard = () => {
       pending: properties.filter(p => p.status === 'pending').length,
       approved: properties.filter(p => p.status === 'approved').length,
       rejected: properties.filter(p => p.status === 'rejected').length,
-      forSale: properties.filter(p => p.property_type === 'sale').length,
-      forRent: properties.filter(p => p.property_type === 'rent').length,
-      forLease: properties.filter(p => p.property_type === 'lease').length
     };
   };
 
@@ -88,21 +145,28 @@ const UserDashboard = () => {
     navigate('/');
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'approved': return 'success';
-      case 'pending': return 'warning';
-      case 'rejected': return 'danger';
-      default: return 'secondary';
-    }
-  };
+  const handleProfileSave = async () => {
+    try {
+      const response = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          first_name: profileData.first_name,
+          last_name: profileData.last_name,
+          phone: profileData.phone
+        })
+      });
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'approved': return 'fa-check-circle';
-      case 'pending': return 'fa-clock';
-      case 'rejected': return 'fa-times-circle';
-      default: return 'fa-question-circle';
+      if (response.ok) {
+        setIsEditing(false);
+        // Refresh user data
+        loadDashboardData();
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
     }
   };
 
@@ -118,7 +182,7 @@ const UserDashboard = () => {
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'short',
+      month: 'long',
       day: 'numeric'
     });
   };
@@ -129,90 +193,180 @@ const UserDashboard = () => {
     return statusMatch && typeMatch;
   });
 
-  const StatCard = ({ title, value, icon, color = 'primary' }) => (
-    <div className={`stat-card stat-card-${color}`}>
-      <div className="stat-icon">
-        <i className={`fas ${icon}`}></i>
+  // Image Carousel Component
+  const ImageCarousel = ({ images, title }) => {
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    
+    if (!images || images.length === 0) {
+      return (
+        <div className="property-images">
+          <div className="no-image-modern">
+            <i className="fas fa-home"></i>
+            <span>No Images Available</span>
+          </div>
+        </div>
+      );
+    }
+
+    const nextImage = () => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    };
+
+    const prevImage = () => {
+      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    };
+
+    return (
+      <div className="property-images">
+        <div className="image-carousel">
+          {images.map((image, index) => (
+            <img
+              key={index}
+              src={image.url}
+              alt={`${title} - Image ${index + 1}`}
+              className={`carousel-image ${index === currentImageIndex ? 'active' : ''}`}
+            />
+          ))}
+          
+          {images.length > 1 && (
+            <>
+              <button className="carousel-controls carousel-prev" onClick={prevImage}>
+                <i className="fas fa-chevron-left"></i>
+              </button>
+              <button className="carousel-controls carousel-next" onClick={nextImage}>
+                <i className="fas fa-chevron-right"></i>
+              </button>
+              
+              <div className="carousel-indicators">
+                {images.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`carousel-dot ${index === currentImageIndex ? 'active' : ''}`}
+                    onClick={() => setCurrentImageIndex(index)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
-      <div className="stat-content">
-        <h3>{value}</h3>
-        <p>{title}</p>
+    );
+  };
+
+  // Professional Property Card
+  const PropertyCard = ({ property }) => (
+    <div className="property-card-modern fade-in">
+      <ImageCarousel images={property.images} title={property.title} />
+      
+      <div className={`property-status-badge status-${property.status}`}>
+        {property.status}
+      </div>
+      
+      <div className="property-details-modern">
+        <h3 className="property-title-modern">{property.title}</h3>
+        
+        <p className="property-address-modern">
+          <i className="fas fa-map-marker-alt"></i>
+          {property.address_line1}, {property.city}, {property.state}
+        </p>
+        
+        <div className="property-price-modern">{formatPrice(property)}</div>
+        
+        <div className="property-features">
+          {property.bedrooms && (
+            <div className="feature-item">
+              <div className="feature-icon">
+                <i className="fas fa-bed"></i>
+              </div>
+              <span>{property.bedrooms} Bedrooms</span>
+            </div>
+          )}
+          {property.bathrooms && (
+            <div className="feature-item">
+              <div className="feature-icon">
+                <i className="fas fa-bath"></i>
+              </div>
+              <span>{property.bathrooms} Bathrooms</span>
+            </div>
+          )}
+          {property.square_feet && (
+            <div className="feature-item">
+              <div className="feature-icon">
+                <i className="fas fa-ruler-combined"></i>
+              </div>
+              <span>{Number(property.square_feet).toLocaleString()} sqft</span>
+            </div>
+          )}
+          {property.parking_spots && (
+            <div className="feature-item">
+              <div className="feature-icon">
+                <i className="fas fa-car"></i>
+              </div>
+              <span>{property.parking_spots} Parking</span>
+            </div>
+          )}
+          {property.student_housing && (
+            <div className="feature-item">
+              <div className="feature-icon">
+                <i className="fas fa-graduation-cap"></i>
+              </div>
+              <span>Student-Friendly</span>
+            </div>
+          )}
+        </div>
+        
+        <div className="property-meta-modern">
+          <span className="property-type-badge">
+            {property.property_type.charAt(0).toUpperCase() + property.property_type.slice(1)}
+          </span>
+          <small>Submitted: {formatDate(property.created_at)}</small>
+        </div>
+        
+        <div className="property-actions-modern">
+          <button 
+            className="action-btn-modern btn-edit"
+            onClick={() => navigate(`/edit-property/${property.id}`)}
+          >
+            <i className="fas fa-edit"></i> Edit
+          </button>
+          {property.status === 'approved' && (
+            <button 
+              className="action-btn-modern btn-view"
+              onClick={() => window.open(`/property/${property.slug}`, '_blank')}
+            >
+              <i className="fas fa-eye"></i> View
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 
-  const PropertyCard = ({ property }) => (
-    <div className="property-card">
-      <div className="property-image">
-        {property.images && property.images.length > 0 ? (
-          <img src={property.images[0].url} alt={property.title} />
-        ) : (
-          <div className="no-image">
-            <i className="fas fa-home"></i>
-            <span>No Image</span>
-          </div>
-        )}
-      </div>
-      <div className="property-details">
-        <h4>{property.title}</h4>
-        <p className="property-address">
-          <i className="fas fa-map-marker-alt"></i>
-          {property.address_line1}, {property.city}, {property.state}
-        </p>
-        <p className="property-price">{formatPrice(property)}</p>
-        <div className="property-meta">
-          <span className="property-type">
-            <i className="fas fa-tag"></i>
-            {property.property_type.charAt(0).toUpperCase() + property.property_type.slice(1)}
-          </span>
-          <span className={`property-status status-${property.status}`}>
-            <i className={`fas ${getStatusIcon(property.status)}`}></i>
-            {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
-          </span>
-        </div>
-        <div className="property-stats">
-          {property.bedrooms && (
-            <span><i className="fas fa-bed"></i> {property.bedrooms} bed</span>
-          )}
-          {property.bathrooms && (
-            <span><i className="fas fa-bath"></i> {property.bathrooms} bath</span>
-          )}
-          {property.square_feet && (
-            <span><i className="fas fa-ruler-combined"></i> {Number(property.square_feet).toLocaleString()} sqft</span>
+  // Professional Stats Card
+  const StatCard = ({ title, value, icon, color, trend }) => (
+    <div className={`stat-card-modern ${color} fade-in`}>
+      <div className="stat-header">
+        <div className="stat-content-modern">
+          <h3>{value}</h3>
+          <p>{title}</p>
+          {trend && (
+            <div className="stat-trend">
+              <i className="fas fa-arrow-up"></i>
+              <span>{trend}</span>
+            </div>
           )}
         </div>
-        <div className="property-dates">
-          <small>Submitted: {formatDate(property.created_at)}</small>
-          {property.approved_at && (
-            <small>Approved: {formatDate(property.approved_at)}</small>
-          )}
+        <div className="stat-icon-modern">
+          <i className={`fas ${icon}`}></i>
         </div>
-      </div>
-      <div className="property-actions">
-        <button 
-          className="btn btn-sm btn-outline-primary"
-          onClick={() => navigate(`/edit-property/${property.id}`)}
-        >
-          <i className="fas fa-edit"></i> Edit
-        </button>
-        {property.status === 'approved' && (
-          <button 
-            className="btn btn-sm btn-success"
-            onClick={() => window.open(`/property/${property.slug}`, '_blank')}
-          >
-            <i className="fas fa-eye"></i> View
-          </button>
-        )}
       </div>
     </div>
   );
 
   if (loading) {
     return (
-      <div className="dashboard-loading">
-        <div className="spinner-border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+      <div className="dashboard-loading-modern">
+        <div className="loading-spinner"></div>
         <p>Loading your dashboard...</p>
       </div>
     );
@@ -220,164 +374,148 @@ const UserDashboard = () => {
 
   return (
     <div className="user-dashboard">
-      {/* Header */}
+      {/* Professional Header */}
       <div className="dashboard-header">
-        <div className="header-left">
-          <div className="site-navigation">
-            <button 
-              className="btn btn-link site-nav-btn"
-              onClick={() => navigate('/')}
-              title="Go to Home"
-            >
-              <i className="fas fa-home me-2"></i>
-              Home
-            </button>
-            <span className="nav-separator">|</span>
-            <button 
-              className="btn btn-link site-nav-btn"
-              onClick={() => navigate('/find')}
-              title="Find Properties"
-            >
-              <i className="fas fa-search me-2"></i>
-              Find Properties
-            </button>
+        <div className="header-container">
+          <div className="header-top">
+            <div className="user-greeting">
+              <div className="user-avatar-large">
+                <i className="fas fa-user"></i>
+              </div>
+              <div className="greeting-text">
+                <h1>Welcome back, {user?.first_name}!</h1>
+                <p>Manage your property listings and track your success</p>
+              </div>
+            </div>
+            
+            <div className="header-actions">
+              <div className="add-listing-dropdown-container">
+                <button 
+                  className="add-listing-btn-modern"
+                  onClick={() => setShowAddListingDropdown(!showAddListingDropdown)}
+                >
+                  <span>Add New Listing</span>
+                  <i className={`fas fa-chevron-down ${showAddListingDropdown ? 'rotated' : ''}`}></i>
+                </button>
+                
+                {showAddListingDropdown && (
+                  <div className="add-listing-dropdown-menu">
+                    <button 
+                      className="dropdown-item-btn"
+                      onClick={() => {navigate('/addlist'); setShowAddListingDropdown(false);}}
+                    >
+                      <i className="fas fa-home" style={{marginRight: '0.5rem'}}></i>
+                      For Sale
+                    </button>
+                    <button 
+                      className="dropdown-item-btn"
+                      onClick={() => {navigate('/addrent'); setShowAddListingDropdown(false);}}
+                    >
+                      <i className="fas fa-key" style={{marginRight: '0.5rem'}}></i>
+                      For Rent
+                    </button>
+                    <button 
+                      className="dropdown-item-btn"
+                      onClick={() => {navigate('/addlease'); setShowAddListingDropdown(false);}}
+                    >
+                      <i className="fas fa-file-contract" style={{marginRight: '0.5rem'}}></i>
+                      For Lease
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <button 
+                className="profile-menu-btn"
+                onClick={handleLogout}
+                title="Sign Out"
+              >
+                <i className="fas fa-sign-out-alt"></i>
+              </button>
+            </div>
           </div>
-          <h1>
-            <i className="fas fa-tachometer-alt me-3"></i>
-            My Dashboard
-          </h1>
-          <p>Welcome back, {user?.first_name} {user?.last_name}</p>
-        </div>
-        <div className="header-right">
-          <button 
-            className="btn btn-primary me-2"
-            onClick={() => navigate('/addlist')}
-          >
-            <i className="fas fa-plus me-2"></i>
-            Add Property
-          </button>
-          <button className="btn btn-outline-secondary" onClick={handleLogout}>
-            <i className="fas fa-sign-out-alt me-2"></i>
-            Logout
-          </button>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="dashboard-nav">
-        <div className="nav nav-tabs">
-          <button 
-            className={`nav-link ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
-          >
-            <i className="fas fa-chart-pie me-2"></i>
-            Overview
-          </button>
-          <button 
-            className={`nav-link ${activeTab === 'properties' ? 'active' : ''}`}
-            onClick={() => setActiveTab('properties')}
-          >
-            <i className="fas fa-building me-2"></i>
-            My Properties
-          </button>
-          <button 
-            className={`nav-link ${activeTab === 'profile' ? 'active' : ''}`}
-            onClick={() => setActiveTab('profile')}
-          >
-            <i className="fas fa-user me-2"></i>
-            Profile
-          </button>
+      {/* Modern Navigation */}
+      <div className="dashboard-nav-modern">
+        <div className="nav-container">
+          <div className="nav-tabs-modern">
+            <button 
+              className={`nav-tab-modern ${activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
+              <i className="fas fa-chart-line"></i>
+              Overview
+            </button>
+            <button 
+              className={`nav-tab-modern ${activeTab === 'properties' ? 'active' : ''}`}
+              onClick={() => setActiveTab('properties')}
+            >
+              <i className="fas fa-building"></i>
+              My Properties
+            </button>
+            <button 
+              className={`nav-tab-modern ${activeTab === 'profile' ? 'active' : ''}`}
+              onClick={() => setActiveTab('profile')}
+            >
+              <i className="fas fa-user"></i>
+              Profile
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="dashboard-content">
+      <div className="dashboard-main">
         {activeTab === 'overview' && (
-          <div className="overview-tab">
-            <div className="stats-grid">
-              <StatCard 
-                title="Total Properties" 
-                value={stats.total || 0} 
-                icon="fa-home" 
-                color="primary" 
-              />
-              <StatCard 
-                title="Approved" 
-                value={stats.approved || 0} 
-                icon="fa-check-circle" 
-                color="success" 
-              />
-              <StatCard 
-                title="Pending Review" 
-                value={stats.pending || 0} 
-                icon="fa-clock" 
-                color="warning" 
-              />
-              <StatCard 
-                title="Need Updates" 
-                value={stats.rejected || 0} 
-                icon="fa-edit" 
-                color="danger" 
-              />
-            </div>
-
-            <div className="quick-actions">
-              <h4><i className="fas fa-bolt me-2"></i>Quick Actions</h4>
-              <div className="action-buttons">
-                <button 
-                  className="action-btn"
-                  onClick={() => navigate('/addlist')}
-                >
-                  <i className="fas fa-plus-circle"></i>
-                  <span>List Property for Sale</span>
-                </button>
-                <button 
-                  className="action-btn"
-                  onClick={() => navigate('/addrent')}
-                >
-                  <i className="fas fa-key"></i>
-                  <span>List Property for Rent</span>
-                </button>
-                <button 
-                  className="action-btn"
-                  onClick={() => navigate('/addlease')}
-                >
-                  <i className="fas fa-file-contract"></i>
-                  <span>List Property for Lease</span>
-                </button>
+          <>
+            <div className="stats-section">
+              <div className="stats-header">
+                <h2>Property Statistics</h2>
+              </div>
+              <div className="stats-grid-modern">
+                <StatCard 
+                  title="Total Properties" 
+                  value={stats.total || 0} 
+                  icon="fa-home" 
+                  color="primary"
+                />
+                <StatCard 
+                  title="Approved Listings" 
+                  value={stats.approved || 0} 
+                  icon="fa-check-circle" 
+                  color="success"
+                />
+                <StatCard 
+                  title="Pending Review" 
+                  value={stats.pending || 0} 
+                  icon="fa-clock" 
+                  color="warning"
+                />
+                <StatCard 
+                  title="Need Updates" 
+                  value={stats.rejected || 0} 
+                  icon="fa-edit" 
+                  color="danger"
+                />
               </div>
             </div>
-
-            {stats.total > 0 && (
-              <div className="recent-activity">
-                <h4><i className="fas fa-clock me-2"></i>Recent Properties</h4>
-                <div className="recent-properties">
-                  {properties.slice(0, 3).map(property => (
-                    <div key={property.id} className="recent-property">
-                      <div className="recent-property-info">
-                        <h6>{property.title}</h6>
-                        <p>{formatPrice(property)}</p>
-                      </div>
-                      <span className={`badge bg-${getStatusColor(property.status)}`}>
-                        {property.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          </>
         )}
 
         {activeTab === 'properties' && (
-          <div className="properties-tab">
-            <div className="properties-header">
-              <h4><i className="fas fa-building me-2"></i>My Properties ({filteredProperties.length})</h4>
-              <div className="properties-filters">
+          <div className="properties-section">
+            <div className="properties-header-modern">
+              <div className="properties-title">
+                <h2>My Properties</h2>
+                <span className="property-count">{filteredProperties.length}</span>
+              </div>
+              <div className="properties-filters-modern">
                 <select 
                   value={filters.status}
                   onChange={(e) => setFilters({...filters, status: e.target.value})}
-                  className="form-select"
+                  className="filter-select"
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
@@ -387,7 +525,7 @@ const UserDashboard = () => {
                 <select 
                   value={filters.type}
                   onChange={(e) => setFilters({...filters, type: e.target.value})}
-                  className="form-select"
+                  className="filter-select"
                 >
                   <option value="all">All Types</option>
                   <option value="sale">For Sale</option>
@@ -398,20 +536,20 @@ const UserDashboard = () => {
             </div>
 
             {filteredProperties.length === 0 ? (
-              <div className="no-properties">
-                <i className="fas fa-home mb-3"></i>
-                <h5>No Properties Found</h5>
-                <p>You haven't submitted any properties yet, or no properties match your filters.</p>
+              <div className="no-properties-modern">
+                <i className="fas fa-home"></i>
+                <h3>No Properties Found</h3>
+                <p>You haven't submitted any properties yet, or no properties match your current filters.</p>
                 <button 
-                  className="btn btn-primary"
+                  className="btn-add-first"
                   onClick={() => navigate('/addlist')}
                 >
-                  <i className="fas fa-plus me-2"></i>
+                  <i className="fas fa-plus"></i>
                   Add Your First Property
                 </button>
               </div>
             ) : (
-              <div className="properties-grid">
+              <div className="properties-grid-modern">
                 {filteredProperties.map(property => (
                   <PropertyCard key={property.id} property={property} />
                 ))}
@@ -421,26 +559,85 @@ const UserDashboard = () => {
         )}
 
         {activeTab === 'profile' && (
-          <div className="profile-tab">
-            <h4><i className="fas fa-user me-2"></i>Profile Information</h4>
-            <div className="profile-info">
-              <div className="profile-field">
-                <label>Name</label>
-                <p>{user?.first_name} {user?.last_name}</p>
+          <div className={`profile-section ${isEditing ? 'editing' : ''}`}>
+            <div className="profile-header">
+              <h2>
+                <i className="fas fa-user"></i>
+                Profile Information
+              </h2>
+              {isEditing && (
+                <small style={{color: '#64748b', fontStyle: 'italic'}}>
+                  Click outside this form to cancel editing
+                </small>
+              )}
+            </div>
+            
+            <div className="profile-form" ref={profileFormRef}>
+              <div className="form-group-modern">
+                <label className="form-label-modern">First Name</label>
+                <input
+                  type="text"
+                  className="form-input-modern"
+                  value={profileData.first_name}
+                  onChange={(e) => setProfileData({...profileData, first_name: e.target.value})}
+                  disabled={!isEditing}
+                />
               </div>
-              <div className="profile-field">
-                <label>Email</label>
-                <p>{user?.email}</p>
+              
+              <div className="form-group-modern">
+                <label className="form-label-modern">Last Name</label>
+                <input
+                  type="text"
+                  className="form-input-modern"
+                  value={profileData.last_name}
+                  onChange={(e) => setProfileData({...profileData, last_name: e.target.value})}
+                  disabled={!isEditing}
+                />
               </div>
-              <div className="profile-field">
-                <label>Member Since</label>
-                <p>{user?.created_at ? formatDate(user.created_at) : 'N/A'}</p>
+              
+              <div className="form-group-modern">
+                <label className="form-label-modern">Email Address</label>
+                <input
+                  type="email"
+                  className="form-input-modern"
+                  value={profileData.email}
+                  disabled
+                  title="Email cannot be changed for security reasons"
+                />
+              </div>
+              
+              <div className="form-group-modern">
+                <label className="form-label-modern">Phone Number</label>
+                <input
+                  type="tel"
+                  className="form-input-modern"
+                  value={profileData.phone}
+                  onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
+                  disabled={!isEditing}
+                  placeholder="+1 (555) 123-4567"
+                />
               </div>
             </div>
-            <button className="btn btn-outline-primary">
-              <i className="fas fa-edit me-2"></i>
-              Edit Profile
-            </button>
+            
+            <div className="profile-actions">
+              {!isEditing ? (
+                <button 
+                  className="btn-save"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <i className="fas fa-edit"></i>
+                  Edit Profile
+                </button>
+              ) : (
+                <button 
+                  className="btn-save"
+                  onClick={handleProfileSave}
+                >
+                  <i className="fas fa-save"></i>
+                  Save Changes
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

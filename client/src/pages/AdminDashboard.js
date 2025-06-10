@@ -285,25 +285,71 @@ const AdminDashboard = () => {
       {/* Header */}
       <div className="admin-header">
         <div className="admin-header-left">
-          <h1>
-            <i className="fas fa-tachometer-alt me-3"></i>
-            Admin Dashboard
-          </h1>
-          <p>Property Management System</p>
-        </div>
-        <div className="admin-header-right">
-          <div className="admin-user-info">
-            <span className="admin-welcome">
-              Welcome, <strong>{user?.first_name} {user?.last_name}</strong>
-            </span>
-            <span className="admin-role-badge">
-              {user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}
-            </span>
+          {/* Breadcrumb Navigation */}
+          <nav className="breadcrumb-nav">
+            <a href="/" className="breadcrumb-link">
+              <i className="fas fa-home"></i>
+              <span>Home</span>
+            </a>
+            <i className="fas fa-chevron-right breadcrumb-separator"></i>
+            <span className="breadcrumb-current">Admin Dashboard</span>
+          </nav>
+          
+          <div className="admin-title">
+            <h1>
+              <i className="fas fa-tachometer-alt me-3"></i>
+              Admin Dashboard
+            </h1>
+            <p>Property Management System</p>
           </div>
-          <button className="btn btn-outline-danger" onClick={handleLogout}>
-            <i className="fas fa-sign-out-alt me-2"></i>
-            Logout
-          </button>
+        </div>
+        
+        <div className="admin-header-right">
+          {/* Admin Profile Dropdown */}
+          <div className="admin-profile-dropdown">
+            <button className="btn btn-link admin-profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+              <div className="admin-avatar">
+                <i className="fas fa-user-shield"></i>
+              </div>
+              <div className="admin-info">
+                <span className="admin-name">{user?.first_name}</span>
+                <span className="admin-role">
+                  {user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                </span>
+              </div>
+            </button>
+            <ul className="dropdown-menu dropdown-menu-end">
+              <li>
+                <div className="dropdown-header">
+                  <strong>{user?.first_name} {user?.last_name}</strong>
+                  <small className="text-muted d-block">{user?.email}</small>
+                  <span className="admin-role-badge">
+                    {user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                  </span>
+                </div>
+              </li>
+              <li><hr className="dropdown-divider" /></li>
+              <li>
+                <a className="dropdown-item" href="#" onClick={(e) => {e.preventDefault(); setActiveTab('settings');}}>
+                  <i className="fas fa-cogs me-2"></i>
+                  Settings
+                </a>
+              </li>
+              <li>
+                <a className="dropdown-item" href="/" onClick={(e) => {e.preventDefault(); window.open('/', '_blank');}}>
+                  <i className="fas fa-globe me-2"></i>
+                  View Site
+                </a>
+              </li>
+              <li><hr className="dropdown-divider" /></li>
+              <li>
+                <a className="dropdown-item text-danger" href="#" onClick={(e) => {e.preventDefault(); handleLogout();}}>
+                  <i className="fas fa-sign-out-alt me-2"></i>
+                  Sign Out
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 

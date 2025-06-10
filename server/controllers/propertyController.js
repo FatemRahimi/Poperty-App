@@ -104,6 +104,8 @@ const submitProperty = async (req, res) => {
       furnished, 
       furnishedStatus, // Alternative field name from frontend
       pets_allowed,
+      student_housing,
+      studentHousing, // Alternative field name from frontend
       availability_date, 
       availableFrom, // Alternative field name from frontend
       contact_name, 
@@ -127,6 +129,7 @@ const submitProperty = async (req, res) => {
     const lease_term_mapped = lease_term || tenancyLength;
     const deposit_amount_mapped = deposit_amount || depositAmount;
     const furnished_mapped = furnished || (furnishedStatus === 'furnished');
+    const student_housing_mapped = student_housing || studentHousing || false;
     const availability_date_mapped = availability_date || availableFrom;
     const contact_name_mapped = contact_name || contactName;
     const contact_phone_mapped = contact_phone || contactPhone;
@@ -177,7 +180,7 @@ const submitProperty = async (req, res) => {
         bedrooms, bathrooms, square_feet, lot_size, year_built,
         price, monthly_rent, lease_term, deposit_amount,
         parking_spaces, has_garage, has_pool, has_garden, furnished, pets_allowed,
-        availability_date, contact_name, contact_phone, contact_email, slug
+        student_housing, availability_date, contact_name, contact_phone, contact_email, slug
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
         $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
@@ -189,7 +192,7 @@ const submitProperty = async (req, res) => {
         price_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
         parking_spaces || 0, has_garage || false, has_pool || false, 
         has_garden || false, furnished_mapped || false, pets_allowed || false,
-        availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, slug
+        student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, slug
       ]
     );
 
