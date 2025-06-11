@@ -784,6 +784,42 @@
   to { transform: rotate(360deg); }
 }
 
+.edit-buttons-container {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.btn-cancel {
+  background: #6b7280;
+  color: white;
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 120px;
+  position: relative;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #4b5563;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
+.btn-cancel:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* No Properties State */
 .no-properties-modern {
   background: white;
