@@ -85,6 +85,7 @@ const AddList = () => {
     
     // Step 3: Additional Information
     description: "",
+    shortDescription: "",
     features: [],
     mediaFiles: [],
     contactPhone: ""
@@ -110,7 +111,32 @@ const AddList = () => {
   // Media handling functions
   const handleMediaChange = (e) => {
     const files = Array.from(e.target.files);
+    
     if (files.length > 0) {
+      // Check individual file sizes (1GB = 1024 * 1024 * 1024 bytes)
+      const maxFileSize = 1024 * 1024 * 1024; // 1GB
+      const oversizedFiles = files.filter(file => file.size > maxFileSize);
+      
+      if (oversizedFiles.length > 0) {
+        alert(`Some files are too large. Maximum file size is 1GB per file.\nOversized files: ${oversizedFiles.map(f => f.name).join(', ')}`);
+        return;
+      }
+      
+      // Limit to 15 files
+      if (mediaFiles.length + files.length > 15) {
+        alert("You can upload a maximum of 15 files");
+        return;
+      }
+      
+      // Check total size limit
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+      const maxTotalSize = 15 * 1024 * 1024 * 1024; // 15GB total (15 files x 1GB each)
+      
+      if (totalSize > maxTotalSize) {
+        alert(`Total file size too large. Maximum total size is 15GB for all files combined.`);
+        return;
+      }
+      
       const newMediaFiles = [...mediaFiles, ...files];
       setMediaFiles(newMediaFiles);
       
@@ -118,7 +144,8 @@ const AddList = () => {
       const newPreviewUrls = files.map(file => ({
         url: URL.createObjectURL(file),
         type: file.type,
-        name: file.name
+        name: file.name,
+        size: file.size
       }));
       setMediaPreviewUrls(prev => [...prev, ...newPreviewUrls]);
       
@@ -201,6 +228,10 @@ const AddList = () => {
       alert("❌ Please provide a property description before submitting.");
       return false;
     }
+    if (!formData.shortDescription?.trim()) {
+      alert("❌ Please provide a short description for property cards before submitting.");
+      return false;
+    }
     if (!formData.contactPhone.trim()) {
       alert("❌ Please provide a contact phone number before submitting.");
       return false;
@@ -261,24 +292,34 @@ const AddList = () => {
         return;
       }
 
-      // Map form data to backend format
-      const propertyData = {
+      // Create FormData to handle file uploads
+      const submitFormData = new FormData();
+      
+      // Map AddList form fields to backend expected fields
+      const fieldMapping = {
+        // Basic property info
         title: formData.propertyName,
+        propertyTitle: formData.propertyName,
         description: formData.description,
-        property_type: "sale", // Since this is AddList for sale
-        property_category: formData.propertyType,
+        shortDescription: formData.shortDescription,
+        property_type: 'sale',
+        propertyType: 'sale',
         
-        // Address information
+        // Address fields
         address_line1: formData.streetAddress,
+        streetAddress: formData.streetAddress,
         city: formData.city,
+        state: '',
+        region: '', 
         zip_code: formData.postalCode,
-        country: "USA",
+        postcode: formData.postalCode,
+        country: 'UK',
         
         // Property details
-        bedrooms: parseInt(formData.bedrooms) || 0,
-        bathrooms: parseFloat(formData.bathrooms) || 0,
-        square_feet: parseInt(formData.floorArea) || 0,
-        year_built: parseInt(formData.builtYear) || null,
+        bedrooms: formData.bedrooms,
+        bathrooms: formData.bathrooms,
+        square_feet: formData.floorArea,
+        year_built: formData.builtYear,
         
         // Financial information
         price: formData.unpriced ? null : parseFloat(formData.askingPrice?.replace(/[^0-9.]/g, '')) || 0,
@@ -292,40 +333,58 @@ const AddList = () => {
         
         // Contact information
         contact_phone: formData.contactPhone,
+        contactPhone: formData.contactPhone,
+        contact_email: localStorage.getItem('userEmail') || '',
+        contactEmail: localStorage.getItem('userEmail') || '',
+        contact_name: localStorage.getItem('userName') || '',
+        contactName: localStorage.getItem('userName') || '',
         
-        // Additional data specific to this form
-        features: formData.features || [],
-        metadata: {
-          propertySubtype: formData.propertySubtype,
-          dueDiligencePeriod: formData.dueDiligencePeriod,
-          closingPeriod: formData.closingPeriod,
-          expirationDate: formData.expirationDate,
-          reminderDays: formData.reminderDays,
-          earnestDepositType: formData.earnestDepositType,
-          loiRequired: formData.loiRequired,
-          receptionRooms: formData.receptionRooms,
-          tenure: formData.tenure,
-          chainFree: formData.chainFree,
-          epcRating: formData.epcRating,
-          councilTaxBand: formData.councilTaxBand,
-          nearestStation: formData.nearestStation,
-          primarySchoolNearby: formData.primarySchoolNearby,
-          secondarySchoolNearby: formData.secondarySchoolNearby,
-          interestRate: formData.interestRate,
-          mortgageEstimate: formData.mortgageEstimate
-        }
+        // Additional metadata
+        propertySubtype: formData.propertySubtype,
+        dueDiligencePeriod: formData.dueDiligencePeriod,
+        closingPeriod: formData.closingPeriod,
+        expirationDate: formData.expirationDate,
+        reminderDays: formData.reminderDays,
+        earnestDepositType: formData.earnestDepositType,
+        loiRequired: formData.loiRequired,
+        receptionRooms: formData.receptionRooms,
+        tenure: formData.tenure,
+        chainFree: formData.chainFree,
+        epcRating: formData.epcRating,
+        councilTaxBand: formData.councilTaxBand,
+        nearestStation: formData.nearestStation,
+        primarySchoolNearby: formData.primarySchoolNearby,
+        secondarySchoolNearby: formData.secondarySchoolNearby,
+        interestRate: formData.interestRate,
+        mortgageEstimate: formData.mortgageEstimate
       };
-
-      console.log("Submitting property data:", propertyData);
+      
+      // Add all mapped fields to FormData
+      Object.keys(fieldMapping).forEach(key => {
+        if (fieldMapping[key] !== undefined && fieldMapping[key] !== null && fieldMapping[key] !== '') {
+          submitFormData.append(key, fieldMapping[key]);
+        }
+      });
+      
+      // Add user information
+      submitFormData.append('userEmail', localStorage.getItem('userEmail') || '');
+      submitFormData.append('userId', localStorage.getItem('userId') || '');
+      submitFormData.append('listingType', 'sale');
+      
+      // Add photos if any
+      mediaFiles.forEach((file, index) => {
+        submitFormData.append('photos', file);
+      });
+      
+      console.log('Submitting sale property data with', mediaFiles.length, 'media files...');
 
       // Make API call to submit property
-      const response = await fetch('/api/properties/submit', {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/submit`, {
         method: 'POST',
+        body: submitFormData,
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(propertyData)
+        }
       });
 
       const result = await response.json();
@@ -577,6 +636,22 @@ const AddList = () => {
             required
           ></textarea>
         </div>
+        
+        <div className="form-group">
+          <label htmlFor="shortDescription">Short Description (2 lines for property cards)*</label>
+          <textarea
+            id="shortDescription"
+            name="shortDescription"
+            value={formData.shortDescription || ''}
+            onChange={handleChange}
+            className="form-textarea"
+            rows="2"
+            maxLength="120"
+            placeholder="Brief description for property cards (max 120 characters)..."
+            required
+          ></textarea>
+          <small>{formData.shortDescription?.length || 0}/120 characters</small>
+        </div>
 
         <h4 className="subsection-title">Upload Photos & Videos</h4>
         
@@ -587,7 +662,7 @@ const AddList = () => {
                 <div className="upload-icon">📷🎥</div>
                 <div className="upload-text">
                   <span>Drag & drop or click to upload</span>
-                  <small>Photos & videos • Up to 10 files • Max 1GB each</small>
+                  <small>Photos & videos • Up to 15 files • Max 1GB each</small>
                 </div>
               </div>
             </label>
@@ -609,7 +684,18 @@ const AddList = () => {
                     <div className="media-content">
                       {media.type.startsWith('video/') ? (
                         <div className="video-container">
-                          <video src={media.url} controls>
+                          <video 
+                            src={media.url} 
+                            controls
+                            muted
+                            preload="metadata"
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              background: 'transparent'
+                            }}
+                          >
                             Your browser does not support the video tag.
                           </video>
                           <div className="media-type-badge">Video</div>

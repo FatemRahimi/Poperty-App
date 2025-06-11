@@ -74,6 +74,7 @@ const submitProperty = async (req, res) => {
       title: providedTitle,
       propertyTitle, // Alternative field name from frontend
       description, 
+      shortDescription, // New field for property cards
       property_type, 
       propertyType, // Alternative field name from frontend
       property_category,
@@ -210,18 +211,18 @@ const submitProperty = async (req, res) => {
     // Insert property
     const propertyResult = await client.query(
       `INSERT INTO properties (
-        user_id, title, description, property_type, property_category,
+        user_id, title, description, short_description, property_type, property_category,
         address_line1, address_line2, city, state, zip_code, country,
         bedrooms, bathrooms, square_feet, lot_size, year_built,
         price, monthly_rent, lease_term, deposit_amount,
         parking_spaces, has_garage, has_pool, has_garden, furnished, pets_allowed,
         student_housing, availability_date, contact_name, contact_phone, contact_email, slug
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
+        $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33
       ) RETURNING *`,
       [
-        user_id, title, description, property_type_mapped, property_category,
+        user_id, title, description, shortDescription, property_type_mapped, property_category,
         address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
         bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built,
         price_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,

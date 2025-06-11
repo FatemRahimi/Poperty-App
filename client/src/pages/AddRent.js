@@ -140,6 +140,7 @@ const AddRent = () => {
     
     // Description & Media
     description: "",
+    shortDescription: "",
     photos: [],
     contactPhone: ""
   });
@@ -175,18 +176,18 @@ const AddRent = () => {
       return;
     }
     
-    // Limit to 10 photos
-    if (photoFiles.length + files.length > 10) {
-      alert("You can upload a maximum of 10 photos");
+    // Limit to 15 photos
+    if (photoFiles.length + files.length > 15) {
+      alert("You can upload a maximum of 15 photos");
       return;
     }
     
     // Check total size limit
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-    const maxTotalSize = 10 * 1024 * 1024 * 1024; // 10GB total (10 files x 1GB each)
+    const maxTotalSize = 15 * 1024 * 1024 * 1024; // 15GB total (15 files x 1GB each)
     
     if (totalSize > maxTotalSize) {
-      alert(`Total file size too large. Maximum total size is 10GB for all files combined.`);
+      alert(`Total file size too large. Maximum total size is 15GB for all files combined.`);
       return;
     }
     
@@ -243,7 +244,8 @@ const AddRent = () => {
         !formData.bathrooms || !formData.furnishedStatus || !formData.rentalPrice || 
         !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
         !formData.councilTaxBand || !formData.postcode || !formData.streetAddress || 
-        !formData.city || !formData.description?.trim() || !formData.contactPhone?.trim()) {
+        !formData.city || !formData.description?.trim() || !formData.shortDescription?.trim() || 
+        !formData.contactPhone?.trim()) {
       alert("Please fill in all required fields before submitting.");
       return;
     }
@@ -261,6 +263,7 @@ const AddRent = () => {
         title: formData.propertyTitle, // Map propertyTitle to title for backend
         propertyTitle: formData.propertyTitle, // Alternative field name
         description: formData.description,
+        shortDescription: formData.shortDescription,
         property_type: 'rent', // Set type as rent
         propertyType: 'rent',
         
@@ -632,6 +635,22 @@ const AddRent = () => {
               ></textarea>
             </div>
             
+            <div className="form-group">
+              <label htmlFor="shortDescription">Short Description (2 lines for property cards)*</label>
+              <textarea
+                id="shortDescription"
+                name="shortDescription"
+                value={formData.shortDescription || ''}
+                onChange={handleChange}
+                className="form-textarea"
+                rows="2"
+                maxLength="120"
+                placeholder="Brief description for property cards (max 120 characters)..."
+                required
+              ></textarea>
+              <small>{formData.shortDescription?.length || 0}/120 characters</small>
+            </div>
+            
             <h4 className="subsection-title">Upload Photos & Videos</h4>
             
             <div className="media-upload-section">
@@ -641,7 +660,7 @@ const AddRent = () => {
                     <div className="upload-icon">📷🎥</div>
                     <div className="upload-text">
                       <span>Drag & drop or click to upload</span>
-                      <small>Photos & videos • Up to 10 files • Max 1GB each</small>
+                      <small>Photos & videos • Up to 15 files • Max 1GB each</small>
                     </div>
                   </div>
                 </label>
