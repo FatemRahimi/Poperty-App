@@ -23,7 +23,6 @@ const UserDashboard = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
-  const [debugInfo, setDebugInfo] = useState('');
   
   const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
@@ -65,23 +64,15 @@ const UserDashboard = () => {
   // Handle click outside profile form to cancel editing
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isEditing && profileFormRef.current && !profileFormRef.current.contains(event.target)) {
-        setIsEditing(false);
-        // Reset form data to original user data
-        setProfileData({
-          first_name: user?.first_name || '',
-          last_name: user?.last_name || '',
-          email: user?.email || '',
-          phone: user?.phone || '',
-          created_at: user?.created_at || ''
-        });
-      }
+      // Removed click-outside-to-cancel functionality for better UX
+      // Users should explicitly choose to cancel or save
     };
 
-    if (isEditing) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
+    // Removed the problematic click-outside behavior
+    // if (isEditing) {
+    //   document.addEventListener('mousedown', handleClickOutside);
+    //   return () => document.removeEventListener('mousedown', handleClickOutside);
+    // }
   }, [isEditing, user]);
 
   // Handle click outside add listing dropdown to close it
@@ -153,9 +144,42 @@ const UserDashboard = () => {
     navigate('/');
   };
 
+  const handleCancelEdit = () => {
+    // Check if there are unsaved changes
+    const hasChanges = 
+      profileData.first_name !== (user?.first_name || '') ||
+      profileData.last_name !== (user?.last_name || '') ||
+      profileData.phone !== (user?.phone || '');
+
+    if (hasChanges) {
+      const confirmCancel = window.confirm(
+        'You have unsaved changes. Are you sure you want to cancel? Your changes will be lost.'
+      );
+      if (!confirmCancel) {
+        return; // User chose to continue editing
+      }
+    }
+
+    // Reset form data to original user data
+    setProfileData({
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      created_at: user?.created_at || ''
+    });
+    
+    // Exit editing mode
+    setIsEditing(false);
+    
+    // Clear any save messages
+    setSaveMessage({ type: '', text: '' });
+  };
+
   const handleProfileSave = async () => {
+    console.log('🔥 SAVE BUTTON CLICKED - Function started!');
+    
     try {
-      setDebugInfo('🔍 Starting profile save...');
       console.log('🔍 Starting profile save...');
       console.log('Profile data to save:', {
         first_name: profileData.first_name,
@@ -166,12 +190,9 @@ const UserDashboard = () => {
       // Check if user is authenticated
       const token = localStorage.getItem('token');
       console.log('🔑 JWT Token exists:', !!token);
-      console.log('🔑 JWT Token preview:', token ? token.substring(0, 50) + '...' : 'No token');
       
       if (!token) {
-        const errorMsg = '❌ No authentication token found!';
-        setDebugInfo(errorMsg);
-        console.log(errorMsg);
+        console.log('❌ No authentication token found!');
         setSaveMessage({ 
           type: 'error', 
           text: 'Authentication error. Please log in again.' 
@@ -188,13 +209,7 @@ const UserDashboard = () => {
         phone: profileData.phone
       };
       
-      setDebugInfo('📤 Sending request to server...');
       console.log('📤 Sending request with data:', requestBody);
-      console.log('📤 Request URL:', '/api/users/profile');
-      console.log('📤 Request headers:', {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token.substring(0, 20)}...`
-      });
       
       const response = await fetch('/api/users/profile', {
         method: 'PUT',
@@ -205,14 +220,10 @@ const UserDashboard = () => {
         body: JSON.stringify(requestBody)
       });
 
-      setDebugInfo(`📥 Server responded with status: ${response.status}`);
       console.log('📥 Response status:', response.status);
-      console.log('📥 Response ok:', response.ok);
-      console.log('📥 Response statusText:', response.statusText);
 
       if (response.ok) {
         const result = await response.json();
-        setDebugInfo('✅ Server response received, processing...');
         console.log('✅ Success response:', result);
         
         // Update local profile data with the server response
@@ -237,10 +248,8 @@ const UserDashboard = () => {
         
         if (userUpdateSuccess) {
           console.log('✅ User context updated successfully');
-          setDebugInfo('✅ Profile saved and context updated!');
         } else {
           console.log('❌ Failed to update user context');
-          setDebugInfo('⚠️ Profile saved but context update failed');
         }
         
         // Exit editing mode
@@ -252,13 +261,10 @@ const UserDashboard = () => {
         // Clear success message after 4 seconds
         setTimeout(() => {
           setSaveMessage({ type: '', text: '' });
-          setDebugInfo('');
-        }, 6000);
+        }, 4000);
         
       } else {
         const errorData = await response.json().catch(() => null);
-        const errorMsg = `❌ Server error: ${response.status} - ${response.statusText}`;
-        setDebugInfo(errorMsg);
         console.log('❌ Error response status:', response.status);
         console.log('❌ Error response data:', errorData);
         
@@ -266,7 +272,6 @@ const UserDashboard = () => {
         
         if (response.status === 401) {
           errorMessage = 'Session expired. Please log in again.';
-          // Redirect to login
           setTimeout(() => {
             localStorage.removeItem('token');
             navigate('/login');
@@ -280,19 +285,14 @@ const UserDashboard = () => {
         setSaveMessage({ type: 'error', text: errorMessage });
       }
     } catch (error) {
-      const errorMsg = `❌ Network error: ${error.message}`;
-      setDebugInfo(errorMsg);
-      console.error('❌ Network error:', error);
-      console.error('❌ Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
+      console.error('❌ Network/JavaScript error:', error);
+      console.error('❌ Error stack:', error.stack);
       setSaveMessage({ 
         type: 'error', 
         text: 'Network error. Please check your connection and try again.' 
       });
     } finally {
+      console.log('🏁 Finally block - setting isSaving to false');
       setIsSaving(false);
     }
   };
@@ -490,6 +490,40 @@ const UserDashboard = () => {
     </div>
   );
 
+  // Function to refresh user profile data from server
+  const refreshUserProfile = async () => {
+    try {
+      const response = await fetch('/api/auth/verify-token', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Fresh user data received:', result.user);
+        
+        // Update the user context with fresh data
+        updateUser(result.user);
+        
+        // Update local profile state with fresh data
+        setProfileData({
+          first_name: result.user.first_name || '',
+          last_name: result.user.last_name || '',
+          email: result.user.email || '',
+          phone: result.user.phone || '',
+          created_at: result.user.created_at || ''
+        });
+        
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error refreshing user profile:', error);
+      return false;
+    }
+  };
+
   if (loading) {
     return (
       <div className="dashboard-loading-modern">
@@ -584,7 +618,13 @@ const UserDashboard = () => {
             </button>
             <button 
               className={`nav-tab-modern ${activeTab === 'profile' ? 'active' : ''}`}
-              onClick={() => setActiveTab('profile')}
+              onClick={async () => {
+                setActiveTab('profile');
+                // Auto-refresh profile data when switching to profile tab
+                if (activeTab !== 'profile') {
+                  await refreshUserProfile();
+                }
+              }}
             >
               <i className="fas fa-user"></i>
               Profile
@@ -694,70 +734,67 @@ const UserDashboard = () => {
               </h2>
               {isEditing && (
                 <small style={{color: '#64748b', fontStyle: 'italic'}}>
-                  Click outside this form to cancel editing
+                  Make your changes and click Save or Cancel
                 </small>
               )}
             </div>
             
-            {/* Debug info showing current user data */}
-            <div style={{
-              backgroundColor: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '6px',
-              padding: '8px',
-              marginBottom: '16px',
-              fontSize: '12px',
-              color: '#64748b'
-            }}>
-              <strong>Current User Context:</strong> {user?.first_name} {user?.last_name} | Phone: {user?.phone || 'None'} | Email: {user?.email}
-            </div>
-            
-            <div className="profile-form" ref={profileFormRef}>
-              <div className="form-group-modern">
-                <label className="form-label-modern">First Name</label>
-                <input
-                  type="text"
-                  className="form-input-modern"
-                  value={profileData.first_name}
-                  onChange={(e) => setProfileData({...profileData, first_name: e.target.value})}
-                  disabled={!isEditing}
-                />
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                console.log('🚫 Form submission prevented');
+                if (isEditing) {
+                  handleProfileSave();
+                }
+              }}
+            >
+              <div className="profile-form" ref={profileFormRef}>
+                <div className="form-group-modern">
+                  <label className="form-label-modern">First Name</label>
+                  <input
+                    type="text"
+                    className="form-input-modern"
+                    value={profileData.first_name}
+                    onChange={(e) => setProfileData({...profileData, first_name: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+                
+                <div className="form-group-modern">
+                  <label className="form-label-modern">Last Name</label>
+                  <input
+                    type="text"
+                    className="form-input-modern"
+                    value={profileData.last_name}
+                    onChange={(e) => setProfileData({...profileData, last_name: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+                
+                <div className="form-group-modern">
+                  <label className="form-label-modern">Email Address</label>
+                  <input
+                    type="email"
+                    className="form-input-modern"
+                    value={profileData.email}
+                    disabled
+                    title="Email cannot be changed for security reasons"
+                  />
+                </div>
+                
+                <div className="form-group-modern">
+                  <label className="form-label-modern">Phone Number</label>
+                  <input
+                    type="tel"
+                    className="form-input-modern"
+                    value={profileData.phone}
+                    onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
+                    disabled={!isEditing}
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
               </div>
-              
-              <div className="form-group-modern">
-                <label className="form-label-modern">Last Name</label>
-                <input
-                  type="text"
-                  className="form-input-modern"
-                  value={profileData.last_name}
-                  onChange={(e) => setProfileData({...profileData, last_name: e.target.value})}
-                  disabled={!isEditing}
-                />
-              </div>
-              
-              <div className="form-group-modern">
-                <label className="form-label-modern">Email Address</label>
-                <input
-                  type="email"
-                  className="form-input-modern"
-                  value={profileData.email}
-                  disabled
-                  title="Email cannot be changed for security reasons"
-                />
-              </div>
-              
-              <div className="form-group-modern">
-                <label className="form-label-modern">Phone Number</label>
-                <input
-                  type="tel"
-                  className="form-input-modern"
-                  value={profileData.phone}
-                  onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
-                  disabled={!isEditing}
-                  placeholder="+1 (555) 123-4567"
-                />
-              </div>
-            </div>
+            </form>
             
             <div className="profile-actions">
               {saveMessage.text && (
@@ -767,47 +804,48 @@ const UserDashboard = () => {
                 </div>
               )}
               
-              {debugInfo && (
-                <div className="debug-info" style={{
-                  backgroundColor: '#f0f9ff',
-                  border: '1px solid #0ea5e9',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  marginBottom: '16px',
-                  fontFamily: 'monospace',
-                  fontSize: '14px',
-                  color: '#0c4a6e'
-                }}>
-                  <strong>🔧 Debug Info:</strong> {debugInfo}
-                </div>
-              )}
-              
               {!isEditing ? (
                 <button 
                   className="btn-save"
-                  onClick={() => setIsEditing(true)}
+                  onClick={async () => {
+                    // Refresh profile data before editing to ensure latest values
+                    await refreshUserProfile();
+                    setIsEditing(true);
+                  }}
                 >
                   <i className="fas fa-edit"></i>
                   Edit Profile
                 </button>
               ) : (
-                <button 
-                  className="btn-save"
-                  onClick={handleProfileSave}
-                  disabled={isSaving}
-                >
-                  {isSaving ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin"></i>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-save"></i>
-                      Save Changes
-                    </>
-                  )}
-                </button>
+                <div className="edit-buttons-container">
+                  <button 
+                    type="button"
+                    className="btn-cancel"
+                    onClick={handleCancelEdit}
+                    disabled={isSaving}
+                  >
+                    <i className="fas fa-times"></i>
+                    Cancel
+                  </button>
+                  <button 
+                    type="button"
+                    className="btn-save"
+                    onClick={handleProfileSave}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin"></i>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-save"></i>
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
             </div>
           </div>
