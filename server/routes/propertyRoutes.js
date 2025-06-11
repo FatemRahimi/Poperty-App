@@ -7,7 +7,8 @@ const {
   getUserProperties,
   getAllProperties,
   updatePropertyStatus,
-  getDashboardStats
+  getDashboardStats,
+  deleteProperty
 } = require('../controllers/propertyController');
 
 // Configure multer for file uploads
@@ -15,7 +16,7 @@ const storage = multer.memoryStorage(); // Store files in memory for processing
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB limit per file (increased from 50MB)
+    fileSize: 1024 * 1024 * 1024, // 1GB limit per file (increased from 100MB)
     files: 10 // Maximum 10 files
   },
   fileFilter: (req, file, cb) => {
@@ -34,7 +35,7 @@ const handleMulterError = (err, req, res, next) => {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         success: false,
-        message: 'File too large. Maximum file size is 100MB per file.'
+        message: 'File too large. Maximum file size is 1GB per file.'
       });
     }
     if (err.code === 'LIMIT_FILE_COUNT') {
@@ -91,6 +92,7 @@ const requireAdmin = (req, res, next) => {
 // Use multer to handle FormData with file uploads
 router.post('/submit', authenticateJWT, upload.array('photos', 10), handleMulterError, submitProperty);
 router.get('/my-properties', authenticateJWT, getUserProperties);
+router.delete('/:id', authenticateJWT, deleteProperty);
 
 // Admin routes (protected - admin only)
 router.get('/admin/all', authenticateJWT, requireAdmin, getAllProperties);

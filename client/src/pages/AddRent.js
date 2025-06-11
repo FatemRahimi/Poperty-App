@@ -26,7 +26,12 @@ const bedroomOptions = [
   { value: "3", label: "3" },
   { value: "4", label: "4" },
   { value: "5", label: "5" },
-  { value: "6+", label: "6+" }
+  { value: "6", label: "6" },
+  { value: "7", label: "7" },
+  { value: "8", label: "8" },
+  { value: "9", label: "9" },
+  { value: "10", label: "10" },
+  { value: "10+", label: "10+" }
 ];
 
 // Bathroom options
@@ -34,22 +39,29 @@ const bathroomOptions = [
   { value: "1", label: "1" },
   { value: "2", label: "2" },
   { value: "3", label: "3" },
-  { value: "4+", label: "4+" }
+  { value: "4", label: "4" },
+  { value: "5", label: "5" },
+  { value: "6", label: "6" },
+  { value: "7", label: "7" },
+  { value: "8", label: "8" },
+  { value: "9", label: "9" },
+  { value: "10", label: "10" },
+  { value: "10+", label: "10+" }
 ];
 
-// Furnished status options
+// Enhanced furnished status options with more detail
 const furnishedOptions = [
   { value: "furnished", label: "Furnished" },
   { value: "partFurnished", label: "Part-Furnished" },
   { value: "unfurnished", label: "Unfurnished" }
 ];
 
-// Tenancy length options
+// Enhanced tenancy length options with exact months
 const tenancyLengthOptions = [
-  { value: "6", label: "6 months" },
-  { value: "12", label: "12 months" },
-  { value: "18", label: "18 months" },
-  { value: "24", label: "24 months" },
+  { value: "6", label: "6 months minimum" },
+  { value: "12", label: "12 months minimum" },
+  { value: "18", label: "18 months minimum" },
+  { value: "24", label: "24 months minimum" },
   { value: "flexible", label: "Flexible" }
 ];
 
@@ -76,6 +88,20 @@ const epcRatingOptions = [
   { value: "G", label: "G" }
 ];
 
+// Council tax status options (Rightmove requirement)
+const councilTaxStatusOptions = [
+  { value: "tenant", label: "Tenant Responsible" },
+  { value: "included", label: "Included in Rent" },
+  { value: "exempt", label: "Exempt (e.g., Student Property)" }
+];
+
+// Essential utilities options only
+const billsOptions = [
+  { value: "none", label: "Bills Not Included" },
+  { value: "some", label: "Some Bills Included" },
+  { value: "all", label: "All Bills Included" }
+];
+
 const AddRent = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading } = useAuth();
@@ -84,7 +110,7 @@ const AddRent = () => {
   const [success, setSuccess] = useState("");
   const [currentSection, setCurrentSection] = useState(1);
   const [formData, setFormData] = useSessionStorage("addRentForm", {
-    // Property Details
+    // Property Details - Essential only
     propertyTitle: "",
     propertyType: "",
     bedrooms: "",
@@ -95,6 +121,7 @@ const AddRent = () => {
     availableFrom: "",
     tenancyLength: "",
     councilTaxBand: "",
+    councilTaxStatus: "", // Required by Trading Standards
     
     // Location Information
     postcode: "",
@@ -102,14 +129,12 @@ const AddRent = () => {
     city: "",
     region: "",
     
-    // Property Features
+    // Essential Property Features
     garden: false,
     parking: false,
     balconyTerrace: false,
-    billsIncluded: false,
+    billsIncluded: "",
     petsAllowed: false,
-    ensuiteBathroom: false,
-    liftAccess: false,
     studentHousing: false,
     epcRating: "",
     
@@ -141,9 +166,27 @@ const AddRent = () => {
   const handlePhotoChange = (e) => {
     const files = Array.from(e.target.files);
     
+    // Check individual file sizes (1GB = 1024 * 1024 * 1024 bytes)
+    const maxFileSize = 1024 * 1024 * 1024; // 1GB
+    const oversizedFiles = files.filter(file => file.size > maxFileSize);
+    
+    if (oversizedFiles.length > 0) {
+      alert(`Some files are too large. Maximum file size is 1GB per file.\nOversized files: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      return;
+    }
+    
     // Limit to 10 photos
     if (photoFiles.length + files.length > 10) {
       alert("You can upload a maximum of 10 photos");
+      return;
+    }
+    
+    // Check total size limit
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    const maxTotalSize = 10 * 1024 * 1024 * 1024; // 10GB total (10 files x 1GB each)
+    
+    if (totalSize > maxTotalSize) {
+      alert(`Total file size too large. Maximum total size is 10GB for all files combined.`);
       return;
     }
     
@@ -267,8 +310,6 @@ const AddRent = () => {
         councilTaxBand: formData.councilTaxBand,
         balconyTerrace: formData.balconyTerrace,
         billsIncluded: formData.billsIncluded,
-        ensuiteBathroom: formData.ensuiteBathroom,
-        liftAccess: formData.liftAccess,
         studentHousing: formData.studentHousing,
         epcRating: formData.epcRating
       };
@@ -292,6 +333,16 @@ const AddRent = () => {
       
       console.log('Submitting rent property data...');
       
+      // Debug logging
+      console.log('FormData contents:');
+      for (let [key, value] of submitFormData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}:`, `File - ${value.name} (${value.size} bytes)`);
+        } else {
+          console.log(`${key}:`, value);
+        }
+      }
+      
       // Make API call to submit property
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/submit`, {
         method: 'POST',
@@ -303,7 +354,10 @@ const AddRent = () => {
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit property');
+        console.error('Server response error:', errorData);
+        console.error('Response status:', response.status);
+        console.error('Response statusText:', response.statusText);
+        throw new Error(errorData.message || `Server error: ${response.status} ${response.statusText}`);
       }
       
       const result = await response.json();
@@ -427,6 +481,15 @@ const AddRent = () => {
               options={councilTaxOptions}
               required
             />
+            
+            <SelectInput
+              label="Council Tax Status"
+              name="councilTaxStatus"
+              value={formData.councilTaxStatus}
+              onChange={handleChange}
+              options={councilTaxStatusOptions}
+              required
+            />
           </div>
         );
       
@@ -512,17 +575,6 @@ const AddRent = () => {
               <div className="feature-item">
                 <input 
                   type="checkbox" 
-                  id="billsIncluded" 
-                  name="billsIncluded" 
-                  checked={formData.billsIncluded}
-                  onChange={handleChange}
-                />
-                <label htmlFor="billsIncluded">Bills Included</label>
-              </div>
-              
-              <div className="feature-item">
-                <input 
-                  type="checkbox" 
                   id="petsAllowed" 
                   name="petsAllowed" 
                   checked={formData.petsAllowed}
@@ -530,29 +582,7 @@ const AddRent = () => {
                 />
                 <label htmlFor="petsAllowed">Pets Allowed</label>
               </div>
-              
-              <div className="feature-item">
-                <input 
-                  type="checkbox" 
-                  id="ensuiteBathroom" 
-                  name="ensuiteBathroom" 
-                  checked={formData.ensuiteBathroom}
-                  onChange={handleChange}
-                />
-                <label htmlFor="ensuiteBathroom">Ensuite Bathroom</label>
-              </div>
-              
-              <div className="feature-item">
-                <input 
-                  type="checkbox" 
-                  id="liftAccess" 
-                  name="liftAccess" 
-                  checked={formData.liftAccess}
-                  onChange={handleChange}
-                />
-                <label htmlFor="liftAccess">Lift Access</label>
-              </div>
-              
+
               <div className="feature-item">
                 <input 
                   type="checkbox" 
@@ -564,6 +594,14 @@ const AddRent = () => {
                 <label htmlFor="studentHousing">Suitable for Students</label>
               </div>
             </div>
+            
+            <SelectInput
+              label="Bills Included"
+              name="billsIncluded"
+              value={formData.billsIncluded}
+              onChange={handleChange}
+              options={billsOptions}
+            />
             
             <SelectInput
               label="EPC Rating"
@@ -603,7 +641,7 @@ const AddRent = () => {
                     <div className="upload-icon">📷🎥</div>
                     <div className="upload-text">
                       <span>Drag & drop or click to upload</span>
-                      <small>Photos & videos • Up to 10 files • Max 50MB each</small>
+                      <small>Photos & videos • Up to 10 files • Max 1GB each</small>
                     </div>
                   </div>
                 </label>

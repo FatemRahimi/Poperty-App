@@ -1,0 +1,139 @@
+/* Import the existing property card styles from UserDashboard */
+@import '../pages/UserDashboard.css';
+
+/* Additional styles specific to the reusable PropertyCard component */
+.property-card-modern.compact {
+  max-height: 350px;
+}
+
+.property-card-modern.compact .property-images {
+  height: 160px;
+}
+
+.property-card-modern.compact .property-details-modern {
+  padding: 0.75rem;
+  height: 190px;
+}
+
+.property-card-modern.compact .property-title-modern {
+  font-size: 0.9rem;
+}
+
+.property-card-modern.compact .property-price-modern {
+  font-size: 1.1rem;
+}
+
+/* Standalone usage without dashboard context */
+.property-card-modern.standalone {
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.property-card-modern.standalone:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Video styling for property carousel */
+.property-images .carousel-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+  transition: opacity 0.3s ease;
+}
+
+.property-images video.carousel-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+  background: #000;
+}
+
+.property-images video.carousel-image::-webkit-media-controls-panel {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.property-images video.carousel-image::-webkit-media-controls-play-button,
+.property-images video.carousel-image::-webkit-media-controls-volume-slider,
+.property-images video.carousel-image::-webkit-media-controls-timeline {
+  filter: invert(1);
+}
+
+/* Media type indicator */
+.media-type-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px;
+  border-radius: 50%;
+  font-size: 14px;
+  z-index: 5;
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+}
+
+.media-type-indicator:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+.media-type-indicator .fa-video {
+  color: #e74c3c;
+}
+
+.media-type-indicator .fa-image {
+  color: #3498db;
+}
+
+/* Ensure videos don't interfere with carousel navigation */
+.image-carousel {
+  position: relative;
+  overflow: hidden;
+}
+
+.image-carousel video {
+  pointer-events: auto;
+}
+
+.image-carousel .carousel-controls {
+  pointer-events: auto;
+  z-index: 10;
+}
+
+/* Delete button styles */
+.action-btn-modern.btn-delete {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  border: none;
+}
+
+.action-btn-modern.btn-delete:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c0392b, #a93226);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.action-btn-modern.btn-delete:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Ensure actions are visible and properly spaced */
+.property-actions-modern {
+  display: flex !important;
+  gap: 0.5rem !important;
+  margin-top: auto !important;
+  padding-top: 0.5rem !important;
+  flex-wrap: wrap;
+}
+
+.action-btn-modern {
+  flex: 1 !important;
+  min-width: fit-content !important;
+  white-space: nowrap !important;
+} 
