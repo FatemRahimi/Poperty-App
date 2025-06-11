@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import PropertyCard from '../components/PropertyCard';
 import './UserDashboard.css';
 
 const UserDashboard = () => {
@@ -98,6 +99,13 @@ const UserDashboard = () => {
       };
     }
   }, [showAddListingDropdown]);
+
+  // Load dashboard data when component mounts or activeTab changes
+  useEffect(() => {
+    if (activeTab === 'properties') {
+      loadDashboardData();
+    }
+  }, [activeTab]);
 
   const loadDashboardData = async () => {
     try {
@@ -380,95 +388,6 @@ const UserDashboard = () => {
     );
   };
 
-  // Professional Property Card
-  const PropertyCard = ({ property }) => (
-    <div className="property-card-modern fade-in">
-      <ImageCarousel images={property.images} title={property.title} />
-      
-      <div className={`property-status-badge status-${property.status}`}>
-        {property.status}
-      </div>
-      
-      <div className="property-details-modern">
-        <h3 className="property-title-modern">{property.title}</h3>
-        
-        <p className="property-address-modern">
-          <i className="fas fa-map-marker-alt"></i>
-          {property.address_line1}, {property.city}, {property.state}
-        </p>
-        
-        <div className="property-price-modern">{formatPrice(property)}</div>
-        
-        <div className="property-features">
-          {property.bedrooms && (
-            <div className="feature-item">
-              <div className="feature-icon">
-                <i className="fas fa-bed"></i>
-              </div>
-              <span>{property.bedrooms} Bedrooms</span>
-            </div>
-          )}
-          {property.bathrooms && (
-            <div className="feature-item">
-              <div className="feature-icon">
-                <i className="fas fa-bath"></i>
-              </div>
-              <span>{property.bathrooms} Bathrooms</span>
-            </div>
-          )}
-          {property.square_feet && (
-            <div className="feature-item">
-              <div className="feature-icon">
-                <i className="fas fa-ruler-combined"></i>
-              </div>
-              <span>{Number(property.square_feet).toLocaleString()} sqft</span>
-            </div>
-          )}
-          {property.parking_spots && (
-            <div className="feature-item">
-              <div className="feature-icon">
-                <i className="fas fa-car"></i>
-              </div>
-              <span>{property.parking_spots} Parking</span>
-            </div>
-          )}
-          {property.student_housing && (
-            <div className="feature-item">
-              <div className="feature-icon">
-                <i className="fas fa-graduation-cap"></i>
-              </div>
-              <span>Student-Friendly</span>
-            </div>
-          )}
-        </div>
-        
-        <div className="property-meta-modern">
-          <span className="property-type-badge">
-            {property.property_type.charAt(0).toUpperCase() + property.property_type.slice(1)}
-          </span>
-          <small>Submitted: {formatDate(property.created_at)}</small>
-        </div>
-        
-        <div className="property-actions-modern">
-          <button 
-            className="action-btn-modern btn-edit"
-            onClick={() => navigate(`/edit-property/${property.id}`)}
-          >
-            <i className="fas fa-edit"></i> Edit
-          </button>
-          {property.status === 'approved' && (
-            <button 
-              className="action-btn-modern btn-view"
-              onClick={() => window.open(`/property/${property.slug}`, '_blank')}
-            >
-              <i className="fas fa-eye"></i> View
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
   // Professional Stats Card
   const StatCard = ({ title, value, icon, color, trend }) => (
     <div className={`stat-card-modern ${color} fade-in`}>
@@ -522,6 +441,15 @@ const UserDashboard = () => {
       console.error('Error refreshing user profile:', error);
       return false;
     }
+  };
+
+  // Handle property deletion callback
+  const handlePropertyDeleted = (deletedPropertyId) => {
+    setProperties(prevProperties => 
+      prevProperties.filter(property => property.id !== deletedPropertyId)
+    );
+    // Refresh data to update stats
+    loadDashboardData();
   };
 
   if (loading) {
@@ -726,7 +654,11 @@ const UserDashboard = () => {
             ) : (
               <div className="properties-grid-modern">
                 {filteredProperties.map(property => (
-                  <PropertyCard key={property.id} property={property} />
+                  <PropertyCard 
+                    key={property.id} 
+                    property={property} 
+                    onPropertyDeleted={handlePropertyDeleted}
+                  />
                 ))}
               </div>
             )}

@@ -1,5 +1,7 @@
 const { Pool } = require('pg');
 const nodemailer = require('nodemailer');
+const fs = require('fs');
+const path = require('path');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgres://fatemehrahimi@localhost:5432/propertydb'
@@ -135,6 +137,35 @@ const submitProperty = async (req, res) => {
     const contact_phone_mapped = contact_phone || contactPhone;
     const contact_email_mapped = contact_email || contactEmail || req.user?.email;
 
+    // Data conversion for numeric fields
+    const convertBathrooms = (bathrooms) => {
+      if (!bathrooms) return null;
+      if (typeof bathrooms === 'string') {
+        if (bathrooms.includes('+')) {
+          // Convert "4+" to 4, "10+" to 10, etc.
+          return parseInt(bathrooms.replace('+', ''));
+        }
+        return parseInt(bathrooms) || null;
+      }
+      return bathrooms;
+    };
+
+    const convertBedrooms = (bedrooms) => {
+      if (!bedrooms) return null;
+      if (typeof bedrooms === 'string') {
+        if (bedrooms.includes('+')) {
+          // Convert "6+" to 6, "10+" to 10, etc.
+          return parseInt(bedrooms.replace('+', ''));
+        }
+        return parseInt(bedrooms) || null;
+      }
+      return bedrooms;
+    };
+
+    // Convert form values to database-compatible types
+    const bathrooms_converted = convertBathrooms(bathrooms);
+    const bedrooms_converted = convertBedrooms(bedrooms);
+
     // Debug logging for property submission
     console.log('🔍 Property submission debug:');
     console.log('📋 Raw request body keys:', Object.keys(req.body));
@@ -145,6 +176,10 @@ const submitProperty = async (req, res) => {
     console.log('📋 Is title truthy?', !!title);
     console.log('📋 property_type_mapped:', property_type_mapped);
     console.log('📋 city:', city);
+    console.log('📋 bathrooms (raw):', bathrooms);
+    console.log('📋 bathrooms_converted:', bathrooms_converted);
+    console.log('📋 bedrooms (raw):', bedrooms);
+    console.log('📋 bedrooms_converted:', bedrooms_converted);
 
     // Validate required fields
     if (!title) {
@@ -183,12 +218,12 @@ const submitProperty = async (req, res) => {
         student_housing, availability_date, contact_name, contact_phone, contact_email, slug
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
+        $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
       ) RETURNING *`,
       [
         user_id, title, description, property_type_mapped, property_category,
         address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
-        bedrooms, bathrooms, square_feet, lot_size, year_built,
+        bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built,
         price_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
         parking_spaces || 0, has_garage || false, has_pool || false, 
         has_garden || false, furnished_mapped || false, pets_allowed || false,
@@ -200,12 +235,30 @@ const submitProperty = async (req, res) => {
 
     // Handle uploaded files from multer
     if (req.files && req.files.length > 0) {
+      // Ensure uploads directory exists
+      const uploadsDir = path.join(__dirname, '..', 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
       for (let i = 0; i < req.files.length; i++) {
         const file = req.files[i];
         
-        // In a production environment, you would upload these files to a cloud storage service
-        // For now, we'll create a placeholder URL
-        const imageUrl = `/uploads/${property.id}_${i}_${file.originalname}`;
+        // Create unique filename
+        const filename = `${property.id}_${i}_${file.originalname}`;
+        const filepath = path.join(uploadsDir, filename);
+        
+        // Save file to disk
+        try {
+          fs.writeFileSync(filepath, file.buffer);
+          console.log(`📁 File saved: ${filename}`);
+        } catch (fileError) {
+          console.error(`❌ Error saving file ${filename}:`, fileError);
+          continue; // Skip this file if save fails
+        }
+        
+        // Store URL in database
+        const imageUrl = `/uploads/${filename}`;
         
         await client.query(
           `INSERT INTO property_images (property_id, image_url, image_type, image_order, alt_text)
@@ -663,10 +716,91 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
+// Delete property (user can delete their own property)
+const deleteProperty = async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const { id } = req.params;
+    const user_id = req.user.id;
+    
+    // Check if property exists and belongs to user
+    const propertyResult = await client.query(
+      'SELECT * FROM properties WHERE id = $1 AND user_id = $2',
+      [id, user_id]
+    );
+    
+    if (propertyResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Property not found or you do not have permission to delete it'
+      });
+    }
+    
+    const property = propertyResult.rows[0];
+    
+    // Get all image files to delete from filesystem
+    const imagesResult = await client.query(
+      'SELECT image_url FROM property_images WHERE property_id = $1',
+      [id]
+    );
+    
+    // Delete images from filesystem
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    for (const imageRow of imagesResult.rows) {
+      const imageUrl = imageRow.image_url;
+      if (imageUrl.startsWith('/uploads/')) {
+        const filename = imageUrl.replace('/uploads/', '');
+        const filepath = path.join(uploadsDir, filename);
+        
+        try {
+          if (fs.existsSync(filepath)) {
+            fs.unlinkSync(filepath);
+            console.log(`🗑️ Deleted file: ${filename}`);
+          }
+        } catch (fileError) {
+          console.error(`❌ Error deleting file ${filename}:`, fileError);
+        }
+      }
+    }
+    
+    // Delete related records (cascading)
+    await client.query('DELETE FROM property_images WHERE property_id = $1', [id]);
+    await client.query('DELETE FROM property_amenities WHERE property_id = $1', [id]);
+    await client.query('DELETE FROM property_submissions WHERE property_id = $1', [id]);
+    
+    // Delete the property
+    await client.query('DELETE FROM properties WHERE id = $1', [id]);
+    
+    await client.query('COMMIT');
+    
+    console.log(`🗑️ Property deleted: ${property.title} (ID: ${id})`);
+    
+    res.json({
+      success: true,
+      message: `Property "${property.title}" has been deleted successfully`
+    });
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Delete property error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete property',
+      error: error.message
+    });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   submitProperty,
   getUserProperties,
   getAllProperties,
   updatePropertyStatus,
-  getDashboardStats
+  getDashboardStats,
+  deleteProperty
 }; 

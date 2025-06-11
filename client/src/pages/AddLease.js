@@ -545,7 +545,7 @@ const AddLease = () => {
               <div className="upload-icon">📷🎥</div>
               <div className="upload-text">
                 <span>Drag & drop or click to upload</span>
-                <small>Photos & videos • Up to 10 files • Max 50MB each</small>
+                <small>Photos & videos • Up to 10 files • Max 1GB each</small>
               </div>
             </div>
           </label>
