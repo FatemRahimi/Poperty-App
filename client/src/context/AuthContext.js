@@ -143,6 +143,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (updatedUserData) => {
+    try {
+      console.log('🔄 AuthContext: Updating user data:', updatedUserData);
+      
+      // Update the user state
+      const newUserData = { ...user, ...updatedUserData };
+      setUser(newUserData);
+      
+      // Update localStorage
+      localStorage.setItem('user', JSON.stringify(newUserData));
+      
+      console.log('✅ AuthContext: User data updated successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ AuthContext: Error updating user data:', error);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -150,7 +169,8 @@ export const AuthProvider = ({ children }) => {
       logout, 
       loading, 
       isAuthenticated,
-      validateToken 
+      validateToken,
+      updateUser
     }}>
       {children}
     </AuthContext.Provider>

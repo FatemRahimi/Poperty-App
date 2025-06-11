@@ -21,14 +21,22 @@ const UserDashboard = () => {
     created_at: ''
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
+  const [debugInfo, setDebugInfo] = useState('');
   
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const profileFormRef = useRef(null);
 
   // Redirect if not authenticated
   useEffect(() => {
+    console.log('🏠 UserDashboard: Component loaded');
+    console.log('🏠 UserDashboard: User data:', user);
+    console.log('🏠 UserDashboard: User authenticated:', !!user);
+    
     if (!user) {
+      console.log('🏠 UserDashboard: No user found, redirecting to login');
       navigate('/login');
       return;
     }
@@ -147,26 +155,145 @@ const UserDashboard = () => {
 
   const handleProfileSave = async () => {
     try {
+      setDebugInfo('🔍 Starting profile save...');
+      console.log('🔍 Starting profile save...');
+      console.log('Profile data to save:', {
+        first_name: profileData.first_name,
+        last_name: profileData.last_name,
+        phone: profileData.phone
+      });
+      
+      // Check if user is authenticated
+      const token = localStorage.getItem('token');
+      console.log('🔑 JWT Token exists:', !!token);
+      console.log('🔑 JWT Token preview:', token ? token.substring(0, 50) + '...' : 'No token');
+      
+      if (!token) {
+        const errorMsg = '❌ No authentication token found!';
+        setDebugInfo(errorMsg);
+        console.log(errorMsg);
+        setSaveMessage({ 
+          type: 'error', 
+          text: 'Authentication error. Please log in again.' 
+        });
+        return;
+      }
+      
+      setIsSaving(true);
+      setSaveMessage({ type: '', text: '' });
+      
+      const requestBody = {
+        first_name: profileData.first_name,
+        last_name: profileData.last_name,
+        phone: profileData.phone
+      };
+      
+      setDebugInfo('📤 Sending request to server...');
+      console.log('📤 Sending request with data:', requestBody);
+      console.log('📤 Request URL:', '/api/users/profile');
+      console.log('📤 Request headers:', {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token.substring(0, 20)}...`
+      });
+      
       const response = await fetch('/api/users/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          first_name: profileData.first_name,
-          last_name: profileData.last_name,
-          phone: profileData.phone
-        })
+        body: JSON.stringify(requestBody)
       });
 
+      setDebugInfo(`📥 Server responded with status: ${response.status}`);
+      console.log('📥 Response status:', response.status);
+      console.log('📥 Response ok:', response.ok);
+      console.log('📥 Response statusText:', response.statusText);
+
       if (response.ok) {
+        const result = await response.json();
+        setDebugInfo('✅ Server response received, processing...');
+        console.log('✅ Success response:', result);
+        
+        // Update local profile data with the server response
+        const updatedProfileData = {
+          first_name: result.user.first_name,
+          last_name: result.user.last_name,
+          email: result.user.email,
+          phone: result.user.phone || '',
+          created_at: profileData.created_at
+        };
+        
+        console.log('🔄 Updating local profile data:', updatedProfileData);
+        setProfileData(updatedProfileData);
+        
+        // Update the user context with the new data
+        console.log('🔄 Updating user context...');
+        const userUpdateSuccess = updateUser({
+          first_name: result.user.first_name,
+          last_name: result.user.last_name,
+          phone: result.user.phone
+        });
+        
+        if (userUpdateSuccess) {
+          console.log('✅ User context updated successfully');
+          setDebugInfo('✅ Profile saved and context updated!');
+        } else {
+          console.log('❌ Failed to update user context');
+          setDebugInfo('⚠️ Profile saved but context update failed');
+        }
+        
+        // Exit editing mode
         setIsEditing(false);
-        // Refresh user data
-        loadDashboardData();
+        
+        // Show success message
+        setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
+        
+        // Clear success message after 4 seconds
+        setTimeout(() => {
+          setSaveMessage({ type: '', text: '' });
+          setDebugInfo('');
+        }, 6000);
+        
+      } else {
+        const errorData = await response.json().catch(() => null);
+        const errorMsg = `❌ Server error: ${response.status} - ${response.statusText}`;
+        setDebugInfo(errorMsg);
+        console.log('❌ Error response status:', response.status);
+        console.log('❌ Error response data:', errorData);
+        
+        let errorMessage = 'Failed to update profile. Please try again.';
+        
+        if (response.status === 401) {
+          errorMessage = 'Session expired. Please log in again.';
+          // Redirect to login
+          setTimeout(() => {
+            localStorage.removeItem('token');
+            navigate('/login');
+          }, 2000);
+        } else if (response.status === 403) {
+          errorMessage = 'Access denied. Please log in again.';
+        } else if (errorData && errorData.message) {
+          errorMessage = errorData.message;
+        }
+        
+        setSaveMessage({ type: 'error', text: errorMessage });
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
+      const errorMsg = `❌ Network error: ${error.message}`;
+      setDebugInfo(errorMsg);
+      console.error('❌ Network error:', error);
+      console.error('❌ Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      setSaveMessage({ 
+        type: 'error', 
+        text: 'Network error. Please check your connection and try again.' 
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -572,6 +699,19 @@ const UserDashboard = () => {
               )}
             </div>
             
+            {/* Debug info showing current user data */}
+            <div style={{
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              padding: '8px',
+              marginBottom: '16px',
+              fontSize: '12px',
+              color: '#64748b'
+            }}>
+              <strong>Current User Context:</strong> {user?.first_name} {user?.last_name} | Phone: {user?.phone || 'None'} | Email: {user?.email}
+            </div>
+            
             <div className="profile-form" ref={profileFormRef}>
               <div className="form-group-modern">
                 <label className="form-label-modern">First Name</label>
@@ -620,6 +760,28 @@ const UserDashboard = () => {
             </div>
             
             <div className="profile-actions">
+              {saveMessage.text && (
+                <div className={`save-message ${saveMessage.type}`}>
+                  <i className={`fas ${saveMessage.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i>
+                  {saveMessage.text}
+                </div>
+              )}
+              
+              {debugInfo && (
+                <div className="debug-info" style={{
+                  backgroundColor: '#f0f9ff',
+                  border: '1px solid #0ea5e9',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  marginBottom: '16px',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  color: '#0c4a6e'
+                }}>
+                  <strong>🔧 Debug Info:</strong> {debugInfo}
+                </div>
+              )}
+              
               {!isEditing ? (
                 <button 
                   className="btn-save"
@@ -632,9 +794,19 @@ const UserDashboard = () => {
                 <button 
                   className="btn-save"
                   onClick={handleProfileSave}
+                  disabled={isSaving}
                 >
-                  <i className="fas fa-save"></i>
-                  Save Changes
+                  {isSaving ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-save"></i>
+                      Save Changes
+                    </>
+                  )}
                 </button>
               )}
             </div>
