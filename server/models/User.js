@@ -54,6 +54,19 @@ class User {
     }
   }
 
+  static async updateProfile(userId, profileData) {
+    try {
+      const { first_name, last_name, phone } = profileData;
+      const result = await pool.query(
+        'UPDATE users SET first_name = $1, last_name = $2, phone = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *',
+        [first_name, last_name, phone, userId]
+      );
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static async verify(userId) {
     try {
       const result = await pool.query(

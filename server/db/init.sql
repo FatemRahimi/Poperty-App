@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
   password VARCHAR(255),  -- Made optional for Google OAuth users
   first_name VARCHAR(100),
   last_name VARCHAR(100),
+  phone VARCHAR(20),  -- Added phone column
   google_id VARCHAR(255) UNIQUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
