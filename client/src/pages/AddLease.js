@@ -110,6 +110,7 @@ const AddLease = () => {
     
     // Step 3: Description & Photos
     description: "",
+    shortDescription: "",
     files: [],
     contactPhone: ""
   });
@@ -148,8 +149,26 @@ const AddLease = () => {
   const handlePhotoChange = (e) => {
     const files = Array.from(e.target.files);
     
-    if (photoFiles.length + files.length > 10) {
-      alert("You can upload a maximum of 10 files");
+    // Check individual file sizes (1GB = 1024 * 1024 * 1024 bytes)
+    const maxFileSize = 1024 * 1024 * 1024; // 1GB
+    const oversizedFiles = files.filter(file => file.size > maxFileSize);
+    
+    if (oversizedFiles.length > 0) {
+      alert(`Some files are too large. Maximum file size is 1GB per file.\nOversized files: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      return;
+    }
+    
+    if (photoFiles.length + files.length > 15) {
+      alert("You can upload a maximum of 15 files");
+      return;
+    }
+    
+    // Check total size limit
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    const maxTotalSize = 15 * 1024 * 1024 * 1024; // 15GB total (15 files x 1GB each)
+    
+    if (totalSize > maxTotalSize) {
+      alert(`Total file size too large. Maximum total size is 15GB for all files combined.`);
       return;
     }
     
@@ -212,6 +231,10 @@ const AddLease = () => {
       alert("❌ Please provide a property description");
       return false;
     }
+    if (!formData.shortDescription?.trim()) {
+      alert("❌ Please provide a short description for property cards");
+      return false;
+    }
     if (!formData.contactPhone.trim()) {
       alert("❌ Please provide a contact phone number");
       return false;
@@ -269,6 +292,7 @@ const AddLease = () => {
         title: formData.spaceName, // Map spaceName to title for backend
         propertyTitle: formData.spaceName, // Alternative field name
         description: formData.description,
+        shortDescription: formData.shortDescription,
         property_type: 'lease', // Set type as lease
         propertyType: 'lease',
         
@@ -535,6 +559,21 @@ const AddLease = () => {
           required
         />
       </div>
+      
+      <div className="form-group">
+        <label htmlFor="shortDescription" className="form-label">Short Description (2 lines for property cards)*</label>
+        <textarea
+          id="shortDescription"
+          className="form-textarea"
+          rows="2"
+          maxLength="120"
+          value={formData.shortDescription || ''}
+          onChange={(e) => setFormData(prev => ({ ...prev, shortDescription: e.target.value }))}
+          placeholder="Brief description for property cards (max 120 characters)..."
+          required
+        />
+        <small>{formData.shortDescription?.length || 0}/120 characters</small>
+      </div>
 
       <h4 className="subsection-title">Upload Photos & Videos</h4>
       
@@ -545,7 +584,7 @@ const AddLease = () => {
               <div className="upload-icon">📷🎥</div>
               <div className="upload-text">
                 <span>Drag & drop or click to upload</span>
-                <small>Photos & videos • Up to 10 files • Max 1GB each</small>
+                <small>Photos & videos • Up to 15 files • Max 1GB each</small>
               </div>
             </div>
           </label>
@@ -567,7 +606,18 @@ const AddLease = () => {
                   <div className="media-content">
                     {photoFiles[index]?.type?.startsWith('video/') ? (
                       <div className="video-container">
-                        <video src={url} controls>
+                        <video 
+                          src={url} 
+                          controls
+                          muted
+                          preload="metadata"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            background: 'transparent'
+                          }}
+                        >
                           Your browser does not support the video tag.
                         </video>
                         <div className="media-type-badge">Video</div>

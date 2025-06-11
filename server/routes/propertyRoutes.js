@@ -17,7 +17,7 @@ const upload = multer({
   storage: storage,
   limits: {
     fileSize: 1024 * 1024 * 1024, // 1GB limit per file (increased from 100MB)
-    files: 10 // Maximum 10 files
+    files: 15 // Maximum 15 files (increased from 10)
   },
   fileFilter: (req, file, cb) => {
     // Accept images and videos
@@ -41,7 +41,7 @@ const handleMulterError = (err, req, res, next) => {
     if (err.code === 'LIMIT_FILE_COUNT') {
       return res.status(400).json({
         success: false,
-        message: 'Too many files. Maximum 10 files allowed.'
+        message: 'Too many files. Maximum 15 files allowed.'
       });
     }
     return res.status(400).json({
@@ -90,7 +90,7 @@ const requireAdmin = (req, res, next) => {
 
 // Property submission routes (protected - user must be authenticated)
 // Use multer to handle FormData with file uploads
-router.post('/submit', authenticateJWT, upload.array('photos', 10), handleMulterError, submitProperty);
+router.post('/submit', authenticateJWT, upload.array('photos', 15), handleMulterError, submitProperty);
 router.get('/my-properties', authenticateJWT, getUserProperties);
 router.delete('/:id', authenticateJWT, deleteProperty);
 

@@ -40,6 +40,11 @@
   object-fit: cover;
   border-radius: 8px 8px 0 0;
   transition: opacity 0.3s ease;
+  display: none; /* Default hidden */
+}
+
+.property-images .carousel-image.active {
+  display: block !important; /* Show active media */
 }
 
 .property-images video.carousel-image {
@@ -47,17 +52,40 @@
   height: 100%;
   object-fit: cover;
   border-radius: 8px 8px 0 0;
-  background: #000;
+  background: transparent !important;
+  filter: none !important;
 }
 
+.property-images video.carousel-image.active {
+  display: block !important; /* Ensure active videos are shown */
+}
+
+/* Remove webkit video control styling that causes dark overlay */
 .property-images video.carousel-image::-webkit-media-controls-panel {
-  background-color: rgba(0, 0, 0, 0.8);
+  background: transparent !important;
 }
 
 .property-images video.carousel-image::-webkit-media-controls-play-button,
 .property-images video.carousel-image::-webkit-media-controls-volume-slider,
-.property-images video.carousel-image::-webkit-media-controls-timeline {
-  filter: invert(1);
+.property-images video.carousel-image::-webkit-media-controls-timeline,
+.property-images video.carousel-image::-webkit-media-controls-current-time-display,
+.property-images video.carousel-image::-webkit-media-controls-time-remaining-display {
+  filter: none !important;
+  opacity: 0.8;
+}
+
+/* Improve video container */
+.property-images video.carousel-image::-webkit-media-controls-overlay-enclosure {
+  display: none !important;
+}
+
+/* Remove any dark overlays or filters */
+.property-images video.carousel-image::-webkit-media-controls-enclosure {
+  background: transparent !important;
+}
+
+.property-images video {
+  filter: brightness(1) contrast(1) !important;
 }
 
 /* Media type indicator */
