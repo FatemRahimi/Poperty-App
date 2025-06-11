@@ -369,7 +369,7 @@ const UserDashboard = () => {
                   <div
                     key={index}
                     className={`carousel-dot ${index === currentImageIndex ? 'active' : ''}`}
-                    onClick={() => setCurrentImageIndex(index)}
+                    onClick={() => goToImage(index)}
                   />
                 ))}
               </div>
@@ -600,6 +600,14 @@ const UserDashboard = () => {
 
       {/* Modern Navigation */}
       <div className="dashboard-nav-modern">
+        <span 
+          className="home-link-simple"
+          onClick={() => navigate('/find')}
+          title="Go to Property Search"
+        >
+          Home <i className="fas fa-chevron-right"></i>
+        </span>
+        <span className="dashboard-text">Dashboard</span>
         <div className="nav-container">
           <div className="nav-tabs-modern">
             <button 
