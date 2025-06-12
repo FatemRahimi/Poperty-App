@@ -51,11 +51,14 @@ CREATE TABLE IF NOT EXISTS properties (
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   description TEXT,
+  short_description VARCHAR(120), -- Short description for property cards
   property_type VARCHAR(50) NOT NULL, -- 'sale', 'rent', 'lease'
   property_category VARCHAR(50), -- 'residential', 'commercial', 'land'
   
   -- Address information
-  address_line1 VARCHAR(255),
+  house_number VARCHAR(20), -- Property number (e.g., "123", "45A", "Flat 2")
+  street_name VARCHAR(200), -- Street name (e.g., "Main Street", "Oak Avenue")
+  address_line1 VARCHAR(255), -- Full street address (auto-populated from house_number + street_name)
   address_line2 VARCHAR(255),
   city VARCHAR(100),
   state VARCHAR(100),

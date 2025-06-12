@@ -125,9 +125,11 @@ const AddRent = () => {
     
     // Location Information
     postcode: "",
-    streetAddress: "",
+    houseNumber: "",
+    streetName: "",
     city: "",
     region: "",
+    country: "",
     
     // Essential Property Features
     garden: false,
@@ -223,7 +225,7 @@ const AddRent = () => {
         return;
       }
     } else if (currentSection === 2) {
-      if (!formData.postcode || !formData.streetAddress || !formData.city) {
+      if (!formData.postcode || !formData.houseNumber || !formData.streetName || !formData.city || !formData.country) {
         alert("Please fill in all required location fields before continuing.");
         return;
       }
@@ -243,8 +245,8 @@ const AddRent = () => {
     if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
         !formData.bathrooms || !formData.furnishedStatus || !formData.rentalPrice || 
         !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
-        !formData.councilTaxBand || !formData.postcode || !formData.streetAddress || 
-        !formData.city || !formData.description?.trim() || !formData.shortDescription?.trim() || 
+        !formData.councilTaxBand || !formData.postcode || !formData.houseNumber || 
+        !formData.streetName || !formData.city || !formData.country || !formData.description?.trim() || !formData.shortDescription?.trim() || 
         !formData.contactPhone?.trim()) {
       alert("Please fill in all required fields before submitting.");
       return;
@@ -268,14 +270,16 @@ const AddRent = () => {
         propertyType: 'rent',
         
         // Address fields
-        address_line1: formData.streetAddress,
-        streetAddress: formData.streetAddress,
+        address_line1: `${formData.houseNumber} ${formData.streetName}`.trim(),
+        streetAddress: `${formData.houseNumber} ${formData.streetName}`.trim(),
+        house_number: formData.houseNumber,
+        street_name: formData.streetName,
         city: formData.city,
         state: formData.region, // Map region to state
         region: formData.region, 
         zip_code: formData.postcode,
         postcode: formData.postcode,
-        country: 'UK', // Default for UK properties
+        country: formData.country,
         
         // Property details
         bedrooms: formData.bedrooms,
@@ -501,20 +505,41 @@ const AddRent = () => {
           <div className="form-section">
             <h3 className="section-title">Location Information</h3>
             
-            <TextInput
-              label="Street Address"
-              name="streetAddress"
-              value={formData.streetAddress}
-              onChange={handleChange}
-              required
-            />
+            <div className="form-row">
+              <TextInput
+                label="House Number*"
+                name="houseNumber"
+                value={formData.houseNumber}
+                onChange={handleChange}
+                placeholder="e.g., 123, 45A, Flat 2"
+                required
+              />
+              
+              <TextInput
+                label="Street Name*"
+                name="streetName"
+                value={formData.streetName}
+                onChange={handleChange}
+                placeholder="e.g., Main Street, Oak Avenue"
+                required
+              />
+            </div>
             
             <div className="form-row">
               <TextInput
-                label="City/Town"
+                label="City/Town*"
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
+                required
+              />
+              
+              <TextInput
+                label="Country*"
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                placeholder="e.g., United Kingdom"
                 required
               />
               
@@ -527,7 +552,7 @@ const AddRent = () => {
             </div>
             
             <TextInput
-              label="Postcode"
+              label="Postcode*"
               name="postcode"
               value={formData.postcode}
               onChange={handleChange}

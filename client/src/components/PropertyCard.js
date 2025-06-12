@@ -82,172 +82,182 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
 
   return (
     <div className={`property-card-modern ${compact ? 'compact' : ''} fade-in`}>
-      {/* Image Section */}
-      <div className="property-images">
-        {property.images && property.images.length > 0 ? (
-          <div className="image-carousel">
-            {property.images.map((media, index) => {
-              // Check if the file is a video based on image_type from database or URL extension as fallback
-              const isVideo = media.type === 'video' || media.image_type === 'video' || 
-                (media.url && (
-                  media.url.toLowerCase().endsWith('.mp4') ||
-                  media.url.toLowerCase().endsWith('.mov') ||
-                  media.url.toLowerCase().endsWith('.avi') ||
-                  media.url.toLowerCase().endsWith('.webm') ||
-                  media.url.toLowerCase().endsWith('.ogg')
-                ));
+      <div className="property-card-content">
+        {/* Image Section */}
+        <div className="property-images">
+          {property.images && property.images.length > 0 ? (
+            <div className="image-carousel">
+              {property.images
+                .filter((media) => {
+                  // Filter to show only images, exclude videos
+                  const isVideo = media.type === 'video' || media.image_type === 'video' || 
+                    (media.url && (
+                      media.url.toLowerCase().endsWith('.mp4') ||
+                      media.url.toLowerCase().endsWith('.mov') ||
+                      media.url.toLowerCase().endsWith('.avi') ||
+                      media.url.toLowerCase().endsWith('.webm') ||
+                      media.url.toLowerCase().endsWith('.ogg')
+                    ));
+                  return !isVideo; // Return only non-video media
+                })
+                .map((media, index) => (
+                  <img
+                    key={index}
+                    src={media.url}
+                    alt={`${property.title} - Image ${index + 1}`}
+                    className={`carousel-image ${index === currentImageIndex ? 'active' : ''}`}
+                    onError={(e) => {
+                      console.error('Image load error:', media.url, e);
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                ))}
               
-              return isVideo ? (
-                <video
-                  key={index}
-                  src={media.url}
-                  className={`carousel-image ${index === currentImageIndex ? 'active' : ''}`}
-                  controls
-                  muted
-                  loop
-                  preload="metadata"
-                  onError={(e) => {
-                    console.error('Video load error:', media.url, e);
-                    e.target.style.display = 'none';
-                  }}
-                />
-              ) : (
-                <img
-                  key={index}
-                  src={media.url}
-                  alt={`${property.title} - Image ${index + 1}`}
-                  className={`carousel-image ${index === currentImageIndex ? 'active' : ''}`}
-                  onError={(e) => {
-                    console.error('Image load error:', media.url, e);
-                    e.target.style.display = 'none';
-                  }}
-                />
-              );
-            })}
-            
-            {property.images.length > 1 && (
-              <>
-                <button className="carousel-controls carousel-prev" onClick={prevImage}>
-                  <i className="fas fa-chevron-left"></i>
-                </button>
-                <button className="carousel-controls carousel-next" onClick={nextImage}>
-                  <i className="fas fa-chevron-right"></i>
-                </button>
-                
-                <div className="carousel-indicators">
-                  {property.images.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`carousel-dot ${index === currentImageIndex ? 'active' : ''}`}
-                      onClick={() => setCurrentImageIndex(index)}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-            
-            {/* Media type indicator */}
-            {property.images && property.images.length > 0 && (
+              {property.images.filter(media => {
+                const isVideo = media.type === 'video' || media.image_type === 'video' || 
+                  (media.url && (
+                    media.url.toLowerCase().endsWith('.mp4') ||
+                    media.url.toLowerCase().endsWith('.mov') ||
+                    media.url.toLowerCase().endsWith('.avi') ||
+                    media.url.toLowerCase().endsWith('.webm') ||
+                    media.url.toLowerCase().endsWith('.ogg')
+                  ));
+                return !isVideo;
+              }).length > 1 && (
+                <>
+                  <button className="carousel-controls carousel-prev" onClick={prevImage}>
+                    <i className="fas fa-chevron-left"></i>
+                  </button>
+                  <button className="carousel-controls carousel-next" onClick={nextImage}>
+                    <i className="fas fa-chevron-right"></i>
+                  </button>
+                  
+                  <div className="carousel-indicators">
+                    {property.images.filter(media => {
+                      const isVideo = media.type === 'video' || media.image_type === 'video' || 
+                        (media.url && (
+                          media.url.toLowerCase().endsWith('.mp4') ||
+                          media.url.toLowerCase().endsWith('.mov') ||
+                          media.url.toLowerCase().endsWith('.avi') ||
+                          media.url.toLowerCase().endsWith('.webm') ||
+                          media.url.toLowerCase().endsWith('.ogg')
+                        ));
+                      return !isVideo;
+                    }).map((_, index) => (
+                      <div
+                        key={index}
+                        className={`carousel-dot ${index === currentImageIndex ? 'active' : ''}`}
+                        onClick={() => setCurrentImageIndex(index)}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+              
+              {/* Media type indicator - only for images now */}
               <div className="media-type-indicator">
-                {property.images[currentImageIndex]?.type === 'video' || 
-                 property.images[currentImageIndex]?.image_type === 'video' || 
-                 (property.images[currentImageIndex]?.url && (
-                   property.images[currentImageIndex].url.toLowerCase().endsWith('.mp4') ||
-                   property.images[currentImageIndex].url.toLowerCase().endsWith('.mov') ||
-                   property.images[currentImageIndex].url.toLowerCase().endsWith('.avi') ||
-                   property.images[currentImageIndex].url.toLowerCase().endsWith('.webm') ||
-                   property.images[currentImageIndex].url.toLowerCase().endsWith('.ogg')
-                 )) ? (
-                  <i className="fas fa-video" title="Video"></i>
-                ) : (
-                  <i className="fas fa-image" title="Image"></i>
-                )}
+                <i className="fas fa-image" title="Image"></i>
+              </div>
+            </div>
+          ) : (
+            <div className="no-image-modern">
+              <i className="fas fa-home"></i>
+              <span>No Images Available</span>
+            </div>
+          )}
+        </div>
+        
+        {/* Property Details */}
+        <div 
+          className="property-details-modern"
+          onClick={() => navigate(`/property/${property.slug || property.id}`)}
+          style={{ cursor: 'pointer' }}
+        >
+          {/* Status Badge */}
+          {property.status && (
+            <div className={`property-status-badge status-${property.status}`}>
+              {property.status}
+            </div>
+          )}
+          
+          <h3 className="property-title-modern">{property.title}</h3>
+          
+          <p className="property-address-modern">
+            <i className="fas fa-map-marker-alt"></i>
+            {formatAddress(property)}
+          </p>
+          
+          <div className="property-price-modern">{formatPrice(property)}</div>
+          
+          {/* Short Description */}
+          {property.short_description && (
+            <div className="property-short-description">
+              {property.short_description}
+            </div>
+          )}
+          
+          <div className="property-features">
+            {property.bedrooms && (
+              <div className="feature-item">
+                <div className="feature-icon">
+                  <i className="fas fa-bed"></i>
+                </div>
+                <span>{property.bedrooms} Bed{property.bedrooms !== 1 ? 's' : ''}</span>
+              </div>
+            )}
+            {property.bathrooms && (
+              <div className="feature-item">
+                <div className="feature-icon">
+                  <i className="fas fa-bath"></i>
+                </div>
+                <span>{property.bathrooms} Bath{property.bathrooms !== 1 ? 's' : ''}</span>
+              </div>
+            )}
+            {property.square_feet && (
+              <div className="feature-item">
+                <div className="feature-icon">
+                  <i className="fas fa-ruler-combined"></i>
+                </div>
+                <span>{Number(property.square_feet).toLocaleString()} sqft</span>
+              </div>
+            )}
+            {property.parking_spots && (
+              <div className="feature-item">
+                <div className="feature-icon">
+                  <i className="fas fa-car"></i>
+                </div>
+                <span>{property.parking_spots} Parking</span>
+              </div>
+            )}
+            {property.student_housing && (
+              <div className="feature-item">
+                <div className="feature-icon">
+                  <i className="fas fa-graduation-cap"></i>
+                </div>
+                <span>Student-Friendly</span>
               </div>
             )}
           </div>
-        ) : (
-          <div className="no-image-modern">
-            <i className="fas fa-home"></i>
-            <span>No Images Available</span>
+          
+          <div className="property-meta-modern">
+            <span className="property-type-badge">
+              {property.property_type?.charAt(0).toUpperCase() + property.property_type?.slice(1)}
+            </span>
+            {property.created_at && (
+              <small>Added: {formatDate(property.created_at)}</small>
+            )}
           </div>
-        )}
-      </div>
-      
-      {/* Status Badge */}
-      {property.status && (
-        <div className={`property-status-badge status-${property.status}`}>
-          {property.status}
-        </div>
-      )}
-      
-      {/* Property Details */}
-      <div className="property-details-modern">
-        <h3 className="property-title-modern">{property.title}</h3>
-        
-        <p className="property-address-modern">
-          <i className="fas fa-map-marker-alt"></i>
-          {formatAddress(property)}
-        </p>
-        
-        <div className="property-price-modern">{formatPrice(property)}</div>
-        
-        <div className="property-features">
-          {property.bedrooms && (
-            <div className="feature-item">
-              <div className="feature-icon">
-                <i className="fas fa-bed"></i>
-              </div>
-              <span>{property.bedrooms} Bed{property.bedrooms !== 1 ? 's' : ''}</span>
-            </div>
-          )}
-          {property.bathrooms && (
-            <div className="feature-item">
-              <div className="feature-icon">
-                <i className="fas fa-bath"></i>
-              </div>
-              <span>{property.bathrooms} Bath{property.bathrooms !== 1 ? 's' : ''}</span>
-            </div>
-          )}
-          {property.square_feet && (
-            <div className="feature-item">
-              <div className="feature-icon">
-                <i className="fas fa-ruler-combined"></i>
-              </div>
-              <span>{Number(property.square_feet).toLocaleString()} sqft</span>
-            </div>
-          )}
-          {property.parking_spots && (
-            <div className="feature-item">
-              <div className="feature-icon">
-                <i className="fas fa-car"></i>
-              </div>
-              <span>{property.parking_spots} Parking</span>
-            </div>
-          )}
-          {property.student_housing && (
-            <div className="feature-item">
-              <div className="feature-icon">
-                <i className="fas fa-graduation-cap"></i>
-              </div>
-              <span>Student-Friendly</span>
-            </div>
-          )}
         </div>
         
-        <div className="property-meta-modern">
-          <span className="property-type-badge">
-            {property.property_type?.charAt(0).toUpperCase() + property.property_type?.slice(1)}
-          </span>
-          {property.created_at && (
-            <small>Added: {formatDate(property.created_at)}</small>
-          )}
-        </div>
-        
+        {/* Action Buttons - Outside clickable area */}
         {showActions && (
-          <div className="property-actions-modern">
+          <div className="property-actions-modern" onClick={(e) => e.stopPropagation()}>
             <button 
               className="action-btn-modern btn-edit"
-              onClick={() => navigate(`/edit-property/${property.id}`)}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/edit-property/${property.id}`);
+              }}
               disabled={isDeleting}
             >
               <i className="fas fa-edit"></i> Edit
@@ -255,7 +265,10 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
             {property.status === 'approved' && (
               <button 
                 className="action-btn-modern btn-view"
-                onClick={() => window.open(`/property/${property.slug}`, '_blank')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/property/${property.slug || property.id}`);
+                }}
                 disabled={isDeleting}
               >
                 <i className="fas fa-eye"></i> View
@@ -263,7 +276,10 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
             )}
             <button 
               className="action-btn-modern btn-delete"
-              onClick={handleDelete}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete();
+              }}
               disabled={isDeleting}
             >
               {isDeleting ? (

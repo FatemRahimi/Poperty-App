@@ -112,7 +112,9 @@ const AddLease = () => {
     description: "",
     shortDescription: "",
     files: [],
-    contactPhone: ""
+    contactPhone: "",
+    houseNumber: "",
+    streetName: "",
   });
 
   useEffect(() => {
@@ -203,7 +205,7 @@ const AddLease = () => {
     ];
     
     if (showAddress) {
-      requiredFields.push("address");
+      requiredFields.push("houseNumber", "streetName");
     }
     
     const missingFields = requiredFields.filter(field => !formData[field]);
@@ -297,8 +299,10 @@ const AddLease = () => {
         propertyType: 'lease',
         
         // Address fields
-        address_line1: formData.address,
-        streetAddress: formData.address,
+        address_line1: `${formData.houseNumber} ${formData.streetName}`.trim(),
+        streetAddress: `${formData.houseNumber} ${formData.streetName}`.trim(),
+        house_number: formData.houseNumber,
+        street_name: formData.streetName,
         city: formData.city,
         state: '', // Not collected in lease form
         region: '', 
@@ -441,11 +445,14 @@ const AddLease = () => {
       {showAddress && (
         <>
           <div className="form-row">
-            <TextInput label="Address*" name="address" value={formData.address} onChange={handleChange} />
-            <TextInput label="Postal Code" name="postalCode" value={formData.postalCode} onChange={handleChange} />
+            <TextInput label="House Number*" name="houseNumber" value={formData.houseNumber} onChange={handleChange} placeholder="e.g., 123, 45A, Unit 2" />
+            <TextInput label="Street Name*" name="streetName" value={formData.streetName} onChange={handleChange} placeholder="e.g., Main Street, Oak Avenue" />
           </div>
           <div className="form-row">
             <TextInput label="City" name="city" value={formData.city} onChange={handleChange} />
+            <TextInput label="Postal Code" name="postalCode" value={formData.postalCode} onChange={handleChange} />
+          </div>
+          <div className="form-row">
             <TextInput label="Country" name="country" value={formData.country} onChange={handleChange} disabled />
           </div>
         </>

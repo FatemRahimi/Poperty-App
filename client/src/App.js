@@ -22,6 +22,7 @@ import AddRent from "./pages/AddRent";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserDashboard from "./pages/UserDashboard";
+import PropertyView from "./pages/PropertyView";
 
 function Layout() {
     const location = useLocation();
@@ -43,6 +44,7 @@ function Layout() {
                 <Route path="/signup" element={<Signup/>}/>
                 <Route path="/logout" element={<Logout />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
+                <Route path="/property/:slug" element={<PropertyView />} />
                 
                 {/* Secure Admin Route */}
                 <Route path="/admin-x9k7m2p5q8" element={<AdminLogin />} />
