@@ -88,7 +88,10 @@ const AddList = () => {
     shortDescription: "",
     features: [],
     mediaFiles: [],
-    contactPhone: ""
+    contactPhone: "",
+    houseNumber: "",
+    streetName: "",
+    country: "",
   });
 
   useEffect(() => {
@@ -181,7 +184,7 @@ const AddList = () => {
       !formData.propertyName ||
       (!formData.unpriced && !formData.askingPrice) ||
       (isAddressRequired &&
-        (!formData.streetAddress || !formData.city || !formData.postalCode)) ||
+        (!formData.houseNumber || !formData.streetName || !formData.city || !formData.country || !formData.postalCode)) ||
       !formData.earnestDepositAmount || 
       !formData.dueDiligencePeriod ||
       !formData.closingPeriod ||
@@ -306,14 +309,16 @@ const AddList = () => {
         propertyType: 'sale',
         
         // Address fields
-        address_line1: formData.streetAddress,
-        streetAddress: formData.streetAddress,
+        address_line1: `${formData.houseNumber} ${formData.streetName}`.trim(),
+        streetAddress: `${formData.houseNumber} ${formData.streetName}`.trim(),
+        house_number: formData.houseNumber,
+        street_name: formData.streetName,
         city: formData.city,
         state: '',
         region: '', 
         zip_code: formData.postalCode,
         postcode: formData.postalCode,
-        country: 'UK',
+        country: formData.country,
         
         // Property details
         bedrooms: formData.bedrooms,
@@ -449,18 +454,35 @@ const AddList = () => {
         {/* Address Form */}
         {showAddressForm && (
           <div className="address-form">
-            <TextInput
-              label="Street Address"
-              name="streetAddress"
-              value={formData.streetAddress}
-              onChange={handleChange}
-            />
+            <div className="form-row">
+              <TextInput
+                label="House Number"
+                name="houseNumber"
+                value={formData.houseNumber}
+                onChange={handleChange}
+                placeholder="e.g., 123, 45A, Flat 2"
+              />
+              <TextInput
+                label="Street Name"
+                name="streetName"
+                value={formData.streetName}
+                onChange={handleChange}
+                placeholder="e.g., Main Street, Oak Avenue"
+              />
+            </div>
             <div className="form-row">
               <TextInput
                 label="City"
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
+              />
+              <TextInput
+                label="Country"
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                placeholder="e.g., United Kingdom"
               />
               <TextInput
                 label="Postal Code"

@@ -1,9 +1,170 @@
 /* Import the existing property card styles from UserDashboard */
 @import '../pages/UserDashboard.css';
 
+/* Horizontal layout for image and details side by side */
+.property-card-content {
+  display: flex;
+  height: 250px; /* Increased height to accommodate action buttons */
+  position: relative;
+}
+
+.property-card-content .property-images {
+  width: 50%; /* Equal width - 50% for images */
+  height: 250px; /* Match container height */
+  flex-shrink: 0;
+  border-radius: 0; /* Remove border radius */
+}
+
+.property-card-content .property-details-modern {
+  width: 50%; /* Equal width - 50% for details */
+  padding: 1.5rem 1.5rem 4rem 1.5rem; /* Add bottom padding for action buttons */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  position: relative;
+  min-width: 0; /* Allow text to wrap */
+  transition: background-color 0.3s ease;
+}
+
+.property-card-content .property-details-modern:hover {
+  background-color: #f8fafc;
+}
+
+/* Status badge positioning in horizontal layout */
+.property-card-content .property-status-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0; /* Remove border radius */
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced property details styling */
+.property-card-content .property-title-modern {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.property-card-content .property-address-modern {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  line-height: 1.2;
+}
+
+.property-card-content .property-address-modern i {
+  font-size: 0.8rem;
+  color: #ef4444;
+}
+
+.property-card-content .property-price-modern {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #059669;
+  margin: 0 0 0.75rem 0;
+  line-height: 1;
+}
+
+/* Short description styling */
+.property-short-description {
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 0 0 1rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Enhanced features with bigger black icons */
+.property-card-content .property-features {
+  display: flex;
+  gap: 1.2rem;
+  margin: 0.75rem 0;
+  flex-wrap: wrap;
+}
+
+.property-card-content .feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #374151;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.property-card-content .feature-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000000; /* Black color for icons */
+}
+
+.property-card-content .feature-icon i {
+  font-size: 0.9rem; /* Bigger icons */
+}
+
+/* Compact mode adjustments */
+.property-card-modern.compact .property-card-content {
+  height: 200px; /* Smaller height for compact mode */
+}
+
+.property-card-modern.compact .property-card-content .property-images {
+  width: 50%; /* Keep equal width in compact mode */
+  height: 200px;
+}
+
+.property-card-modern.compact .property-card-content .property-details-modern {
+  padding: 1rem 1rem 3.5rem 1rem; /* Adjusted padding for compact mode */
+}
+
+/* Mobile responsive - stack vertically on small screens */
+@media (max-width: 768px) {
+  .property-card-content {
+    flex-direction: column;
+    height: auto;
+    min-height: 400px;
+  }
+  
+  .property-card-content .property-images {
+    width: 100%;
+    height: 200px;
+  }
+  
+  .property-card-content .property-details-modern {
+    width: 100%;
+    padding: 1rem 1rem 4rem 1rem;
+  }
+  
+  .property-actions-modern {
+    left: 0; /* Full width on mobile */
+    position: relative;
+    margin-top: auto;
+  }
+}
+
 /* Additional styles specific to the reusable PropertyCard component */
 .property-card-modern.compact {
-  max-height: 350px;
+  max-height: none; /* Remove height restriction for horizontal layout */
 }
 
 .property-card-modern.compact .property-images {
@@ -12,7 +173,6 @@
 
 .property-card-modern.compact .property-details-modern {
   padding: 0.75rem;
-  height: 190px;
 }
 
 .property-card-modern.compact .property-title-modern {
@@ -38,7 +198,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px 8px 0 0;
+  border-radius: 0; /* Remove border radius */
   transition: opacity 0.3s ease;
   display: none; /* Default hidden */
 }
@@ -51,7 +211,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px 8px 0 0;
+  border-radius: 0; /* Remove border radius */
   background: transparent !important;
   filter: none !important;
 }
@@ -96,7 +256,7 @@
   background: rgba(0, 0, 0, 0.7);
   color: white;
   padding: 8px;
-  border-radius: 50%;
+  border-radius: 0; /* Remove border radius */
   font-size: 14px;
   z-index: 5;
   backdrop-filter: blur(5px);
@@ -131,37 +291,115 @@
   z-index: 10;
 }
 
-/* Delete button styles */
-.action-btn-modern.btn-delete {
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
+/* Enhanced Professional Action Buttons - Positioned at bottom of card */
+.property-actions-modern {
+  position: absolute;
+  bottom: 0;
+  left: 50%; /* Start from where details section begins */
+  right: 0;
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: white;
+  border-top: 1px solid #f1f5f9;
+  z-index: 10;
+}
+
+.property-actions-modern .action-btn-modern {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border-radius: 0; /* Remove border radius */
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: fit-content;
+  white-space: nowrap;
+}
+
+.property-actions-modern .btn-edit {
+  background: #ffffff;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.property-actions-modern .btn-edit:hover:not(:disabled) {
+  background: #f9fafb;
+  color: #111827;
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.property-actions-modern .btn-view {
+  background: #059669;
   color: white;
-  border: none;
+  border-color: #059669;
 }
 
-.action-btn-modern.btn-delete:hover:not(:disabled) {
-  background: linear-gradient(135deg, #c0392b, #a93226);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+.property-actions-modern .btn-view:hover:not(:disabled) {
+  background: #047857;
+  border-color: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
 }
 
-.action-btn-modern.btn-delete:disabled {
-  background: #bdc3c7;
+.property-actions-modern .btn-delete {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+
+.property-actions-modern .btn-delete:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.property-actions-modern .btn-delete:disabled {
+  background: #9ca3af;
+  border-color: #9ca3af;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
-/* Ensure actions are visible and properly spaced */
-.property-actions-modern {
-  display: flex !important;
-  gap: 0.5rem !important;
-  margin-top: auto !important;
-  padding-top: 0.5rem !important;
-  flex-wrap: wrap;
+.property-actions-modern .action-btn-modern i {
+  font-size: 0.75rem;
 }
 
-.action-btn-modern {
-  flex: 1 !important;
-  min-width: fit-content !important;
-  white-space: nowrap !important;
+/* Enhanced meta section */
+.property-card-content .property-meta-modern {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.75rem 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.property-card-content .property-type-badge {
+  background: #f8fafc;
+  color: #475569;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0; /* Remove border radius */
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid #e2e8f0;
+}
+
+.property-card-content .property-meta-modern small {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 500;
 } 
