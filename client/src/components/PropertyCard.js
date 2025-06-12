@@ -44,13 +44,25 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
   };
 
   const formatAddress = (property) => {
-    const parts = [
-      property.address_line1,
-      property.city,
-      property.state,
-      property.postal_code
-    ].filter(Boolean);
-    return parts.join(', ');
+    const parts = [];
+    
+    // Add street name (from address_line1)
+    if (property.address_line1) {
+      parts.push(property.address_line1);
+    }
+    
+    // Add city
+    if (property.city) {
+      parts.push(property.city);
+    }
+    
+    // Add first 3 characters of postcode
+    const postcode = property.zip_code || property.postcode;
+    if (postcode && postcode.length >= 3) {
+      parts.push(postcode.substring(0, 3));
+    }
+    
+    return parts.length > 0 ? parts.join(', ') : 'Location not specified';
   };
 
   const nextImage = () => {
@@ -83,12 +95,13 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
       const data = await response.json();
 
       if (data.success) {
-        alert(`Property "${property.title}" has been deleted successfully.`);
-        // Call the callback to refresh the properties list
+        // Call the callback to refresh the properties list and show success
         if (onPropertyDeleted) {
-          onPropertyDeleted(property.id);
+          onPropertyDeleted(property.id, property.title);
         }
       } else {
+        console.error('Delete failed:', data.message);
+        // Only show alert for errors, not success
         alert(`Failed to delete property: ${data.message}`);
       }
     } catch (error) {
@@ -102,13 +115,39 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
   return (
     <div className={`property-card-modern ${compact ? 'compact' : ''} fade-in`}>
       <div className="property-card-content">
-        {/* Image Section */}
-        <div className="property-images">
-          {property.images && property.images.length > 0 ? (
-            <div className="image-carousel">
-              {property.images
-                .filter((media) => {
-                  // Filter to show only images, exclude videos
+        {/* Left Column - Images and Rental Prices */}
+        <div className="property-left-column">
+          {/* Image Section */}
+          <div className="property-images">
+            {property.images && property.images.length > 0 ? (
+              <div className="image-carousel">
+                {property.images
+                  .filter((media) => {
+                    // Filter to show only images, exclude videos
+                    const isVideo = media.type === 'video' || media.image_type === 'video' || 
+                      (media.url && (
+                        media.url.toLowerCase().endsWith('.mp4') ||
+                        media.url.toLowerCase().endsWith('.mov') ||
+                        media.url.toLowerCase().endsWith('.avi') ||
+                        media.url.toLowerCase().endsWith('.webm') ||
+                        media.url.toLowerCase().endsWith('.ogg')
+                      ));
+                    return !isVideo; // Return only non-video media
+                  })
+                  .map((media, index) => (
+                    <img
+                      key={index}
+                      src={media.url}
+                      alt={`${property.title} - Image ${index + 1}`}
+                      className={`carousel-image ${index === currentImageIndex ? 'active' : ''}`}
+                      onError={(e) => {
+                        console.error('Image load error:', media.url, e);
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  ))}
+                
+                {property.images.filter(media => {
                   const isVideo = media.type === 'video' || media.image_type === 'video' || 
                     (media.url && (
                       media.url.toLowerCase().endsWith('.mp4') ||
@@ -117,41 +156,57 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                       media.url.toLowerCase().endsWith('.webm') ||
                       media.url.toLowerCase().endsWith('.ogg')
                     ));
-                  return !isVideo; // Return only non-video media
-                })
-                .map((media, index) => (
-                  <img
-                    key={index}
-                    src={media.url}
-                    alt={`${property.title} - Image ${index + 1}`}
-                    className={`carousel-image ${index === currentImageIndex ? 'active' : ''}`}
-                    onError={(e) => {
-                      console.error('Image load error:', media.url, e);
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                ))}
-              
-              {property.images.filter(media => {
-                const isVideo = media.type === 'video' || media.image_type === 'video' || 
-                  (media.url && (
-                    media.url.toLowerCase().endsWith('.mp4') ||
-                    media.url.toLowerCase().endsWith('.mov') ||
-                    media.url.toLowerCase().endsWith('.avi') ||
-                    media.url.toLowerCase().endsWith('.webm') ||
-                    media.url.toLowerCase().endsWith('.ogg')
-                  ));
-                return !isVideo;
-              }).length > 1 && (
-                <>
-                  <button className="carousel-controls carousel-prev" onClick={prevImage}>
-                    <i className="fas fa-chevron-left"></i>
-                  </button>
-                  <button className="carousel-controls carousel-next" onClick={nextImage}>
-                    <i className="fas fa-chevron-right"></i>
-                  </button>
-                  
-                  <div className="carousel-indicators">
+                  return !isVideo;
+                }).length > 1 && (
+                  <>
+                    <button className="carousel-controls carousel-prev" onClick={prevImage}>
+                      <i className="fas fa-chevron-left"></i>
+                    </button>
+                    <button className="carousel-controls carousel-next" onClick={nextImage}>
+                      <i className="fas fa-chevron-right"></i>
+                    </button>
+                    
+                    {/* Image counter on the left */}
+                    <div className="image-counter">
+                      {currentImageIndex + 1}/{property.images.filter(media => {
+                        const isVideo = media.type === 'video' || media.image_type === 'video' || 
+                          (media.url && (
+                            media.url.toLowerCase().endsWith('.mp4') ||
+                            media.url.toLowerCase().endsWith('.mov') ||
+                            media.url.toLowerCase().endsWith('.avi') ||
+                            media.url.toLowerCase().endsWith('.webm') ||
+                            media.url.toLowerCase().endsWith('.ogg')
+                          ));
+                        return !isVideo;
+                      }).length}
+                    </div>
+                    
+                    <div className="carousel-indicators">
+                      {property.images.filter(media => {
+                        const isVideo = media.type === 'video' || media.image_type === 'video' || 
+                          (media.url && (
+                            media.url.toLowerCase().endsWith('.mp4') ||
+                            media.url.toLowerCase().endsWith('.mov') ||
+                            media.url.toLowerCase().endsWith('.avi') ||
+                            media.url.toLowerCase().endsWith('.webm') ||
+                            media.url.toLowerCase().endsWith('.ogg')
+                          ));
+                        return !isVideo;
+                      }).map((_, index) => (
+                        <div
+                          key={index}
+                          className={`carousel-dot ${index === currentImageIndex ? 'active' : ''}`}
+                          onClick={() => setCurrentImageIndex(index)}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+                
+                {/* Media type indicator - show image count */}
+                <div className="media-type-indicator">
+                  <i className="fas fa-camera" title="Photos"></i>
+                  <span className="image-count">
                     {property.images.filter(media => {
                       const isVideo = media.type === 'video' || media.image_type === 'video' || 
                         (media.url && (
@@ -162,41 +217,35 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                           media.url.toLowerCase().endsWith('.ogg')
                         ));
                       return !isVideo;
-                    }).map((_, index) => (
-                      <div
-                        key={index}
-                        className={`carousel-dot ${index === currentImageIndex ? 'active' : ''}`}
-                        onClick={() => setCurrentImageIndex(index)}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-              
-              {/* Media type indicator - show image count */}
-              <div className="media-type-indicator">
-                <i className="fas fa-camera" title="Photos"></i>
-                <span className="image-count">
-                  {property.images.filter(media => {
-                    const isVideo = media.type === 'video' || media.image_type === 'video' || 
-                      (media.url && (
-                        media.url.toLowerCase().endsWith('.mp4') ||
-                        media.url.toLowerCase().endsWith('.mov') ||
-                        media.url.toLowerCase().endsWith('.avi') ||
-                        media.url.toLowerCase().endsWith('.webm') ||
-                        media.url.toLowerCase().endsWith('.ogg')
-                      ));
-                    return !isVideo;
-                  }).length}
-                </span>
+                    }).length}
+                  </span>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="no-image-modern">
-              <i className="fas fa-home"></i>
-              <span>No Images Available</span>
-            </div>
-          )}
+            ) : (
+              <div className="no-image-modern">
+                <i className="fas fa-home"></i>
+                <span>No Images Available</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Rental Prices Text Section - Below images in left column */}
+          <div className="property-rental-text">
+            {property.property_type === 'rent' && (
+              <>
+                {(property.monthly_rent || property.monthlyRent) ? (
+                  <div className="rental-text-item monthly">
+                    <span className="rental-amount monthly">£{Number(property.monthly_rent || property.monthlyRent).toLocaleString()} pcm</span>
+                  </div>
+                ) : null}
+                {(property.weekly_rent || property.weeklyRent) ? (
+                  <div className="rental-text-item weekly">
+                    <span className="rental-amount weekly">£{Number(property.weekly_rent || property.weeklyRent).toLocaleString()} pw</span>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </div>
         </div>
         
         {/* Property Details */}
@@ -218,23 +267,6 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
             <i className="fas fa-map-marker-alt"></i>
             {formatAddress(property)}
           </p>
-          
-          <div className="property-price-modern">{formatPrice(property)}</div>
-          
-          {/* Additional Price Details */}
-          {getPriceDetails(property).length > 1 && (
-            <div className="additional-prices">
-              {getPriceDetails(property).map((price, index) => (
-                <div key={index} className={`price-item price-${price.type}`}>
-                  <span className="price-label">{price.label}:</span>
-                  <span className="price-amount">
-                    £{Number(price.amount).toLocaleString()}
-                    {price.type === 'weekly' ? '/pw' : price.type === 'monthly' ? '/pcm' : ''}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
           
           {/* Short Description */}
           {property.short_description && (
@@ -303,7 +335,16 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
               className="action-btn-modern btn-edit"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/edit-property/${property.id}`);
+                // Redirect to appropriate form based on property type
+                if (property.property_type === 'rent') {
+                  navigate('/addrent', { state: { editMode: true, propertyData: property } });
+                } else if (property.property_type === 'lease') {
+                  navigate('/addlease', { state: { editMode: true, propertyData: property } });
+                } else if (property.property_type === 'sale') {
+                  navigate('/addlist', { state: { editMode: true, propertyData: property } });
+                } else {
+                  alert('Edit functionality not available for this property type');
+                }
               }}
               disabled={isDeleting}
             >

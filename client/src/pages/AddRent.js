@@ -219,14 +219,14 @@ const AddRent = () => {
   const nextSection = () => {
     // Validate current section
     if (currentSection === 1) {
-      // Check if at least one rent field is filled
-      const hasRentPrice = formData.weeklyRent || formData.monthlyRent;
+      // Check if both rent fields are filled
+      const hasBothRentPrices = formData.weeklyRent && formData.monthlyRent;
       
       if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
-          !formData.bathrooms || !formData.furnishedStatus || !hasRentPrice || 
+          !formData.bathrooms || !formData.furnishedStatus || !hasBothRentPrices || 
           !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
           !formData.councilTaxBand) {
-        alert("Please fill in all required fields before continuing. Note: You need either weekly rent OR monthly rent.");
+        alert("Please fill in all required fields before continuing. Note: Both weekly rent AND monthly rent are required.");
         return;
       }
     } else if (currentSection === 2) {
@@ -247,16 +247,16 @@ const AddRent = () => {
     e.preventDefault();
     
     // Final validation
-    // Check if at least one rent field is filled
-    const hasRentPrice = formData.weeklyRent || formData.monthlyRent;
+    // Check if both rent fields are filled
+    const hasBothRentPrices = formData.weeklyRent && formData.monthlyRent;
     
     if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
-        !formData.bathrooms || !formData.furnishedStatus || !hasRentPrice || 
+        !formData.bathrooms || !formData.furnishedStatus || !hasBothRentPrices || 
         !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
-        !formData.councilTaxBand || !formData.postcode || !formData.houseNumber || 
-        !formData.streetName || !formData.city || !formData.country || 
+        !formData.councilTaxBand || !formData.postcode || !formData.streetAddress || 
+        !formData.city || !formData.country || 
         !formData.description?.trim() || !formData.shortDescription?.trim() || !formData.contactPhone?.trim()) {
-      alert("Please fill in all required fields before submitting. Note: You need either weekly rent OR monthly rent.");
+      alert("Please fill in all required fields before submitting. Note: Both weekly rent AND monthly rent are required.");
       return;
     }
     
@@ -267,21 +267,24 @@ const AddRent = () => {
       // Create FormData to handle file uploads
       const submitFormData = new FormData();
       
+      // Debug logging for rental prices
+      console.log('🏠 AddRent Debug - Form Data Values:');
+      console.log('Raw weeklyRent:', formData.weeklyRent, typeof formData.weeklyRent);
+      console.log('Raw monthlyRent:', formData.monthlyRent, typeof formData.monthlyRent);
+      
       // Map AddRent form fields to backend expected fields
       const fieldMapping = {
         // Basic property info
-        title: formData.propertyTitle, // Map propertyTitle to title for backend
-        propertyTitle: formData.propertyTitle, // Alternative field name
+        title: formData.propertyTitle,
+        propertyTitle: formData.propertyTitle,
         description: formData.description,
         shortDescription: formData.shortDescription,
-        property_type: 'rent', // Set type as rent
+        property_type: 'rent',
         propertyType: 'rent',
         
         // Address fields
-        address_line1: `${formData.houseNumber} ${formData.streetName}`.trim(),
-        streetAddress: `${formData.houseNumber} ${formData.streetName}`.trim(),
-        house_number: formData.houseNumber,
-        street_name: formData.streetName,
+        address_line1: formData.streetAddress,
+        streetAddress: formData.streetAddress,
         city: formData.city,
         state: formData.region, // Map region to state
         region: formData.region, 
@@ -296,9 +299,10 @@ const AddRent = () => {
         furnishedStatus: formData.furnishedStatus,
         
         // Rental-specific fields
-        weekly_rent: formData.weeklyRent,
-        monthly_rent: formData.monthlyRent,
-        rentalPrice: formData.monthlyRent,
+        weekly_rent: formData.weeklyRent ? parseFloat(formData.weeklyRent).toFixed(2) : null,
+        weeklyRent: formData.weeklyRent ? parseFloat(formData.weeklyRent).toFixed(2) : null,
+        monthly_rent: formData.monthlyRent ? parseFloat(formData.monthlyRent).toFixed(2) : null,
+        monthlyRent: formData.monthlyRent ? parseFloat(formData.monthlyRent).toFixed(2) : null,
         deposit_amount: formData.depositAmount,
         depositAmount: formData.depositAmount,
         availability_date: formData.availableFrom,
@@ -333,7 +337,17 @@ const AddRent = () => {
       // Add all mapped fields to FormData
       Object.keys(fieldMapping).forEach(key => {
         if (fieldMapping[key] !== undefined && fieldMapping[key] !== null && fieldMapping[key] !== '') {
-          submitFormData.append(key, fieldMapping[key]);
+          // Convert numeric values to strings when adding to FormData
+          if (typeof fieldMapping[key] === 'number') {
+            submitFormData.append(key, fieldMapping[key].toString());
+          } else {
+            submitFormData.append(key, fieldMapping[key]);
+          }
+          
+          // Debug log for rental prices
+          if (key.includes('rent')) {
+            console.log(`📝 Adding to FormData - ${key}:`, fieldMapping[key], typeof fieldMapping[key]);
+          }
         }
       });
       
@@ -451,26 +465,28 @@ const AddRent = () => {
             
             <div className="form-row">
               <TextInput
-                label="Weekly Rent (£)"
+                label="Weekly Rent (£)*"
                 name="weeklyRent"
                 value={formData.weeklyRent}
                 onChange={handleChange}
                 type="number"
-                placeholder="Enter if renting weekly"
+                placeholder="Enter weekly rent amount"
+                required
               />
               
               <TextInput
-                label="Monthly Rent (£)"
+                label="Monthly Rent (£)*"
                 name="monthlyRent"
                 value={formData.monthlyRent}
                 onChange={handleChange}
                 type="number"
-                placeholder="Enter if renting monthly"
+                placeholder="Enter monthly rent amount"
+                required
               />
             </div>
             
             <small style={{color: '#666', fontSize: '14px', marginBottom: '15px', display: 'block'}}>
-              * Enter either weekly OR monthly rent (at least one is required)
+              * Enter both weekly AND monthly rent (both are mandatory)
             </small>
             
             <div className="form-row">
@@ -533,20 +549,11 @@ const AddRent = () => {
             
             <div className="form-row">
               <TextInput
-                label="House Number*"
-                name="houseNumber"
-                value={formData.houseNumber}
+                label="Street Address*"
+                name="streetAddress"
+                value={formData.streetAddress}
                 onChange={handleChange}
-                placeholder="e.g., 123, 45A, Flat 2"
-                required
-              />
-              
-              <TextInput
-                label="Street Name*"
-                name="streetName"
-                value={formData.streetName}
-                onChange={handleChange}
-                placeholder="e.g., Main Street, Oak Avenue"
+                placeholder="e.g., 123 Main Street, Flat 2A Oak Avenue"
                 required
               />
             </div>
@@ -695,11 +702,11 @@ const AddRent = () => {
                 onChange={handleChange}
                 className="form-textarea"
                 rows="2"
-                maxLength="120"
-                placeholder="Brief description for property cards (max 120 characters)..."
+                maxLength="80"
+                placeholder="Brief description for property cards (max 80 characters)..."
                 required
               ></textarea>
-              <small>{formData.shortDescription?.length || 0}/120 characters</small>
+              <small>{formData.shortDescription?.length || 0}/80 characters</small>
             </div>
             
             <h4 className="subsection-title">Upload Photos & Videos</h4>
