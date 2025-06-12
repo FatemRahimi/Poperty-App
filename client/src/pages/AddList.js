@@ -10,9 +10,14 @@ import useSessionStorage from "../Utils/useSessionStorage";
 
 // Property Type Options
 const propertyTypeOptions = [
-  { value: "residential", label: "Residential" },
-  { value: "commercial", label: "Commercial" },
+  { value: "detached", label: "Detached" },
+  { value: "semi-detached", label: "Semi-Detached" },
+  { value: "terraced", label: "Terraced" },
+  { value: "flat", label: "Flat" },
+  { value: "bungalow", label: "Bungalow" },
   { value: "land", label: "Land" },
+  { value: "park_home", label: "Park Home" },
+  { value: "student_hall", label: "Student Hall" }
 ];
 
 const propertySubtypeOptions = [
@@ -178,11 +183,14 @@ const AddList = () => {
   const validateStep1 = () => {
     const isAddressRequired = showAddressForm;
   
+    // Check if at least one price field is filled
+    const hasPrice = formData.askingPrice;
+  
     const isFormIncomplete =
       !formData.propertyType ||
       !formData.propertySubtype ||
       !formData.propertyName ||
-      (!formData.unpriced && !formData.askingPrice) ||
+      (!formData.unpriced && !hasPrice) ||
       (isAddressRequired &&
         (!formData.houseNumber || !formData.streetName || !formData.city || !formData.country || !formData.postalCode)) ||
       !formData.earnestDepositAmount || 
@@ -195,6 +203,7 @@ const AddList = () => {
       alert("❌ Please fill in all required fields before continuing.");
       return false;
     }
+    
     return true;
   };
 
@@ -274,173 +283,88 @@ const AddList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateStep3()) {
-      return;
-    }
-
     try {
-      // Check authentication
-      const isLoggedIn = localStorage.getItem("token");
-      if (!isLoggedIn) {
-        alert("❌ Please log in to submit a property.");
-        navigate("/login");
-        return;
-      }
-
-      // Get auth token
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("❌ Please log in to submit a property.");
-        navigate("/login");
-        return;
-      }
-
-      // Create FormData to handle file uploads
-      const submitFormData = new FormData();
+      const formDataToSend = new FormData();
       
-      // Map AddList form fields to backend expected fields
-      const fieldMapping = {
-        // Basic property info
-        title: formData.propertyName,
-        propertyTitle: formData.propertyName,
-        description: formData.description,
-        shortDescription: formData.shortDescription,
-        property_type: 'sale',
-        propertyType: 'sale',
-        
-        // Address fields
-        address_line1: `${formData.houseNumber} ${formData.streetName}`.trim(),
-        streetAddress: `${formData.houseNumber} ${formData.streetName}`.trim(),
-        house_number: formData.houseNumber,
-        street_name: formData.streetName,
-        city: formData.city,
-        state: '',
-        region: '', 
-        zip_code: formData.postalCode,
-        postcode: formData.postalCode,
-        country: formData.country,
-        
-        // Property details
-        bedrooms: formData.bedrooms,
-        bathrooms: formData.bathrooms,
-        square_feet: formData.floorArea,
-        year_built: formData.builtYear,
-        
-        // Financial information
-        price: formData.unpriced ? null : parseFloat(formData.askingPrice?.replace(/[^0-9.]/g, '')) || 0,
-        deposit_amount: parseFloat(formData.earnestDepositAmount?.replace(/[^0-9.]/g, '')) || 0,
-        
-        // Property features
-        parking_spaces: formData.parking === "garage" ? 1 : 0,
-        has_garage: formData.parking === "garage",
-        has_garden: formData.garden,
-        furnished: formData.furnished === "furnished",
-        
-        // Contact information
-        contact_phone: formData.contactPhone,
-        contactPhone: formData.contactPhone,
-        contact_email: localStorage.getItem('userEmail') || '',
-        contactEmail: localStorage.getItem('userEmail') || '',
-        contact_name: localStorage.getItem('userName') || '',
-        contactName: localStorage.getItem('userName') || '',
-        
-        // Additional metadata
-        propertySubtype: formData.propertySubtype,
-        dueDiligencePeriod: formData.dueDiligencePeriod,
-        closingPeriod: formData.closingPeriod,
-        expirationDate: formData.expirationDate,
-        reminderDays: formData.reminderDays,
-        earnestDepositType: formData.earnestDepositType,
-        loiRequired: formData.loiRequired,
-        receptionRooms: formData.receptionRooms,
-        tenure: formData.tenure,
-        chainFree: formData.chainFree,
-        epcRating: formData.epcRating,
-        councilTaxBand: formData.councilTaxBand,
-        nearestStation: formData.nearestStation,
-        primarySchoolNearby: formData.primarySchoolNearby,
-        secondarySchoolNearby: formData.secondarySchoolNearby,
-        interestRate: formData.interestRate,
-        mortgageEstimate: formData.mortgageEstimate
-      };
-      
-      // Add all mapped fields to FormData
-      Object.keys(fieldMapping).forEach(key => {
-        if (fieldMapping[key] !== undefined && fieldMapping[key] !== null && fieldMapping[key] !== '') {
-          submitFormData.append(key, fieldMapping[key]);
+      // Add all form fields
+      Object.keys(formData).forEach(key => {
+        if (key !== 'mediaFiles') {
+          formDataToSend.append(key, formData[key]);
         }
       });
       
-      // Add user information
-      submitFormData.append('userEmail', localStorage.getItem('userEmail') || '');
-      submitFormData.append('userId', localStorage.getItem('userId') || '');
-      submitFormData.append('listingType', 'sale');
-      
-      // Add photos if any
-      mediaFiles.forEach((file, index) => {
-        submitFormData.append('photos', file);
+      // Add media files
+      mediaFiles.forEach(file => {
+        formDataToSend.append('images', file);
       });
       
-      console.log('Submitting sale property data with', mediaFiles.length, 'media files...');
-
-      // Make API call to submit property
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/submit`, {
+      const response = await fetch('/api/properties', {
         method: 'POST',
-        body: submitFormData,
+        body: formDataToSend,
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        alert("✅ Property listing submitted successfully! You will receive a confirmation email shortly.");
-        
-        // Clear form data and redirect to dashboard
-        sessionStorage.removeItem("propertyListingForm");
-        navigate("/dashboard");
-      } else {
-        throw new Error(result.message || 'Failed to submit property');
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit property');
       }
-
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Property submitted successfully!');
+        navigate('/dashboard');
+      } else {
+        throw new Error(data.message || 'Failed to submit property');
+      }
     } catch (error) {
-      console.error('Property submission error:', error);
-      alert(`❌ Failed to submit property: ${error.message}`);
+      console.error('Error submitting property:', error);
+      alert(`Error submitting property: ${error.message}`);
     }
   };
 
   // Render Step 1: Basic Property Information
   const renderStep1 = () => {
     return (
-      <>
-        {/* Property Type */}
-        <SelectInput
-          label="Property Type"
-          name="propertyType"
-          value={formData.propertyType}
-          onChange={handleChange}
-          options={propertyTypeOptions}
-          required
-        />
-
-        {/* Property Subtype */}
-        <SelectInput
-          label="Property Subtype"
-          name="propertySubtype"
-          value={formData.propertySubtype}
-          onChange={handleChange}
-          options={propertySubtypeOptions}
-          required
-        />
-
-        {/* Property Name */}
-        <TextInput
-          label="Property Name"
-          name="propertyName"
-          value={formData.propertyName}
-          onChange={handleChange}
-        />
+      <div className="step-container">
+        <h2>Basic Property Information</h2>
+        <div className="form-group">
+          <SelectInput
+            label="Property Type"
+            name="propertyType"
+            value={formData.propertyType}
+            onChange={handleChange}
+            options={propertyTypeOptions}
+            required
+          />
+          <SelectInput
+            label="Property Subtype"
+            name="propertySubtype"
+            value={formData.propertySubtype}
+            onChange={handleChange}
+            options={propertySubtypeOptions}
+            required
+          />
+          <TextInput
+            label="Property Name"
+            name="propertyName"
+            value={formData.propertyName}
+            onChange={handleChange}
+            required
+          />
+          <div className="price-section">
+            <TextInput
+              label="Asking Price"
+              name="askingPrice"
+              type="number"
+              value={formData.askingPrice}
+              onChange={handleChange}
+              required={!formData.unpriced}
+              disabled={formData.unpriced}
+            />
+          </div>
+        </div>
 
         {/* Address Toggle */}
         <button
@@ -494,43 +418,12 @@ const AddList = () => {
           </div>
         )}
 
-        {/* Asking Price and Earnest Money */}
-        <h3 className="section-title">Asking Price and Terms</h3>
-
-        <div className="form-row">
-          {/* Asking Price */}
-          <div className="form-group">
-            <label className="field-title">Asking Price</label>
-            <div className="input-with-addon">
-              <input
-                type="text"
-                name="askingPrice"
-                value={formData.askingPrice}
-                onChange={handleChange}
-                placeholder="$"
-                disabled={formData.unpriced}
-              />
-              <div className="addon-box">
-                <input
-                  type="checkbox"
-                  name="unpriced"
-                  checked={formData.unpriced}
-                  onChange={handleChange}
-                  id="unpricedCheckbox"
-                  className="big-checkbox"
-                />
-                <label htmlFor="unpricedCheckbox" className="addon-label">Unpriced</label>
-              </div>
-            </div>
-          </div>
-
-          {/* Earnest Deposit Section */}
-          <div className="form-group">
-            <EarnestDepositSection
-              formData={formData}
-              handleChange={handleChange}
-            />
-          </div>
+        {/* Earnest Deposit Section */}
+        <div className="form-group">
+          <EarnestDepositSection
+            formData={formData}
+            handleChange={handleChange}
+          />
         </div>
 
         {/* Due Diligence and Closing Period */}
@@ -569,7 +462,7 @@ const AddList = () => {
             type="number"
           />
         </div>
-      </>
+      </div>
     );
   };
 

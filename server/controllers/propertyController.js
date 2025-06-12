@@ -94,6 +94,8 @@ const submitProperty = async (req, res) => {
       year_built,
       price, 
       askingPrice, // Alternative field name from frontend
+      weekly_rent,
+      weeklyRent, // Alternative field name from frontend
       monthly_rent, 
       rentalPrice, // Alternative field name from frontend
       lease_term, 
@@ -128,6 +130,7 @@ const submitProperty = async (req, res) => {
     const state_mapped = state || region;
     const zip_code_mapped = zip_code || postcode;
     const price_mapped = price || askingPrice;
+    const weekly_rent_mapped = weekly_rent || weeklyRent;
     const monthly_rent_mapped = monthly_rent || rentalPrice;
     const lease_term_mapped = lease_term || tenancyLength;
     const deposit_amount_mapped = deposit_amount || depositAmount;
@@ -214,18 +217,18 @@ const submitProperty = async (req, res) => {
         user_id, title, description, short_description, property_type, property_category,
         address_line1, address_line2, city, state, zip_code, country,
         bedrooms, bathrooms, square_feet, lot_size, year_built,
-        price, monthly_rent, lease_term, deposit_amount,
+        price, weekly_rent, monthly_rent, lease_term, deposit_amount,
         parking_spaces, has_garage, has_pool, has_garden, furnished, pets_allowed,
         student_housing, availability_date, contact_name, contact_phone, contact_email, slug
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-        $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
       ) RETURNING *`,
       [
         user_id, title, description, shortDescription, property_type_mapped, property_category,
         address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
         bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built,
-        price_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
+        price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
         parking_spaces || 0, has_garage || false, has_pool || false, 
         has_garden || false, furnished_mapped || false, pets_allowed || false,
         student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, slug

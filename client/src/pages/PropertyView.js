@@ -35,8 +35,10 @@ const PropertyView = () => {
   const formatPrice = (property) => {
     if (property.property_type === 'sale' && property.price) {
       return `£${Number(property.price).toLocaleString()}`;
+    } else if (property.weekly_rent) {
+      return `£${Number(property.weekly_rent).toLocaleString()}/pw`;
     } else if (property.monthly_rent) {
-      return `£${Number(property.monthly_rent).toLocaleString()}/month`;
+      return `£${Number(property.monthly_rent).toLocaleString()}/pcm`;
     }
     return 'Price not available';
   };

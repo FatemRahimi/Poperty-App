@@ -4,6 +4,7 @@ import SelectInput from "../components/inputs/SelectInput";
 import TextInput from "../components/inputs/TextInput";
 import Logo from "../components/Logo";
 import "../styles/AddList.css"; // reusing the AddList CSS
+import "./AddRent.css"; // AddRent specific styles
 import useSessionStorage from "../Utils/useSessionStorage";
 import { useAuth } from "../context/AuthContext";
 
@@ -116,7 +117,8 @@ const AddRent = () => {
     bedrooms: "",
     bathrooms: "",
     furnishedStatus: "",
-    rentalPrice: "",
+    weeklyRent: "",
+    monthlyRent: "",
     depositAmount: "",
     availableFrom: "",
     tenancyLength: "",
@@ -217,11 +219,14 @@ const AddRent = () => {
   const nextSection = () => {
     // Validate current section
     if (currentSection === 1) {
+      // Check if at least one rent field is filled
+      const hasRentPrice = formData.weeklyRent || formData.monthlyRent;
+      
       if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
-          !formData.bathrooms || !formData.furnishedStatus || !formData.rentalPrice || 
+          !formData.bathrooms || !formData.furnishedStatus || !hasRentPrice || 
           !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
           !formData.councilTaxBand) {
-        alert("Please fill in all required fields before continuing.");
+        alert("Please fill in all required fields before continuing. Note: You need either weekly rent OR monthly rent.");
         return;
       }
     } else if (currentSection === 2) {
@@ -242,13 +247,16 @@ const AddRent = () => {
     e.preventDefault();
     
     // Final validation
+    // Check if at least one rent field is filled
+    const hasRentPrice = formData.weeklyRent || formData.monthlyRent;
+    
     if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
-        !formData.bathrooms || !formData.furnishedStatus || !formData.rentalPrice || 
+        !formData.bathrooms || !formData.furnishedStatus || !hasRentPrice || 
         !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
         !formData.councilTaxBand || !formData.postcode || !formData.houseNumber || 
-        !formData.streetName || !formData.city || !formData.country || !formData.description?.trim() || !formData.shortDescription?.trim() || 
-        !formData.contactPhone?.trim()) {
-      alert("Please fill in all required fields before submitting.");
+        !formData.streetName || !formData.city || !formData.country || 
+        !formData.description?.trim() || !formData.shortDescription?.trim() || !formData.contactPhone?.trim()) {
+      alert("Please fill in all required fields before submitting. Note: You need either weekly rent OR monthly rent.");
       return;
     }
     
@@ -288,8 +296,9 @@ const AddRent = () => {
         furnishedStatus: formData.furnishedStatus,
         
         // Rental-specific fields
-        monthly_rent: formData.rentalPrice,
-        rentalPrice: formData.rentalPrice,
+        weekly_rent: formData.weeklyRent,
+        monthly_rent: formData.monthlyRent,
+        rentalPrice: formData.monthlyRent,
         deposit_amount: formData.depositAmount,
         depositAmount: formData.depositAmount,
         availability_date: formData.availableFrom,
@@ -442,14 +451,29 @@ const AddRent = () => {
             
             <div className="form-row">
               <TextInput
-                label="Rental Price per Month (£)"
-                name="rentalPrice"
-                value={formData.rentalPrice}
+                label="Weekly Rent (£)"
+                name="weeklyRent"
+                value={formData.weeklyRent}
                 onChange={handleChange}
                 type="number"
-                required
+                placeholder="Enter if renting weekly"
               />
               
+              <TextInput
+                label="Monthly Rent (£)"
+                name="monthlyRent"
+                value={formData.monthlyRent}
+                onChange={handleChange}
+                type="number"
+                placeholder="Enter if renting monthly"
+              />
+            </div>
+            
+            <small style={{color: '#666', fontSize: '14px', marginBottom: '15px', display: 'block'}}>
+              * Enter either weekly OR monthly rent (at least one is required)
+            </small>
+            
+            <div className="form-row">
               <TextInput
                 label="Deposit Amount (£)"
                 name="depositAmount"
@@ -480,23 +504,25 @@ const AddRent = () => {
               />
             </div>
             
-            <SelectInput
-              label="Council Tax Band"
-              name="councilTaxBand"
-              value={formData.councilTaxBand}
-              onChange={handleChange}
-              options={councilTaxOptions}
-              required
-            />
-            
-            <SelectInput
-              label="Council Tax Status"
-              name="councilTaxStatus"
-              value={formData.councilTaxStatus}
-              onChange={handleChange}
-              options={councilTaxStatusOptions}
-              required
-            />
+            <div className="form-row">
+              <SelectInput
+                label="Council Tax Band"
+                name="councilTaxBand"
+                value={formData.councilTaxBand}
+                onChange={handleChange}
+                options={councilTaxOptions}
+                required
+              />
+              
+              <SelectInput
+                label="Council Tax Status"
+                name="councilTaxStatus"
+                value={formData.councilTaxStatus}
+                onChange={handleChange}
+                options={councilTaxStatusOptions}
+                required
+              />
+            </div>
           </div>
         );
       

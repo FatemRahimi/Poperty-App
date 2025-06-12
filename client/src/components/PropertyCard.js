@@ -10,10 +10,29 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
   const formatPrice = (property) => {
     if (property.property_type === 'sale' && property.price) {
       return `£${Number(property.price).toLocaleString()}`;
+    } else if (property.weekly_rent) {
+      return `£${Number(property.weekly_rent).toLocaleString()}/pw`;
     } else if (property.monthly_rent) {
-      return `£${Number(property.monthly_rent).toLocaleString()}/month`;
+      return `£${Number(property.monthly_rent).toLocaleString()}/pcm`;
     }
     return 'Price not available';
+  };
+
+  // Separate function to get both weekly and monthly prices for display
+  const getPriceDetails = (property) => {
+    const prices = [];
+    
+    if (property.price) {
+      prices.push({ type: 'sale', amount: property.price, label: 'Asking Price' });
+    }
+    if (property.weekly_rent) {
+      prices.push({ type: 'weekly', amount: property.weekly_rent, label: 'Weekly' });
+    }
+    if (property.monthly_rent) {
+      prices.push({ type: 'monthly', amount: property.monthly_rent, label: 'Monthly' });
+    }
+    
+    return prices;
   };
 
   const formatDate = (dateString) => {
@@ -154,9 +173,22 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                 </>
               )}
               
-              {/* Media type indicator - only for images now */}
+              {/* Media type indicator - show image count */}
               <div className="media-type-indicator">
-                <i className="fas fa-image" title="Image"></i>
+                <i className="fas fa-camera" title="Photos"></i>
+                <span className="image-count">
+                  {property.images.filter(media => {
+                    const isVideo = media.type === 'video' || media.image_type === 'video' || 
+                      (media.url && (
+                        media.url.toLowerCase().endsWith('.mp4') ||
+                        media.url.toLowerCase().endsWith('.mov') ||
+                        media.url.toLowerCase().endsWith('.avi') ||
+                        media.url.toLowerCase().endsWith('.webm') ||
+                        media.url.toLowerCase().endsWith('.ogg')
+                      ));
+                    return !isVideo;
+                  }).length}
+                </span>
               </div>
             </div>
           ) : (
@@ -188,6 +220,21 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
           </p>
           
           <div className="property-price-modern">{formatPrice(property)}</div>
+          
+          {/* Additional Price Details */}
+          {getPriceDetails(property).length > 1 && (
+            <div className="additional-prices">
+              {getPriceDetails(property).map((price, index) => (
+                <div key={index} className={`price-item price-${price.type}`}>
+                  <span className="price-label">{price.label}:</span>
+                  <span className="price-amount">
+                    £{Number(price.amount).toLocaleString()}
+                    {price.type === 'weekly' ? '/pw' : price.type === 'monthly' ? '/pcm' : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           
           {/* Short Description */}
           {property.short_description && (
