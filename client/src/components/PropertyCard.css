@@ -248,32 +248,41 @@
   filter: brightness(1) contrast(1) !important;
 }
 
-/* Media type indicator */
+/* Media type indicator - Updated to be lighter and show image count */
 .media-type-indicator {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 8px;
-  border-radius: 0; /* Remove border radius */
-  font-size: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #374151;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
   z-index: 5;
   backdrop-filter: blur(5px);
   transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .media-type-indicator:hover {
-  background: rgba(0, 0, 0, 0.9);
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.95);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.media-type-indicator .fa-video {
-  color: #e74c3c;
+.media-type-indicator .fa-camera {
+  color: #3b82f6;
+  font-size: 12px;
 }
 
-.media-type-indicator .fa-image {
-  color: #3498db;
+.media-type-indicator .image-count {
+  font-weight: 600;
+  font-size: 11px;
+  color: #1f2937;
 }
 
 /* Ensure videos don't interfere with carousel navigation */
@@ -402,4 +411,51 @@
   font-size: 0.7rem;
   color: #94a3b8;
   font-weight: 500;
+}
+
+/* Additional Prices Section */
+.additional-prices {
+  margin: 0.5rem 0;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.price-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.25rem 0;
+  padding: 0.25rem 0;
+}
+
+.price-item:not(:last-child) {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.price-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.price-amount {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #059669;
+}
+
+.price-item.price-sale .price-amount {
+  color: #dc2626;
+}
+
+.price-item.price-weekly .price-amount {
+  color: #7c3aed;
+}
+
+.price-item.price-monthly .price-amount {
+  color: #059669;
 } 

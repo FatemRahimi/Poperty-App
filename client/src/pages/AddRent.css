@@ -51,20 +51,18 @@
 }
 
 .form-section {
-  margin-bottom: 3rem;
-  padding: 1.5rem;
-  background-color: #f9f9f9;
-  border-radius: 15px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 20px 0;
+  background: transparent;
+  margin-bottom: 15px;
 }
 
 .section-title {
-  font-size: 1.5rem;
+  font-size: 22px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #342fd6;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e0e0e0;
   font-family: 'Montserrat', sans-serif;
 }
 
@@ -199,6 +197,11 @@ label {
   .btn {
     padding: 0.6rem 1.2rem;
   }
+  
+  /* Ensure form sections have consistent spacing */
+  .form-section {
+    margin-bottom: 12px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -211,7 +214,7 @@ label {
   }
   
   .section-title {
-    font-size: 1.25rem;
+    font-size: 18px;
   }
   
   .form-actions {
@@ -221,5 +224,86 @@ label {
   
   .btn {
     width: 100%;
+  }
+  
+  /* Ensure form sections have consistent spacing */
+  .form-section {
+    margin-bottom: 10px;
+  }
+}
+
+/* AddRent specific styles */
+.form-sale-container .form-wrapper {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.form-section .section-title {
+  margin-bottom: 20px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 10px;
+}
+
+/* Form buttons should be inside the form with proper spacing */
+.form-buttons {
+  margin-top: 20px;
+  padding: 15px 0;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Responsive adjustments for AddRent */
+@media (max-width: 1024px) {
+  .form-sale-container .form-wrapper {
+    max-width: 90%;
+    padding: 40px 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .form-sale-container .form-wrapper {
+    max-width: 95%;
+    padding: 30px 20px;
+  }
+  
+  .form-section {
+    padding: 15px 0;
+    margin-bottom: 12px;
+  }
+  
+  .form-section .section-title,
+  .section-title {
+    font-size: 20px;
+    margin-bottom: 18px;
+  }
+  
+  .form-buttons {
+    margin-top: 15px;
+    padding: 12px 0;
+  }
+}
+
+@media (max-width: 576px) {
+  .form-sale-container .form-wrapper {
+    max-width: 100%;
+    padding: 20px 15px;
+  }
+  
+  .form-section {
+    padding: 12px 0;
+    margin-bottom: 10px;
+  }
+  
+  .form-section .section-title,
+  .section-title {
+    font-size: 18px;
+    margin-bottom: 15px;
+  }
+  
+  .form-buttons {
+    margin-top: 12px;
+    padding: 10px 0;
   }
 } 

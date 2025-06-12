@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS properties (
   title VARCHAR(255) NOT NULL,
   description TEXT,
   short_description VARCHAR(120), -- Short description for property cards
-  property_type VARCHAR(50) NOT NULL, -- 'sale', 'rent', 'lease'
+  property_type VARCHAR(50) NOT NULL, -- 'detached', 'semi-detached', 'terraced', 'flat', 'bungalow', 'land', 'park_home', 'student_hall'
   property_category VARCHAR(50), -- 'residential', 'commercial', 'land'
   
   -- Address information
@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS properties (
   
   -- Financial information
   price DECIMAL(12,2),
+  weekly_rent DECIMAL(10,2), -- for rent properties
   monthly_rent DECIMAL(10,2), -- for rent properties
   lease_term INTEGER, -- for lease properties (months)
   deposit_amount DECIMAL(10,2),

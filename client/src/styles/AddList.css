@@ -913,6 +913,11 @@ select:focus {
     padding: 14px;
     min-height: 100px;
   }
+  
+  .property-features {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }
 
 /* Mobile Large (576px to 767px) */
@@ -1054,15 +1059,41 @@ select:focus {
     margin: 10px 0 15px 0;
   }
   
+  .property-form {
+    gap: 3px;
+    padding: 20px 10px;
+  }
+  
   .form-textarea {
-    font-size: 16px;
-    padding: 14px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px;
     min-height: 100px;
   }
   
   .property-features {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
+  }
+  
+  .media-info {
+    padding: 8px;
+  }
+  
+  .media-name {
+    font-size: 11px;
+  }
+  
+  .media-size {
+    font-size: 10px;
+  }
+  
+  .media-summary {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .total-size {
+    font-size: 11px;
   }
 }
 
@@ -1256,7 +1287,8 @@ select:focus {
     font-size: 10px;
   }
   
-  .media-summary {
+  .media-summary,
+  .photo-count {
     padding: 10px 12px;
     font-size: 12px;
   }
