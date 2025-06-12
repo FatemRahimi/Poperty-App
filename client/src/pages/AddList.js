@@ -192,7 +192,7 @@ const AddList = () => {
       !formData.propertyName ||
       (!formData.unpriced && !hasPrice) ||
       (isAddressRequired &&
-        (!formData.houseNumber || !formData.streetName || !formData.city || !formData.country || !formData.postalCode)) ||
+        (!formData.streetAddress || !formData.city || !formData.country || !formData.postalCode)) ||
       !formData.earnestDepositAmount || 
       !formData.dueDiligencePeriod ||
       !formData.closingPeriod ||
@@ -380,18 +380,11 @@ const AddList = () => {
           <div className="address-form">
             <div className="form-row">
               <TextInput
-                label="House Number"
-                name="houseNumber"
-                value={formData.houseNumber}
+                label="Street Address"
+                name="streetAddress"
+                value={formData.streetAddress}
                 onChange={handleChange}
-                placeholder="e.g., 123, 45A, Flat 2"
-              />
-              <TextInput
-                label="Street Name"
-                name="streetName"
-                value={formData.streetName}
-                onChange={handleChange}
-                placeholder="e.g., Main Street, Oak Avenue"
+                placeholder="e.g., 123 Main Street, Flat 2A Oak Avenue"
               />
             </div>
             <div className="form-row">
@@ -561,11 +554,11 @@ const AddList = () => {
             onChange={handleChange}
             className="form-textarea"
             rows="2"
-            maxLength="120"
-            placeholder="Brief description for property cards (max 120 characters)..."
+            maxLength="80"
+            placeholder="Brief description for property cards (max 80 characters)..."
             required
           ></textarea>
-          <small>{formData.shortDescription?.length || 0}/120 characters</small>
+          <small>{formData.shortDescription?.length || 0}/80 characters</small>
         </div>
 
         <h4 className="subsection-title">Upload Photos & Videos</h4>

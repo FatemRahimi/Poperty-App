@@ -445,8 +445,7 @@ const AddLease = () => {
       {showAddress && (
         <>
           <div className="form-row">
-            <TextInput label="House Number*" name="houseNumber" value={formData.houseNumber} onChange={handleChange} placeholder="e.g., 123, 45A, Unit 2" />
-            <TextInput label="Street Name*" name="streetName" value={formData.streetName} onChange={handleChange} placeholder="e.g., Main Street, Oak Avenue" />
+            <TextInput label="Street Address*" name="streetAddress" value={formData.streetAddress} onChange={handleChange} placeholder="e.g., 123 Main Street, Unit 2A Oak Avenue" />
           </div>
           <div className="form-row">
             <TextInput label="City" name="city" value={formData.city} onChange={handleChange} />
@@ -573,13 +572,13 @@ const AddLease = () => {
           id="shortDescription"
           className="form-textarea"
           rows="2"
-          maxLength="120"
+          maxLength="80"
           value={formData.shortDescription || ''}
           onChange={(e) => setFormData(prev => ({ ...prev, shortDescription: e.target.value }))}
-          placeholder="Brief description for property cards (max 120 characters)..."
+          placeholder="Brief description for property cards (max 80 characters)..."
           required
         />
-        <small>{formData.shortDescription?.length || 0}/120 characters</small>
+        <small>{formData.shortDescription?.length || 0}/80 characters</small>
       </div>
 
       <h4 className="subsection-title">Upload Photos & Videos</h4>

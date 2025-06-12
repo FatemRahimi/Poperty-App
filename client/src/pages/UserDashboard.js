@@ -444,10 +444,14 @@ const UserDashboard = () => {
   };
 
   // Handle property deletion callback
-  const handlePropertyDeleted = (deletedPropertyId) => {
+  const handlePropertyDeleted = (deletedPropertyId, propertyTitle) => {
     setProperties(prevProperties => 
       prevProperties.filter(property => property.id !== deletedPropertyId)
     );
+    
+    // Show a subtle success message
+    console.log(`✅ Property "${propertyTitle}" deleted successfully`);
+    
     // Refresh data to update stats
     loadDashboardData();
   };

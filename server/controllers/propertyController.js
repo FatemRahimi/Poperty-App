@@ -97,6 +97,7 @@ const submitProperty = async (req, res) => {
       weekly_rent,
       weeklyRent, // Alternative field name from frontend
       monthly_rent, 
+      monthlyRent, // Alternative field name from frontend
       rentalPrice, // Alternative field name from frontend
       lease_term, 
       tenancyLength, // Alternative field name from frontend
@@ -130,8 +131,14 @@ const submitProperty = async (req, res) => {
     const state_mapped = state || region;
     const zip_code_mapped = zip_code || postcode;
     const price_mapped = price || askingPrice;
-    const weekly_rent_mapped = weekly_rent || weeklyRent;
-    const monthly_rent_mapped = monthly_rent || rentalPrice;
+    
+    // Convert rent values to numbers and map them
+    const weekly_rent_value = weekly_rent || weeklyRent;
+    const monthly_rent_value = monthly_rent || monthlyRent || rentalPrice;
+    
+    const weekly_rent_mapped = weekly_rent_value ? parseFloat(weekly_rent_value) : null;
+    const monthly_rent_mapped = monthly_rent_value ? parseFloat(monthly_rent_value) : null;
+    
     const lease_term_mapped = lease_term || tenancyLength;
     const deposit_amount_mapped = deposit_amount || depositAmount;
     const furnished_mapped = furnished || (furnishedStatus === 'furnished');
@@ -184,6 +191,22 @@ const submitProperty = async (req, res) => {
     console.log('📋 bathrooms_converted:', bathrooms_converted);
     console.log('📋 bedrooms (raw):', bedrooms);
     console.log('📋 bedrooms_converted:', bedrooms_converted);
+    console.log('💰 RENTAL PRICES DEBUG:');
+    console.log('💰 Raw weekly_rent:', weekly_rent);
+    console.log('💰 Raw weeklyRent:', weeklyRent);
+    console.log('💰 Raw monthly_rent:', monthly_rent);
+    console.log('💰 Raw monthlyRent:', monthlyRent);
+    console.log('💰 Raw rentalPrice:', rentalPrice);
+    console.log('💰 Mapped weekly_rent:', weekly_rent_mapped);
+    console.log('💰 Mapped monthly_rent:', monthly_rent_mapped);
+    console.log('💰 Types:', {
+      weekly_rent: typeof weekly_rent,
+      weeklyRent: typeof weeklyRent,
+      weekly_rent_mapped: typeof weekly_rent_mapped,
+      monthly_rent: typeof monthly_rent,
+      monthlyRent: typeof monthlyRent,
+      monthly_rent_mapped: typeof monthly_rent_mapped
+    });
 
     // Validate required fields
     if (!title) {
@@ -212,6 +235,19 @@ const submitProperty = async (req, res) => {
     const slug = generateSlug(title);
 
     // Insert property
+    console.log('📝 INSERT DEBUG - Values being inserted:');
+    console.log('weekly_rent_mapped:', weekly_rent_mapped);
+    console.log('monthly_rent_mapped:', monthly_rent_mapped);
+    console.log('Values array:', [
+      user_id, title, description, shortDescription, property_type_mapped, property_category,
+      address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
+      bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built,
+      price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
+      parking_spaces || 0, has_garage || false, has_pool || false, 
+      has_garden || false, furnished_mapped || false, pets_allowed || false,
+      student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, slug
+    ]);
+    
     const propertyResult = await client.query(
       `INSERT INTO properties (
         user_id, title, description, short_description, property_type, property_category,
@@ -222,7 +258,7 @@ const submitProperty = async (req, res) => {
         student_housing, availability_date, contact_name, contact_phone, contact_email, slug
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
+        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34
       ) RETURNING *`,
       [
         user_id, title, description, shortDescription, property_type_mapped, property_category,
@@ -402,7 +438,7 @@ const submitProperty = async (req, res) => {
 const getUserProperties = async (req, res) => {
   try {
     const user_id = req.user.id;
-    const { page = 1, limit = 10, status, type } = req.query;
+    const { page = 1, limit = 100, status, type } = req.query;
     const offset = (page - 1) * limit;
 
     let whereClause = 'WHERE p.user_id = $1';
@@ -421,7 +457,8 @@ const getUserProperties = async (req, res) => {
       queryParams.push(type);
     }
 
-    const query = `
+    // Build base query
+    let query = `
       SELECT 
         p.*,
         COUNT(pi.id) as image_count,
@@ -435,10 +472,13 @@ const getUserProperties = async (req, res) => {
       ${whereClause}
       GROUP BY p.id
       ORDER BY p.created_at DESC
-      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
     `;
 
-    queryParams.push(limit, offset);
+    // Only add LIMIT and OFFSET if limit is reasonable (not trying to get all records)
+    if (limit && limit < 1000) {
+      query += ` LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+      queryParams.push(limit, offset);
+    }
 
     const result = await pool.query(query, queryParams);
 
@@ -447,15 +487,20 @@ const getUserProperties = async (req, res) => {
     const countResult = await pool.query(countQuery, queryParams.slice(0, paramCount));
     const totalCount = parseInt(countResult.rows[0].count);
 
+    // Build pagination response
+    const paginationResponse = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalCount,
+      totalPages: limit < 1000 ? Math.ceil(totalCount / limit) : 1,
+      hasNextPage: limit < 1000 ? (page * limit) < totalCount : false,
+      hasPrevPage: page > 1
+    };
+
     res.json({
       success: true,
       properties: result.rows,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        totalCount,
-        totalPages: Math.ceil(totalCount / limit)
-      }
+      pagination: paginationResponse
     });
 
   } catch (error) {
@@ -496,7 +541,7 @@ const getAllProperties = async (req, res) => {
       queryParams.push(`%${search}%`);
     }
 
-    const query = `
+    let query = `
       SELECT 
         p.*,
         u.first_name, u.last_name, u.email as user_email,
@@ -512,10 +557,13 @@ const getAllProperties = async (req, res) => {
       ${whereClause}
       GROUP BY p.id, u.first_name, u.last_name, u.email
       ORDER BY p.created_at DESC
-      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
     `;
 
-    queryParams.push(limit, offset);
+    // Only add LIMIT and OFFSET if limit is reasonable (not trying to get all records)
+    if (limit && limit < 1000) {
+      query += ` LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+      queryParams.push(limit, offset);
+    }
 
     const result = await pool.query(query, queryParams);
 
@@ -771,6 +819,7 @@ const deleteProperty = async (req, res) => {
     }
     
     // Delete related records (cascading)
+    await client.query('DELETE FROM email_notifications WHERE property_id = $1', [id]);
     await client.query('DELETE FROM property_images WHERE property_id = $1', [id]);
     await client.query('DELETE FROM property_amenities WHERE property_id = $1', [id]);
     await client.query('DELETE FROM property_submissions WHERE property_id = $1', [id]);
@@ -798,6 +847,24 @@ const deleteProperty = async (req, res) => {
   } finally {
     client.release();
   }
+};
+
+// Frontend can load properties in chunks
+const loadAllProperties = async () => {
+  let allProperties = [];
+  let page = 1;
+  let hasMore = true;
+  
+  while (hasMore) {
+    const response = await fetch(`/api/properties/my-properties?page=${page}&limit=100`);
+    const data = await response.json();
+    
+    allProperties = [...allProperties, ...data.properties];
+    hasMore = data.pagination.hasNextPage;
+    page++;
+  }
+  
+  return allProperties;
 };
 
 module.exports = {
