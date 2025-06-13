@@ -219,19 +219,20 @@ const AddRent = () => {
   const nextSection = () => {
     // Validate current section
     if (currentSection === 1) {
-      // Check if both rent fields are filled
-      const hasBothRentPrices = formData.weeklyRent && formData.monthlyRent;
+      // Check if both weekly and monthly rent are filled
+      const hasWeeklyRent = formData.weeklyRent;
+      const hasMonthlyRent = formData.monthlyRent;
       
       if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
-          !formData.bathrooms || !formData.furnishedStatus || !hasBothRentPrices || 
+          !formData.bathrooms || !formData.furnishedStatus || !hasWeeklyRent || !hasMonthlyRent || 
           !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
           !formData.councilTaxBand) {
-        alert("Please fill in all required fields before continuing. Note: Both weekly rent AND monthly rent are required.");
+        alert("Please fill in all required fields before continuing. Both weekly and monthly rent are required.");
         return;
       }
     } else if (currentSection === 2) {
       if (!formData.postcode || !formData.houseNumber || !formData.streetName || !formData.city || !formData.country) {
-        alert("Please fill in all required location fields before continuing.");
+        alert("Please fill in all required fields before continuing.");
         return;
       }
     }
@@ -247,16 +248,17 @@ const AddRent = () => {
     e.preventDefault();
     
     // Final validation
-    // Check if both rent fields are filled
-    const hasBothRentPrices = formData.weeklyRent && formData.monthlyRent;
+    // Check if both weekly and monthly rent are filled
+    const hasWeeklyRent = formData.weeklyRent;
+    const hasMonthlyRent = formData.monthlyRent;
     
     if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
-        !formData.bathrooms || !formData.furnishedStatus || !hasBothRentPrices || 
+        !formData.bathrooms || !formData.furnishedStatus || !hasWeeklyRent || !hasMonthlyRent || 
         !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
-        !formData.councilTaxBand || !formData.postcode || !formData.streetAddress || 
-        !formData.city || !formData.country || 
+        !formData.councilTaxBand || !formData.postcode || !formData.houseNumber || 
+        !formData.streetName || !formData.city || !formData.country || 
         !formData.description?.trim() || !formData.shortDescription?.trim() || !formData.contactPhone?.trim()) {
-      alert("Please fill in all required fields before submitting. Note: Both weekly rent AND monthly rent are required.");
+      alert("Please fill in all required fields before submitting. Both weekly and monthly rent are required.");
       return;
     }
     
@@ -283,8 +285,10 @@ const AddRent = () => {
         propertyType: 'rent',
         
         // Address fields
-        address_line1: formData.streetAddress,
-        streetAddress: formData.streetAddress,
+        address_line1: `${formData.houseNumber} ${formData.streetName}`.trim(),
+        streetAddress: `${formData.houseNumber} ${formData.streetName}`.trim(),
+        house_number: formData.houseNumber,
+        street_name: formData.streetName,
         city: formData.city,
         state: formData.region, // Map region to state
         region: formData.region, 
@@ -485,8 +489,8 @@ const AddRent = () => {
               />
             </div>
             
-            <small style={{color: '#666', fontSize: '14px', marginBottom: '15px', display: 'block'}}>
-              * Enter both weekly AND monthly rent (both are mandatory)
+            <small style={{color: '#666', fontSize: '14px', marginBottom: '1rem', display: 'block'}}>
+              Both weekly and monthly rent are required fields.
             </small>
             
             <div className="form-row">
@@ -549,11 +553,20 @@ const AddRent = () => {
             
             <div className="form-row">
               <TextInput
-                label="Street Address*"
-                name="streetAddress"
-                value={formData.streetAddress}
+                label="House Number*"
+                name="houseNumber"
+                value={formData.houseNumber}
                 onChange={handleChange}
-                placeholder="e.g., 123 Main Street, Flat 2A Oak Avenue"
+                placeholder="e.g., 123, Flat 2A"
+                required
+              />
+              
+              <TextInput
+                label="Street Name*"
+                name="streetName"
+                value={formData.streetName}
+                onChange={handleChange}
+                placeholder="e.g., Main Street, Oak Avenue"
                 required
               />
             </div>
