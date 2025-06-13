@@ -183,7 +183,7 @@ const PropertyView = () => {
                             <video src={media.url} muted>
                               <source src={media.url} />
                             </video>
-                            <div className="video-overlay">
+                            <div className="property-video-overlay">
                               <i className="fas fa-play"></i>
                             </div>
                           </div>
