@@ -657,13 +657,14 @@
 }
 
 .property-type-badge {
-  background: #f1f5f9;
+  background: transparent; /* Remove background */
   color: #475569;
   padding: 0.2rem 0.5rem;
-  border-radius: 12px;
+  border-radius: 0; /* Remove border radius */
   font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
+  border: none; /* Remove border */
 }
 
 .property-meta-modern small {
