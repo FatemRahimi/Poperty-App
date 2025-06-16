@@ -562,7 +562,7 @@ const AddRent = () => {
               />
               
               <TextInput
-                label="Street Name*"
+                label="Street Name (address_line1)*"
                 name="streetName"
                 value={formData.streetName}
                 onChange={handleChange}
