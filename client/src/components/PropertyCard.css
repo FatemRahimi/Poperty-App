@@ -1,6 +1,11 @@
 /* Import the existing property card styles from UserDashboard */
 @import '../pages/UserDashboard.css';
 
+/* Override border from UserDashboard.css */
+.property-card-modern {
+  border: none; /* Remove border from property cards */
+}
+
 /* Horizontal layout for image and details side by side */
 .property-card-content {
   display: flex;
@@ -82,6 +87,7 @@
   position: relative;
   min-width: 0; /* Allow text to wrap */
   transition: background-color 0.3s ease;
+  border: none; /* Remove any inherited borders */
 }
 
 .property-card-content .property-details-modern:hover {
@@ -91,16 +97,43 @@
 /* Status badge positioning in horizontal layout */
 .property-card-content .property-status-badge {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  padding: 0.4rem 0.8rem;
-  border-radius: 0; /* Remove border radius */
-  font-size: 0.7rem;
-  font-weight: 700;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   z-index: 2;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.property-card-content .property-status-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Status badge color variants */
+.property-card-content .status-approved {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.property-card-content .status-pending {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.property-card-content .status-rejected {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* Enhanced property details styling */
@@ -111,20 +144,25 @@
   margin: 0 0 0.5rem 0;
   line-height: 1.3;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .property-card-content .property-address-modern {
-  color: #64748b;
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 0.75rem 0;
+  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  margin: 0 4rem 0.75rem 0; /* Add right margin to avoid status badge overlap */
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  line-height: 1.2;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .property-card-content .property-address-modern i {
@@ -142,39 +180,42 @@
 
 /* Short description styling */
 .property-short-description {
-  color: #64748b;
-  font-size: 0.85rem;
-  line-height: 1.4;
-  margin: 0 0 1rem 0;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  letter-spacing: 0.015em;
+  margin: -0.5rem 0 1rem 0; /* Move description further up with negative margin */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.4rem; /* Ensure space for 2 lines */
+  min-height: 2.7rem; /* Adjusted for better line height */
   background: transparent; /* Ensure no background hiding content */
   opacity: 1; /* Ensure fully visible */
 }
 
-/* Enhanced features with bigger black icons */
+/* Professional compact features styling */
 .property-card-content .property-features {
   display: flex;
-  gap: 1.2rem;
-  margin: 0.75rem 0;
+  gap: 0.8rem; /* Reduced gap between features */
+  margin: 0.1rem 0 0.75rem 0;
   flex-wrap: wrap;
 }
 
 .property-card-content .feature-item {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.3rem; /* Smaller gap for tighter spacing between icon and text */
   color: #374151;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.8rem; /* Smaller, professional text size */
+  font-weight: 500; /* Lighter weight */
 }
 
 .property-card-content .feature-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px; /* Smaller icon container */
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -182,7 +223,7 @@
 }
 
 .property-card-content .feature-icon i {
-  font-size: 0.9rem; /* Bigger icons */
+  font-size: 0.85rem; /* Smaller icons */
 }
 
 /* Compact mode adjustments */
@@ -270,17 +311,63 @@
 }
 
 /* Video styling for property carousel */
+.property-images .image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: none; /* Default hidden */
+  cursor: pointer; /* Hand cursor for clickable images */
+}
+
+.property-images .image-container.active {
+  display: block !important; /* Show active container */
+}
+
 .property-images .carousel-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: 0; /* Remove border radius */
-  transition: opacity 0.3s ease;
-  display: none; /* Default hidden */
+  transition: all 0.3s ease;
 }
 
-.property-images .carousel-image.active {
-  display: block !important; /* Show active media */
+.property-images .image-container:hover .carousel-image {
+  transform: scale(1.02); /* Slight zoom on hover */
+  filter: brightness(1.1); /* Slight brightness increase on hover */
+}
+
+/* Zoom overlay that appears on hover */
+.image-zoom-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(2px);
+}
+
+.property-images .image-container:hover .image-zoom-overlay {
+  opacity: 1;
+}
+
+.image-zoom-overlay i {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.image-zoom-overlay span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .property-images video.carousel-image {
@@ -392,73 +479,81 @@
 
 .property-actions-modern .action-btn-modern {
   flex: 1;
-  padding: 0.6rem 1rem;
-  border-radius: 0; /* Remove border radius */
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
   font-weight: 600;
-  font-size: 0.8rem;
-  transition: all 0.3s ease;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
   cursor: pointer;
   border: 1px solid;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  gap: 0.5rem;
+  text-transform: none;
+  letter-spacing: 0.25px;
   min-width: fit-content;
   white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
 }
 
 .property-actions-modern .btn-edit {
-  background: #ffffff;
-  color: #374151;
-  border-color: #d1d5db;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #475569;
+  border-color: #cbd5e1;
 }
 
 .property-actions-modern .btn-edit:hover:not(:disabled) {
-  background: #f9fafb;
-  color: #111827;
-  border-color: #9ca3af;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  color: #334155;
+  border-color: #94a3b8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.15);
 }
 
 .property-actions-modern .btn-view {
-  background: #059669;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border-color: #059669;
 }
 
 .property-actions-modern .btn-view:hover:not(:disabled) {
-  background: #047857;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
   border-color: #047857;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
 }
 
 .property-actions-modern .btn-delete {
-  background: #dc2626;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
   border-color: #dc2626;
 }
 
 .property-actions-modern .btn-delete:hover:not(:disabled) {
-  background: #b91c1c;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
   border-color: #b91c1c;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
 }
 
 .property-actions-modern .btn-delete:disabled {
-  background: #9ca3af;
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
   border-color: #9ca3af;
   cursor: not-allowed;
   transform: none;
-  box-shadow: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  opacity: 0.7;
 }
 
 .property-actions-modern .action-btn-modern i {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
+  transition: transform 0.2s ease;
+}
+
+.property-actions-modern .action-btn-modern:hover:not(:disabled) i {
+  transform: scale(1.1);
 }
 
 /* Enhanced meta section */
@@ -466,13 +561,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 0.75rem 0;
+  margin: -0.3rem 0 0.75rem 0; /* Move meta section up with negative top margin */
   padding-top: 0.75rem;
   border-top: none;
 }
 
 .property-card-content .property-type-badge {
-  background: #f8fafc;
+  background: transparent; /* Remove background */
   color: #475569;
   padding: 0.3rem 0.6rem;
   border-radius: 0; /* Remove border radius */
@@ -480,7 +575,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border: 1px solid #e2e8f0;
+  border: none; /* Remove border */
 }
 
 .property-card-content .property-meta-modern small {

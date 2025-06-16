@@ -48,10 +48,15 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
   const formatAddress = (property) => {
     const parts = [];
     
+    // Helper function to convert text to title case (capitalize first letter of each word)
+    const toTitleCase = (str) => {
+      return str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+    };
+    
     // Add street name only (without house number)
     if (property.street_name) {
-      // Use the separate street_name field (new format)
-      parts.push(property.street_name);
+      // Use the separate street_name field (new format) and apply title case
+      parts.push(toTitleCase(property.street_name));
     } else if (property.address_line1) {
       // Fallback: if street_name is not available, try to extract street name from address_line1
       // by removing potential house numbers and flat numbers at the beginning
@@ -63,22 +68,23 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
         .trim();
       
       if (cleanedAddress && cleanedAddress !== property.address_line1) {
-        parts.push(cleanedAddress);
+        // Apply title case to the cleaned street name
+        parts.push(toTitleCase(cleanedAddress));
       } else {
-        // If we couldn't clean it, use the original address_line1
-        parts.push(property.address_line1);
+        // If we couldn't clean it, use the original address_line1 with title case
+        parts.push(toTitleCase(property.address_line1));
       }
     }
     
-    // Add country
-    if (property.country) {
-      parts.push(property.country);
+    // Add city with title case
+    if (property.city) {
+      parts.push(toTitleCase(property.city));
     }
     
-    // Add first 3 characters of postcode
+    // Add first 3 characters of postcode (keep uppercase)
     const postcode = property.zip_code || property.postcode;
     if (postcode && postcode.length >= 3) {
-      parts.push(postcode.substring(0, 3));
+      parts.push(postcode.substring(0, 3).toUpperCase());
     }
     
     return parts.length > 0 ? parts.join(', ') : 'Location not specified';
@@ -154,16 +160,28 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                     return !isVideo; // Return only non-video media
                   })
                   .map((media, index) => (
-                    <img
+                    <div
                       key={index}
-                      src={media.url}
-                      alt={`${property.title} - Image ${index + 1}`}
-                      className={`carousel-image ${index === currentImageIndex ? 'active' : ''}`}
-                      onError={(e) => {
-                        console.error('Image load error:', media.url, e);
-                        e.target.style.display = 'none';
+                      className={`image-container ${index === currentImageIndex ? 'active' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/property/${property.slug || property.id}`);
                       }}
-                    />
+                    >
+                      <img
+                        src={media.url}
+                        alt={`${property.title} - Image ${index + 1}`}
+                        className="carousel-image"
+                        onError={(e) => {
+                          console.error('Image load error:', media.url, e);
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                      <div className="image-zoom-overlay">
+                        <i className="fas fa-search-plus"></i>
+                     
+                      </div>
+                    </div>
                   ))}
                 
                 {property.images.filter(media => {
@@ -178,10 +196,22 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                   return !isVideo;
                 }).length > 1 && (
                   <>
-                    <button className="carousel-controls carousel-prev" onClick={prevImage}>
+                    <button 
+                      className="carousel-controls carousel-prev" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        prevImage();
+                      }}
+                    >
                       <i className="fas fa-chevron-left"></i>
                     </button>
-                    <button className="carousel-controls carousel-next" onClick={nextImage}>
+                    <button 
+                      className="carousel-controls carousel-next" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        nextImage();
+                      }}
+                    >
                       <i className="fas fa-chevron-right"></i>
                     </button>
                     
@@ -222,22 +252,9 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                   </>
                 )}
                 
-                {/* Media type indicator - show image count */}
+                {/* Media type indicator */}
                 <div className="media-type-indicator">
                   <i className="fas fa-camera" title="Photos"></i>
-                  <span className="image-count">
-                    {property.images.filter(media => {
-                      const isVideo = media.type === 'video' || media.image_type === 'video' || 
-                        (media.url && (
-                          media.url.toLowerCase().endsWith('.mp4') ||
-                          media.url.toLowerCase().endsWith('.mov') ||
-                          media.url.toLowerCase().endsWith('.avi') ||
-                          media.url.toLowerCase().endsWith('.webm') ||
-                          media.url.toLowerCase().endsWith('.ogg')
-                        ));
-                      return !isVideo;
-                    }).length}
-                  </span>
                 </div>
               </div>
             ) : (
@@ -287,19 +304,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
             {formatAddress(property)}
           </p>
           
-          {/* Short Description - First 50 characters of main description */}
-          <div className="property-short-description">
-            {property.description && property.description.trim() ? (
-              property.description.length > 100 
-                ? `${property.description.substring(0, 100)}...`
-                : property.description
-            ) : (
-              <span style={{ fontStyle: 'italic', color: '#999' }}>
-                No description available
-              </span>
-            )}
-          </div>
-          
+          {/* Property Features - Moved above description */}
           <div className="property-features">
             {property.bedrooms && (
               <div className="feature-item">
@@ -314,7 +319,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                 <div className="feature-icon">
                   <i className="fas fa-bath"></i>
                 </div>
-                <span>{property.bathrooms} Bath{property.bathrooms !== 1 ? 's' : ''}</span>
+                <span>{Math.floor(property.bathrooms)} Bath{Math.floor(property.bathrooms) !== 1 ? 's' : ''}</span>
               </div>
             )}
             {property.square_feet && (
@@ -340,6 +345,19 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                 </div>
                 <span>Student-Friendly</span>
               </div>
+            )}
+          </div>
+
+          {/* Short Description - Moved below features */}
+          <div className="property-short-description">
+            {property.description && property.description.trim() ? (
+              property.description.length > 120 
+                ? `${property.description.substring(0, 120)}...`
+                : property.description
+            ) : (
+              <span style={{ fontStyle: 'italic', color: '#999' }}>
+                No description available
+              </span>
             )}
           </div>
           

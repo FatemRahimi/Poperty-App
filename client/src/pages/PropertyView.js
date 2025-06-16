@@ -205,60 +205,60 @@ const PropertyView = () => {
         </div>
 
         {/* Property Details */}
-        <div className="property-details">
-          <div className="property-header">
-            <h1 className="property-title">{property.title}</h1>
-            <div className="property-price">{formatPrice(property)}</div>
+        <div className="view-property-details">
+          <div className="view-property-header">
+            <h1 className="view-property-title">{property.title}</h1>
+            <div className="view-property-price">{formatPrice(property)}</div>
           </div>
 
-          <div className="property-address">
+          <div className="view-property-address">
             <i className="fas fa-map-marker-alt"></i>
             <span>{formatAddress(property)}</span>
           </div>
 
-          <div className="property-features">
+          <div className="view-property-features">
             {property.bedrooms && (
-              <div className="feature">
+              <div className="view-feature">
                 <i className="fas fa-bed"></i>
                 <span>{property.bedrooms} Bedroom{property.bedrooms !== 1 ? 's' : ''}</span>
               </div>
             )}
             {property.bathrooms && (
-              <div className="feature">
+              <div className="view-feature">
                 <i className="fas fa-bath"></i>
                 <span>{property.bathrooms} Bathroom{property.bathrooms !== 1 ? 's' : ''}</span>
               </div>
             )}
             {property.square_feet && (
-              <div className="feature">
+              <div className="view-feature">
                 <i className="fas fa-ruler-combined"></i>
                 <span>{Number(property.square_feet).toLocaleString()} sqft</span>
               </div>
             )}
             {property.parking_spaces && (
-              <div className="feature">
+              <div className="view-feature">
                 <i className="fas fa-car"></i>
                 <span>{property.parking_spaces} Parking Space{property.parking_spaces !== 1 ? 's' : ''}</span>
               </div>
             )}
           </div>
 
-          <div className="property-description">
+          <div className="view-property-description">
             <h3>Description</h3>
             <p>{property.description || 'No description available.'}</p>
           </div>
 
-          <div className="property-contact">
+          <div className="view-property-contact">
             <h3>Contact Information</h3>
-            <div className="contact-details">
+            <div className="view-contact-details">
               {property.contact_phone && (
-                <div className="contact-item">
+                <div className="view-contact-item">
                   <i className="fas fa-phone"></i>
                   <span>{property.contact_phone}</span>
                 </div>
               )}
               {property.contact_email && (
-                <div className="contact-item">
+                <div className="view-contact-item">
                   <i className="fas fa-envelope"></i>
                   <span>{property.contact_email}</span>
                 </div>
