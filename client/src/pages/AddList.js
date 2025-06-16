@@ -90,7 +90,6 @@ const AddList = () => {
     
     // Step 3: Additional Information
     description: "",
-    shortDescription: "",
     features: [],
     mediaFiles: [],
     contactPhone: "",
@@ -238,10 +237,6 @@ const AddList = () => {
   const validateStep3 = () => {
     if (!formData.description.trim()) {
       alert("❌ Please provide a property description before submitting.");
-      return false;
-    }
-    if (!formData.shortDescription?.trim()) {
-      alert("❌ Please provide a short description for property cards before submitting.");
       return false;
     }
     if (!formData.contactPhone.trim()) {
@@ -543,22 +538,6 @@ const AddList = () => {
             placeholder="Provide a detailed description of your property..."
             required
           ></textarea>
-        </div>
-        
-        <div className="form-group">
-          <label htmlFor="shortDescription">Short Description (2 lines for property cards)*</label>
-          <textarea
-            id="shortDescription"
-            name="shortDescription"
-            value={formData.shortDescription || ''}
-            onChange={handleChange}
-            className="form-textarea"
-            rows="2"
-            maxLength="80"
-            placeholder="Brief description for property cards (max 80 characters)..."
-            required
-          ></textarea>
-          <small>{formData.shortDescription?.length || 0}/80 characters</small>
         </div>
 
         <h4 className="subsection-title">Upload Photos & Videos</h4>
