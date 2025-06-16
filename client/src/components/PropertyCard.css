@@ -150,6 +150,9 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: 2.4rem; /* Ensure space for 2 lines */
+  background: transparent; /* Ensure no background hiding content */
+  opacity: 1; /* Ensure fully visible */
 }
 
 /* Enhanced features with bigger black icons */

@@ -119,6 +119,36 @@ const UserDashboard = () => {
       
       if (propertiesResponse.ok) {
         const propertiesData = await propertiesResponse.json();
+        
+        // Debug logging
+        console.log('🔍 Frontend UserDashboard - API Response Debug:');
+        console.log('📊 Total properties received:', propertiesData.properties?.length || 0);
+        console.log('🗂️ Full API response structure:', propertiesData);
+        
+        if (propertiesData.properties && propertiesData.properties.length > 0) {
+          const firstProperty = propertiesData.properties[0];
+          console.log('🏠 First property detailed debug:', {
+            id: firstProperty.id,
+            title: firstProperty.title,
+            hasDescription: !!firstProperty.description,
+            descriptionLength: firstProperty.description?.length || 0,
+            descriptionValue: firstProperty.description || 'NO DESCRIPTION',
+            descriptionPreview: firstProperty.description?.substring(0, 100) || 'NO DESCRIPTION',
+            allPropertyFields: Object.keys(firstProperty),
+            fullPropertyObject: firstProperty
+          });
+          
+          // Check latest property for description
+          console.log('📋 Latest property (should have description):', {
+            id: propertiesData.properties[0].id,
+            title: propertiesData.properties[0].title,
+            description: propertiesData.properties[0].description,
+            hasDescription: !!propertiesData.properties[0].description
+          });
+        } else {
+          console.log('❌ No properties found in API response');
+        }
+        
         setProperties(propertiesData.properties || []);
         
         const userStats = calculateStats(propertiesData.properties || []);

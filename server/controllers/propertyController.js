@@ -73,8 +73,7 @@ const submitProperty = async (req, res) => {
     const {
       title: providedTitle,
       propertyTitle, // Alternative field name from frontend
-      description, 
-      shortDescription, // New field for property cards
+      description,
       property_type, 
       propertyType, // Alternative field name from frontend
       property_category,
@@ -128,8 +127,6 @@ const submitProperty = async (req, res) => {
     const title = providedTitle || propertyTitle;
     const property_type_mapped = property_type || propertyType;
     const address_line1_mapped = address_line1 || streetAddress;
-    const house_number_mapped = req.body.house_number;
-    const street_name_mapped = req.body.street_name;
     const state_mapped = state || region;
     const zip_code_mapped = zip_code || postcode;
     const price_mapped = price || askingPrice;
@@ -190,8 +187,6 @@ const submitProperty = async (req, res) => {
     console.log('📋 property_type_mapped:', property_type_mapped);
     console.log('📋 city:', city);
     console.log('🏠 ADDRESS DEBUG:');
-    console.log('🏠 house_number_mapped:', house_number_mapped);
-    console.log('🏠 street_name_mapped:', street_name_mapped);
     console.log('🏠 address_line1_mapped:', address_line1_mapped);
     console.log('📋 bathrooms (raw):', bathrooms);
     console.log('📋 bathrooms_converted:', bathrooms_converted);
@@ -245,7 +240,7 @@ const submitProperty = async (req, res) => {
     console.log('weekly_rent_mapped:', weekly_rent_mapped);
     console.log('monthly_rent_mapped:', monthly_rent_mapped);
     console.log('Values array:', [
-      user_id, title, description, shortDescription, property_type_mapped, property_category,
+      user_id, title, description, property_type_mapped, property_category,
       address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
       bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built,
       price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
@@ -256,19 +251,19 @@ const submitProperty = async (req, res) => {
     
     const propertyResult = await client.query(
       `INSERT INTO properties (
-        user_id, title, description, short_description, property_type, property_category,
-        house_number, street_name, address_line1, address_line2, city, state, zip_code, country,
+        user_id, title, description, property_type, property_category,
+        address_line1, address_line2, city, state, zip_code, country,
         bedrooms, bathrooms, square_feet, lot_size, year_built,
         price, weekly_rent, monthly_rent, lease_term, deposit_amount,
         parking_spaces, has_garage, has_pool, has_garden, furnished, pets_allowed,
         student_housing, availability_date, contact_name, contact_phone, contact_email, slug
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33
       ) RETURNING *`,
       [
-        user_id, title, description, shortDescription, property_type_mapped, property_category,
-        house_number_mapped, street_name_mapped, address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
+        user_id, title, description, property_type_mapped, property_category,
+        address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
         bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built,
         price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
         parking_spaces || 0, has_garage || false, has_pool || false, 
@@ -487,6 +482,21 @@ const getUserProperties = async (req, res) => {
     }
 
     const result = await pool.query(query, queryParams);
+
+    // Debug logging - check what data is returned from database
+    console.log('🔍 Backend getUserProperties Debug:');
+    console.log('📊 Total properties returned:', result.rows.length);
+    if (result.rows.length > 0) {
+      const firstProperty = result.rows[0];
+      console.log('🏠 First property debug:', {
+        id: firstProperty.id,
+        title: firstProperty.title,
+        hasDescription: !!firstProperty.description,
+        descriptionValue: firstProperty.description ? firstProperty.description.substring(0, 100) + '...' : 'NULL/EMPTY',
+        descriptionLength: firstProperty.description?.length || 0,
+        allFields: Object.keys(firstProperty)
+      });
+    }
 
     // Get total count
     const countQuery = `SELECT COUNT(*) FROM properties p ${whereClause}`;

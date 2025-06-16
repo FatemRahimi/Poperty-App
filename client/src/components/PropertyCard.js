@@ -7,6 +7,8 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
 
+
+
   const formatPrice = (property) => {
     if (property.property_type === 'sale' && property.price) {
       return `£${Number(property.price).toLocaleString()}`;
@@ -285,12 +287,18 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
             {formatAddress(property)}
           </p>
           
-          {/* Short Description */}
-          {property.short_description && (
-            <div className="property-short-description">
-              {property.short_description}
-            </div>
-          )}
+          {/* Short Description - First 50 characters of main description */}
+          <div className="property-short-description">
+            {property.description && property.description.trim() ? (
+              property.description.length > 100 
+                ? `${property.description.substring(0, 100)}...`
+                : property.description
+            ) : (
+              <span style={{ fontStyle: 'italic', color: '#999' }}>
+                No description available
+              </span>
+            )}
+          </div>
           
           <div className="property-features">
             {property.bedrooms && (

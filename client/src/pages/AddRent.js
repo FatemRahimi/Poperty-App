@@ -144,7 +144,6 @@ const AddRent = () => {
     
     // Description & Media
     description: "",
-    shortDescription: "",
     photos: [],
     contactPhone: ""
   });
@@ -256,8 +255,8 @@ const AddRent = () => {
         !formData.bathrooms || !formData.furnishedStatus || !hasWeeklyRent || !hasMonthlyRent || 
         !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
         !formData.councilTaxBand || !formData.postcode || !formData.houseNumber || 
-        !formData.streetName || !formData.city || !formData.country || 
-        !formData.description?.trim() || !formData.shortDescription?.trim() || !formData.contactPhone?.trim()) {
+        !formData.streetName ||         !formData.city || !formData.country || 
+        !formData.description?.trim() || !formData.contactPhone?.trim()) {
       alert("Please fill in all required fields before submitting. Both weekly and monthly rent are required.");
       return;
     }
@@ -280,7 +279,6 @@ const AddRent = () => {
         title: formData.propertyTitle,
         propertyTitle: formData.propertyTitle,
         description: formData.description,
-        shortDescription: formData.shortDescription,
         property_type: 'rent',
         propertyType: 'rent',
         
@@ -677,7 +675,7 @@ const AddRent = () => {
               options={billsOptions}
             />
             
-            <SelectInput
+            <SelectInput 
               label="EPC Rating"
               name="epcRating"
               value={formData.epcRating}
@@ -692,7 +690,7 @@ const AddRent = () => {
           <div className="form-section">
             <h3 className="section-title">Property Description & Media</h3>
             
-            <div className="form-group">
+           <div className="form-group">
               <label htmlFor="description">Property Description*</label>
               <textarea
                 id="description"
@@ -706,21 +704,7 @@ const AddRent = () => {
               ></textarea>
             </div>
             
-            <div className="form-group">
-              <label htmlFor="shortDescription">Short Description (2 lines for property cards)*</label>
-              <textarea
-                id="shortDescription"
-                name="shortDescription"
-                value={formData.shortDescription || ''}
-                onChange={handleChange}
-                className="form-textarea"
-                rows="2"
-                maxLength="80"
-                placeholder="Brief description for property cards (max 80 characters)..."
-                required
-              ></textarea>
-              <small>{formData.shortDescription?.length || 0}/80 characters</small>
-            </div>
+
             
             <h4 className="subsection-title">Upload Photos & Videos</h4>
             

@@ -110,7 +110,6 @@ const AddLease = () => {
     
     // Step 3: Description & Photos
     description: "",
-    shortDescription: "",
     files: [],
     contactPhone: "",
     houseNumber: "",
@@ -233,10 +232,6 @@ const AddLease = () => {
       alert("❌ Please provide a property description");
       return false;
     }
-    if (!formData.shortDescription?.trim()) {
-      alert("❌ Please provide a short description for property cards");
-      return false;
-    }
     if (!formData.contactPhone.trim()) {
       alert("❌ Please provide a contact phone number");
       return false;
@@ -294,7 +289,6 @@ const AddLease = () => {
         title: formData.spaceName, // Map spaceName to title for backend
         propertyTitle: formData.spaceName, // Alternative field name
         description: formData.description,
-        shortDescription: formData.shortDescription,
         property_type: 'lease', // Set type as lease
         propertyType: 'lease',
         
@@ -566,20 +560,7 @@ const AddLease = () => {
         />
       </div>
       
-      <div className="form-group">
-        <label htmlFor="shortDescription" className="form-label">Short Description (2 lines for property cards)*</label>
-        <textarea
-          id="shortDescription"
-          className="form-textarea"
-          rows="2"
-          maxLength="80"
-          value={formData.shortDescription || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, shortDescription: e.target.value }))}
-          placeholder="Brief description for property cards (max 80 characters)..."
-          required
-        />
-        <small>{formData.shortDescription?.length || 0}/80 characters</small>
-      </div>
+
 
       <h4 className="subsection-title">Upload Photos & Videos</h4>
       

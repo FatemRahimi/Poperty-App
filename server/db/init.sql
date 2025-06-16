@@ -51,7 +51,6 @@ CREATE TABLE IF NOT EXISTS properties (
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   description TEXT,
-  short_description VARCHAR(120), -- Short description for property cards
   property_type VARCHAR(50) NOT NULL, -- 'detached', 'semi-detached', 'terraced', 'flat', 'bungalow', 'land', 'park_home', 'student_hall'
   property_category VARCHAR(50), -- 'residential', 'commercial', 'land'
   
@@ -164,3 +163,8 @@ CREATE INDEX IF NOT EXISTS idx_property_amenities_property_id ON property_amenit
 
 -- Create initial super admin using ENV variables
 -- This will be handled by the setup script
+
+SELECT id, title, description, short_description 
+FROM properties 
+ORDER BY created_at DESC 
+LIMIT 5;
