@@ -215,7 +215,7 @@ const PropertyView = () => {
             <i className="fas fa-map-marker-alt"></i>
             <span>{formatAddress(property)}</span>
           </div>
-
+g
           <div className="view-property-features">
             {property.bedrooms && (
               <div className="view-feature">
