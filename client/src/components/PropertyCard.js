@@ -46,14 +46,31 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
   const formatAddress = (property) => {
     const parts = [];
     
-    // Add street name (from address_line1)
-    if (property.address_line1) {
-      parts.push(property.address_line1);
+    // Add street name only (without house number)
+    if (property.street_name) {
+      // Use the separate street_name field (new format)
+      parts.push(property.street_name);
+    } else if (property.address_line1) {
+      // Fallback: if street_name is not available, try to extract street name from address_line1
+      // by removing potential house numbers and flat numbers at the beginning
+      let cleanedAddress = property.address_line1
+        .replace(/^[0-9]+[a-zA-Z]?\s+/, '')  // Remove numbers like "123 ", "45A "
+        .replace(/^Flat\s+[0-9]+[a-zA-Z]?\s+/, '')  // Remove "Flat 2A "
+        .replace(/^Apartment\s+[0-9]+[a-zA-Z]?\s+/, '')  // Remove "Apartment 5B "
+        .replace(/^Unit\s+[0-9]+[a-zA-Z]?\s+/, '')  // Remove "Unit 7 "
+        .trim();
+      
+      if (cleanedAddress && cleanedAddress !== property.address_line1) {
+        parts.push(cleanedAddress);
+      } else {
+        // If we couldn't clean it, use the original address_line1
+        parts.push(property.address_line1);
+      }
     }
     
-    // Add city
-    if (property.city) {
-      parts.push(property.city);
+    // Add country
+    if (property.country) {
+      parts.push(property.country);
     }
     
     // Add first 3 characters of postcode
