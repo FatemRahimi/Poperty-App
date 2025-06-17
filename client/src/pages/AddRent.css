@@ -1,220 +1,320 @@
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+/* Import Modern Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
 
-/* Container Styles */
+/* Container Styles - Modern and Clean */
 .add-rent-container {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  padding: 4rem 2rem;
-  background-color: #f8f9fa;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .add-rent-content {
-  max-width: 800px;
+  max-width: 900px;
   width: 100%;
-  background-color: #fff;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  padding: 3rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem;
+  margin: auto;
 }
 
-/* Title Styles */
+/* Title Styles - Professional and Modern */
 .add-rent-title {
   background: none;
   border: none;
-  font-weight: bold;
-  color: #342fd6;
+  font-weight: 700;
+  font-size: 2rem;
+  color: #1e293b;
   cursor: pointer;
   padding: 0;
-  font-size: 2.5rem;
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Poppins', sans-serif;
   text-align: center;
-  margin-bottom: 3rem;
-  animation: glowText 2s infinite alternate;
+  margin-bottom: 2rem;
+  letter-spacing: -0.02em;
+  transition: all 0.3s ease;
 }
 
-@keyframes glowText {
-  from {
-    text-shadow: 0 0 5px rgba(52, 47, 214, 0.2);
-    color: #342fd6;
-  }
-  to {
-    text-shadow: 0 0 10px rgba(52, 47, 214, 0.5);
-    color: #4a43e0;
-  }
+.add-rent-title:hover {
+  color: #3b82f6;
+  transform: translateY(-1px);
 }
 
-/* Form Styles */
+/* Form Styles - Optimized Layout */
 .add-rent-form {
   width: 100%;
 }
 
 .form-section {
-  padding: 20px 0;
+  padding: 0;
   background: transparent;
-  margin-bottom: 15px;
+  margin-bottom: 2rem;
 }
 
 .section-title {
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #e0e0e0;
-  font-family: 'Montserrat', sans-serif;
-}
-
-.form-group {
+  color: #1e293b;
   margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e2e8f0;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: -0.01em;
 }
 
+/* Enhanced Form Rows - Space Efficient */
 .form-row {
+  display: grid;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.form-row.three-cols {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.form-row.single-col {
+  grid-template-columns: 1fr;
+}
+
+/* Form Group - Compact and Modern */
+.form-group {
+  margin-bottom: 1.25rem;
   display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  flex-direction: column;
 }
 
-.half {
-  flex: 1;
-}
-
+/* Labels - Professional Typography */
 label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #555;
-  font-family: 'Montserrat', sans-serif;
+  color: #374151;
+  font-size: 0.875rem;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.01em;
 }
 
+/* Form Controls - Modern Input Design */
 .form-control {
   width: 100%;
-  padding: 0.75rem;
-  font-size: 1rem;
-  border: 1px solid #ddd;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  border: 2px solid #e5e7eb;
   border-radius: 8px;
   background-color: #fff;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+  color: #1f2937;
 }
 
 .form-control:focus {
   outline: none;
-  border-color: #342fd6;
-  box-shadow: 0 0 0 3px rgba(52, 47, 214, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: #fafbfc;
 }
 
-/* Button Styles */
+.form-control:hover {
+  border-color: #d1d5db;
+}
+
+/* Button Styles - Modern and Professional */
 .form-actions {
   display: flex;
   justify-content: space-between;
-  margin-top: 2rem;
+  align-items: center;
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
 }
 
 .btn {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
+  padding: 0.875rem 2rem;
+  font-size: 0.9rem;
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   border: none;
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .btn-primary {
-  background-color: #342fd6;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #2a25ab;
-  transform: translateY(-2px);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
 }
 
 .btn-primary:disabled {
-  background-color: #6b68d9;
+  background: #9ca3af;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .btn-secondary {
-  background-color: #e9ecef;
-  color: #495057;
+  background: #f3f4f6;
+  color: #374151;
+  border: 2px solid #e5e7eb;
 }
 
 .btn-secondary:hover {
-  background-color: #dde1e5;
-  transform: translateY(-2px);
+  background: #e5e7eb;
+  transform: translateY(-1px);
 }
 
 .btn-secondary:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
-/* Alert Styles */
+/* Alert Styles - Modern Design */
 .alert {
-  padding: 1rem;
+  padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
   border-radius: 8px;
   font-weight: 500;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .alert-danger {
-  background-color: #fee2e2;
-  color: #b91c1c;
+  background: #fef2f2;
+  color: #dc2626;
   border: 1px solid #fecaca;
 }
 
 .alert-success {
-  background-color: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
 }
 
-/* Responsive Styles */
+/* Property Features - Compact Grid */
+.property-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.feature-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.feature-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.feature-item label {
+  margin: 0;
+  cursor: pointer;
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+/* Photo Upload Section */
+.photo-upload-section {
+  margin: 2rem 0;
+}
+
+.photo-previews {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.photo-preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+}
+
+.photo-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-photo-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(220, 38, 38, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+/* Responsive Design - Mobile First */
 @media (max-width: 768px) {
   .add-rent-container {
-    padding: 2rem 1rem;
+    padding: 1rem 0.5rem;
   }
   
-  .add-rent-content {
-    padding: 2rem;
-  }
-  
-  .add-rent-title {
-    font-size: 2rem;
-    margin-bottom: 2rem;
-  }
-  
-  .form-row {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .btn {
-    padding: 0.6rem 1.2rem;
-  }
-  
-  /* Ensure form sections have consistent spacing */
-  .form-section {
-    margin-bottom: 12px;
-  }
-}
-
-@media (max-width: 480px) {
   .add-rent-content {
     padding: 1.5rem;
+    border-radius: 12px;
   }
   
   .add-rent-title {
     font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .form-row.three-cols {
+    grid-template-columns: 1fr;
   }
   
   .section-title {
-    font-size: 18px;
+    font-size: 1.25rem;
+    margin-bottom: 1.25rem;
   }
   
   .form-actions {
@@ -224,86 +324,112 @@ label {
   
   .btn {
     width: 100%;
+    justify-content: center;
   }
   
-  /* Ensure form sections have consistent spacing */
-  .form-section {
-    margin-bottom: 10px;
+  .property-features {
+    grid-template-columns: 1fr;
   }
 }
 
-/* AddRent specific styles */
-.form-sale-container .form-wrapper {
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-.form-section .section-title {
-  margin-bottom: 20px;
-  font-size: 22px;
-  font-weight: 600;
-  color: #333;
-  border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 10px;
-}
-
-/* Form buttons should be inside the form with proper spacing */
-.form-buttons {
-  margin-top: 20px;
-  padding: 15px 0;
-  border-top: 1px solid #e0e0e0;
-}
-
-/* Responsive adjustments for AddRent */
-@media (max-width: 1024px) {
-  .form-sale-container .form-wrapper {
-    max-width: 90%;
-    padding: 40px 30px;
-  }
-}
-
-@media (max-width: 768px) {
-  .form-sale-container .form-wrapper {
-    max-width: 95%;
-    padding: 30px 20px;
+@media (max-width: 480px) {
+  .add-rent-content {
+    padding: 1rem;
   }
   
-  .form-section {
-    padding: 15px 0;
-    margin-bottom: 12px;
+  .add-rent-title {
+    font-size: 1.5rem;
   }
   
-  .form-section .section-title,
   .section-title {
-    font-size: 20px;
-    margin-bottom: 18px;
+    font-size: 1.125rem;
   }
   
-  .form-buttons {
-    margin-top: 15px;
-    padding: 12px 0;
+  .form-control {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+  }
+  
+  .btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
   }
 }
 
-@media (max-width: 576px) {
-  .form-sale-container .form-wrapper {
-    max-width: 100%;
-    padding: 20px 15px;
+/* Tablet Optimization */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .form-row.three-cols {
+    grid-template-columns: 1fr 1fr;
   }
   
-  .form-section {
-    padding: 12px 0;
-    margin-bottom: 10px;
+  .property-features {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+}
+
+/* Large Screen Optimization */
+@media (min-width: 1200px) {
+  .add-rent-content {
+    max-width: 1000px;
+    padding: 3rem;
   }
   
-  .form-section .section-title,
-  .section-title {
-    font-size: 18px;
-    margin-bottom: 15px;
+  .form-row {
+    gap: 1.5rem;
   }
   
-  .form-buttons {
-    margin-top: 12px;
-    padding: 10px 0;
+  .property-features {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
+}
+
+/* Enhanced Focus States for Accessibility */
+.form-control:focus-visible,
+.btn:focus-visible,
+.feature-item input:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Smooth Transitions */
+* {
+  box-sizing: border-box;
+}
+
+.form-section,
+.form-row,
+.form-group {
+  transition: all 0.2s ease;
+}
+
+/* Modern Select Styling */
+select.form-control {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23374151' viewBox='0 0 16 16'%3E%3Cpath d='M8 10.5l-4-4h8l-4 4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px;
+  padding-right: 2.5rem;
+  appearance: none;
+}
+
+/* Input Group Styles for Rent Fields */
+.input-group {
+  display: flex;
+  align-items: stretch;
+}
+
+.input-group .form-control {
+  border-radius: 8px 0 0 8px;
+  border-right: none;
+}
+
+.input-group-text {
+  background: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  padding: 0.75rem 1rem;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.9rem;
 } 

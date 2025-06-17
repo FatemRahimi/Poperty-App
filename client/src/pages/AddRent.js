@@ -419,24 +419,28 @@ const AddRent = () => {
           <div className="form-section">
             <h3 className="section-title">Property Details</h3>
             
-            <TextInput
-              label="Property Title"
-              name="propertyTitle"
-              value={formData.propertyTitle}
-              onChange={handleChange}
-              placeholder="e.g. Modern 2-Bed Flat in Central London"
-            />
-            
-            <SelectInput
-              label="Property Type"
-              name="propertyType"
-              value={formData.propertyType}
-              onChange={handleChange}
-              options={propertyTypeOptions}
-              required
-            />
-            
+            {/* Title and Type Row */}
             <div className="form-row">
+              <TextInput
+                label="Property Title"
+                name="propertyTitle"
+                value={formData.propertyTitle}
+                onChange={handleChange}
+                placeholder="e.g. Modern 2-Bed Flat in Central London"
+              />
+              
+              <SelectInput
+                label="Property Type"
+                name="propertyType"
+                value={formData.propertyType}
+                onChange={handleChange}
+                options={propertyTypeOptions}
+                required
+              />
+            </div>
+            
+            {/* Bedrooms, Bathrooms, and Furnished Status */}
+            <div className="form-row three-cols">
               <SelectInput
                 label="Bedrooms"
                 name="bedrooms"
@@ -454,25 +458,26 @@ const AddRent = () => {
                 options={bathroomOptions}
                 required
               />
+              
+              <SelectInput
+                label="Furnished Status"
+                name="furnishedStatus"
+                value={formData.furnishedStatus}
+                onChange={handleChange}
+                options={furnishedOptions}
+                required
+              />
             </div>
             
-            <SelectInput
-              label="Furnished Status"
-              name="furnishedStatus"
-              value={formData.furnishedStatus}
-              onChange={handleChange}
-              options={furnishedOptions}
-              required
-            />
-            
-            <div className="form-row">
+            {/* Rent and Deposit Row */}
+            <div className="form-row three-cols">
               <TextInput
                 label="Weekly Rent (£)*"
                 name="weeklyRent"
                 value={formData.weeklyRent}
                 onChange={handleChange}
                 type="number"
-                placeholder="Enter weekly rent amount"
+                placeholder="450"
                 required
               />
               
@@ -482,26 +487,26 @@ const AddRent = () => {
                 value={formData.monthlyRent}
                 onChange={handleChange}
                 type="number"
-                placeholder="Enter monthly rent amount"
+                placeholder="1950"
                 required
               />
-            </div>
-            
-            <small style={{color: '#666', fontSize: '14px', marginBottom: '1rem', display: 'block'}}>
-              Both weekly and monthly rent are required fields.
-            </small>
-            
-            <div className="form-row">
+              
               <TextInput
                 label="Deposit Amount (£)"
                 name="depositAmount"
                 value={formData.depositAmount}
                 onChange={handleChange}
                 type="number"
+                placeholder="2000"
                 required
               />
             </div>
             
+            <small style={{color: '#6b7280', fontSize: '0.875rem', marginBottom: '1.5rem', display: 'block', fontStyle: 'italic'}}>
+              Both weekly and monthly rent are required fields for property portals.
+            </small>
+            
+            {/* Availability and Tenancy Row */}
             <div className="form-row">
               <TextInput
                 label="Available From"
@@ -522,6 +527,7 @@ const AddRent = () => {
               />
             </div>
             
+            {/* Council Tax Row */}
             <div className="form-row">
               <SelectInput
                 label="Council Tax Band"
@@ -549,32 +555,35 @@ const AddRent = () => {
           <div className="form-section">
             <h3 className="section-title">Location Information</h3>
             
+            {/* Address Line 1 */}
             <div className="form-row">
               <TextInput
                 label="House Number*"
                 name="houseNumber"
                 value={formData.houseNumber}
                 onChange={handleChange}
-                placeholder="e.g., 123, Flat 2A"
+                placeholder="123, Flat 2A"
                 required
               />
               
               <TextInput
-                label="Street Name (address_line1)*"
+                label="Street Name*"
                 name="streetName"
                 value={formData.streetName}
                 onChange={handleChange}
-                placeholder="e.g., Main Street, Oak Avenue"
+                placeholder="Main Street, Oak Avenue"
                 required
               />
             </div>
             
-            <div className="form-row">
+            {/* City, Country, Region Row */}
+            <div className="form-row three-cols">
               <TextInput
                 label="City/Town*"
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
+                placeholder="London"
                 required
               />
               
@@ -583,25 +592,30 @@ const AddRent = () => {
                 name="country"
                 value={formData.country}
                 onChange={handleChange}
-                placeholder="e.g., United Kingdom"
+                placeholder="United Kingdom"
                 required
               />
               
               <TextInput
-                label="Region (Optional)"
+                label="Region"
                 name="region"
                 value={formData.region}
                 onChange={handleChange}
+                placeholder="Greater London"
               />
             </div>
             
-            <TextInput
-              label="Postcode*"
-              name="postcode"
-              value={formData.postcode}
-              onChange={handleChange}
-              required
-            />
+            {/* Postcode Row */}
+            <div className="form-row single-col" style={{maxWidth: '300px'}}>
+              <TextInput
+                label="Postcode*"
+                name="postcode"
+                value={formData.postcode}
+                onChange={handleChange}
+                placeholder="SW1A 1AA"
+                required
+              />
+            </div>
           </div>
         );
       
