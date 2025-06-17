@@ -365,6 +365,237 @@
   margin-bottom: 2rem;
   flex-wrap: wrap;
   gap: 1rem;
+  position: relative;
+}
+
+/* Professional Search/Filter Header */
+.professional-search-header {
+  background: linear-gradient(135deg, #1e293b, #334155);
+  padding: 1.25rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(30, 41, 59, 0.15);
+}
+
+.search-filter-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Location Search Group */
+.location-group {
+  min-width: 280px;
+}
+
+.location-input {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.location-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.location-input::placeholder {
+  color: #64748b;
+}
+
+.radius-select {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.9rem;
+  color: white;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  appearance: none;
+}
+
+.radius-select:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.6);
+}
+
+.radius-select:focus {
+  border-bottom-color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Price Filter Group */
+.price-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.price-select {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.9rem;
+  color: white;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+  appearance: none;
+}
+
+.price-select:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.6);
+}
+
+.price-select:focus {
+  border-bottom-color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Bedroom Filter Group */
+.bedroom-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bedroom-select {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.9rem;
+  color: white;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+  appearance: none;
+}
+
+.bedroom-select:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.6);
+}
+
+.bedroom-select:focus {
+  border-bottom-color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Property Type Group */
+.type-select {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.9rem;
+  color: white;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+  appearance: none;
+}
+
+.type-select:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.6);
+}
+
+.type-select:focus {
+  border-bottom-color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Additional Filters Group */
+.additional-group {
+  position: relative;
+}
+
+.additional-select {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+  padding: 0.75rem 1.5rem 0.75rem 0.5rem;
+  font-size: 0.9rem;
+  color: white;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  appearance: none;
+}
+
+.additional-select:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.6);
+}
+
+.additional-select:focus {
+  border-bottom-color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-icon {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+  font-size: 0.7rem;
+  transition: color 0.2s ease;
+}
+
+.additional-group:hover .dropdown-icon {
+  color: white;
+}
+
+/* Separator styling */
+.separator {
+  color: white;
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin: 0 0.25rem;
+}
+
+/* Custom dropdown arrow styling for all selects */
+.radius-select,
+.price-select,
+.bedroom-select,
+.type-select,
+.additional-select {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 10.5l-4-4h8l-4 4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 0.75rem;
+  padding-right: 2rem;
+}
+
+/* Special styling for additional-select since it has custom icon */
+.additional-select {
+  background-image: none;
+  padding-right: 1.5rem;
 }
 
 .properties-title {
@@ -1587,6 +1818,37 @@
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
+  }
+  
+  .professional-search-header {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .search-filter-container {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+  
+  .filter-group {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .location-group {
+    min-width: 100%;
+  }
+  
+  .location-input,
+  .radius-select,
+  .price-select,
+  .bedroom-select,
+  .type-select,
+  .additional-select {
+    width: 100%;
+    min-width: 100%;
   }
 
   .properties-filters-modern {

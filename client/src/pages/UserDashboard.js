@@ -14,6 +14,7 @@ const UserDashboard = () => {
     status: 'all',
     type: 'all'
   });
+  const [searchQuery, setSearchQuery] = useState('');
   const [profileData, setProfileData] = useState({
     first_name: '',
     last_name: '',
@@ -355,7 +356,16 @@ const UserDashboard = () => {
   const filteredProperties = properties.filter(property => {
     const statusMatch = filters.status === 'all' || property.status === filters.status;
     const typeMatch = filters.type === 'all' || property.property_type === filters.type;
-    return statusMatch && typeMatch;
+    
+    // Search functionality
+    const searchMatch = searchQuery === '' || 
+      property.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.address_line1?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.zip_code?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return statusMatch && typeMatch && searchMatch;
   });
 
   // Image Carousel Component
@@ -603,6 +613,98 @@ const UserDashboard = () => {
         </div>
       </div>
 
+      {/* Professional Search/Filter Bar - Show only when properties tab is active */}
+      {activeTab === 'properties' && (
+        <div className="professional-search-header">
+          <div className="search-filter-container">
+            {/* Location Search */}
+            <div className="filter-group location-group">
+              <input
+                type="text"
+                placeholder="Search location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="location-input"
+              />
+              <select className="radius-select">
+                <option value="0.5">Within 1/2 mile</option>
+                <option value="1">Within 1 mile</option>
+                <option value="2">Within 2 miles</option>
+                <option value="5">Within 5 miles</option>
+              </select>
+            </div>
+
+            {/* Price Filters */}
+            <div className="filter-group price-group">
+              <select className="price-select">
+                <option value="">Min Price</option>
+                <option value="500">£500</option>
+                <option value="750">£750</option>
+                <option value="1000">£1,000</option>
+                <option value="1500">£1,500</option>
+                <option value="2000">£2,000</option>
+              </select>
+              <span className="separator">to</span>
+              <select className="price-select">
+                <option value="">Max Price</option>
+                <option value="1000">£1,000</option>
+                <option value="1500">£1,500</option>
+                <option value="2000">£2,000</option>
+                <option value="3000">£3,000</option>
+                <option value="5000">£5,000+</option>
+              </select>
+            </div>
+
+            {/* Bedroom Filters */}
+            <div className="filter-group bedroom-group">
+              <select className="bedroom-select">
+                <option value="">1 Bed</option>
+                <option value="1">1 Bedroom</option>
+                <option value="2">2 Bedrooms</option>
+                <option value="3">3 Bedrooms</option>
+              </select>
+              <span className="separator">to</span>
+              <select className="bedroom-select">
+                <option value="">2 Bed</option>
+                <option value="2">2 Bedrooms</option>
+                <option value="3">3 Bedrooms</option>
+                <option value="4">4 Bedrooms</option>
+                <option value="5">5+ Bedrooms</option>
+              </select>
+            </div>
+
+            {/* Property Type */}
+            <div className="filter-group type-group">
+              <select 
+                value={filters.type}
+                onChange={(e) => setFilters({...filters, type: e.target.value})}
+                className="type-select"
+              >
+                <option value="all">Property Type (All)</option>
+                <option value="rent">For Rent</option>
+                <option value="sale">For Sale</option>
+                <option value="lease">For Lease</option>
+              </select>
+            </div>
+
+            {/* Additional Filters */}
+            <div className="filter-group additional-group">
+              <select 
+                value={filters.status}
+                onChange={(e) => setFilters({...filters, status: e.target.value})}
+                className="additional-select"
+              >
+                <option value="all">Status (All)</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Needs Updates</option>
+              </select>
+              <i className="fas fa-chevron-down dropdown-icon"></i>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="dashboard-main">
         {activeTab === 'overview' && (
@@ -647,28 +749,6 @@ const UserDashboard = () => {
               <div className="properties-title">
                 <h2>My Properties</h2>
                 <span className="property-count">{filteredProperties.length}</span>
-              </div>
-              <div className="properties-filters-modern">
-                <select 
-                  value={filters.status}
-                  onChange={(e) => setFilters({...filters, status: e.target.value})}
-                  className="filter-select"
-                >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Needs Updates</option>
-                </select>
-                <select 
-                  value={filters.type}
-                  onChange={(e) => setFilters({...filters, type: e.target.value})}
-                  className="filter-select"
-                >
-                  <option value="all">All Types</option>
-                  <option value="sale">For Sale</option>
-                  <option value="rent">For Rent</option>
-                  <option value="lease">For Lease</option>
-                </select>
               </div>
             </div>
 

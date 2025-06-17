@@ -285,11 +285,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
         </div>
         
         {/* Property Details */}
-        <div 
-          className="property-details-modern"
-          onClick={() => navigate(`/property/${property.slug || property.id}`)}
-          style={{ cursor: 'pointer' }}
-        >
+        <div className="property-details-modern">
           {/* Status Badge */}
           {property.status && (
             <div className={`property-status-badge status-${property.status}`}>
@@ -349,7 +345,11 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
           </div>
 
           {/* Short Description - Moved below features */}
-          <div className="property-short-description">
+          <div 
+            className="property-short-description"
+            onClick={() => navigate(`/property/${property.slug || property.id}`)}
+            style={{ cursor: 'pointer' }}
+          >
             {property.description && property.description.trim() ? (
               property.description.length > 120 
                 ? `${property.description.substring(0, 120)}...`
