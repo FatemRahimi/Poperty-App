@@ -34,18 +34,19 @@
 .property-rental-text {
   height: 30%; /* 30% of left column height for rental prices */
   background: white;
-  padding: 1rem;
+  padding: 0.75rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   border-top: 1px solid #e2e8f0;
+  gap: 0.25rem; /* Reduced gap between children */
 }
 
 .rental-text-item {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0; /* Removed margin, using gap instead */
 }
 
 .rental-text-item:last-child {
@@ -204,7 +205,7 @@
   flex-wrap: wrap;
 }
 
-.property-card-content .feature-item {
+.property-card-content .property-feature-item {
   display: flex;
   align-items: center;
   gap: 0.3rem; /* Smaller gap for tighter spacing between icon and text */
@@ -471,7 +472,7 @@
   right: 0;
   display: flex;
   gap: 0.75rem;
-  padding: 1rem 1.5rem;
+  padding: 1rem 3rem;
   background: white;
   border-top: none;
   z-index: 10;
@@ -479,9 +480,9 @@
 
 .property-actions-modern .action-btn-modern {
   flex: 1;
-  padding: 0.75rem 1.25rem;
+  padding: 0.55rem 1.25rem;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.85rem;
   transition: all 0.2s ease;
   cursor: pointer;
@@ -499,17 +500,17 @@
 }
 
 .property-actions-modern .btn-edit {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  color: #475569;
-  border-color: #cbd5e1;
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
 }
 
 .property-actions-modern .btn-edit:hover:not(:disabled) {
-  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
-  color: #334155;
-  border-color: #94a3b8;
+  background: #f0f4ff;
+  color: #667eea;
+  border-color: #5a67d8;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.15);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
 .property-actions-modern .btn-view {
@@ -526,14 +527,15 @@
 }
 
 .property-actions-modern .btn-delete {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  border-color: #dc2626;
+  background: white;
+  color: black;
+  border: 2px solid #ef4444;
 }
 
 .property-actions-modern .btn-delete:hover:not(:disabled) {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  border-color: #b91c1c;
+  background: #fef2f2;
+  color: black;
+  border-color: #dc2626;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
 }
@@ -561,21 +563,21 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: -0.3rem 0 0.75rem 0; /* Move meta section up with negative top margin */
+  margin: 0 0 2rem 0; /* Much more bottom margin for greater distance from description */
   padding-top: 0.75rem;
   border-top: none;
 }
 
 .property-card-content .property-type-badge {
-  background: transparent; /* Remove background */
-  color: #475569;
+  background: transparent;
+  color: #3b82f6; /* Blue text color */
   padding: 0.3rem 0.6rem;
-  border-radius: 0; /* Remove border radius */
+  border-radius: 0;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border: none; /* Remove border */
+  border: none;
 }
 
 .property-card-content .property-meta-modern small {
