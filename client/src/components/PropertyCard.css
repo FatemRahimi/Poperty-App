@@ -139,15 +139,16 @@
 
 /* Enhanced property details styling */
 .property-card-content .property-title-modern {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 0.5rem 0;
-  line-height: 1.3;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 0.3rem 0;
+  line-height: 1.4;
   display: -webkit-box;
   
   -webkit-box-orient: vertical;
   overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .property-card-content .property-address-modern {
@@ -181,18 +182,18 @@
 
 /* Short description styling */
 .property-short-description {
-  color: #747679;
-  font-size: 0.9rem;
+  color: #666666;
+  font-size: 0.95rem;
   font-weight: 400;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.5;
-  letter-spacing: 0.015em;
-  margin: -0.1rem 0 0.3rem 0; /* Very tight spacing with minimal negative margin */
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  margin: 0.3rem 0 0.5rem 0; /* Better spacing */
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.7rem; /* Adjusted for better line height */
+  min-height: 3rem; /* Adjusted for better line height */
   background: transparent; /* Ensure no background hiding content */
   opacity: 1; /* Ensure fully visible */
 }
@@ -208,10 +209,11 @@
 .property-card-content .property-feature-item {
   display: flex;
   align-items: center;
-  gap: 0.3rem; /* Smaller gap for tighter spacing between icon and text */
-  color: #374151;
-  font-size: 0.85rem; /* Smaller, professional text size */
-  font-weight: 500; /* Lighter weight */
+  gap: 0.4rem; /* Smaller gap for tighter spacing between icon and text */
+  color: #4a4a4a;
+  font-size: 0.9rem; /* Smaller, professional text size */
+  font-weight: 400; /* Lighter weight */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .property-card-content .feature-icon {
