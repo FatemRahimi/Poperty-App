@@ -303,7 +303,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
           {/* Property Features - Moved above description */}
           <div className="property-features">
             {property.bedrooms && (
-              <div className="feature-item">
+              <div className="property-feature-item">
                 <div className="feature-icon">
                   <i className="fas fa-bed"></i>
                 </div>
@@ -311,7 +311,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
               </div>
             )}
             {property.bathrooms && (
-              <div className="feature-item">
+              <div className="property-feature-item">
                 <div className="feature-icon">
                   <i className="fas fa-bath"></i>
                 </div>
@@ -319,7 +319,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
               </div>
             )}
             {property.square_feet && (
-              <div className="feature-item">
+              <div className="property-feature-item">
                 <div className="feature-icon">
                   <i className="fas fa-ruler-combined"></i>
                 </div>
@@ -327,7 +327,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
               </div>
             )}
             {property.parking_spots && (
-              <div className="feature-item">
+              <div className="property-feature-item">
                 <div className="feature-icon">
                   <i className="fas fa-car"></i>
                 </div>
@@ -335,7 +335,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
               </div>
             )}
             {property.student_housing && (
-              <div className="feature-item">
+              <div className="property-feature-item">
                 <div className="feature-icon">
                   <i className="fas fa-graduation-cap"></i>
                 </div>
