@@ -181,7 +181,7 @@
 
 /* Short description styling */
 .property-short-description {
-  color: #374151;
+  color: #747679;
   font-size: 0.9rem;
   font-weight: 400;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -200,8 +200,8 @@
 /* Professional compact features styling */
 .property-card-content .property-features {
   display: flex;
-  gap: 0.8rem; /* Reduced gap between features */
-  margin: 0.1rem 0 0.2rem 0; /* Very tight spacing */
+  gap: 1.5rem; /* Reduced gap between features */
+  margin: 0.2rem 0 0.3rem 0; /* Very tight spacing */
   flex-wrap: wrap;
 }
 
@@ -210,7 +210,7 @@
   align-items: center;
   gap: 0.3rem; /* Smaller gap for tighter spacing between icon and text */
   color: #374151;
-  font-size: 0.8rem; /* Smaller, professional text size */
+  font-size: 0.85rem; /* Smaller, professional text size */
   font-weight: 500; /* Lighter weight */
 }
 
