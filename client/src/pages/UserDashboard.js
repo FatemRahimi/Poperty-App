@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PropertyCard from '../components/PropertyCard';
+import SearchDropdown from '../components/SearchDropdown';
 import './UserDashboard.css';
 
 const UserDashboard = () => {
@@ -15,6 +16,17 @@ const UserDashboard = () => {
     type: 'all'
   });
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Search dropdown states
+  const [searchFilters, setSearchFilters] = useState({
+    radius: '0.5',
+    minPrice: '',
+    maxPrice: '',
+    minBeds: '',
+    maxBeds: '',
+    propertyType: 'all',
+    status: 'all'
+  });
   const [profileData, setProfileData] = useState({
     first_name: '',
     last_name: '',
@@ -368,6 +380,103 @@ const UserDashboard = () => {
     return statusMatch && typeMatch && searchMatch;
   });
 
+  // Dropdown options for search filters
+  const radiusOptions = [
+    { value: '0.25', label: 'Within 1/4 mile' },
+    { value: '0.5', label: 'Within 1/2 mile' },
+    { value: '1', label: 'Within 1 mile' },
+    { value: '2', label: 'Within 2 miles' },
+    { value: '3', label: 'Within 3 miles' },
+    { value: '5', label: 'Within 5 miles' },
+    { value: '10', label: 'Within 10 miles' },
+    { value: '15', label: 'Within 15 miles' },
+    { value: '20', label: 'Within 20 miles' },
+    { value: '25', label: 'Within 25 miles' },
+    { value: '30', label: 'Within 30 miles' }
+  ];
+
+  const priceOptions = {
+    min: [
+      { value: '', label: 'Min Price' },
+      { value: '500', label: '£500' },
+      { value: '750', label: '£750' },
+      { value: '1000', label: '£1,000' },
+      { value: '1500', label: '£1,500' },
+      { value: '2000', label: '£2,000' }
+    ],
+    max: [
+      { value: '', label: 'Max Price' },
+      { value: '1000', label: '£1,000' },
+      { value: '1500', label: '£1,500' },
+      { value: '2000', label: '£2,000' },
+      { value: '3000', label: '£3,000' },
+      { value: '5000', label: '£5,000+' }
+    ]
+  };
+
+  const bedroomOptions = {
+    min: [
+      { value: '', label: 'Min Beds' },
+      { value: '1', label: '1' },
+      { value: '2', label: '2' },
+      { value: '3', label: '3' },
+      { value: '4', label: '4' },
+      { value: '5', label: '5' },
+      { value: '6', label: '6' },
+      { value: '7', label: '7' },
+      { value: '8', label: '8' },
+      { value: '9', label: '9' },
+      { value: '10', label: '10' },
+      { value: '11', label: '11' },
+      { value: '12', label: '12' },
+      { value: '13', label: '13' },
+      { value: '14', label: '14' },
+      { value: '15', label: '15' },
+      { value: '16', label: '16' },
+      { value: '17', label: '17' },
+      { value: '18', label: '18' },
+      { value: '19', label: '19' },
+      { value: '20', label: '20' }
+    ],
+    max: [
+      { value: '', label: 'Max Beds' },
+      { value: '1', label: '1' },
+      { value: '2', label: '2' },
+      { value: '3', label: '3' },
+      { value: '4', label: '4' },
+      { value: '5', label: '5' },
+      { value: '6', label: '6' },
+      { value: '7', label: '7' },
+      { value: '8', label: '8' },
+      { value: '9', label: '9' },
+      { value: '10', label: '10' },
+      { value: '11', label: '11' },
+      { value: '12', label: '12' },
+      { value: '13', label: '13' },
+      { value: '14', label: '14' },
+      { value: '15', label: '15' },
+      { value: '16', label: '16' },
+      { value: '17', label: '17' },
+      { value: '18', label: '18' },
+      { value: '19', label: '19' },
+      { value: '20', label: '20' }
+    ]
+  };
+
+  const propertyTypeOptions = [
+    { value: 'all', label: 'Property Type (All)' },
+    { value: 'rent', label: 'For Rent' },
+    { value: 'sale', label: 'For Sale' },
+    { value: 'lease', label: 'For Lease' }
+  ];
+
+  const statusOptions = [
+    { value: 'all', label: 'Status (All)' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'rejected', label: 'Needs Updates' }
+  ];
+
   // Image Carousel Component
   const ImageCarousel = ({ images, title }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -626,80 +735,80 @@ const UserDashboard = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="location-input"
               />
-              <select className="radius-select">
-                <option value="0.5">Within 1/2 mile</option>
-                <option value="1">Within 1 mile</option>
-                <option value="2">Within 2 miles</option>
-                <option value="5">Within 5 miles</option>
-              </select>
+              <SearchDropdown
+                value={searchFilters.radius}
+                onChange={(value) => setSearchFilters({...searchFilters, radius: value})}
+                options={radiusOptions}
+                placeholder="Select radius"
+                className="search-dropdown-radius"
+                style={{minWidth: '150px'}}
+              />
             </div>
 
             {/* Price Filters */}
             <div className="filter-group price-group">
-              <select className="price-select">
-                <option value="">Min Price</option>
-                <option value="500">£500</option>
-                <option value="750">£750</option>
-                <option value="1000">£1,000</option>
-                <option value="1500">£1,500</option>
-                <option value="2000">£2,000</option>
-              </select>
+              <SearchDropdown
+                value={searchFilters.minPrice}
+                onChange={(value) => setSearchFilters({...searchFilters, minPrice: value})}
+                options={priceOptions.min}
+                placeholder="Min Price"
+                className="search-dropdown-price-min"
+                style={{minWidth: '100px'}}
+              />
               <span className="separator">to</span>
-              <select className="price-select">
-                <option value="">Max Price</option>
-                <option value="1000">£1,000</option>
-                <option value="1500">£1,500</option>
-                <option value="2000">£2,000</option>
-                <option value="3000">£3,000</option>
-                <option value="5000">£5,000+</option>
-              </select>
+              <SearchDropdown
+                value={searchFilters.maxPrice}
+                onChange={(value) => setSearchFilters({...searchFilters, maxPrice: value})}
+                options={priceOptions.max}
+                placeholder="Max Price"
+                className="search-dropdown-price-max"
+                style={{minWidth: '100px'}}
+              />
             </div>
 
             {/* Bedroom Filters */}
             <div className="filter-group bedroom-group">
-              <select className="bedroom-select">
-                <option value="">1 Bed</option>
-                <option value="1">1 Bedroom</option>
-                <option value="2">2 Bedrooms</option>
-                <option value="3">3 Bedrooms</option>
-              </select>
+              <SearchDropdown
+                value={searchFilters.minBeds}
+                onChange={(value) => setSearchFilters({...searchFilters, minBeds: value})}
+                options={bedroomOptions.min}
+                placeholder="Min Beds"
+                className="search-dropdown-beds-min"
+                style={{minWidth: '95px'}}
+              />
               <span className="separator">to</span>
-              <select className="bedroom-select">
-                <option value="">2 Bed</option>
-                <option value="2">2 Bedrooms</option>
-                <option value="3">3 Bedrooms</option>
-                <option value="4">4 Bedrooms</option>
-                <option value="5">5+ Bedrooms</option>
-              </select>
+              <SearchDropdown
+                value={searchFilters.maxBeds}
+                onChange={(value) => setSearchFilters({...searchFilters, maxBeds: value})}
+                options={bedroomOptions.max}
+                placeholder="Max Beds"
+                className="search-dropdown-beds-max"
+                style={{minWidth: '95px'}}
+              />
             </div>
 
             {/* Property Type */}
             <div className="filter-group type-group">
-              <select 
-                value={filters.type}
-                onChange={(e) => setFilters({...filters, type: e.target.value})}
-                className="type-select"
-              >
-                <option value="all">Property Type (All)</option>
-                <option value="rent">For Rent</option>
-                <option value="sale">For Sale</option>
-                <option value="lease">For Lease</option>
-              </select>
+              <SearchDropdown
+                value={searchFilters.propertyType}
+                onChange={(value) => setSearchFilters({...searchFilters, propertyType: value})}
+                options={propertyTypeOptions}
+                placeholder="Property Type"
+                className="search-dropdown-property-type"
+                style={{minWidth: '140px'}}
+              />
             </div>
 
             {/* Additional Filters */}
             <div className="filter-group additional-group">
-              <select 
-                value={filters.status}
-                onChange={(e) => setFilters({...filters, status: e.target.value})}
-                className="additional-select"
-              >
-                <option value="all">Status (All)</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Needs Updates</option>
-              </select>
-              <i className="fas fa-chevron-down dropdown-icon"></i>
+              <SearchDropdown
+                value={searchFilters.status}
+                onChange={(value) => setSearchFilters({...searchFilters, status: value})}
+                options={statusOptions}
+                placeholder="Status"
+                className="search-dropdown-status"
+                style={{minWidth: '120px'}}
+              />
             </div>
           </div>
         </div>
