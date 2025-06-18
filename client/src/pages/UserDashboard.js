@@ -1152,20 +1152,6 @@ const UserDashboard = () => {
               <div className="properties-title">
                 <h2>My Properties</h2>
                 <span className="property-count">{filteredProperties.length}</span>
-                {(searchFilters.propertyType !== 'all' || searchFilters.status !== 'all') && (
-                  <div className="active-filters">
-                    {searchFilters.propertyType !== 'all' && (
-                      <span className="filter-tag">
-                        {propertyTypeOptions.find(opt => opt.value === searchFilters.propertyType)?.label}
-                      </span>
-                    )}
-                    {searchFilters.status !== 'all' && (
-                      <span className="filter-tag">
-                        {statusOptions.find(opt => opt.value === searchFilters.status)?.label}
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
 
