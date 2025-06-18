@@ -397,7 +397,6 @@ const UserDashboard = () => {
 
   const priceOptions = {
     min: [
-      { value: '', label: 'Min Price' },
       { value: '100', label: '£100' },
       { value: '200', label: '£200' },
       { value: '300', label: '£300' },
@@ -432,7 +431,6 @@ const UserDashboard = () => {
       { value: '35000', label: '£35,000' }
     ],
     max: [
-      { value: '', label: 'Max Price' },
       { value: '100', label: '£100' },
       { value: '200', label: '£200' },
       { value: '300', label: '£300' },
@@ -470,7 +468,6 @@ const UserDashboard = () => {
 
   const bedroomOptions = {
     min: [
-      { value: '', label: 'Min Beds' },
       { value: '0', label: 'Studio' },
       { value: '1', label: '1' },
       { value: '2', label: '2' },
@@ -494,7 +491,6 @@ const UserDashboard = () => {
       { value: '20', label: '20' }
     ],
     max: [
-      { value: '', label: 'Max Beds' },
       { value: '0', label: 'Studio' },
       { value: '1', label: '1' },
       { value: '2', label: '2' },
@@ -520,14 +516,12 @@ const UserDashboard = () => {
   };
 
   const propertyTypeOptions = [
-    { value: 'all', label: 'Property Type (All)' },
     { value: 'rent', label: 'For Rent' },
     { value: 'sale', label: 'For Sale' },
     { value: 'lease', label: 'For Lease' }
   ];
 
   const statusOptions = [
-    { value: 'all', label: 'Status (All)' },
     { value: 'pending', label: 'Pending' },
     { value: 'approved', label: 'Approved' },
     { value: 'rejected', label: 'Needs Updates' }

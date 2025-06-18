@@ -351,8 +351,8 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
             style={{ cursor: 'pointer' }}
           >
             {property.description && property.description.trim() ? (
-              property.description.length > 120 
-                ? `${property.description.substring(0, 120)}...`
+              property.description.length > 90
+                ? `${property.description.substring(0, 90)}...`
                 : property.description
             ) : (
               <span style={{ fontStyle: 'italic', color: '#999' }}>
