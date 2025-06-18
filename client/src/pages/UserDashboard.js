@@ -24,6 +24,15 @@ const UserDashboard = () => {
     propertyBuildingType: 'all',
     status: 'all'
   });
+  
+  // Properties tab dropdown state
+  const [showPropertiesDropdown, setShowPropertiesDropdown] = useState(false);
+  const [autoCloseTimeout, setAutoCloseTimeout] = useState(null);
+  const [tempFilters, setTempFilters] = useState({
+    propertyType: 'all',
+    status: 'all'
+  });
+  
   const [profileData, setProfileData] = useState({
     first_name: '',
     last_name: '',
@@ -38,6 +47,7 @@ const UserDashboard = () => {
   const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const profileFormRef = useRef(null);
+  const navRef = useRef(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -110,12 +120,86 @@ const UserDashboard = () => {
     }
   }, [showAddListingDropdown]);
 
+  // Handle click outside properties dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!showPropertiesDropdown) return;
+      
+      // Check if click is outside both the tab container and the dropdown itself
+      const isClickInsideTab = event.target.closest('.properties-tab-container');
+      const isClickInsideDropdown = event.target.closest('.properties-dropdown');
+      
+      if (!isClickInsideTab && !isClickInsideDropdown) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Reset temporary filters to current applied filters when clicking outside
+        setTempFilters({
+          propertyType: searchFilters.propertyType,
+          status: searchFilters.status
+        });
+        setShowPropertiesDropdown(false);
+        
+        // Clear any existing timeout
+        if (autoCloseTimeout) {
+          clearTimeout(autoCloseTimeout);
+          setAutoCloseTimeout(null);
+        }
+      }
+    };
+
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && showPropertiesDropdown) {
+        // Reset temporary filters to current applied filters when pressing Escape
+        setTempFilters({
+          propertyType: searchFilters.propertyType,
+          status: searchFilters.status
+        });
+        setShowPropertiesDropdown(false);
+        // Clear any existing timeout
+        if (autoCloseTimeout) {
+          clearTimeout(autoCloseTimeout);
+          setAutoCloseTimeout(null);
+        }
+      }
+    };
+
+    if (showPropertiesDropdown) {
+      document.addEventListener('mousedown', handleClickOutside, true);
+      document.addEventListener('click', handleClickOutside, true);
+      document.addEventListener('keydown', handleEscKey);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside, true);
+        document.removeEventListener('click', handleClickOutside, true);
+        document.removeEventListener('keydown', handleEscKey);
+      };
+    }
+  }, [showPropertiesDropdown, autoCloseTimeout, searchFilters]);
+
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (autoCloseTimeout) {
+        clearTimeout(autoCloseTimeout);
+      }
+    };
+  }, [autoCloseTimeout]);
+
   // Load dashboard data when component mounts or activeTab changes
   useEffect(() => {
     if (activeTab === 'properties') {
       loadDashboardData();
     }
-  }, [activeTab]);
+    // Close dropdown when switching away from properties tab
+    if (activeTab !== 'properties') {
+      // Clear any existing timeout
+      if (autoCloseTimeout) {
+        clearTimeout(autoCloseTimeout);
+        setAutoCloseTimeout(null);
+      }
+      setShowPropertiesDropdown(false);
+    }
+  }, [activeTab, autoCloseTimeout]);
 
   const loadDashboardData = async () => {
     try {
@@ -759,7 +843,7 @@ const UserDashboard = () => {
       </div>
 
       {/* Modern Navigation */}
-      <div className="dashboard-nav-modern">
+      <div className="dashboard-nav-modern" ref={navRef}>
         <span 
           className="home-link-simple"
           onClick={() => navigate('/find')}
@@ -772,22 +856,162 @@ const UserDashboard = () => {
           <div className="nav-tabs-modern">
             <button 
               className={`nav-tab-modern ${activeTab === 'overview' ? 'active' : ''}`}
-              onClick={() => setActiveTab('overview')}
+              onClick={() => {
+                setActiveTab('overview');
+                setShowPropertiesDropdown(false);
+              }}
             >
               <i className="fas fa-chart-line"></i>
               Overview
             </button>
-            <button 
-              className={`nav-tab-modern ${activeTab === 'properties' ? 'active' : ''}`}
-              onClick={() => setActiveTab('properties')}
-            >
-              <i className="fas fa-building"></i>
-              My Properties
-            </button>
+            <div className="properties-tab-container">
+              <button 
+                className={`nav-tab-modern properties-tab ${activeTab === 'properties' ? 'active' : ''}`}
+                onClick={() => {
+                  if (activeTab === 'properties') {
+                    // If already on properties tab, just toggle dropdown
+                    // Clear any existing timeout
+                    if (autoCloseTimeout) {
+                      clearTimeout(autoCloseTimeout);
+                      setAutoCloseTimeout(null);
+                    }
+                    if (!showPropertiesDropdown) {
+                      // Initialize temp filters when opening dropdown
+                      setTempFilters({
+                        propertyType: searchFilters.propertyType,
+                        status: searchFilters.status
+                      });
+                    }
+                    setShowPropertiesDropdown(!showPropertiesDropdown);
+                  } else {
+                    // If switching to properties tab, set active and show dropdown for 2 seconds
+                    setActiveTab('properties');
+                    // Initialize temp filters when opening dropdown
+                    setTempFilters({
+                      propertyType: searchFilters.propertyType,
+                      status: searchFilters.status
+                    });
+                    setShowPropertiesDropdown(true);
+                    
+                    // Auto-close dropdown after 2 seconds and reset to current applied filters
+                    const timeoutId = setTimeout(() => {
+                      // Reset temporary filters to current applied filters when auto-closing
+                      setTempFilters({
+                        propertyType: searchFilters.propertyType,
+                        status: searchFilters.status
+                      });
+                      setShowPropertiesDropdown(false);
+                      setAutoCloseTimeout(null);
+                    }, 2000);
+                    setAutoCloseTimeout(timeoutId);
+                  }
+                }}
+              >
+                <i className="fas fa-building"></i>
+                My Properties
+                <svg 
+                  className={`dropdown-arrow ${showPropertiesDropdown ? 'open' : ''}`}
+                  width="12" 
+                  height="12" 
+                  viewBox="0 0 12 12" 
+                  fill="none"
+                >
+                  <path 
+                    d="M3 4.5L6 7.5L9 4.5" 
+                    stroke="currentColor" 
+                    strokeWidth="1.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              
+              {activeTab === 'properties' && showPropertiesDropdown && (
+                <div className="properties-dropdown">
+                  <div className="dropdown-content">
+                    <div className="dropdown-section">
+                      <h4>
+                        <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 7h-9"/>
+                          <path d="M14 17H5"/>
+                          <circle cx="17" cy="17" r="3"/>
+                          <circle cx="7" cy="7" r="3"/>
+                        </svg>
+                        Categories
+                      </h4>
+                      <div className="filter-options-simple">
+                        {propertyTypeOptions.map(option => (
+                          <label key={option.value} className="simple-option">
+                            <input
+                              type="radio"
+                              name="propertyType"
+                              value={option.value}
+                              checked={tempFilters.propertyType === option.value}
+                              onChange={(e) => {
+                                const newTempFilters = {...tempFilters, propertyType: e.target.value};
+                                setTempFilters(newTempFilters);
+                                // Apply filters immediately and close dropdown
+                                setSearchFilters({...searchFilters, propertyType: e.target.value});
+                                setTimeout(() => {
+                                  setShowPropertiesDropdown(false);
+                                  if (autoCloseTimeout) {
+                                    clearTimeout(autoCloseTimeout);
+                                    setAutoCloseTimeout(null);
+                                  }
+                                }, 300);
+                              }}
+                            />
+                            <span className="option-text">{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="dropdown-section">
+                      <h4>
+                        <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <path d="M12 8v4"/>
+                          <path d="M12 16h.01"/>
+                        </svg>
+                        Status
+                      </h4>
+                      <div className="filter-options-simple">
+                        {statusOptions.map(option => (
+                          <label key={option.value} className="simple-option">
+                            <input
+                              type="radio"
+                              name="status"
+                              value={option.value}
+                              checked={tempFilters.status === option.value}
+                              onChange={(e) => {
+                                const newTempFilters = {...tempFilters, status: e.target.value};
+                                setTempFilters(newTempFilters);
+                                // Apply filters immediately and close dropdown
+                                setSearchFilters({...searchFilters, status: e.target.value});
+                                setTimeout(() => {
+                                  setShowPropertiesDropdown(false);
+                                  if (autoCloseTimeout) {
+                                    clearTimeout(autoCloseTimeout);
+                                    setAutoCloseTimeout(null);
+                                  }
+                                }, 300);
+                              }}
+                            />
+                            <span className="option-text">{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             <button 
               className={`nav-tab-modern ${activeTab === 'profile' ? 'active' : ''}`}
               onClick={async () => {
                 setActiveTab('profile');
+                setShowPropertiesDropdown(false);
                 // Auto-refresh profile data when switching to profile tab
                 if (activeTab !== 'profile') {
                   await refreshUserProfile();
@@ -949,6 +1173,20 @@ const UserDashboard = () => {
               <div className="properties-title">
                 <h2>My Properties</h2>
                 <span className="property-count">{filteredProperties.length}</span>
+                {(searchFilters.propertyType !== 'all' || searchFilters.status !== 'all') && (
+                  <div className="active-filters">
+                    {searchFilters.propertyType !== 'all' && (
+                      <span className="filter-tag">
+                        {propertyTypeOptions.find(opt => opt.value === searchFilters.propertyType)?.label}
+                      </span>
+                    )}
+                    {searchFilters.status !== 'all' && (
+                      <span className="filter-tag">
+                        {statusOptions.find(opt => opt.value === searchFilters.status)?.label}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
