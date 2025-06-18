@@ -1102,29 +1102,7 @@ const UserDashboard = () => {
               />
             </div>
 
-            {/* Categories */}
-            <div className="filter-group type-group">
-              <SearchDropdown
-                value={searchFilters.propertyType}
-                onChange={(value) => setSearchFilters({...searchFilters, propertyType: value})}
-                options={propertyTypeOptions}
-                placeholder="Categories"
-                className="search-dropdown-property-type"
-                style={{minWidth: '140px'}}
-              />
-            </div>
 
-            {/* Additional Filters */}
-            <div className="filter-group additional-group">
-              <SearchDropdown
-                value={searchFilters.status}
-                onChange={(value) => setSearchFilters({...searchFilters, status: value})}
-                options={statusOptions}
-                placeholder="Status"
-                className="search-dropdown-status"
-                style={{minWidth: '120px'}}
-              />
-            </div>
           </div>
         </div>
       )}
