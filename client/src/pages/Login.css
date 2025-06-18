@@ -69,7 +69,7 @@
     font-size: 1.5rem;
     font-weight: 600;
     text-align: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
     color: #23262a;
 }
 
@@ -108,7 +108,7 @@
     box-shadow: 0 2px 6px rgba(66, 133, 244, 0.08);
     transition: all 0.2s ease;
     width: 100%;
-    margin-bottom: 1.2rem;
+    margin-bottom: 0.8rem;
 }
 
 .google-login:hover {
@@ -153,7 +153,7 @@
 .divider {
     position: relative;
     text-align: center;
-    margin: 1.2rem 0;
+    margin: 0.8rem 0;
     color: #777;
     font-size: 0.85rem;
 }
@@ -179,7 +179,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.2rem;
 }
 
 .password-header .form-label {
@@ -200,32 +200,43 @@
     text-decoration: underline;
 }
 
-/* ✅ Input Fields */
-.form-label {
+/* ✅ Login Input Fields */
+.login-form-label {
     display: block;
     color: #23262a;
-    font-weight: 500;
-    margin-bottom: 0.4rem;
+    font-weight: 300;
+    margin-bottom: 0.2rem;
     text-align: left;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.1px;
 }
 
-.form-control {
+.login-form-control {
     width: 100%;
     padding: 0.6rem 0.8rem;
     font-size: 0.9rem;
     border: 1px solid #e0e0e0;
     border-radius: 5px;
     background: #f9fafd;
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.2rem;
     transition: all 0.2s ease;
 }
 
-.form-control:focus {
+.login-form-control:focus {
     border-color: #3498db;
     outline: none;
     background: #fff;
     box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+}
+
+.login-is-invalid {
+    border-color: #dc3545;
+    background: #fff5f5;
+}
+
+.login-is-invalid:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
 }
 
 /* ✅ Forgot Password */
@@ -243,7 +254,7 @@
 }
 
 /* ✅ Sign In Button */
-.sign-in-btn {
+.login-sign-in-btn {
     width: 100%;
     padding: 0.7rem 0;
     background: #3498db;
@@ -254,11 +265,11 @@
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin-top: 0.4rem;
-    margin-bottom: 0.8rem;
+    margin-top: 1.2rem;
+    margin-bottom: 1rem;
 }
 
-.sign-in-btn:hover {
+.login-sign-in-btn:hover {
     background: #217dbb;
     box-shadow: 0 4px 16px rgba(52, 152, 219, 0.13);
 }
@@ -339,10 +350,9 @@
     transform: translateY(-1px);
 }
 
-/* ✅ Input Validation States */
+/* ✅ Input Validation States - Simplified */
 .form-control.is-invalid {
     border-color: #dc3545;
-    background-color: #fff5f5;
 }
 
 .form-control.is-invalid:focus {
@@ -350,15 +360,7 @@
     box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.15);
 }
 
-.form-control.is-valid {
-    border-color: #28a745;
-    background-color: #f8fff9;
-}
-
-.form-control.is-valid:focus {
-    border-color: #28a745;
-    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.15);
-}
+/* Removed green validation state to avoid hover line feedback */
 
 /* ✅ Loading Spinner */
 .spinner {
@@ -377,13 +379,13 @@
 }
 
 /* ✅ Disabled Button State */
-.sign-in-btn:disabled {
+.login-sign-in-btn:disabled {
     background: #6c757d;
     cursor: not-allowed;
     opacity: 0.65;
 }
 
-.sign-in-btn:disabled:hover {
+.login-sign-in-btn:disabled:hover {
     background: #6c757d;
     box-shadow: none;
 }

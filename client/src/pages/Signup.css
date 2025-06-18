@@ -74,8 +74,8 @@
     letter-spacing: 0.2px;
       }
   
-/* ✅ Input Fields */
-.form-label {
+/* ✅ Signup Input Fields */
+.signup-form-label {
     display: block;
     color: #23262a;
     font-weight: 300;
@@ -85,7 +85,7 @@
     letter-spacing: 0.1px;
 }
 
-.form-control {
+.signup-form-control {
     width: 100%;
     padding: 0.5rem 0.7rem;
     font-size: 0.85rem;
@@ -97,15 +97,15 @@
     font-weight: 300;
 }
 
-.form-control:focus {
+.signup-form-control:focus {
     border-color: #3498db;
     outline: none;
     background: #fff;
     box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
   }
   
-/* ✅ Form Text */
-.form-text {
+/* ✅ Signup Form Text */
+.signup-form-text {
     font-size: 0.75rem;
     color: #666;
     margin-top: 0.2rem;
@@ -115,15 +115,22 @@
   }
   
 /* ✅ Password Requirement Message */
-.form-group1 .form-text {
+.signup-form-group .signup-form-text {
     color: #5a7ca7 !important;
     font-size: 0.8rem;
     margin-top: 0.3rem;
     margin-bottom: 0.8rem;
   }
 
-/* ✅ Caution Text */
-.text-danger {
+.signup-text-info {
+    color: #5a7ca7 !important;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+    margin-bottom: 2.5rem;
+  }
+
+/* ✅ Signup Caution Text */
+.signup-text-danger {
     color: #dc3545;
     font-weight: 400;
     display: flex;
@@ -134,13 +141,13 @@
     font-size: 0.8rem;
 }
 
-.form-text.text-danger::before {
+.signup-form-text.signup-text-danger::before {
    
     font-size: 0.9rem;
 }
 
-/* ✅ Sign In Button */
-.sign-in-btn {
+/* ✅ Signup Submit Button */
+.signup-submit-btn {
     width: 100%;
     padding: 0.6rem 0;
     background: #3498db;
@@ -151,12 +158,12 @@
     font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin-top: 0.3rem;
+    margin-top: 2rem;
     margin-bottom: 0.6rem;
     letter-spacing: 0.3px;
 }
 
-.sign-in-btn:hover {
+.signup-submit-btn:hover {
     background: #217dbb;
     box-shadow: 0 4px 16px rgba(52, 152, 219, 0.13);
 }
@@ -235,16 +242,7 @@
     }
 }
 
-.signup-label {
-    font-size: 0.8rem;
-    font-weight: 300;
-    color: #23262a;
-    letter-spacing: 0.1px;
-    margin-bottom: 0.3rem;
-    text-align: left;
-}
-
-.login-form .form-text.text-danger {
+.login-form .signup-form-text.signup-text-info {
     color: #5a7ca7 !important;
 }
 

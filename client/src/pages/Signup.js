@@ -75,10 +75,10 @@ const Signup = () => {
 
             {/* Email Input */}
             <div className="mb-3 text-start">
-              <label className="form-label signup-label">Enter Email</label>
+              <label className="signup-form-label">Enter Email</label>
               <input
                 type="email"
-                className="form-control"
+                className="signup-form-control"
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -87,17 +87,17 @@ const Signup = () => {
             </div>
 
             {/* Password Input */}
-            <div className="form-group1">
-              <label htmlFor="password" className="form-label signup-label">Password</label>
+            <div className="signup-form-group">
+              <label htmlFor="password" className="signup-form-label">Password</label>
               <input
                 type="password"
-                className="form-control"
+                className="signup-form-control"
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              <small className="form-text text-danger">
+              <small className="signup-form-text signup-text-info">
                  Password must be at least 8 characters long
               </small>
             </div>
@@ -111,7 +111,7 @@ const Signup = () => {
 
             <button 
               type="submit" 
-              className="sign-in-btn btn btn-dark w-100 py-2"
+              className="signup-submit-btn"
               disabled={isLoading}
             >
               {isLoading ? "Signing up..." : "Sign up"}
