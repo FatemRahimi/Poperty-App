@@ -11,10 +11,6 @@ const UserDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddListingDropdown, setShowAddListingDropdown] = useState(false);
-  const [filters, setFilters] = useState({
-    status: 'all',
-    type: 'all'
-  });
   const [searchQuery, setSearchQuery] = useState('');
   
   // Search dropdown states
@@ -25,6 +21,7 @@ const UserDashboard = () => {
     minBeds: '',
     maxBeds: '',
     propertyType: 'all',
+    propertyBuildingType: 'all',
     status: 'all'
   });
   const [profileData, setProfileData] = useState({
@@ -366,8 +363,22 @@ const UserDashboard = () => {
   };
 
   const filteredProperties = properties.filter(property => {
-    const statusMatch = filters.status === 'all' || property.status === filters.status;
-    const typeMatch = filters.type === 'all' || property.property_type === filters.type;
+    // Status filter
+    const statusMatch = searchFilters.status === 'all' || property.status === searchFilters.status;
+    
+    // Property type (rent/sale/lease) filter
+    const typeMatch = searchFilters.propertyType === 'all' || property.property_type === searchFilters.propertyType;
+    
+    // Property building type filter
+    const buildingTypeMatch = searchFilters.propertyBuildingType === 'all' || property.building_type === searchFilters.propertyBuildingType;
+    
+    // Price filters
+    const minPriceMatch = searchFilters.minPrice === '' || property.price >= parseInt(searchFilters.minPrice);
+    const maxPriceMatch = searchFilters.maxPrice === '' || property.price <= parseInt(searchFilters.maxPrice);
+    
+    // Bedroom filters
+    const minBedsMatch = searchFilters.minBeds === '' || property.bedrooms >= parseInt(searchFilters.minBeds);
+    const maxBedsMatch = searchFilters.maxBeds === '' || property.bedrooms <= parseInt(searchFilters.maxBeds);
     
     // Search functionality
     const searchMatch = searchQuery === '' || 
@@ -377,7 +388,7 @@ const UserDashboard = () => {
       property.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       property.zip_code?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    return statusMatch && typeMatch && searchMatch;
+    return statusMatch && typeMatch && buildingTypeMatch && minPriceMatch && maxPriceMatch && minBedsMatch && maxBedsMatch && searchMatch;
   });
 
   // Dropdown options for search filters
@@ -397,6 +408,7 @@ const UserDashboard = () => {
 
   const priceOptions = {
     min: [
+      { value: '', label:  'Min price' },
       { value: '100', label: '£100' },
       { value: '200', label: '£200' },
       { value: '300', label: '£300' },
@@ -431,6 +443,7 @@ const UserDashboard = () => {
       { value: '35000', label: '£35,000' }
     ],
     max: [
+      { value: '', label: 'Max price' },
       { value: '100', label: '£100' },
       { value: '200', label: '£200' },
       { value: '300', label: '£300' },
@@ -468,6 +481,7 @@ const UserDashboard = () => {
 
   const bedroomOptions = {
     min: [
+      { value: '', label: ' Min Bed ' },
       { value: '0', label: 'Studio' },
       { value: '1', label: '1' },
       { value: '2', label: '2' },
@@ -491,6 +505,7 @@ const UserDashboard = () => {
       { value: '20', label: '20' }
     ],
     max: [
+      { value: '', label:  'Max Beds' },
       { value: '0', label: 'Studio' },
       { value: '1', label: '1' },
       { value: '2', label: '2' },
@@ -515,13 +530,27 @@ const UserDashboard = () => {
     ]
   };
 
+  const propertyBuildingTypeOptions = [
+    { value: 'all', label: 'Property Types' },
+    { value: 'detached', label: 'Detached' },
+    { value: 'semi-detached', label: 'Semi-Detached' },
+    { value: 'terraced', label: 'Terraced' },
+    { value: 'flat', label: 'Flat' },
+    { value: 'bungalow', label: 'Bungalow' },
+    { value: 'land', label: 'Land' },
+    { value: 'park-home', label: 'Park Home' },
+    { value: 'student-halls', label: 'Student Halls' }
+  ];
+
   const propertyTypeOptions = [
+    { value: 'all', label: 'All Categories' },
     { value: 'rent', label: 'For Rent' },
     { value: 'sale', label: 'For Sale' },
     { value: 'lease', label: 'For Lease' }
   ];
 
   const statusOptions = [
+    { value: 'all', label: 'All Statuses' },
     { value: 'pending', label: 'Pending' },
     { value: 'approved', label: 'Approved' },
     { value: 'rejected', label: 'Needs Updates' }
@@ -838,12 +867,24 @@ const UserDashboard = () => {
             </div>
 
             {/* Property Type */}
+            <div className="filter-group property-type-group">
+              <SearchDropdown
+                value={searchFilters.propertyBuildingType}
+                onChange={(value) => setSearchFilters({...searchFilters, propertyBuildingType: value})}
+                options={propertyBuildingTypeOptions}
+                placeholder="Property Type"
+                className="search-dropdown-property-building-type"
+                style={{minWidth: '140px'}}
+              />
+            </div>
+
+            {/* Categories */}
             <div className="filter-group type-group">
               <SearchDropdown
                 value={searchFilters.propertyType}
                 onChange={(value) => setSearchFilters({...searchFilters, propertyType: value})}
                 options={propertyTypeOptions}
-                placeholder="Property Type"
+                placeholder="Categories"
                 className="search-dropdown-property-type"
                 style={{minWidth: '140px'}}
               />
