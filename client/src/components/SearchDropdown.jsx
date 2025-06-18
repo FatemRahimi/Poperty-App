@@ -39,16 +39,20 @@ const SearchDropdown = ({
   // Add/remove z-index classes when dropdown opens/closes
   useEffect(() => {
     const container = dropdownRef.current;
+    const filterGroup = container?.closest('.filter-group');
     
     if (isOpen) {
       container?.classList.add('dropdown-open');
+      filterGroup?.classList.add('has-open-dropdown');
     } else {
       container?.classList.remove('dropdown-open');
+      filterGroup?.classList.remove('has-open-dropdown');
     }
     
     // Cleanup on unmount
     return () => {
       container?.classList.remove('dropdown-open');
+      filterGroup?.classList.remove('has-open-dropdown');
     };
   }, [isOpen]);
 

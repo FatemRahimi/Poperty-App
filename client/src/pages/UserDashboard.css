@@ -626,7 +626,7 @@
   margin-bottom: 2rem;
   box-shadow: 0 4px 20px rgba(30, 41, 59, 0.15);
   position: relative;
-  z-index: 1;
+  z-index: 2147483647;
 }
 
 .search-filter-container {
@@ -661,13 +661,13 @@
 
 /* Ensure filter groups with open dropdowns have proper stacking */
 .filter-group:has(.dropdown-open) {
-  z-index: 9999;
+  z-index: 2147483647;
   overflow: visible;
 }
 
 /* Alternative for browsers that don't support :has() */
 .filter-group.has-open-dropdown {
-  z-index: 9999;
+  z-index: 2147483647;
   overflow: visible;
 }
 
@@ -967,12 +967,12 @@
 }
 
 .search-dropdown-container:has(.search-dropdown-options) {
-  z-index: 9999;
+  z-index: 2147483647;
 }
 
 /* Alternative for browsers that don't support :has() */
 .search-dropdown-container.dropdown-open {
-  z-index: 9999;
+  z-index: 2147483647;
 }
 
 .search-select-box {
@@ -1037,6 +1037,23 @@
   background: transparent !important;
 }
 
+/* Ensure all property card elements stay behind search dropdowns */
+.property-card-modern .media-type-indicator,
+.property-card-modern .image-counter,
+.property-card-modern .property-status-badge,
+.property-card-modern .property-actions-modern,
+.property-card-modern .carousel-controls,
+.property-card-modern .carousel-indicators,
+.property-card-modern .image-zoom-overlay,
+.property-count,
+.filter-tag,
+.stat-card-modern,
+.nav-tab-modern,
+.add-listing-btn-modern,
+.profile-menu-btn {
+  z-index: 1000 !important;
+}
+
 /* Nuclear option - catch any remaining placeholder issues */
 .search-select-box.placeholder .search-select-value{
   color: rgb(255, 255, 255) !important;
@@ -1088,7 +1105,7 @@
   border-top: none;
   border-radius: 0 0 8px 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  z-index: 99999;
+  z-index: 2147483647;
   max-height: 250px;
   overflow-y: auto;
   animation: searchDropdownSlideDown 0.2s ease-out;
