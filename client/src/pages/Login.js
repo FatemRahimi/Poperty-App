@@ -196,12 +196,11 @@ const Login = () => {
     };
 
     const getInputClassName = (fieldName) => {
-        let className = "form-control";
+        let className = "login-form-control";
         if (errors[fieldName]) {
-            className += " is-invalid";
-        } else if (touched[fieldName] && !errors[fieldName]) {
-            className += " is-valid";
+            className += " login-is-invalid";
         }
+        // Removed is-valid class to avoid hover line feedback
         return className;
     };
     
@@ -270,7 +269,7 @@ const Login = () => {
 
                         {/* Email Input */}
                         <div className="mb-3 text-start">
-                            <label className="form-label"><strong>Email</strong></label>
+                            <label className="login-form-label">Email</label>
                             <input 
                                 type="email" 
                                 name="email"
@@ -314,7 +313,7 @@ const Login = () => {
                         {/* Password Input */}
                         <div className="mb-3 text-start">
                             <div className="password-header">
-                            <label className="form-label"><strong>Password</strong></label>
+                            <label className="login-form-label">Password</label>
                                 <Link to="/password" className="forgot-link">
                                     Forgot 
                                 </Link>
@@ -340,7 +339,7 @@ const Login = () => {
                         {/* Submit Button */}
                         <button 
                             type="submit" 
-                            className="sign-in-btn btn btn-dark w-100 py-2"
+                            className="login-sign-in-btn"
                             disabled={isLoading || Object.keys(errors).length > 0}
                         >
                             {isLoading ? (
