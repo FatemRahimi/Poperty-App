@@ -1059,6 +1059,7 @@ const UserDashboard = () => {
                 style={{minWidth: '100px'}}
               />
               <span className="separator">to</span>
+            
               <SearchDropdown
                 value={searchFilters.maxPrice}
                 onChange={(value) => setSearchFilters({...searchFilters, maxPrice: value})}
