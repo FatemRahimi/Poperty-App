@@ -371,11 +371,11 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
           </div>
         </div>
         
-        {/* Action Buttons - Outside clickable area */}
+        {/* Action Icons - Outside clickable area */}
         {showActions && (
           <div className="property-actions-modern" onClick={(e) => e.stopPropagation()}>
-            <button 
-              className="action-btn-modern btn-edit"
+            <i 
+              className="property-action-icon edit-icon fas fa-edit"
               onClick={(e) => {
                 e.stopPropagation();
                 // Redirect to appropriate form based on property type
@@ -389,40 +389,28 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                   alert('Edit functionality not available for this property type');
                 }
               }}
-              disabled={isDeleting}
-            >
-              <i className="fas fa-edit"></i> Edit
-            </button>
+              title="Edit Property"
+            ></i>
             {property.status === 'approved' && (
-              <button 
-                className="action-btn-modern btn-view"
+              <i 
+                className="property-action-icon view-icon fas fa-eye"
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(`/property/${property.slug || property.id}`);
                 }}
-                disabled={isDeleting}
-              >
-                <i className="fas fa-eye"></i> View
-              </button>
+                title="View Property"
+              ></i>
             )}
-            <button 
-              className="action-btn-modern btn-delete"
+            <i 
+              className={`property-action-icon delete-icon ${isDeleting ? 'fas fa-spinner fa-spin' : 'fas fa-trash'}`}
               onClick={(e) => {
                 e.stopPropagation();
-                handleDelete();
+                if (!isDeleting) {
+                  handleDelete();
+                }
               }}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <i className="fas fa-spinner fa-spin"></i> Deleting...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-trash"></i> Delete
-                </>
-              )}
-            </button>
+              title={isDeleting ? "Deleting..." : "Delete Property"}
+            ></i>
           </div>
         )}
       </div>
