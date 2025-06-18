@@ -396,7 +396,7 @@
 .filter-group:not(:last-child)::after {
   content: '';
   position: absolute;
-  right: -1rem;
+  right: -1.5rem;
   top: 50%;
   transform: translateY(-50%);
   width: 2px;
@@ -557,6 +557,11 @@
 .bedroom-select:focus {
   border-bottom-color: white;
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* Property Building Type Group */
+.property-type-group {
+  margin-right: 3rem;
 }
 
 /* Property Type Group */
