@@ -924,7 +924,7 @@ const UserDashboard = () => {
                     strokeLinejoin="round"
                   />
                 </svg>
-              </button>
+                            </button>
               
               {activeTab === 'properties' && showPropertiesDropdown && (
                 <div className="properties-dropdown">
@@ -1006,7 +1006,7 @@ const UserDashboard = () => {
                   </div>
                 </div>
               )}
-            </div>
+              </div>
             <button 
               className={`nav-tab-modern ${activeTab === 'profile' ? 'active' : ''}`}
               onClick={async () => {
@@ -1308,6 +1308,8 @@ const UserDashboard = () => {
           </div>
         )}
       </div>
+
+
     </div>
   );
 };
