@@ -16,7 +16,15 @@ const SearchDropdown = ({
   useEffect(() => {
     if (value) {
       const selectedOption = options.find(opt => opt.value === value);
-      setSelectedLabel(selectedOption ? selectedOption.label : "");
+      // If the selected option is the first one (placeholder), treat as no selection
+      const isPlaceholderOption = selectedOption && selectedOption === options[0] && 
+        (value === 'min-price' || value === 'max-price' || value === 'min-beds' || value === 'max-beds' || value === 'all');
+      
+      if (isPlaceholderOption) {
+        setSelectedLabel("");
+      } else {
+        setSelectedLabel(selectedOption ? selectedOption.label : "");
+      }
     } else {
       setSelectedLabel("");
     }
@@ -78,7 +86,7 @@ const SearchDropdown = ({
     >
       {/* Custom Select Box */}
       <div 
-        className={`search-select-box ${isOpen ? 'open' : ''} ${!value ? 'placeholder' : ''}`}
+        className={`search-select-box ${isOpen ? 'open' : ''} ${!selectedLabel ? 'placeholder' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         tabIndex={0}
@@ -86,7 +94,7 @@ const SearchDropdown = ({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <span className="search-select-value">
+        <span className={`search-select-value ${!selectedLabel ? 'showing-placeholder' : ''}`}>
           {selectedLabel || placeholder}
         </span>
         <span className={`search-select-arrow ${isOpen ? 'open' : ''}`}>

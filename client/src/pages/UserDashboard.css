@@ -4,7 +4,6 @@
   background: #f8fafc;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
-
 /* Professional Header Design */
 .dashboard-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -281,7 +280,7 @@
 
 .properties-dropdown {
   position: fixed !important;
-  top: 140px !important; /* Position below the navigation */
+  top: 60px !important; /* Position right below the sticky navigation */
   left: 0 !important;
   right: 0 !important;
   width: 100vw !important;
@@ -293,7 +292,7 @@
   /* Force it to be the topmost layer */
   isolation: isolate !important;
   transform: translateZ(0) !important;
-  /* Break out of all containers */
+  /* Allow pointer events */
   pointer-events: auto !important;
   /* Ensure it's in its own layer */
   will-change: transform, opacity !important;
@@ -325,6 +324,8 @@
   /* Extra insurance for visibility */
   position: relative;
   z-index: 1;
+  /* Allow pointer events on the content */
+  pointer-events: auto !important;
 }
 
 .dropdown-section {
@@ -636,10 +637,11 @@
   gap: 1rem;
   position: relative;
 }
-
+/* linear-gradient(135deg, #1e293b, #334155);
+  padding: 0.75rem 2rem;*/
 /* Professional Search/Filter Header */
 .professional-search-header {
-  background: linear-gradient(135deg, #1e293b, #334155);
+  background: linear-gradient(135deg, #334155, #334155);
   padding: 0.75rem 2rem;
   margin-bottom: 2rem;
   box-shadow: 0 4px 20px rgba(30, 41, 59, 0.15);
@@ -778,66 +780,12 @@
   margin-right: 2rem;
 }
 
-.price-select {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 0;
-  padding: 0.75rem 0.5rem;
-  font-size: 0.95rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', 'Helvetica Neue', Arial, sans-serif;
-  color: white;
-  outline: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 100px;
-  appearance: none;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.price-select:hover {
-  border-bottom-color: rgba(255, 255, 255, 0.6);
-}
-
-.price-select:focus {
-  border-bottom-color: white;
-  background: rgba(255, 255, 255, 0.1);
-}
-
 /* Bedroom Filter Group */
 .bedroom-group {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-right: 2rem;
-}
-
-.bedroom-select {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 0;
-  padding: 0.75rem 0.5rem;
-  font-size: 0.95rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', 'Helvetica Neue', Arial, sans-serif;
-  color: white;
-  outline: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 80px;
-  appearance: none;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.bedroom-select:hover {
-  border-bottom-color: rgba(255, 255, 255, 0.6);
-}
-
-.bedroom-select:focus {
-  border-bottom-color: white;
-  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Property Building Type Group */
@@ -933,10 +881,8 @@
   margin: 0 0.25rem;
 }
 
-/* Custom dropdown arrow styling for all selects */
+/* Custom dropdown arrow styling for remaining selects */
 .radius-select,
-.price-select,
-.bedroom-select,
 .type-select,
 .additional-select {
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 10.5l-4-4h8l-4 4z'/%3E%3C/svg%3E");
@@ -955,8 +901,6 @@
 
 /* Option styling for better visibility */
 .radius-select option,
-.price-select option,
-.bedroom-select option,
 .type-select option,
 .additional-select option {
   background: #1e293b;
@@ -965,18 +909,7 @@
   font-weight: 500;
 }
 
-/* Placeholder styling for price and bedroom selects */
-.price-select:invalid,
-.bedroom-select:invalid {
-  color: white !important;
-  font-weight: 500;
-}
 
-.price-select option:first-child,
-.bedroom-select option:first-child {
-  color: white;
-  font-weight: 500;
-}
 
 /* Custom Search Dropdown Styles */
 .search-dropdown-container {
@@ -1003,7 +936,6 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', 'Helvetica Neue', Arial, sans-serif;
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: white;
   outline: none;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1029,33 +961,35 @@
   border-bottom-right-radius: 0;
 }
 
+/* Simplified Search Dropdown Styling */
 .search-select-value {
   flex: 1;
   text-align: left;
   font-family: Effra-Medium, Effra, sans-serif;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.01em;
+  color: white;
+}
+
+/* White placeholders for all search dropdowns */
+.search-select-box.placeholder .search-select-value {
   color: white !important;
+  font-weight: 400;
+  font-style: Effra-Medium, Effra, sans-serif !important;
 }
 
-/* ABSOLUTE FORCE - Maximum specificity for placeholder text */
-.user-dashboard .professional-search-header .search-filter-container .search-dropdown-price-min .search-select-box.placeholder .search-select-value,
-.user-dashboard .professional-search-header .search-filter-container .search-dropdown-price-max .search-select-box.placeholder .search-select-value,
-.user-dashboard .professional-search-header .search-filter-container .search-dropdown-beds-min .search-select-box.placeholder .search-select-value,
-.user-dashboard .professional-search-header .search-filter-container .search-dropdown-beds-max .search-select-box.placeholder .search-select-value,
-.user-dashboard .professional-search-header .search-filter-container .search-dropdown-property-building-type .search-select-box.placeholder .search-select-value {
-  color: rgb(255, 255, 255) !important;
-  font-weight: 400 !important;
-  font-family: Effra-Medium, Effra, sans-serif !important;
-  text-shadow: none !important;
-  opacity: 1 !important;
-  filter: none !important;
-  -webkit-font-smoothing: antialiased !important;
-  -moz-osx-font-smoothing: grayscale !important;
-  background: transparent !important;
+/* Special styling for radius dropdown - black text when selected, white placeholder */
+.search-dropdown-radius .search-select-value {
+  color: #101112;
+  font-weight: 400;
 }
 
-/* Ensure all property card elements stay behind search dropdowns */
+.search-dropdown-radius .search-select-box.placeholder .search-select-value {
+  color: white !important;
+  font-style: italic;
+}
+
+/* Ensure dropdowns appear above other elements */
 .property-card-modern .media-type-indicator,
 .property-card-modern .image-counter,
 .property-card-modern .property-status-badge,
@@ -1072,34 +1006,14 @@
   z-index: 1000 !important;
 }
 
-/* Nuclear option - catch any remaining placeholder issues */
-.search-select-box.placeholder .search-select-value{
-  color: rgb(255, 255, 255) !important;
-  font-weight: 400 !important;
-  text-shadow: none !important;
-  filter: none !important;
-  opacity: 1 !important;
-}
-
-/* Special styling for radius dropdown - keep black text */
-.search-dropdown-radius .search-select-value {
-  color: #9298a0 !important;
-  text-shadow: none;
-  font-weight:400;
-}
-
-.search-dropdown-radius .search-select-box.placeholder .search-select-value {
-  color: #6b7280 !important;
-  font-style: italic;
-}
 
 .search-select-arrow {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 20px;
-  height: 20px;
-  color: #3b82f6;
+  height: 30px;
+  color: #c8d0dd;
   transition: transform 0.2s ease;
   margin-left: 0.5rem;
 }
@@ -2464,8 +2378,6 @@
 
   .location-input,
   .radius-select,
-  .price-select,
-  .bedroom-select,
   .type-select,
   .additional-select {
     width: 100%;
@@ -2605,23 +2517,4 @@
   margin-bottom: 0;
 }
 
-/* Ensure property-building-type dropdown matches other dropdowns exactly */
-.search-dropdown-property-building-type .search-select-value {
-  color: rgb(154, 160, 165) !important;
-  font-family: Effra-Medium, Effra, sans-serif !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.01em !important;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
-.search-dropdown-property-building-type .search-select-box.placeholder .search-select-value {
-  color: white !important;
-  font-weight: 400 !important;
-  font-family: Effra-Medium, Effra, sans-serif !important;
-  letter-spacing: 0.01em !important;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-} 
+ 
