@@ -140,11 +140,13 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 2147483647;
   display: flex;
   align-items: center;
   padding-left: 1rem;
   min-height: 60px;
+  /* Ensure navigation doesn't clip dropdowns */
+  overflow: visible;
 }
 
 /* Home Link Base Styling */
@@ -186,6 +188,8 @@
   flex: 1;
   display: flex;
   justify-content: flex-left;
+  /* Ensure container doesn't clip dropdowns */
+  overflow: visible;
 }
 
 .nav-tabs-modern {
@@ -193,6 +197,7 @@
   gap: 0;
   border: none;
   overflow-x: auto;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -253,6 +258,9 @@
   position: relative;
   display: flex;
   align-items: center;
+  /* Ensure container doesn't clip the dropdown */
+  overflow: visible;
+  z-index: 2147483647;
 }
 
 .properties-tab {
@@ -272,16 +280,23 @@
 }
 
 .properties-dropdown {
-  position: fixed;
-  top: 140px; /* Position below the navigation */
-  left: 0;
-  right: 0;
-  width: 100vw;
+  position: fixed !important;
+  top: 140px !important; /* Position below the navigation */
+  left: 0 !important;
+  right: 0 !important;
+  width: 100vw !important;
   background: transparent;
   border: none;
-  z-index: 999999;
+  z-index: 2147483647 !important;
   animation: dropdownSlideDown 0.3s ease-out;
   transform-origin: top center;
+  /* Force it to be the topmost layer */
+  isolation: isolate !important;
+  transform: translateZ(0) !important;
+  /* Break out of all containers */
+  pointer-events: auto !important;
+  /* Ensure it's in its own layer */
+  will-change: transform, opacity !important;
 }
 
 @keyframes dropdownSlideDown {
@@ -307,6 +322,9 @@
   background: white;
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  /* Extra insurance for visibility */
+  position: relative;
+  z-index: 1;
 }
 
 .dropdown-section {
@@ -626,7 +644,7 @@
   margin-bottom: 2rem;
   box-shadow: 0 4px 20px rgba(30, 41, 59, 0.15);
   position: relative;
-  z-index: 2147483647;
+  z-index: 2147483646;
 }
 
 .search-filter-container {
@@ -661,13 +679,13 @@
 
 /* Ensure filter groups with open dropdowns have proper stacking */
 .filter-group:has(.dropdown-open) {
-  z-index: 2147483647;
+  z-index: 2147483646;
   overflow: visible;
 }
 
 /* Alternative for browsers that don't support :has() */
 .filter-group.has-open-dropdown {
-  z-index: 2147483647;
+  z-index: 2147483646;
   overflow: visible;
 }
 
@@ -967,12 +985,12 @@
 }
 
 .search-dropdown-container:has(.search-dropdown-options) {
-  z-index: 2147483647;
+  z-index: 2147483646;
 }
 
 /* Alternative for browsers that don't support :has() */
 .search-dropdown-container.dropdown-open {
-  z-index: 2147483647;
+  z-index: 2147483646;
 }
 
 .search-select-box {
@@ -1105,7 +1123,7 @@
   border-top: none;
   border-radius: 0 0 8px 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  z-index: 2147483647;
+  z-index: 2147483646;
   max-height: 250px;
   overflow-y: auto;
   animation: searchDropdownSlideDown 0.2s ease-out;
