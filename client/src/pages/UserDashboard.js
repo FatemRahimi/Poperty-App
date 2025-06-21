@@ -24,6 +24,22 @@ const UserDashboard = () => {
     propertyBuildingType: 'all',
     status: 'all'
   });
+
+  // More Filters dropdown state
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [moreFilters, setMoreFilters] = useState({
+    minBathrooms: '',
+    maxBathrooms: '',
+    typeOfLet: 'any',
+    dateAdded: 'anytime',
+    moveInDate: '',
+    letAgreed: false,
+    hasGarden: false,
+    hasParking: false,
+    houseShare: false,
+    retirementHome: false,
+    studentAccommodation: false
+  });
   
   // Properties tab dropdown state
   const [showPropertiesDropdown, setShowPropertiesDropdown] = useState(false);
@@ -175,6 +191,30 @@ const UserDashboard = () => {
       };
     }
   }, [showPropertiesDropdown, autoCloseTimeout, searchFilters]);
+
+  // Handle click outside More Filters dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMoreFilters && !event.target.closest('.dashboard-more-filters-container')) {
+        setShowMoreFilters(false);
+      }
+    };
+
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && showMoreFilters) {
+        setShowMoreFilters(false);
+      }
+    };
+
+    if (showMoreFilters) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscKey);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleEscKey);
+      };
+    }
+  }, [showMoreFilters]);
 
   // Cleanup timeout on component unmount
   useEffect(() => {
@@ -640,6 +680,105 @@ const UserDashboard = () => {
     { value: 'rejected', label: 'Needs Updates' }
   ];
 
+  // More Filters Options
+  const bathroomOptions = {
+    min: [
+      { value: '', label: 'Min Bath' },
+      { value: '1', label: '1' },
+      { value: '2', label: '2' },
+      { value: '3', label: '3' },
+      { value: '4', label: '4' },
+      { value: '5', label: '5' },
+      { value: '6', label: '6' },
+      { value: '7', label: '7' },
+      { value: '8', label: '8' },
+      { value: '9', label: '+9' }
+    ],
+    max: [
+      { value: '', label: 'Max Bath' },
+      { value: '1', label: '1' },
+      { value: '2', label: '2' },
+      { value: '3', label: '3' },
+      { value: '4', label: '4' },
+      { value: '5', label: '5' },
+      { value: '6', label: '6' },
+      { value: '7', label: '7' },
+      { value: '8', label: '8' },
+      { value: '9', label: '+9' }
+    ]
+  };
+
+  const typeOfLetOptions = [
+    { value: 'any', label: 'Any' },
+    { value: 'long-term', label: 'Long Term' },
+    { value: 'short-term', label: 'Short Term' },
+    { value: 'holiday', label: 'Holiday Let' },
+    { value: 'commercial', label: 'Commercial' }
+  ];
+
+  const furnishedOptions = [
+    { value: 'any', label: 'Any' },
+    { value: 'furnished', label: 'Furnished' },
+    { value: 'unfurnished', label: 'Unfurnished' },
+    { value: 'part-furnished', label: 'Part Furnished' }
+  ];
+
+  const booleanOptions = [
+    { value: 'any', label: 'Any' },
+    { value: 'yes', label: 'Yes' },
+    { value: 'no', label: 'No' }
+  ];
+
+  const squareFeetOptions = {
+    min: [
+      { value: '', label: 'Min Sq Ft' },
+      { value: '500', label: '500+ sq ft' },
+      { value: '750', label: '750+ sq ft' },
+      { value: '1000', label: '1,000+ sq ft' },
+      { value: '1250', label: '1,250+ sq ft' },
+      { value: '1500', label: '1,500+ sq ft' },
+      { value: '2000', label: '2,000+ sq ft' },
+      { value: '2500', label: '2,500+ sq ft' },
+      { value: '3000', label: '3,000+ sq ft' }
+    ],
+    max: [
+      { value: '', label: 'Max Sq Ft' },
+      { value: '750', label: 'Up to 750 sq ft' },
+      { value: '1000', label: 'Up to 1,000 sq ft' },
+      { value: '1250', label: 'Up to 1,250 sq ft' },
+      { value: '1500', label: 'Up to 1,500 sq ft' },
+      { value: '2000', label: 'Up to 2,000 sq ft' },
+      { value: '2500', label: 'Up to 2,500 sq ft' },
+      { value: '3000', label: 'Up to 3,000 sq ft' },
+      { value: '5000', label: 'Up to 5,000 sq ft' }
+    ]
+  };
+
+  const yearBuiltOptions = {
+    from: [
+      { value: '', label: 'Built From' },
+      { value: '2020', label: '2020+' },
+      { value: '2010', label: '2010+' },
+      { value: '2000', label: '2000+' },
+      { value: '1990', label: '1990+' },
+      { value: '1980', label: '1980+' },
+      { value: '1970', label: '1970+' },
+      { value: '1960', label: '1960+' },
+      { value: '1950', label: '1950+' }
+    ],
+    to: [
+      { value: '', label: 'Built To' },
+      { value: '2024', label: 'Up to 2024' },
+      { value: '2020', label: 'Up to 2020' },
+      { value: '2010', label: 'Up to 2010' },
+      { value: '2000', label: 'Up to 2000' },
+      { value: '1990', label: 'Up to 1990' },
+      { value: '1980', label: 'Up to 1980' },
+      { value: '1970', label: 'Up to 1970' },
+      { value: '1960', label: 'Up to 1960' }
+    ]
+  };
+
   // Image Carousel Component
   const ImageCarousel = ({ images, title }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -1101,6 +1240,235 @@ const UserDashboard = () => {
                 className="search-dropdown-property-building-type"
                 style={{minWidth: '140px'}}
               />
+            </div>
+
+            {/* More Filters */}
+            <div className="filter-group dashboard-more-filters-container">
+              <div 
+                className={`dashboard-more-filters-button ${showMoreFilters ? 'open' : ''}`}
+                onClick={() => setShowMoreFilters(!showMoreFilters)}
+              >
+                <span className="dashboard-more-filters-text">More Filters</span>
+                <i className={`fas fa-chevron-down dashboard-more-filters-arrow ${showMoreFilters ? 'open' : ''}`}></i>
+              </div>
+
+              {showMoreFilters && (
+                <div className="dashboard-more-filters-dropdown">
+                  <div className="dashboard-more-filters-content">
+                    
+                    {/* Bathroom Section */}
+                    <div className="dashboard-filter-section">
+                      <h4 className="dashboard-filter-section-title">
+                        <i className="fas fa-bath"></i>
+                        Bathroom
+                      </h4>
+                      <div className="dashboard-filter-row">
+                        <div className="filter-field">
+                          <SearchDropdown
+                            value={moreFilters.minBathrooms}
+                            onChange={(value) => setMoreFilters({...moreFilters, minBathrooms: value})}
+                            options={bathroomOptions.min}
+                            placeholder="Min Bath"
+                            className="dashboard-more-filter-dropdown"
+                            style={{minWidth: '140px'}}
+                          />
+                        </div>
+                        <div className="filter-field">
+                          <SearchDropdown
+                            value={moreFilters.maxBathrooms}
+                            onChange={(value) => setMoreFilters({...moreFilters, maxBathrooms: value})}
+                            options={bathroomOptions.max}
+                            placeholder="Max Bath"
+                            className="dashboard-more-filter-dropdown"
+                            style={{minWidth: '140px'}}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="dashboard-filter-divider"></div>
+
+                    {/* Property Details Section */}
+                    <div className="dashboard-filter-section">
+                      <h4 className="dashboard-filter-section-title">
+                        <i className="fas fa-home"></i>
+                        Property Details
+                      </h4>
+                      <div className="dashboard-filter-row">
+                        <div className="filter-field">
+                          <label className="filter-field-label">Date Added</label>
+                          <SearchDropdown
+                            value={moreFilters.dateAdded}
+                            onChange={(value) => setMoreFilters({...moreFilters, dateAdded: value})}
+                            options={[
+                              { value: 'anytime', label: 'Anytime' },
+                              { value: '3days', label: 'Last 3 days' },
+                              { value: '7days', label: 'Last 7 days' },
+                              { value: '14days', label: 'Last 14 days' }
+                            ]}
+                            placeholder="Anytime"
+                            className="dashboard-more-filter-dropdown"
+                            style={{minWidth: '280px'}}
+                          />
+                        </div>
+                        <div className="filter-field">
+                          <label className="filter-field-label">Move in by Date</label>
+                          <div className="date-input-container">
+                            <input
+                              type="date"
+                              className="date-input"
+                              value={moreFilters.moveInDate}
+                              onChange={(e) => setMoreFilters({...moreFilters, moveInDate: e.target.value})}
+                              placeholder="dd/mm/yyyy"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="dashboard-filter-row">
+                        <label className="dashboard-filter-checkbox-option">
+                          <input
+                            type="checkbox"
+                            checked={moreFilters.letAgreed}
+                            onChange={(e) => setMoreFilters({...moreFilters, letAgreed: e.target.checked})}
+                          />
+                          <span className="checkbox-custom"></span>
+                          <span className="checkbox-label">Include Let Agreed</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="dashboard-filter-divider"></div>
+
+                    {/* Type of Let Section */}
+                    <div className="dashboard-filter-section">
+                      <h4 className="dashboard-filter-section-title">
+                        <i className="fas fa-key"></i>
+                        Type of Let
+                      </h4>
+                      <div className="dashboard-filter-list">
+                        <label className="dashboard-filter-radio-option">
+                          <input
+                            type="radio"
+                            name="typeOfLet"
+                            value="any"
+                            checked={moreFilters.typeOfLet === 'any'}
+                            onChange={(e) => setMoreFilters({...moreFilters, typeOfLet: e.target.value})}
+                          />
+                          <span className="radio-custom"></span>
+                          <span className="radio-label">Any</span>
+                        </label>
+                        <label className="dashboard-filter-radio-option">
+                          <input
+                            type="radio"
+                            name="typeOfLet"
+                            value="long-term"
+                            checked={moreFilters.typeOfLet === 'long-term'}
+                            onChange={(e) => setMoreFilters({...moreFilters, typeOfLet: e.target.value})}
+                          />
+                          <span className="radio-custom"></span>
+                          <span className="radio-label">Long Term</span>
+                        </label>
+                        <label className="dashboard-filter-radio-option">
+                          <input
+                            type="radio"
+                            name="typeOfLet"
+                            value="short-term"
+                            checked={moreFilters.typeOfLet === 'short-term'}
+                            onChange={(e) => setMoreFilters({...moreFilters, typeOfLet: e.target.value})}
+                          />
+                          <span className="radio-custom"></span>
+                          <span className="radio-label">Short Term</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="dashboard-filter-divider"></div>
+
+                    {/* Property Features Section */}
+                    <div className="dashboard-filter-section">
+                      <div className="dashboard-filter-checkboxes-row">
+                        <label className="dashboard-filter-checkbox-option">
+                          <input
+                            type="checkbox"
+                            checked={moreFilters.hasGarden}
+                            onChange={(e) => setMoreFilters({...moreFilters, hasGarden: e.target.checked})}
+                          />
+                          <span className="checkbox-custom"></span>
+                          <span className="checkbox-label">Garden</span>
+                        </label>
+                        <label className="dashboard-filter-checkbox-option">
+                          <input
+                            type="checkbox"
+                            checked={moreFilters.hasParking}
+                            onChange={(e) => setMoreFilters({...moreFilters, hasParking: e.target.checked})}
+                          />
+                          <span className="checkbox-custom"></span>
+                          <span className="checkbox-label">Parking</span>
+                        </label>
+                        <label className="dashboard-filter-checkbox-option">
+                          <input
+                            type="checkbox"
+                            checked={moreFilters.houseShare}
+                            onChange={(e) => setMoreFilters({...moreFilters, houseShare: e.target.checked})}
+                          />
+                          <span className="checkbox-custom"></span>
+                          <span className="checkbox-label">House Share</span>
+                        </label>
+                        <label className="dashboard-filter-checkbox-option">
+                          <input
+                            type="checkbox"
+                            checked={moreFilters.retirementHome}
+                            onChange={(e) => setMoreFilters({...moreFilters, retirementHome: e.target.checked})}
+                          />
+                          <span className="checkbox-custom"></span>
+                          <span className="checkbox-label">Retirement Home</span>
+                        </label>
+                        <label className="dashboard-filter-checkbox-option">
+                          <input
+                            type="checkbox"
+                            checked={moreFilters.studentAccommodation}
+                            onChange={(e) => setMoreFilters({...moreFilters, studentAccommodation: e.target.checked})}
+                          />
+                          <span className="checkbox-custom"></span>
+                          <span className="checkbox-label">Student Accommodation</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Filter Actions */}
+                    <div className="dashboard-filter-actions">
+                      <button 
+                        className="dashboard-filter-clear-btn"
+                        onClick={() => setMoreFilters({
+                          minBathrooms: '',
+                          maxBathrooms: '',
+                          typeOfLet: 'any',
+                          dateAdded: 'anytime',
+                          moveInDate: '',
+                          letAgreed: false,
+                          hasGarden: false,
+                          hasParking: false,
+                          houseShare: false,
+                          retirementHome: false,
+                          studentAccommodation: false
+                        })}
+                      >
+                        Clear
+                      </button>
+                      <button 
+                        className="dashboard-filter-done-btn"
+                        onClick={() => {
+                          // Apply filters logic here
+                          setShowMoreFilters(false);
+                        }}
+                      >
+                        Done
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
+              )}
             </div>
 
 
