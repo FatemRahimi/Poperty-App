@@ -14,17 +14,9 @@ const SearchDropdown = ({
 
   // Find the label for the selected value
   useEffect(() => {
-    if (value) {
+    if (value && value !== '') {
       const selectedOption = options.find(opt => opt.value === value);
-      // If the selected option is the first one (placeholder), treat as no selection
-      const isPlaceholderOption = selectedOption && selectedOption === options[0] && 
-        (value === 'min-price' || value === 'max-price' || value === 'min-beds' || value === 'max-beds' || value === 'all');
-      
-      if (isPlaceholderOption) {
-        setSelectedLabel("");
-      } else {
-        setSelectedLabel(selectedOption ? selectedOption.label : "");
-      }
+      setSelectedLabel(selectedOption ? selectedOption.label : "");
     } else {
       setSelectedLabel("");
     }
