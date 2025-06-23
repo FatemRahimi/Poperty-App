@@ -915,9 +915,73 @@
    DASHBOARD PAGE - SEARCH FILTERS SECTION
    ======================================== */
 
-/* Custom Search Dropdown Styles */
+/* Custom Search Dropdown Styles - Fundamental Theme Support */
 .search-dropdown-container {
   position: relative;
+}
+
+/* DARK THEME - For video background contexts - HIGH SPECIFICITY */
+.search-dropdown-dark .search-select-value {
+  color: white !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* Universal placeholder styling with high specificity for ALL dropdowns */
+.search-dropdown-container .search-select-value.showing-placeholder {
+  color: #ffffff !important;
+  font-weight: 400 !important;
+  opacity: 1 !important;
+  background: transparent !important;
+  text-shadow: none !important;
+  font-style: normal !important;
+}
+
+/* Ensure placeholder styling works for all dark theme dropdowns */
+.search-dropdown-dark .search-select-box.placeholder .search-select-value {
+  color: #ffffff !important;
+  font-weight: 400 !important;
+  opacity: 1 !important;
+  background: transparent !important;
+  text-shadow: none !important;
+  font-style: normal !important;
+}
+
+.search-dropdown-dark .search-select-arrow {
+  color: #c8d0dd !important;
+}
+
+/* ULTIMATE OVERRIDE - Force white text for ALL dark theme elements */
+.search-dropdown-dark .search-select-value,
+.search-dropdown-dark.search-dropdown-price-min .search-select-value,
+.search-dropdown-dark.search-dropdown-price-max .search-select-value,
+.search-dropdown-dark.search-dropdown-beds-min .search-select-value,
+.search-dropdown-dark.search-dropdown-beds-max .search-select-value,
+.search-dropdown-dark.search-dropdown-property-building-type .search-select-value,
+.search-dropdown-dark.search-dropdown-radius .search-select-value {
+  color: white !important;
+  font-weight: 500 !important;
+  opacity: 1 !important;
+}
+
+/* LIGHT THEME - For white background contexts */
+.search-dropdown-light .search-select-value {
+  color: #1e293b !important;
+  font-weight: 500;
+}
+
+.search-dropdown-light .search-select-box.placeholder .search-select-value,
+.search-dropdown-light .search-select-value.showing-placeholder {
+  color: #000000 !important;
+  font-weight: 400 !important;
+  opacity: 1 !important;
+  background: transparent !important;
+  text-shadow: none !important;
+  font-style: normal !important;
+}
+
+.search-dropdown-light .search-select-arrow {
+  color: #64748b;
 }
 
 .search-select-box {
@@ -955,21 +1019,22 @@
   border-bottom-right-radius: 0;
 }
 
-/* Simplified Search Dropdown Styling */
+/* Simplified Search Dropdown Styling - Default fallback */
 .search-select-value {
   flex: 1;
   text-align: left;
   font-family: Effra-Medium, Effra, sans-serif;
   font-weight: 500;
   letter-spacing: 0.01em;
-  color: white;
+  color: white; /* Default - will be overridden by theme system */
 }
 
-/* White placeholders for all search dropdowns */
+/* Legacy fallback - will be overridden by theme system */
 .search-select-box.placeholder .search-select-value {
-  color: white !important;
+  color: white;
   font-weight: 400;
-  font-style: Effra-Medium, Effra, sans-serif !important;
+  font-style: Effra-Medium, Effra, sans-serif;
+  opacity: 1;
 }
 
 /* Special styling for radius dropdown - black text when selected, white placeholder */
@@ -1199,7 +1264,7 @@
 .dashboard-filter-section {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 2px solid #e6e8eb;
 }
 
 .dashboard-filter-section:last-of-type {
@@ -1275,7 +1340,7 @@
   color: #000000 !important;
   font-weight: 400 !important;
   font-style: italic !important;
-  opacity: 3 !important;
+  opacity: 1 !important;
 }
 
 .dashboard-more-filter-dropdown .search-select-arrow {
@@ -1295,7 +1360,7 @@
   align-items: center;
   padding-top: 1rem;
   margin-top: 1rem;
-  border-top: 1px solid #f1f5f9;
+ 
   gap: 1rem;
 }
 
@@ -2848,23 +2913,24 @@
 
 /* Divider */
 .dashboard-filter-divider {
-  height: 1px;
-  background: linear-gradient(to right, transparent, #e5e7eb, transparent);
-  margin: 24px 0;
+  height: 0px;
+  background: transparent;
+  margin: 16px 0;
 }
 
 /* Rows and Layout */
 .dashboard-filter-row {
   display: flex;
-  gap: 40px;
+  gap: 45px;
   align-items: flex-end;
   flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 
 .dashboard-filter-list {
   display: flex;
   flex-direction: row;
-  gap: 24px;
+  gap: 28px;
   flex-wrap: wrap;
   align-items: center;
 }
@@ -2872,7 +2938,7 @@
 .dashboard-filter-checkboxes-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 24px;
   align-items: center;
 }
 
@@ -2880,9 +2946,9 @@
 .filter-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   min-width: 280px;
-  margin-right: 20px;
+  margin-right: 24px;
 }
 
 .filter-field-label {
@@ -2900,15 +2966,14 @@
 
 .date-input {
   width: 280px;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
   color: #374151;
   background: white;
   transition: all 0.2s ease;
-  height: 38px;
-  box-sizing: border-box;
+  height: 40px;
 }
 
 .date-input:focus {
@@ -2921,9 +2986,9 @@
 .dashboard-filter-radio-option {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   cursor: pointer;
-  padding: 8px 0;
+  padding: 10px 4px;
   transition: all 0.2s ease;
 }
 
@@ -2973,8 +3038,9 @@
 .dashboard-filter-checkbox-option {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   cursor: pointer;
+  padding: 10px 4px;
   transition: all 0.2s ease;
 }
 
@@ -3025,9 +3091,7 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 2px solid #e5e7eb;
+  margin-top: 16px;
 }
 
 .dashboard-filter-clear-btn,

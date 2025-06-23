@@ -16,10 +16,10 @@ const UserDashboard = () => {
   // Search dropdown states
   const [searchFilters, setSearchFilters] = useState({
     radius: '0.5',
-    minPrice: '',
-    maxPrice: '',
-    minBeds: '',
-    maxBeds: '',
+    minPrice: 'any',
+    maxPrice: 'any',
+    minBeds: 'any',
+    maxBeds: 'any',
     propertyType: 'all',
     propertyBuildingType: 'all',
     status: 'all'
@@ -28,8 +28,8 @@ const UserDashboard = () => {
   // More Filters dropdown state
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [moreFilters, setMoreFilters] = useState({
-    minBathrooms: '',
-    maxBathrooms: '',
+    minBathrooms: 'any',
+    maxBathrooms: 'any',
     typeOfLet: 'any',
     dateAdded: 'anytime',
     moveInDate: '',
@@ -497,12 +497,12 @@ const UserDashboard = () => {
     const buildingTypeMatch = searchFilters.propertyBuildingType === 'all' || property.building_type === searchFilters.propertyBuildingType;
     
     // Price filters
-    const minPriceMatch = searchFilters.minPrice === '' || property.price >= parseInt(searchFilters.minPrice);
-    const maxPriceMatch = searchFilters.maxPrice === '' || property.price <= parseInt(searchFilters.maxPrice);
+    const minPriceMatch = searchFilters.minPrice === 'any' || property.price >= parseInt(searchFilters.minPrice);
+    const maxPriceMatch = searchFilters.maxPrice === 'any' || property.price <= parseInt(searchFilters.maxPrice);
     
     // Bedroom filters
-    const minBedsMatch = searchFilters.minBeds === '' || property.bedrooms >= parseInt(searchFilters.minBeds);
-    const maxBedsMatch = searchFilters.maxBeds === '' || property.bedrooms <= parseInt(searchFilters.maxBeds);
+    const minBedsMatch = searchFilters.minBeds === 'any' || property.bedrooms >= parseInt(searchFilters.minBeds);
+    const maxBedsMatch = searchFilters.maxBeds === 'any' || property.bedrooms <= parseInt(searchFilters.maxBeds);
     
     // Search functionality
     const searchMatch = searchQuery === '' || 
@@ -532,7 +532,7 @@ const UserDashboard = () => {
 
   const priceOptions = {
     min: [
-      { value: '', label:  'Min price' },
+      { value: 'any', label: 'Min Price' },
       { value: '100', label: '£100' },
       { value: '200', label: '£200' },
       { value: '300', label: '£300' },
@@ -567,7 +567,7 @@ const UserDashboard = () => {
       { value: '35000', label: '£35,000' }
     ],
     max: [
-      { value: '', label: 'Max price' },
+      { value: 'any', label: 'Max Price' },
       { value: '100', label: '£100' },
       { value: '200', label: '£200' },
       { value: '300', label: '£300' },
@@ -605,7 +605,7 @@ const UserDashboard = () => {
 
   const bedroomOptions = {
     min: [
-      { value: '', label: ' Min Bed ' },
+      { value: 'any', label: 'Min Beds' },
       { value: '0', label: 'Studio' },
       { value: '1', label: '1' },
       { value: '2', label: '2' },
@@ -629,7 +629,7 @@ const UserDashboard = () => {
       { value: '20', label: '20' }
     ],
     max: [
-      { value: '', label:  'Max Beds' },
+      { value: 'any', label: 'Max Beds' },
       { value: '0', label: 'Studio' },
       { value: '1', label: '1' },
       { value: '2', label: '2' },
@@ -683,7 +683,7 @@ const UserDashboard = () => {
   // More Filters Options
   const bathroomOptions = {
     min: [
-      { value: '', label: 'Min Bath' },
+      { value: 'any', label: 'Min Bath' },
       { value: '1', label: '1' },
       { value: '2', label: '2' },
       { value: '3', label: '3' },
@@ -695,7 +695,7 @@ const UserDashboard = () => {
       { value: '9', label: '+9' }
     ],
     max: [
-      { value: '', label: 'Max Bath' },
+      { value: 'any', label: 'Max Bath' },
       { value: '1', label: '1' },
       { value: '2', label: '2' },
       { value: '3', label: '3' },
@@ -1184,6 +1184,7 @@ const UserDashboard = () => {
                 placeholder="Select radius"
                 className="search-dropdown-radius"
                 style={{minWidth: '150px'}}
+                theme="dark"
               />
             </div>
 
@@ -1196,6 +1197,7 @@ const UserDashboard = () => {
                 placeholder="Min Price"
                 className="search-dropdown-price-min"
                 style={{minWidth: '100px'}}
+                theme="dark"
               />
               <span className="separator">to</span>
             
@@ -1206,6 +1208,7 @@ const UserDashboard = () => {
                 placeholder="Max Price"
                 className="search-dropdown-price-max"
                 style={{minWidth: '100px'}}
+                theme="dark"
               />
             </div>
 
@@ -1218,6 +1221,7 @@ const UserDashboard = () => {
                 placeholder="Min Beds"
                 className="search-dropdown-beds-min"
                 style={{minWidth: '95px'}}
+                theme="dark"
               />
               <span className="separator">to</span>
               <SearchDropdown
@@ -1227,6 +1231,7 @@ const UserDashboard = () => {
                 placeholder="Max Beds"
                 className="search-dropdown-beds-max"
                 style={{minWidth: '95px'}}
+                theme="dark"
               />
             </div>
 
@@ -1239,6 +1244,7 @@ const UserDashboard = () => {
                 placeholder="Property Type"
                 className="search-dropdown-property-building-type"
                 style={{minWidth: '140px'}}
+                theme="dark"
               />
             </div>
 
@@ -1271,6 +1277,7 @@ const UserDashboard = () => {
                             placeholder="Min Bath"
                             className="dashboard-more-filter-dropdown"
                             style={{minWidth: '140px'}}
+                            theme="light"
                           />
                         </div>
                         <div className="filter-field">
@@ -1281,6 +1288,7 @@ const UserDashboard = () => {
                             placeholder="Max Bath"
                             className="dashboard-more-filter-dropdown"
                             style={{minWidth: '140px'}}
+                            theme="light"
                           />
                         </div>
                       </div>
@@ -1309,6 +1317,7 @@ const UserDashboard = () => {
                             placeholder="Anytime"
                             className="dashboard-more-filter-dropdown"
                             style={{minWidth: '280px'}}
+                            theme="light"
                           />
                         </div>
                         <div className="filter-field">
@@ -1381,8 +1390,6 @@ const UserDashboard = () => {
                         </label>
                       </div>
                     </div>
-
-                    <div className="dashboard-filter-divider"></div>
 
                     {/* Property Features Section */}
                     <div className="dashboard-filter-section">
