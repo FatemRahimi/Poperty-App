@@ -6,7 +6,8 @@ const SearchDropdown = ({
   options, 
   placeholder = "Select option",
   className = "",
-  style = {}
+  style = {},
+  theme = "light" // "light" for white bg, "dark" for video bg
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLabel, setSelectedLabel] = useState("");
@@ -72,7 +73,7 @@ const SearchDropdown = ({
 
   return (
     <div 
-      className={`search-dropdown-container ${className}`} 
+      className={`search-dropdown-container ${className} search-dropdown-${theme}`} 
       ref={dropdownRef}
       style={style}
     >
