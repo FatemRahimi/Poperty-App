@@ -290,12 +290,12 @@
   width: 100vw !important;
   background: transparent;
   border: none;
-  z-index: 2147483646 !important;
+  z-index: 2147483649 !important; /* Higher than dashboard header */
   animation: dropdownSlideDown 0.3s ease-out;
   transform-origin: top center;
   /* Force it to be the topmost layer */
   isolation: isolate !important;
-  transform: translateZ(0) !important;
+  transform: translateZ(1px) !important;
   /* Allow pointer events */
   pointer-events: auto !important;
   /* Ensure it's in its own layer */
