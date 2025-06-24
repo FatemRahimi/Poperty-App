@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PropertyCard from '../components/PropertyCard';
@@ -1076,7 +1077,7 @@ const UserDashboard = () => {
                 </svg>
                             </button>
               
-              {activeTab === 'properties' && showPropertiesDropdown && (
+              {activeTab === 'properties' && showPropertiesDropdown && createPortal(
                 <div className="properties-dropdown">
                   <div className="dropdown-content">
                     <div className="dropdown-section">
@@ -1154,7 +1155,8 @@ const UserDashboard = () => {
                       </div>
                     </div>
                   </div>
-                </div>
+                </div>,
+                document.body
               )}
               </div>
             <button 
