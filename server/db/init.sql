@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS properties (
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   description TEXT,
-  property_type VARCHAR(50) NOT NULL, -- 'detached', 'semi-detached', 'terraced', 'flat', 'bungalow', 'land', 'park_home', 'student_hall'
+  category VARCHAR(50) NOT NULL, -- 'rent', 'sale', 'lease' - Property category
+  property_type VARCHAR(50), -- 'flat', 'house', 'studio', 'bungalow', 'maisonette', 'duplex', 'detached', 'semi-detached', 'terraced', etc.
   property_category VARCHAR(50), -- 'residential', 'commercial', 'land'
   
   -- Address information
@@ -157,6 +158,7 @@ CREATE TABLE IF NOT EXISTS email_notifications (
 CREATE INDEX IF NOT EXISTS idx_properties_user_id ON properties(user_id);
 CREATE INDEX IF NOT EXISTS idx_properties_status ON properties(status);
 CREATE INDEX IF NOT EXISTS idx_properties_type ON properties(property_type);
+CREATE INDEX IF NOT EXISTS idx_properties_building_type ON properties(property_type);
 CREATE INDEX IF NOT EXISTS idx_properties_created_at ON properties(created_at);
 CREATE INDEX IF NOT EXISTS idx_property_images_property_id ON property_images(property_id);
 CREATE INDEX IF NOT EXISTS idx_property_amenities_property_id ON property_amenities(property_id);

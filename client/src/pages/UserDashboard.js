@@ -490,11 +490,11 @@ const UserDashboard = () => {
     // Status filter
     const statusMatch = searchFilters.status === 'all' || property.status === searchFilters.status;
     
-    // Property type (rent/sale/lease) filter
-    const typeMatch = searchFilters.propertyType === 'all' || property.property_type === searchFilters.propertyType;
+    // Property category (rent/sale/lease) filter
+    const categoryMatch = searchFilters.propertyType === 'all' || property.category === searchFilters.propertyType;
     
-    // Property building type filter
-    const buildingTypeMatch = searchFilters.propertyBuildingType === 'all' || property.building_type === searchFilters.propertyBuildingType;
+    // Property type (flat/house/detached) filter
+    const propertyTypeMatch = searchFilters.propertyBuildingType === 'all' || property.property_type === searchFilters.propertyBuildingType;
     
     // Price filters
     const minPriceMatch = searchFilters.minPrice === 'any' || property.price >= parseInt(searchFilters.minPrice);
@@ -504,6 +504,15 @@ const UserDashboard = () => {
     const minBedsMatch = searchFilters.minBeds === 'any' || property.bedrooms >= parseInt(searchFilters.minBeds);
     const maxBedsMatch = searchFilters.maxBeds === 'any' || property.bedrooms <= parseInt(searchFilters.maxBeds);
     
+    // More Filters - Bathroom filters
+    const minBathMatch = moreFilters.minBathrooms === 'any' || property.bathrooms >= parseInt(moreFilters.minBathrooms);
+    const maxBathMatch = moreFilters.maxBathrooms === 'any' || property.bathrooms <= parseInt(moreFilters.maxBathrooms);
+    
+    // More Filters - Property features
+    const gardenMatch = !moreFilters.hasGarden || property.has_garden;
+    const parkingMatch = !moreFilters.hasParking || property.has_garage || property.parking_spaces > 0;
+    const studentMatch = !moreFilters.studentAccommodation || property.student_housing;
+    
     // Search functionality
     const searchMatch = searchQuery === '' || 
       property.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -512,7 +521,9 @@ const UserDashboard = () => {
       property.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       property.zip_code?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    return statusMatch && typeMatch && buildingTypeMatch && minPriceMatch && maxPriceMatch && minBedsMatch && maxBedsMatch && searchMatch;
+    return statusMatch && categoryMatch && propertyTypeMatch && minPriceMatch && maxPriceMatch && 
+           minBedsMatch && maxBedsMatch && minBathMatch && maxBathMatch && 
+           gardenMatch && parkingMatch && studentMatch && searchMatch;
   });
 
   // Dropdown options for search filters

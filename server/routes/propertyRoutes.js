@@ -107,17 +107,23 @@ router.get('/public', async (req, res) => {
       connectionString: process.env.DATABASE_URL || 'postgres://fatemehrahimi@localhost:5432/propertydb'
     });
 
-    const { page = 1, limit = 12, type, city, min_price, max_price, bedrooms } = req.query;
+    const { page = 1, limit = 12, category, property_type, city, min_price, max_price, bedrooms } = req.query;
     const offset = (page - 1) * limit;
 
     let whereClause = "WHERE p.status = 'approved'";
     let queryParams = [];
     let paramCount = 0;
 
-    if (type) {
+    if (category) {
+      paramCount++;
+      whereClause += ` AND p.category = $${paramCount}`;
+      queryParams.push(category);
+    }
+
+    if (property_type) {
       paramCount++;
       whereClause += ` AND p.property_type = $${paramCount}`;
-      queryParams.push(type);
+      queryParams.push(property_type);
     }
 
     if (city) {

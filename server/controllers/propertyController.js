@@ -74,7 +74,8 @@ const submitProperty = async (req, res) => {
       title: providedTitle,
       propertyTitle, // Alternative field name from frontend
       description,
-      property_type, 
+      category, // NEW: Property category (rent/sale/lease)
+      property_type, // Property type (flat/house/detached/etc)
       propertyType, // Alternative field name from frontend
       property_category,
       address_line1, 
@@ -125,7 +126,8 @@ const submitProperty = async (req, res) => {
 
     // Map frontend field names to backend field names
     const title = providedTitle || propertyTitle;
-    const property_type_mapped = property_type || propertyType;
+    const category_mapped = category || 'rent'; // Default to rent if not specified
+    const property_type_mapped = property_type || propertyType; // flat/house/detached/etc
     const address_line1_mapped = address_line1 || streetAddress;
     const state_mapped = state || region;
     const zip_code_mapped = zip_code || postcode;
@@ -218,10 +220,10 @@ const submitProperty = async (req, res) => {
       });
     }
 
-    if (!property_type_mapped) {
+    if (!category_mapped) {
       return res.status(400).json({
         success: false,
-        message: 'Property type is required'
+        message: 'Property category is required'
       });
     }
 
@@ -240,7 +242,7 @@ const submitProperty = async (req, res) => {
     console.log('weekly_rent_mapped:', weekly_rent_mapped);
     console.log('monthly_rent_mapped:', monthly_rent_mapped);
     console.log('Values array:', [
-      user_id, title, description, property_type_mapped, property_category,
+      user_id, title, description, category_mapped, property_type_mapped, property_category,
       address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
       bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built,
       price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
@@ -251,18 +253,18 @@ const submitProperty = async (req, res) => {
     
     const propertyResult = await client.query(
       `INSERT INTO properties (
-        user_id, title, description, property_type, property_category,
+        user_id, title, description, category, property_type, property_category,
         address_line1, address_line2, city, state, zip_code, country,
         bedrooms, bathrooms, square_feet, lot_size, year_built,
         price, weekly_rent, monthly_rent, lease_term, deposit_amount,
         parking_spaces, has_garage, has_pool, has_garden, furnished, pets_allowed,
         student_housing, availability_date, contact_name, contact_phone, contact_email, slug
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+        $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34
       ) RETURNING *`,
       [
-        user_id, title, description, property_type_mapped, property_category,
+        user_id, title, description, category_mapped, property_type_mapped, property_category,
         address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
         bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built,
         price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
@@ -354,7 +356,8 @@ const submitProperty = async (req, res) => {
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="color: #667eea; margin-top: 0;">${title}</h3>
-          <p><strong>Type:</strong> ${property_type_mapped.charAt(0).toUpperCase() + property_type_mapped.slice(1)}</p>
+          <p><strong>Category:</strong> ${category_mapped.charAt(0).toUpperCase() + category_mapped.slice(1)}</p>
+          <p><strong>Type:</strong> ${property_type_mapped ? property_type_mapped.charAt(0).toUpperCase() + property_type_mapped.slice(1) : 'Not specified'}</p>
           <p><strong>Address:</strong> ${address_line1_mapped}, ${city}, ${state_mapped} ${zip_code_mapped}</p>
           <p><strong>Price:</strong> $${price_mapped ? price_mapped.toLocaleString() : monthly_rent_mapped?.toLocaleString() + '/month'}</p>
           <p><strong>Status:</strong> Pending Review</p>
@@ -390,7 +393,8 @@ const submitProperty = async (req, res) => {
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="color: #667eea; margin-top: 0;">${title}</h3>
           <p><strong>Submitted by:</strong> ${user.first_name} ${user.last_name} (${user.email})</p>
-          <p><strong>Type:</strong> ${property_type_mapped.charAt(0).toUpperCase() + property_type_mapped.slice(1)}</p>
+          <p><strong>Category:</strong> ${category_mapped.charAt(0).toUpperCase() + category_mapped.slice(1)}</p>
+          <p><strong>Type:</strong> ${property_type_mapped ? property_type_mapped.charAt(0).toUpperCase() + property_type_mapped.slice(1) : 'Not specified'}</p>
           <p><strong>Address:</strong> ${address_line1_mapped}, ${city}, ${state_mapped} ${zip_code_mapped}</p>
           <p><strong>Price:</strong> $${price_mapped ? price_mapped.toLocaleString() : monthly_rent_mapped?.toLocaleString() + '/month'}</p>
           <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
@@ -454,7 +458,7 @@ const getUserProperties = async (req, res) => {
 
     if (type) {
       paramCount++;
-      whereClause += ` AND p.property_type = $${paramCount}`;
+      whereClause += ` AND p.category = $${paramCount}`;
       queryParams.push(type);
     }
 
@@ -547,7 +551,7 @@ const getAllProperties = async (req, res) => {
 
     if (type) {
       paramCount++;
-      whereClause += ` AND p.property_type = $${paramCount}`;
+      whereClause += ` AND p.category = $${paramCount}`;
       queryParams.push(type);
     }
 
