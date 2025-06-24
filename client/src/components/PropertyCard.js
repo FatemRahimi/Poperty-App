@@ -302,6 +302,14 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
           
           {/* Property Features - Moved above description */}
           <div className="property-features">
+                  {property.property_type && (
+        <div className="property-feature-item property-building-type">
+          <div className="feature-icon">
+            <i className="fas fa-building"></i>
+          </div>
+          <span>{property.property_type.charAt(0).toUpperCase() + property.property_type.slice(1).replace('-', ' ')}</span>
+        </div>
+      )}
             {property.bedrooms && (
               <div className="property-feature-item">
                 <div className="feature-icon">
