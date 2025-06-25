@@ -33,7 +33,7 @@ const PropertyView = () => {
   };
 
   const formatPrice = (property) => {
-    if (property.property_type === 'sale' && property.price) {
+    if (property.category === 'sale' && property.price) {
       return `£${Number(property.price).toLocaleString()}`;
     } else if (property.weekly_rent) {
       return `£${Number(property.weekly_rent).toLocaleString()}/pw`;

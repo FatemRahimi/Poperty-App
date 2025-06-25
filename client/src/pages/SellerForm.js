@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import "./SellerForm.css";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
 const listings = [
   {

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import "./Signup.css";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
 const Signup = () => {
   const [email, setEmail] = useState("");

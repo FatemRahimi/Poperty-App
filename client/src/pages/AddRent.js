@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SelectInput from "../components/inputs/SelectInput";
 import TextInput from "../components/inputs/TextInput";
+import DateInput from "../components/inputs/DateInput";
 import Logo from "../components/Logo";
+import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 import "../styles/AddList.css"; // reusing the AddList CSS
 import "./AddRent.css"; // AddRent specific styles
 import useSessionStorage from "../Utils/useSessionStorage";
@@ -10,13 +12,14 @@ import { useAuth } from "../context/AuthContext";
 
 // Property type options
 const propertyTypeOptions = [
+  { value: "detached", label: "Detached" },
+  { value: "semi-detached", label: "Semi-Detached" },
+  { value: "terraced", label: "Terraced" },
   { value: "flat", label: "Flat" },
-  { value: "house", label: "House" },
-  { value: "studio", label: "Studio" },
   { value: "bungalow", label: "Bungalow" },
-  { value: "maisonette", label: "Maisonette" },
-  { value: "duplex", label: "Duplex" },
-  { value: "other", label: "Other" }
+  { value: "land", label: "Land" },
+  { value: "park-home", label: "Park Home" },
+  { value: "student-halls", label: "Student Halls" }
 ];
 
 // Bedroom options
@@ -161,10 +164,21 @@ const AddRent = () => {
 
   const handleChange = (e) => {
     const { name, type, value, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    
+    // Handle numeric inputs (weekly rent, monthly rent, deposit)
+    if (name === "weeklyRent" || name === "monthlyRent" || name === "depositAmount") {
+      // Allow only numbers and decimal points
+      const numericValue = value.replace(/[^0-9.]/g, '');
+      setFormData((prev) => ({
+        ...prev,
+        [name]: numericValue,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
   };
 
   const handlePhotoChange = (e) => {
@@ -218,15 +232,14 @@ const AddRent = () => {
   const nextSection = () => {
     // Validate current section
     if (currentSection === 1) {
-      // Check if both weekly and monthly rent are filled
-      const hasWeeklyRent = formData.weeklyRent;
+      // Check if monthly rent is filled (weekly rent is optional)
       const hasMonthlyRent = formData.monthlyRent;
       
       if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
-          !formData.bathrooms || !formData.furnishedStatus || !hasWeeklyRent || !hasMonthlyRent || 
+          !formData.bathrooms || !formData.furnishedStatus || !hasMonthlyRent || 
           !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
           !formData.councilTaxBand) {
-        alert("Please fill in all required fields before continuing. Both weekly and monthly rent are required.");
+        alert("Please fill in all required fields before continuing. Monthly rent is required.");
         return;
       }
     } else if (currentSection === 2) {
@@ -247,17 +260,16 @@ const AddRent = () => {
     e.preventDefault();
     
     // Final validation
-    // Check if both weekly and monthly rent are filled
-    const hasWeeklyRent = formData.weeklyRent;
+    // Check if monthly rent is filled (weekly rent is optional)
     const hasMonthlyRent = formData.monthlyRent;
     
     if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
-        !formData.bathrooms || !formData.furnishedStatus || !hasWeeklyRent || !hasMonthlyRent || 
+        !formData.bathrooms || !formData.furnishedStatus || !hasMonthlyRent || 
         !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
         !formData.councilTaxBand || !formData.postcode || !formData.houseNumber || 
         !formData.streetName ||         !formData.city || !formData.country || 
         !formData.description?.trim() || !formData.contactPhone?.trim()) {
-      alert("Please fill in all required fields before submitting. Both weekly and monthly rent are required.");
+      alert("Please fill in all required fields before submitting. Monthly rent is required.");
       return;
     }
     
@@ -472,13 +484,15 @@ const AddRent = () => {
             {/* Rent and Deposit Row */}
             <div className="form-row three-cols">
               <TextInput
-                label="Weekly Rent (£)*"
+                label="Weekly Rent (£)"
                 name="weeklyRent"
                 value={formData.weeklyRent}
                 onChange={handleChange}
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="450"
-                required
+                className="muted-placeholder"
               />
               
               <TextInput
@@ -486,9 +500,12 @@ const AddRent = () => {
                 name="monthlyRent"
                 value={formData.monthlyRent}
                 onChange={handleChange}
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="1950"
-                required
+                required={true}
+                className="muted-placeholder"
               />
               
               <TextInput
@@ -496,24 +513,23 @@ const AddRent = () => {
                 name="depositAmount"
                 value={formData.depositAmount}
                 onChange={handleChange}
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="2000"
                 required
+                className="muted-placeholder"
               />
             </div>
             
-            <small style={{color: '#6b7280', fontSize: '0.875rem', marginBottom: '1.5rem', display: 'block', fontStyle: 'italic'}}>
-              Both weekly and monthly rent are required fields for property portals.
-            </small>
-            
             {/* Availability and Tenancy Row */}
             <div className="form-row">
-              <TextInput
+              <DateInput
                 label="Available From"
                 name="availableFrom"
                 value={formData.availableFrom}
                 onChange={handleChange}
-                type="date"
+                placeholder="DD/MM/YYYY"
                 required
               />
               
@@ -585,6 +601,7 @@ const AddRent = () => {
                 onChange={handleChange}
                 placeholder="London"
                 required
+                className="muted-placeholder"
               />
               
               <TextInput
@@ -594,6 +611,7 @@ const AddRent = () => {
                 onChange={handleChange}
                 placeholder="United Kingdom"
                 required
+                className="muted-placeholder"
               />
               
               <TextInput
@@ -602,6 +620,7 @@ const AddRent = () => {
                 value={formData.region}
                 onChange={handleChange}
                 placeholder="Greater London"
+                className="muted-placeholder"
               />
             </div>
             

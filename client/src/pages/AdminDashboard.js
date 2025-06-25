@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './AdminDashboard.css';
+import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -168,7 +169,7 @@ const AdminDashboard = () => {
   };
 
   const formatPrice = (property) => {
-    if (property.property_type === 'sale' && property.price) {
+    if (property.category === 'sale' && property.price) {
       return `$${Number(property.price).toLocaleString()}`;
     } else if (property.monthly_rent) {
       return `$${Number(property.monthly_rent).toLocaleString()}/month`;
@@ -230,7 +231,7 @@ const AdminDashboard = () => {
       </div>
       
       <div className="property-info">
-        <p><strong>Type:</strong> {property.property_type} - {property.property_category}</p>
+        <p><strong>Category:</strong> {property.category} - {property.property_type}</p>
         <p><strong>Price:</strong> {formatPrice(property)}</p>
         <p><strong>Address:</strong> {property.address_line1}, {property.city}</p>
         <p><strong>Submitted:</strong> {formatDate(property.created_at)}</p>
@@ -472,7 +473,7 @@ const AdminDashboard = () => {
           <div className="admins-tab">
             <div className="section-header">
               <h4><i className="fas fa-users-cog me-2"></i>Admin Management</h4>
-              <button className="btn btn-primary">
+              <button className="button-base btn-primary">
                 <i className="fas fa-plus me-2"></i>
                 Add Admin
               </button>
@@ -519,9 +520,9 @@ const AdminDashboard = () => {
                 <input 
                   type="text" 
                   placeholder="Search users..." 
-                  className="form-control search-input"
+                  className="form-input-base focus-ring search-input"
                 />
-                <button className="btn btn-primary">
+                <button className="button-base btn-primary">
                   <i className="fas fa-search"></i>
                 </button>
               </div>
@@ -637,7 +638,7 @@ const AdminDashboard = () => {
                   <select 
                     value={reviewData.status}
                     onChange={(e) => setReviewData({...reviewData, status: e.target.value})}
-                    className="form-control"
+                    className="form-input-base focus-ring"
                   >
                     <option value="">Select Action</option>
                     <option value="approved">Approve Property</option>
@@ -650,7 +651,7 @@ const AdminDashboard = () => {
                   <textarea
                     value={reviewData.admin_notes}
                     onChange={(e) => setReviewData({...reviewData, admin_notes: e.target.value})}
-                    className="form-control"
+                    className="form-input-base focus-ring"
                     rows="3"
                     placeholder="Add any internal notes about this property..."
                   />
@@ -662,7 +663,7 @@ const AdminDashboard = () => {
                     <textarea
                       value={reviewData.rejection_reason}
                       onChange={(e) => setReviewData({...reviewData, rejection_reason: e.target.value})}
-                      className="form-control"
+                      className="form-input-base focus-ring"
                       rows="3"
                       placeholder="Explain why this property is being rejected. This will be sent to the user."
                       required
@@ -674,13 +675,13 @@ const AdminDashboard = () => {
 
             <div className="modal-footer">
               <button 
-                className="btn btn-secondary"
+                className="button-base btn-secondary"
                 onClick={() => setReviewModal({ show: false, property: null })}
               >
                 Cancel
               </button>
               <button 
-                className="btn btn-primary"
+                className="button-base btn-primary"
                 onClick={handleReviewSubmit}
                 disabled={!reviewData.status}
               >

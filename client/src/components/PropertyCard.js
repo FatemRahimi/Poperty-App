@@ -10,7 +10,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
 
 
   const formatPrice = (property) => {
-    if (property.property_type === 'sale' && property.price) {
+    if (property.category === 'sale' && property.price) {
       return `£${Number(property.price).toLocaleString()}`;
     } else if (property.weekly_rent) {
       return `£${Number(property.weekly_rent).toLocaleString()}/pw`;
@@ -267,7 +267,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
           
           {/* Rental Prices Text Section - Below images in left column */}
           <div className="property-rental-text">
-            {property.property_type === 'rent' && (
+            {property.category === 'rent' && (
               <>
                 {(property.monthly_rent || property.monthlyRent) ? (
                   <div className="rental-text-item monthly">
@@ -371,7 +371,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
           
           <div className="property-meta-modern">
             <span className="property-type-badge">
-              {property.property_type?.charAt(0).toUpperCase() + property.property_type?.slice(1)}
+              {property.category?.charAt(0).toUpperCase() + property.category?.slice(1)}
             </span>
             {property.created_at && (
               <small>Added: {formatDate(property.created_at)}</small>
@@ -386,15 +386,15 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
               className="property-action-icon edit-icon fas fa-edit"
               onClick={(e) => {
                 e.stopPropagation();
-                // Redirect to appropriate form based on property type
-                if (property.property_type === 'rent') {
+                // Redirect to appropriate form based on property category
+                if (property.category === 'rent') {
                   navigate('/addrent', { state: { editMode: true, propertyData: property } });
-                } else if (property.property_type === 'lease') {
+                } else if (property.category === 'lease') {
                   navigate('/addlease', { state: { editMode: true, propertyData: property } });
-                } else if (property.property_type === 'sale') {
+                } else if (property.category === 'sale') {
                   navigate('/addlist', { state: { editMode: true, propertyData: property } });
                 } else {
-                  alert('Edit functionality not available for this property type');
+                  alert('Edit functionality not available for this property category');
                 }
               }}
               title="Edit Property"

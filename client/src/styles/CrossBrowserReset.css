@@ -1,0 +1,692 @@
+/* ========================================
+   CROSS-BROWSER RESET & NORMALIZATION
+   Ensures identical UI/UX across all browsers
+   ======================================== */
+
+/* CSS Custom Properties for consistent theming */
+:root {
+  /* Colors */
+  --primary-color: #3b82f6;
+  --primary-hover: #2563eb;
+  --border-color: #e5e7eb;
+  --border-focus: #3b82f6;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --background-primary: #ffffff;
+  --background-secondary: #f9fafb;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  
+  /* Typography */
+  --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  --font-family-heading: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.5rem;
+  --spacing-2xl: 2rem;
+  
+  /* Border radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease-in-out;
+  --transition-base: 0.3s ease-in-out;
+}
+
+/* ========================================
+   UNIVERSAL RESET
+   ======================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Remove default browser styling */
+/* Reset appearance for most form elements, but preserve number inputs */
+input:not([type="number"]),
+select,
+textarea,
+button,
+fieldset,
+legend {
+  /* Reset appearance for all browsers */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  -ms-appearance: none;
+  
+  /* Remove default styling */
+  border: none;
+  outline: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  
+  /* Ensure consistent box model */
+  box-sizing: border-box;
+  
+  /* Remove vendor-specific styling */
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0;
+  
+  /* Remove iOS styling */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Special handling for number inputs - preserve native functionality */
+input[type="number"] {
+  /* Minimal reset for number inputs to preserve functionality */
+  border: none;
+  outline: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  box-sizing: border-box;
+  
+  /* DO NOT reset appearance for number inputs */
+  /* Keep native number input behavior in all browsers */
+  
+  /* CRITICAL: Force Safari to allow typing in number inputs */
+  -webkit-text-security: none !important;
+  -webkit-user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
+/* ========================================
+   WEBKIT-SPECIFIC RESETS (Safari, Chrome)
+   ======================================== */
+/* Reset webkit styling for most inputs, but preserve number inputs */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="search"],
+input[type="url"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+textarea,
+select {
+  -webkit-appearance: none;
+  -webkit-border-radius: 0;
+  -webkit-box-shadow: none;
+  -webkit-transform: none;
+  -webkit-transition: none;
+}
+
+/* Number inputs get minimal webkit reset to preserve functionality */
+input[type="number"] {
+  /* Safari needs specific handling for number inputs */
+  -webkit-appearance: textfield; /* Keep textfield for better styling while preserving input */
+  -webkit-border-radius: 0;
+  -webkit-box-shadow: none;
+  -webkit-transform: none;
+  -webkit-transition: none;
+  
+  /* Ensure Safari allows number input */
+  -webkit-text-security: none;
+  -webkit-user-select: text;
+}
+
+/* Remove iOS input shadows and glows */
+input,
+textarea,
+select {
+  -webkit-appearance: none;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+}
+
+/* Fix iOS button styling */
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  -webkit-appearance: none;
+  -webkit-border-radius: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+/* ========================================
+   FIREFOX-SPECIFIC RESETS
+   ======================================== */
+/* Remove Firefox's inner focus ring */
+button::-moz-focus-inner,
+input[type="button"]::-moz-focus-inner,
+input[type="submit"]::-moz-focus-inner,
+input[type="reset"]::-moz-focus-inner {
+  border: none;
+  padding: 0;
+}
+
+/* Preserve Firefox's number input functionality */
+input[type="number"] {
+  -moz-appearance: textfield; /* Keep textfield appearance for better styling */
+}
+
+/* Remove Firefox's search input styling */
+input[type="search"] {
+  -moz-appearance: textfield;
+}
+
+/* ========================================
+   WEBKIT NUMBER/SEARCH INPUT SPINNERS
+   ======================================== */
+/* Restore Chrome/Safari number input spinners for functionality */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: inner-spin-button; /* Restore spinner functionality */
+  opacity: 1;
+  cursor: pointer;
+  height: auto;
+}
+
+/* Remove Chrome/Safari search input styling */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+}
+
+/* ========================================
+   DATE INPUT CROSS-BROWSER CONSISTENCY
+   ======================================== */
+/* Remove browser-specific date picker controls */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  position: absolute;
+  right: 0.75rem;
+}
+
+input[type="date"]::-webkit-inner-spin-button,
+input[type="date"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox date input styling */
+input[type="date"]::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+/* ========================================
+   REMOVE UNWANTED DROPDOWN ARROWS FROM TEXT INPUTS
+   ======================================== */
+/* Remove any unwanted dropdown arrows from text inputs */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="url"],
+input[type="search"] {
+  /* Ensure no background images or arrows */
+  background-image: none !important;
+  
+  /* Remove any browser-specific styling that might add arrows */
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+}
+
+/* Safari-specific dropdown removal */
+input::-webkit-list-button {
+  display: none !important;
+}
+
+input::-webkit-dropdown-arrow {
+  display: none !important;
+}
+
+/* Remove any auto-suggest styling that might add arrows */
+input::-webkit-textfield-decoration-container {
+  display: none !important;
+}
+
+/* ========================================
+   SELECT DROPDOWN STYLING RESET
+   ======================================== */
+select {
+  /* Remove all browser-specific styling */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  
+  /* Remove default arrow */
+  background-image: none;
+  
+  /* Ensure consistent padding */
+  padding-right: 2.5rem;
+}
+
+/* Remove IE select arrow */
+select::-ms-expand {
+  display: none;
+}
+
+/* ========================================
+   FORM ELEMENT NORMALIZATION
+   ======================================== */
+.form-input-base {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: 1rem;
+  font-family: var(--font-family-primary);
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--background-primary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  box-sizing: border-box;
+  
+  /* Prevent zoom on iOS */
+  font-size: 16px;
+  
+  /* Fixed height to prevent shrinking/expanding */
+  min-height: 48px;
+  height: auto;
+  
+  /* Remove any browser-specific shadows */
+  box-shadow: none;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+}
+
+/* Text inputs get full appearance reset */
+.form-input-base[type="text"],
+.form-input-base[type="email"],
+.form-input-base[type="tel"],
+.form-input-base[type="url"],
+.form-input-base[type="search"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: none !important;
+}
+
+/* Number inputs keep full functionality and native behavior */
+.form-input-base[type="number"] {
+  /* CRITICAL: DO NOT remove appearance - preserve native number input functionality */
+  
+  /* Remove background images but keep all other functionality */
+  background-image: none !important;
+  
+  /* Allow native number input behavior in all browsers */
+  /* Safari/Chrome: textfield keeps number validation and spinners */
+  -webkit-appearance: textfield !important;
+  /* Firefox: number keeps native number input behavior */  
+  -moz-appearance: textfield !important;
+  
+  /* Ensure proper spacing for spinners */
+  padding-right: 2.5rem; /* Space for spinners */
+  
+  /* Safari-specific fixes for number input functionality */
+  -webkit-text-security: none !important;
+  -webkit-user-select: text !important;
+  -webkit-touch-callout: default !important;
+  
+  /* Override any global resets that might interfere - numeric input mode for mobile */
+}
+
+/* Ensure number input spinners are visible and functional */
+.form-input-base[type="number"]::-webkit-outer-spin-button,
+.form-input-base[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: inner-spin-button !important;
+  opacity: 1 !important;
+  cursor: pointer;
+  height: auto;
+  margin: 0;
+  display: block !important;
+}
+
+/* Safari-specific number input fixes */
+@supports (-webkit-appearance: none) {
+  .form-input-base[type="number"] {
+    /* Force Safari to treat this as a number input */
+    -webkit-appearance: textfield !important;
+    -webkit-text-security: none !important;
+    -webkit-user-select: text !important;
+    
+    /* Ensure input accepts numeric values */
+    -webkit-writing-mode: horizontal-tb;
+    writing-mode: horizontal-tb;
+  }
+  
+  /* Force Safari number input spinners to be visible */
+  .form-input-base[type="number"]::-webkit-outer-spin-button,
+  .form-input-base[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: inner-spin-button !important;
+    opacity: 1 !important;
+    display: block !important;
+    margin: 0;
+    height: auto;
+    cursor: pointer;
+  }
+}
+
+.form-input-base:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  
+  /* Maintain fixed height on focus */
+  min-height: 48px;
+  height: auto;
+}
+
+.form-input-base:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Date inputs get full appearance reset with custom calendar icon */
+.form-input-base[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  
+  /* Custom calendar icon */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%236b7280' viewBox='0 0 24 24'%3E%3Cpath d='M7 10h5v5H7v-5zm12-4h-1V4c0-.55-.45-1-1-1s-1 .45-1 1v2H8V4c0-.55-.45-1-1-1s-1 .45-1 1v2H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H5V10h14v8z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-md) center;
+  background-size: 20px 20px;
+  padding-right: 3rem;
+  cursor: text;
+}
+
+/* ========================================
+   BUTTON NORMALIZATION
+   ======================================== */
+.button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: var(--font-family-primary);
+  line-height: 1.5;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-decoration: none;
+  
+  /* Reset browser defaults */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: none;
+  box-shadow: none;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  
+  /* Prevent text selection */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+
+.button-base:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.button-base:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ========================================
+   CHECKBOX & RADIO BUTTON STYLING
+   ======================================== */
+.checkbox-base,
+.radio-base {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--border-color);
+  background-color: var(--background-primary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  
+  /* Remove any browser-specific styling */
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+}
+
+.checkbox-base {
+  border-radius: var(--radius-sm);
+}
+
+.radio-base {
+  border-radius: 50%;
+}
+
+.checkbox-base:checked,
+.radio-base:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.checkbox-base:checked::after {
+  content: '✓';
+  display: block;
+  color: white;
+  text-align: center;
+  line-height: 1;
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+.radio-base:checked::after {
+  content: '';
+  display: block;
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: white;
+  border-radius: 50%;
+  margin: 0.125rem auto;
+}
+
+/* ========================================
+   SCROLLBAR STYLING (Webkit browsers)
+   ======================================== */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: var(--radius-sm);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: var(--radius-sm);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* ========================================
+   FOCUS MANAGEMENT
+   ======================================== */
+/* Consistent focus styles across all interactive elements */
+.focus-ring:focus,
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* Hide focus ring for mouse users, show for keyboard users */
+.js-focus-visible .focus-ring:focus:not(.focus-visible) {
+  box-shadow: none;
+}
+
+/* ========================================
+   TYPOGRAPHY NORMALIZATION
+   ======================================== */
+body {
+  font-family: var(--font-family-primary);
+  line-height: 1.6;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-heading);
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ========================================
+   FLEXBOX NORMALIZATION
+   ======================================== */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+/* ========================================
+   GRID NORMALIZATION
+   ======================================== */
+.grid {
+  display: grid;
+}
+
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.gap-6 {
+  gap: 1.5rem;
+}
+
+/* ========================================
+   RESPONSIVE BREAKPOINTS
+   ======================================== */
+@media (max-width: 640px) {
+  .grid-cols-2,
+  .grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-input-base {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+@media print {
+  *,
+  *::before,
+  *::after {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  button,
+  input[type="button"],
+  input[type="submit"] {
+    display: none;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY IMPROVEMENTS
+   ======================================== */
+/* Respect users' motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .form-input-base {
+    border-width: 3px;
+  }
+  
+  .button-base {
+    border-width: 3px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-primary: #f9fafb;
+    --text-secondary: #d1d5db;
+    --background-primary: #1f2937;
+    --background-secondary: #111827;
+    --border-color: #374151;
+  }
+} 

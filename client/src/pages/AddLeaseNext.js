@@ -5,6 +5,7 @@ import CheckboxInput from "../components/inputs/CheckboxInput";
 import SelectInput from "../components/inputs/SelectInput";
 import useSessionStorage from "../Utils/useSessionStorage";
 import "../styles/AddLease.css";
+import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
 
 const heatingCoolingOptions = [

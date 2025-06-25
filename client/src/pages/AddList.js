@@ -7,6 +7,7 @@ import CheckboxInput from "../components/inputs/CheckboxInput";
 import Logo from "../components/Logo";
 import "../styles/AddList.css"; // your custom CSS file
 import useSessionStorage from "../Utils/useSessionStorage";
+import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
 // Property Type Options
 const propertyTypeOptions = [
@@ -16,8 +17,8 @@ const propertyTypeOptions = [
   { value: "flat", label: "Flat" },
   { value: "bungalow", label: "Bungalow" },
   { value: "land", label: "Land" },
-  { value: "park_home", label: "Park Home" },
-  { value: "student_hall", label: "Student Hall" }
+  { value: "park-home", label: "Park Home" },
+  { value: "student-halls", label: "Student Halls" }
 ];
 
 const propertySubtypeOptions = [
