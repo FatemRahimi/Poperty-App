@@ -5,6 +5,7 @@ import CheckboxInput from "../components/inputs/CheckboxInput";
 import "../styles/AddListNext.css"; // CSS just for AddListNext
 import useSessionStorage from "../Utils/useSessionStorage";
 import { Link, useNavigate } from "react-router-dom";
+import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
 const parkingOptions = [
   { value: "garage", label: "Garage" },

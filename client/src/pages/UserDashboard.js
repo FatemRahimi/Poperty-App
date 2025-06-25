@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import PropertyCard from '../components/PropertyCard';
 import SearchDropdown from '../components/SearchDropdown';
 import './UserDashboard.css';
+import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
 const UserDashboard = () => {
   const [properties, setProperties] = useState([]);
@@ -471,7 +472,7 @@ const UserDashboard = () => {
   };
 
   const formatPrice = (property) => {
-    if (property.property_type === 'sale' && property.price) {
+    if (property.category === 'sale' && property.price) {
       return `$${Number(property.price).toLocaleString()}`;
     } else if (property.monthly_rent) {
       return `$${Number(property.monthly_rent).toLocaleString()}/month`;

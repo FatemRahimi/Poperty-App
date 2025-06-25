@@ -1,3 +1,36 @@
+/* CSS Normalize / Reset Styles for Cross-Browser Consistency */
+input, select, textarea, button {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: none;
+  outline: none;
+  font: inherit;
+  background: none;
+  box-sizing: border-box;
+}
+
+/* Unified Form Input Styles */
+.form-input-unified {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  background: white;
+  color: #1e293b;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease;
+  -webkit-appearance: none; /* Safari */
+  -moz-appearance: none;    /* Firefox */
+  appearance: none;
+}
+
+.form-input-unified:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
 .form-wrapper {
   width: 100%;
   max-width: 1200px;
@@ -249,7 +282,7 @@ label {
 }
 
 /* Inputs and Selects */
-/* Inputs without arrow */
+/* Inputs without arrow - Cross-browser consistent */
 input[type="text"],
 input[type="number"],
 input[type="date"] {
@@ -260,8 +293,13 @@ input[type="date"] {
   border-radius: 8px;
   background-color: #fff;
   appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   background-image: none; /* ❌ Remove arrow */
   transition: border-color 0.3s, box-shadow 0.3s;
+  font-family: inherit;
+  color: #1e293b;
+  box-sizing: border-box;
 }
 
 select {
@@ -272,6 +310,8 @@ select {
   border-radius: 6px;
   background-color: #fff;
   appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='black' viewBox='0 0 16 16'%3E%3Cpath d='M4.646 6.646a.5.5 0 0 1 .708 0L8 9.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -281,6 +321,17 @@ select {
   position: relative;
   z-index: 1;
   transition: border-color 0.3s, box-shadow 0.3s;
+  font-family: inherit;
+  color: #1e293b;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+/* Remove dropdown arrows from text inputs (city, country) */
+input[type="text"][name="city"],
+input[type="text"][name="country"] {
+  background-image: none !important;
+  appearance: textfield !important;
 }
 
 /* Increase z-index when focused to ensure dropdown appears above other elements */

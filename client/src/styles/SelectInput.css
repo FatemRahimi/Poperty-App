@@ -1,3 +1,14 @@
+/* Cross-browser Reset for Select Components */
+.custom-select-container *,
+.custom-select-box,
+.custom-option {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
 /* Custom Select Container */
 .custom-select-container {
     position: relative;
