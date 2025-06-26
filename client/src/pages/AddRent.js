@@ -232,24 +232,54 @@ const AddRent = () => {
   const nextSection = () => {
     // Validate current section
     if (currentSection === 1) {
-      // Check if monthly rent is filled (weekly rent is optional)
-      const hasMonthlyRent = formData.monthlyRent;
+      const missingFields = [];
       
-      if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
-          !formData.bathrooms || !formData.furnishedStatus || !hasMonthlyRent || 
-          !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
-          !formData.councilTaxBand) {
-        alert("Please fill in all required fields before continuing. Monthly rent is required.");
+      // Check required fields (property title is NOT required, both weekly and monthly rent ARE required)
+      if (!formData.propertyType) missingFields.push("Property Type");
+      if (!formData.bedrooms) missingFields.push("Bedrooms");
+      if (!formData.bathrooms) missingFields.push("Bathrooms");
+      if (!formData.furnishedStatus) missingFields.push("Furnished Status");
+      if (!formData.weeklyRent) missingFields.push("Weekly Rent");
+      if (!formData.monthlyRent) missingFields.push("Monthly Rent");
+      if (!formData.depositAmount) missingFields.push("Deposit Amount");
+      if (!formData.availableFrom) missingFields.push("Available From");
+      if (!formData.tenancyLength) missingFields.push("Tenancy Length");
+      if (!formData.councilTaxBand) missingFields.push("Council Tax Band");
+      if (!formData.councilTaxStatus) missingFields.push("Council Tax Status");
+      
+      if (missingFields.length > 0) {
+        alert(`Please fill in the following required fields: ${missingFields.join(", ")}`);
         return;
       }
     } else if (currentSection === 2) {
-      if (!formData.postcode || !formData.houseNumber || !formData.streetName || !formData.city || !formData.country) {
-        alert("Please fill in all required fields before continuing.");
+      const missingFields = [];
+      
+      if (!formData.postcode) missingFields.push("Postcode");
+      if (!formData.houseNumber) missingFields.push("House Number");
+      if (!formData.streetName) missingFields.push("Street Name");
+      if (!formData.city) missingFields.push("City/Town");
+      if (!formData.country) missingFields.push("Country");
+      
+      if (missingFields.length > 0) {
+        alert(`Please fill in the following required fields: ${missingFields.join(", ")}`);
+        return;
+      }
+    } else if (currentSection === 3) {
+      const missingFields = [];
+      
+      if (!formData.billsIncluded) missingFields.push("Bills Included");
+      if (!formData.epcRating) missingFields.push("EPC Rating");
+      
+      if (missingFields.length > 0) {
+        alert(`Please fill in the following required fields: ${missingFields.join(", ")}`);
         return;
       }
     }
     
-    setCurrentSection(prev => prev + 1);
+    // For section 4, don't auto-advance - user needs to submit
+    if (currentSection < 4) {
+      setCurrentSection(prev => prev + 1);
+    }
   };
 
   const prevSection = () => {
@@ -259,17 +289,36 @@ const AddRent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Final validation
-    // Check if monthly rent is filled (weekly rent is optional)
-    const hasMonthlyRent = formData.monthlyRent;
+    // Final validation with specific field names
+    const missingFields = [];
     
-    if (!formData.propertyTitle || !formData.propertyType || !formData.bedrooms || 
-        !formData.bathrooms || !formData.furnishedStatus || !hasMonthlyRent || 
-        !formData.depositAmount || !formData.availableFrom || !formData.tenancyLength || 
-        !formData.councilTaxBand || !formData.postcode || !formData.houseNumber || 
-        !formData.streetName ||         !formData.city || !formData.country || 
-        !formData.description?.trim() || !formData.contactPhone?.trim()) {
-      alert("Please fill in all required fields before submitting. Monthly rent is required.");
+    // Check all required fields (property title is NOT required, both weekly and monthly rent ARE required)
+    if (!formData.propertyType) missingFields.push("Property Type");
+    if (!formData.bedrooms) missingFields.push("Bedrooms");
+    if (!formData.bathrooms) missingFields.push("Bathrooms");
+    if (!formData.furnishedStatus) missingFields.push("Furnished Status");
+    if (!formData.weeklyRent) missingFields.push("Weekly Rent");
+    if (!formData.monthlyRent) missingFields.push("Monthly Rent");
+    if (!formData.depositAmount) missingFields.push("Deposit Amount");
+    if (!formData.availableFrom) missingFields.push("Available From");
+    if (!formData.tenancyLength) missingFields.push("Tenancy Length");
+    if (!formData.councilTaxBand) missingFields.push("Council Tax Band");
+    if (!formData.councilTaxStatus) missingFields.push("Council Tax Status");
+    if (!formData.postcode) missingFields.push("Postcode");
+    if (!formData.houseNumber) missingFields.push("House Number");
+    if (!formData.streetName) missingFields.push("Street Name");
+    if (!formData.city) missingFields.push("City/Town");
+    if (!formData.country) missingFields.push("Country");
+    if (!formData.billsIncluded) missingFields.push("Bills Included");
+    if (!formData.epcRating) missingFields.push("EPC Rating");
+    if (!formData.description?.trim()) missingFields.push("Property Description");
+    if (!formData.contactPhone?.trim()) missingFields.push("Contact Phone Number");
+    
+    // Check if photos/videos are uploaded (mandatory)
+    if (photoFiles.length === 0) missingFields.push("Photos or Videos");
+    
+    if (missingFields.length > 0) {
+      alert(`Please fill in the following required fields: ${missingFields.join(", ")}`);
       return;
     }
     
@@ -288,8 +337,8 @@ const AddRent = () => {
       // Map AddRent form fields to backend expected fields
       const fieldMapping = {
         // Basic property info
-        title: formData.propertyTitle,
-        propertyTitle: formData.propertyTitle,
+        title: formData.propertyTitle || `Property for Rent - ${formData.propertyType || 'Property'}`,
+        propertyTitle: formData.propertyTitle || `Property for Rent - ${formData.propertyType || 'Property'}`,
         description: formData.description,
         property_type: 'rent',
         propertyType: 'rent',
@@ -493,10 +542,11 @@ const AddRent = () => {
                 pattern="[0-9]*"
                 placeholder="450"
                 className="muted-placeholder"
+                required
               />
               
               <TextInput
-                label="Monthly Rent (£)*"
+                label="Monthly Rent (£)"
                 name="monthlyRent"
                 value={formData.monthlyRent}
                 onChange={handleChange}
@@ -504,8 +554,8 @@ const AddRent = () => {
                 inputMode="numeric"
                 pattern="[0-9]*"
                 placeholder="1950"
-                required={true}
                 className="muted-placeholder"
+                required
               />
               
               <TextInput
@@ -574,7 +624,7 @@ const AddRent = () => {
             {/* Address Line 1 */}
             <div className="form-row">
               <TextInput
-                label="House Number*"
+                label="House Number"
                 name="houseNumber"
                 value={formData.houseNumber}
                 onChange={handleChange}
@@ -583,7 +633,7 @@ const AddRent = () => {
               />
               
               <TextInput
-                label="Street Name*"
+                label="Street Name"
                 name="streetName"
                 value={formData.streetName}
                 onChange={handleChange}
@@ -595,7 +645,7 @@ const AddRent = () => {
             {/* City, Country, Region Row */}
             <div className="form-row three-cols">
               <TextInput
-                label="City/Town*"
+                label="City/Town"
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
@@ -605,7 +655,7 @@ const AddRent = () => {
               />
               
               <TextInput
-                label="Country*"
+                label="Country"
                 name="country"
                 value={formData.country}
                 onChange={handleChange}
@@ -627,7 +677,7 @@ const AddRent = () => {
             {/* Postcode Row */}
             <div className="form-row single-col" style={{maxWidth: '300px'}}>
               <TextInput
-                label="Postcode*"
+                label="Postcode"
                 name="postcode"
                 value={formData.postcode}
                 onChange={handleChange}
@@ -651,6 +701,7 @@ const AddRent = () => {
                   name="garden" 
                   checked={formData.garden}
                   onChange={handleChange}
+                  className="checkbox-base"
                 />
                 <label htmlFor="garden">Garden</label>
               </div>
@@ -662,6 +713,7 @@ const AddRent = () => {
                   name="parking" 
                   checked={formData.parking}
                   onChange={handleChange}
+                  className="checkbox-base"
                 />
                 <label htmlFor="parking">Parking</label>
               </div>
@@ -673,6 +725,7 @@ const AddRent = () => {
                   name="balconyTerrace" 
                   checked={formData.balconyTerrace}
                   onChange={handleChange}
+                  className="checkbox-base"
                 />
                 <label htmlFor="balconyTerrace">Balcony/Terrace</label>
               </div>
@@ -684,6 +737,7 @@ const AddRent = () => {
                   name="petsAllowed" 
                   checked={formData.petsAllowed}
                   onChange={handleChange}
+                  className="checkbox-base"
                 />
                 <label htmlFor="petsAllowed">Pets Allowed</label>
               </div>
@@ -695,6 +749,7 @@ const AddRent = () => {
                   name="studentHousing" 
                   checked={formData.studentHousing}
                   onChange={handleChange}
+                  className="checkbox-base"
                 />
                 <label htmlFor="studentHousing">Suitable for Students</label>
               </div>
@@ -706,6 +761,7 @@ const AddRent = () => {
               value={formData.billsIncluded}
               onChange={handleChange}
               options={billsOptions}
+              required
             />
             
             <SelectInput 
@@ -714,6 +770,7 @@ const AddRent = () => {
               value={formData.epcRating}
               onChange={handleChange}
               options={epcRatingOptions}
+              required
             />
           </div>
         );
@@ -739,7 +796,7 @@ const AddRent = () => {
             
 
             
-            <h4 className="subsection-title">Upload Photos & Videos</h4>
+            <h4 className="subsection-title">Upload Photos & Videos*</h4>
             
             <div className="media-upload-section">
               <div className="upload-area">
@@ -748,7 +805,7 @@ const AddRent = () => {
                     <div className="upload-icon">📷🎥</div>
                     <div className="upload-text">
                       <span>Drag & drop or click to upload</span>
-                      <small>Photos & videos • Up to 15 files • Max 1GB each</small>
+                      <small>Photos & videos • Up to 15 files • Max 1GB each • REQUIRED</small>
                     </div>
                   </div>
                 </label>
@@ -759,6 +816,7 @@ const AddRent = () => {
                   multiple
                   onChange={handlePhotoChange}
                   style={{ display: 'none' }}
+                  required
                 />
               </div>
               

@@ -255,9 +255,28 @@ input::-webkit-dropdown-arrow {
   display: none !important;
 }
 
-/* Remove any auto-suggest styling that might add arrows */
+/* ✅ Prevent visual SVG without breaking input */
+/* Only apply padding to text inputs, not checkboxes, radios, or other input types */
+input[type="text"],
+input[type="email"], 
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="password"],
+textarea {
+  padding-right: 3rem !important; /* Push text away from Safari autofill icons */
+  background-position: calc(100% - 0.5rem) center; /* Position any background icons properly */
+}
+
+/* Hide Safari autofill contacts button if it appears */
+input::-webkit-contacts-auto-fill-button {
+  visibility: hidden;
+  display: none;
+}
+
+/* Additional Safari autofill icon controls */
 input::-webkit-textfield-decoration-container {
-  display: none !important;
+  visibility: hidden;
 }
 
 /* ========================================

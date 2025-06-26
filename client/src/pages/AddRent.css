@@ -2,6 +2,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
 
 /* ========================================
+   SAFARI INPUT REPAINT FIX
+   ======================================== */
+/* Force repaint/focus fix for Safari input fields */
+input, textarea, select {
+  transform: translateZ(0); /* Triggers hardware acceleration */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+}
+
+/* ========================================
    CROSS-BROWSER DATE INPUT FIXES
    ======================================== */
 /* Ensure consistent date input appearance across all browsers */
@@ -221,51 +232,6 @@ input[name="postcode"] {
   min-height: 48px !important;
   height: auto !important;
   line-height: 1.5 !important;
-}
-
-/* ========================================
-   SAFARI-SPECIFIC FIXES
-   ======================================== */
-/* Safari-specific input fixes */
-@supports (-webkit-appearance: none) {
-  /* Date inputs get special treatment */
-  input[type="date"] {
-    -webkit-appearance: none;
-    -webkit-border-radius: var(--radius-md);
-    -webkit-background-clip: padding-box;
-  }
-  
-  /* Number inputs keep their webkit appearance for better UX */
-  input[type="number"] {
-    -webkit-appearance: textfield;
-    -webkit-border-radius: var(--radius-md);
-  }
-  
-  /* Text inputs get full reset */
-  input[type="text"],
-  input[type="email"],
-  input[type="tel"] {
-    -webkit-appearance: none;
-    -webkit-border-radius: var(--radius-md);
-    -webkit-background-clip: padding-box;
-  }
-  
-  /* Specifically fix Safari dropdown icons issue */
-  input[name="city"]::-webkit-list-button,
-  input[name="country"]::-webkit-list-button,
-  input[name="region"]::-webkit-list-button {
-    display: none !important;
-  }
-  
-  /* Remove any webkit-specific dropdown indicators */
-  input::-webkit-dropdown-arrow {
-    display: none !important;
-  }
-  
-  /* Remove webkit textfield decoration that might add arrows */
-  input::-webkit-textfield-decoration-container {
-    display: none !important;
-  }
 }
 
 /* Container Styles - Modern and Clean */
