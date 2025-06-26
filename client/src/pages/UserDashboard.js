@@ -673,10 +673,24 @@ const UserDashboard = () => {
     { value: 'semi-detached', label: 'Semi-Detached' },
     { value: 'terraced', label: 'Terraced' },
     { value: 'flat', label: 'Flat' },
+    { value: 'apartment', label: 'Apartment' },
+    { value: 'studio', label: 'Studio' },
+    { value: 'duplex', label: 'Duplex' },
+    { value: 'maisonette', label: 'Maisonette' },
     { value: 'bungalow', label: 'Bungalow' },
+    { value: 'cottage', label: 'Cottage' },
+    { value: 'townhouse', label: 'Townhouse' },
+    { value: 'penthouse', label: 'Penthouse' },
     { value: 'land', label: 'Land' },
     { value: 'park-home', label: 'Park Home' },
-    { value: 'student-halls', label: 'Student Halls' }
+    { value: 'mobile-home', label: 'Mobile Home' },
+    { value: 'student-halls', label: 'Student Halls' },
+    { value: 'house-share', label: 'House Share' },
+    { value: 'retirement-home', label: 'Retirement Home' },
+    { value: 'commercial', label: 'Commercial Property' },
+    { value: 'office', label: 'Office Space' },
+    { value: 'retail', label: 'Retail Space' },
+    { value: 'warehouse', label: 'Warehouse' }
   ];
 
   const propertyTypeOptions = [
