@@ -1383,7 +1383,7 @@ h1, h2, h3, h4 {
 .footer-section {
     background: #ffffff;
     color: #23262a;
-    padding: 3rem 0 1.2rem 0;
+    padding: 2rem 0 0.8rem 0;
     font-family: 'Gotham', 'Montserrat', Arial, sans-serif;
     border-top: .1px solid #aac3d4;
     box-shadow: 0 -8px 20px -8px rgba(52, 152, 219, 0.10), 0 -2px 8px -2px rgba(44, 62, 80, 0.08);
@@ -1398,30 +1398,32 @@ h1, h2, h3, h4 {
     margin: 0 auto;
     padding: 0 2rem;
     flex-wrap: wrap;
-    gap: 2.5rem;
+    gap: 1.5rem;
 }
 .footer-brand {
     flex: 1 1 260px;
     min-width: 220px;
 }
 .footer-brand h3 {
-    font-size: 2rem;
+    font-size: 1.8rem;
     color: #3498db;
-    margin-bottom: 0.7rem;
+    margin-bottom: 0.5rem;
     font-weight: 700;
 }
 .footer-brand p,
 .footer-contact p {
     color: #23262a;
+    font-size: 0.95rem;
+    line-height: 1.4;
 }
 .footer-links {
     flex: 1 1 180px;
     min-width: 160px;
 }
 .footer-links h4 {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     color: #3498db;
-    margin-bottom: 0.7rem;
+    margin-bottom: 0.5rem;
     font-weight: 600;
 }
 .footer-links ul {
@@ -1430,12 +1432,12 @@ h1, h2, h3, h4 {
     margin: 0;
 }
 .footer-links li {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
 }
 .footer-links a {
     color: #23262a;
     text-decoration: none;
-    font-size: 1rem;
+    font-size: 0.95rem;
     transition: color 0.2s;
 }
 .footer-links a:hover {
@@ -1446,23 +1448,23 @@ h1, h2, h3, h4 {
     min-width: 180px;
 }
 .footer-contact h4 {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     color: #3498db;
-    margin-bottom: 0.7rem;
+    margin-bottom: 0.5rem;
     font-weight: 600;
 }
 .footer-contact p {
     color: #23262a;
-    font-size: 1.05rem;
-    margin: 0 0 0.5rem 0;
+    font-size: 0.95rem;
+    margin: 0 0 0.4rem 0;
 }
 .footer-social {
-    margin-top: 0.7rem;
+    margin-top: 0.5rem;
 }
 .footer-social a {
     color: #3498db;
     margin-right: 1rem;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     display: inline-block;
     transition: color 0.2s, transform 0.2s;
 }
@@ -1473,22 +1475,92 @@ h1, h2, h3, h4 {
 .footer-bottom {
     text-align: center;
     color: #888;
-    font-size: 0.98rem;
-    margin-top: 2.5rem;
+    font-size: 0.9rem;
+    margin-top: 1.8rem;
     border-top: 1px solid #e0e0e0;
-    padding-top: 1.2rem;
+    padding-top: 0.8rem;
     background: #fff;
 }
 @media (max-width: 900px) {
+    .footer-section {
+        padding: 1.5rem 0 0.6rem 0;
+    }
     .footer-container {
         flex-direction: column;
         align-items: flex-start;
-        gap: 1.5rem;
+        gap: 1rem;
         padding: 0 1rem;
     }
     .footer-brand, .footer-links, .footer-contact {
         min-width: 0;
         width: 100%;
+    }
+    .footer-brand h3 {
+        font-size: 1.6rem;
+        margin-bottom: 0.4rem;
+    }
+    .footer-bottom {
+        margin-top: 1.2rem;
+        padding-top: 0.6rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer-section {
+        padding: 1.2rem 0 0.5rem 0;
+    }
+    .footer-container {
+        gap: 0.8rem;
+        padding: 0 0.8rem;
+    }
+    .footer-brand h3 {
+        font-size: 1.4rem;
+    }
+    .footer-brand p,
+    .footer-contact p,
+    .footer-links a {
+        font-size: 0.9rem;
+    }
+    .footer-links h4,
+    .footer-contact h4 {
+        font-size: 1rem;
+    }
+    .footer-bottom {
+        margin-top: 1rem;
+        padding-top: 0.5rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .footer-section {
+        padding: 1rem 0 0.4rem 0;
+    }
+    .footer-container {
+        gap: 0.6rem;
+        padding: 0 0.6rem;
+    }
+    .footer-brand h3 {
+        font-size: 1.3rem;
+        margin-bottom: 0.3rem;
+    }
+    .footer-links li {
+        margin-bottom: 0.3rem;
+    }
+    .footer-contact p {
+        margin: 0 0 0.3rem 0;
+    }
+    .footer-social {
+        margin-top: 0.4rem;
+    }
+    .footer-social a {
+        font-size: 1.1rem;
+        margin-right: 0.8rem;
+    }
+    .footer-bottom {
+        margin-top: 0.8rem;
+        padding-top: 0.4rem;
+        font-size: 0.8rem;
     }
 }
 
