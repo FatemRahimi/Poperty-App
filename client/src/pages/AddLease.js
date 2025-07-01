@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import SelectInput from "../components/inputs/SelectInput";
 import TextInput from "../components/inputs/TextInput";
 import CheckboxInput from "../components/inputs/CheckboxInput";
 import Logo from "../components/Logo";
-import "../styles/AddList.css";
-import { useNavigate, Link } from "react-router-dom";
+import "../styles/CrossBrowserReset.css";
+import "../styles/AddLease.css";
 import useSessionStorage from "../Utils/useSessionStorage";
 import { useAuth } from "../context/AuthContext";
 
@@ -49,80 +50,174 @@ const useClassOptions = [
 
 const AddLease = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated, loading } = useAuth();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [showAddress, setShowAddress] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [currentSection, setCurrentSection] = useState(1);
+  
+  // Check if we're in edit mode
+  const editMode = location.state?.editMode || false;
+  const propertyData = location.state?.propertyData || null;
+  const propertyId = propertyData?.id || null;
+  
+  // Helper function to format date for input field
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
+  };
+
+  // Helper function to extract house number and street name from address
+  const parseAddress = (address) => {
+    if (!address) return { houseNumber: "", streetName: "" };
+    
+    // Try to split address into house number and street name
+    const parts = address.trim().split(' ');
+    if (parts.length === 0) return { houseNumber: "", streetName: "" };
+    
+    // If first part looks like a number or number+letter (e.g., "123", "45A"), treat it as house number
+    const firstPart = parts[0];
+    if (/^\d+[A-Za-z]*$/.test(firstPart)) {
+      return {
+        houseNumber: firstPart,
+        streetName: parts.slice(1).join(' ')
+      };
+    }
+    
+    // Otherwise, put everything in street name
+    return {
+      houseNumber: "",
+      streetName: address
+    };
+  };
+
+  // Set initial form data based on edit mode
+  const getInitialFormData = () => {
+    if (editMode && propertyData) {
+      const addressParts = parseAddress(propertyData.address_line1);
+      
+      return {
+        // Space Details
+        spaceName: propertyData.title || "",
+        spaceType: propertyData.property_type || "",
+        totalArea: propertyData.square_feet?.toString() || "",
+        description: propertyData.description || "",
+        
+        // Location Information
+        postcode: propertyData.zip_code || "",
+        houseNumber: addressParts.houseNumber,
+        streetName: addressParts.streetName,
+        city: propertyData.city || "",
+        region: propertyData.state || "",
+        country: propertyData.country || "United Kingdom",
+        
+        // Lease Details
+        monthlyRent: propertyData.monthly_rent ? propertyData.monthly_rent.toString() : "",
+        depositAmount: propertyData.deposit_amount ? propertyData.deposit_amount.toString() : "",
+        availableFrom: formatDateForInput(propertyData.availability_date),
+        leaseTerm: propertyData.lease_term?.toString() || "",
+        
+        // Space Features
+        parking: propertyData.parking_spaces > 0 || propertyData.has_garage || false,
+        loadingDock: false, // This data might not be in existing properties
+        securitySystem: false, // This data might not be in existing properties
+        airConditioning: false, // This data might not be in existing properties
+        furnished: propertyData.furnished || false,
+        utilityAccess: false, // This data might not be in existing properties
+        
+        // Media
+        photos: [],
+        contactPhone: propertyData.contact_phone || ""
+      };
+    }
+    
+    // Default empty form data for new leases
+    return {
+      spaceName: "",
+      spaceType: "",
+      totalArea: "",
+      description: "",
+      postcode: "",
+      houseNumber: "",
+      streetName: "",
+      city: "",
+      region: "",
+      country: "",
+      monthlyRent: "",
+      depositAmount: "",
+      availableFrom: "",
+      leaseTerm: "",
+      parking: false,
+      loadingDock: false,
+      securitySystem: false,
+      airConditioning: false,
+      furnished: false,
+      utilityAccess: false,
+      photos: [],
+      contactPhone: ""
+    };
+  };
+
+  // Use different storage keys for new vs edit mode
+  const storageKey = editMode ? `editLeaseForm_${propertyId}` : "addLeaseForm";
+  const [formData, setFormData] = useSessionStorage(storageKey, getInitialFormData());
+  
   const [photoFiles, setPhotoFiles] = useState([]);
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState("");
 
-  const [formData, setFormData] = useSessionStorage("addLeaseCompleteForm", {
-    // Step 1: Basic Space Info
-    spaceType: "",
-    spaceSubtypes: "",
-    spaceName: "",
-    country: "UK",
-    city: "",
-    postalCode: "",
-    address: "",
-    buildingSize: "",
-    minDivisible: "",
-    vacantSQFT: "",
-    landAcres: "",
-    lotSize: "",
-    lotSizeUnit: "acres",
-    taxesPerSQFT: "",
-    parkingSpaces: "",
-    power: "",
-    zoning: "",
-    leaseType: "",
-    isMultipleTenancy: false,
-    
-    // Step 2: Lease Terms & Features
-    leaseLength: "",
-    breakClause: false,
-    rentPerMonth: "",
-    serviceCharge: "",
-    depositRequired: false,
-    depositAmount: "",
-    businessRates: "",
-    utilities: {
-      water: false,
-      gas: false,
-      internet: false,
-      electricity: false,
-    },
-    heatingCooling: "",
-    toiletKitchen: "",
-    security: {
-      cctv: false,
-      keyFob: false,
-      secureAccess: false,
-    },
-    parkingAvailable: false,
-    disabilityAccess: false,
-    floorLoadCapacity: "",
-    useClass: "",
-    openingHours: "",
-    signageAllowed: false,
-    
-    // Step 3: Description & Photos
-    description: "",
-    files: [],
-    contactPhone: "",
-    houseNumber: "",
-    streetName: "",
-  });
+  // Load existing property images if in edit mode
+  useEffect(() => {
+    if (editMode && propertyData && propertyData.images) {
+      const imageUrls = propertyData.images.map((img, index) => ({
+        url: img.url || img.image_url,
+        type: img.type || 'image/jpeg',
+        name: `existing-image-${index}`,
+        size: 0,
+        isExisting: true // Flag to identify existing images
+      }));
+      setPhotoPreviewUrls(imageUrls);
+    }
+  }, [editMode, propertyData]);
+
+  // Update form data when in edit mode
+  useEffect(() => {
+    if (editMode && propertyData) {
+      setFormData(getInitialFormData());
+    }
+  }, [editMode, propertyData]);
+
+  // Clear form data when creating a new property (not in edit mode)
+  useEffect(() => {
+    if (!editMode) {
+      // Clear any existing form data from previous sessions
+      const emptyFormData = getInitialFormData();
+      setFormData(emptyFormData);
+      setPhotoFiles([]);
+      setPhotoPreviewUrls([]);
+      console.log('🆕 NEW LEASE MODE - Form cleared');
+    }
+  }, [editMode]);
 
   useEffect(() => {
     if (!isAuthenticated && !loading) {
-      // Store the current path to redirect back after login
       sessionStorage.setItem('redirectAfterLogin', '/addlease');
       navigate("/login");
     }
   }, [isAuthenticated, loading, navigate]);
+
+  // Cleanup effect to remove edit session data when component unmounts
+  useEffect(() => {
+    return () => {
+      // Only cleanup edit session data, not new property drafts
+      if (editMode && propertyId) {
+        const editStorageKey = `editLeaseForm_${propertyId}`;
+        sessionStorage.removeItem(editStorageKey);
+        console.log('🧹 CLEANUP - Removed lease edit session data');
+      }
+    };
+  }, [editMode, propertyId]);
 
   const handleChange = (e) => {
     const { name, type, value, checked } = e.target;
@@ -194,19 +289,7 @@ const AddLease = () => {
 
   // Validation functions for each step
   const validateStep1 = () => {
-    const requiredFields = [
-      "spaceType",
-      "spaceSubtypes", 
-      "spaceName",
-      "buildingSize",
-      "vacantSQFT",
-      "leaseType",
-    ];
-    
-    if (showAddress) {
-      requiredFields.push("houseNumber", "streetName");
-    }
-    
+    const requiredFields = ["spaceType", "spaceName", "city", "postcode", "totalArea"];
     const missingFields = requiredFields.filter(field => !formData[field]);
     
     if (missingFields.length > 0) {
@@ -217,7 +300,11 @@ const AddLease = () => {
   };
 
   const validateStep2 = () => {
-    const requiredFields = ["leaseLength", "rentPerMonth", "useClass"];
+    const requiredFields = ["leaseTerm", "monthlyRent"];
+    // Only require useClass for new properties, not edits
+    if (!editMode) {
+      requiredFields.push("useClass");
+    }
     const missingFields = requiredFields.filter(field => !formData[field]);
     
     if (missingFields.length > 0) {
@@ -236,6 +323,16 @@ const AddLease = () => {
       alert("❌ Please provide a contact phone number");
       return false;
     }
+    
+    // Check photos/videos (mandatory for new properties, optional for edits if existing photos)
+    const hasExistingPhotos = editMode && photoPreviewUrls.some(url => url.isExisting);
+    const hasNewPhotos = photoFiles.length > 0;
+    
+    if (!hasExistingPhotos && !hasNewPhotos) {
+      alert("❌ Please upload at least one photo or video");
+      return false;
+    }
+    
     return true;
   };
 
@@ -243,7 +340,7 @@ const AddLease = () => {
   const goToNextStep = () => {
     let isValid = false;
     
-    switch(currentStep) {
+    switch(currentSection) {
       case 1:
         isValid = validateStep1();
         break;
@@ -258,13 +355,13 @@ const AddLease = () => {
     }
     
     if (isValid) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentSection(prev => prev + 1);
       window.scrollTo(0, 0);
     }
   };
 
   const goToPrevStep = () => {
-    setCurrentStep(prev => prev - 1);
+    setCurrentSection(prev => prev - 1);
     window.scrollTo(0, 0);
   };
 
@@ -289,8 +386,9 @@ const AddLease = () => {
         title: formData.spaceName, // Map spaceName to title for backend
         propertyTitle: formData.spaceName, // Alternative field name
         description: formData.description,
-        property_type: 'lease', // Set type as lease
-        propertyType: 'lease',
+        category: 'lease', // Property category (rent/sale/lease)
+        property_type: formData.spaceType, // Building/space type
+        propertyType: formData.spaceType,
         
         // Address fields
         address_line1: `${formData.houseNumber} ${formData.streetName}`.trim(),
@@ -300,22 +398,22 @@ const AddLease = () => {
         city: formData.city,
         state: '', // Not collected in lease form
         region: '', 
-        zip_code: formData.postalCode,
-        postcode: formData.postalCode,
+        zip_code: formData.postcode,
+        postcode: formData.postcode,
         country: formData.country,
         
         // Lease-specific fields
-        monthly_rent: formData.rentPerMonth,
-        rentalPrice: formData.rentPerMonth,
-        lease_term: formData.leaseLength,
-        tenancyLength: formData.leaseLength,
+        monthly_rent: formData.monthlyRent,
+        rentalPrice: formData.monthlyRent,
+        lease_term: formData.leaseTerm,
+        tenancyLength: formData.leaseTerm,
         deposit_amount: formData.depositAmount,
         depositAmount: formData.depositAmount,
         
         // Building details
-        square_feet: formData.buildingSize,
-        lot_size: formData.lotSize,
-        parking_spaces: formData.parkingSpaces,
+        square_feet: formData.totalArea,
+        lot_size: formData.leaseTerm,
+        parking_spaces: formData.parking ? 1 : 0,
         
         // Contact information
         contact_phone: formData.contactPhone,
@@ -348,7 +446,7 @@ const AddLease = () => {
         isMultipleTenancy: formData.isMultipleTenancy,
         breakClause: formData.breakClause,
         depositRequired: formData.depositRequired,
-        parkingAvailable: formData.parkingAvailable,
+        parkingAvailable: formData.parking,
         disabilityAccess: formData.disabilityAccess,
         signageAllowed: formData.signageAllowed,
         
@@ -385,9 +483,28 @@ const AddLease = () => {
       
       console.log('Submitting lease property data...');
       
-      // Make API call to submit property
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/submit`, {
-        method: 'POST',
+      // Debug logging
+      console.log('FormData contents:');
+      for (let [key, value] of submitFormData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}:`, `File - ${value.name} (${value.size} bytes)`);
+        } else {
+          console.log(`${key}:`, value);
+        }
+      }
+      
+      // Determine API endpoint and method based on edit mode
+      const apiEndpoint = editMode 
+        ? `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/update/${propertyId}`
+        : `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/submit`;
+      
+      const httpMethod = editMode ? 'PUT' : 'POST';
+      
+      console.log(`${editMode ? 'Updating' : 'Creating'} lease property...`);
+      
+      // Make API call to submit or update property
+      const response = await fetch(apiEndpoint, {
+        method: httpMethod,
         body: submitFormData,
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -396,17 +513,30 @@ const AddLease = () => {
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit property');
+        console.error('Server response error:', errorData);
+        console.error('Response status:', response.status);
+        console.error('Response statusText:', response.statusText);
+        throw new Error(errorData.message || `Server error: ${response.status} ${response.statusText}`);
       }
       
       const result = await response.json();
-      console.log("✅ Lease Property Submitted Successfully:", result);
+      console.log(`✅ Lease Property ${editMode ? 'Updated' : 'Submitted'} Successfully:`, result);
       
-      setSuccess("Property submitted successfully! You will receive a confirmation email shortly.");
+      const successMessage = editMode 
+        ? "Property updated successfully!" 
+        : "Property submitted successfully! You will receive a confirmation email shortly.";
+      
+      setSuccess(successMessage);
+      
+      // Set success flags for dashboard if updating
+      if (editMode) {
+        sessionStorage.setItem('propertyUpdateSuccess', 'true');
+        sessionStorage.setItem('updatedPropertyId', propertyData.id);
+      }
       
       // Clear form data and redirect to dashboard after short delay
       setTimeout(() => {
-        sessionStorage.removeItem("addLeaseCompleteForm");
+        sessionStorage.removeItem(storageKey);
         navigate("/dashboard");
       }, 2000);
       
@@ -443,7 +573,7 @@ const AddLease = () => {
           </div>
           <div className="form-row">
             <TextInput label="City" name="city" value={formData.city} onChange={handleChange} />
-            <TextInput label="Postal Code" name="postalCode" value={formData.postalCode} onChange={handleChange} />
+            <TextInput label="Postal Code" name="postcode" value={formData.postcode} onChange={handleChange} />
           </div>
           <div className="form-row">
             <TextInput label="Country" name="country" value={formData.country} onChange={handleChange} disabled />
@@ -453,14 +583,14 @@ const AddLease = () => {
 
       <h3 className="section-title">Building Details</h3>
       <div className="form-row">
-        <TextInput label="Building Size (sqft)*" name="buildingSize" value={formData.buildingSize} onChange={handleChange} type="number" />
+        <TextInput label="Building Size (sqft)*" name="totalArea" value={formData.totalArea} onChange={handleChange} type="number" />
         <TextInput label="Min Divisible (sqft)" name="minDivisible" value={formData.minDivisible} onChange={handleChange} type="number" />
         <TextInput label="Vacant SQFT*" name="vacantSQFT" value={formData.vacantSQFT} onChange={handleChange} type="number" />
       </div>
 
       <div className="form-row">
         <TextInput label="Land Acres" name="landAcres" value={formData.landAcres} onChange={handleChange} type="number" />
-        <TextInput label="Lot Size" name="lotSize" value={formData.lotSize} onChange={handleChange} type="number" />
+        <TextInput label="Lot Size" name="leaseTerm" value={formData.leaseTerm} onChange={handleChange} type="number" />
         <SelectInput label="Lot Size Unit" name="lotSizeUnit" value={formData.lotSizeUnit} onChange={handleChange} options={lotSizeUnitOptions} />
       </div>
 
@@ -485,8 +615,8 @@ const AddLease = () => {
       <h3 className="section-title">Lease Terms</h3>
 
       <div className="form-row">
-        <TextInput type="number" label="Lease Length (years)*" name="leaseLength" value={formData.leaseLength} onChange={handleChange} />
-        <TextInput type="number" label="Rent per Month (£)*" name="rentPerMonth" value={formData.rentPerMonth} onChange={handleChange} />
+        <TextInput type="number" label="Lease Length (years)*" name="leaseTerm" value={formData.leaseTerm} onChange={handleChange} />
+        <TextInput type="number" label="Rent per Month (£)*" name="monthlyRent" value={formData.monthlyRent} onChange={handleChange} />
         <TextInput type="number" label="Service Charge (£)" name="serviceCharge" value={formData.serviceCharge} onChange={handleChange} />
       </div>
 
@@ -533,7 +663,7 @@ const AddLease = () => {
             onChange={handleChange}
           />
         ))}
-        <CheckboxInput label="Parking Available" name="parkingAvailable" checked={formData.parkingAvailable} onChange={handleChange} />
+        <CheckboxInput label="Parking Available" name="parking" checked={formData.parking} onChange={handleChange} />
         <CheckboxInput label="Disability Access" name="disabilityAccess" checked={formData.disabilityAccess} onChange={handleChange} />
       </div>
 
@@ -560,8 +690,6 @@ const AddLease = () => {
         />
       </div>
       
-
-
       <h4 className="subsection-title">Upload Photos & Videos</h4>
       
       <div className="media-upload-section">
@@ -659,7 +787,7 @@ const AddLease = () => {
   );
 
   const renderCurrentStep = () => {
-    switch(currentStep) {
+    switch(currentSection) {
       case 1:
         return renderStep1();
       case 2:
@@ -678,7 +806,9 @@ const AddLease = () => {
         <div className="form-title-brand">
           <Logo />
         </div>
-        <div className="form-title-add">ADD LISTING FOR LEASE</div>
+        <div className="form-title-add">
+          {editMode ? 'EDIT LEASE PROPERTY' : 'ADD PROPERTY FOR LEASE'}
+        </div>
         <ul className="form-title-find-link">
           <li><Link to="/seller">BACK TO ADD LISTING</Link></li>
         </ul>
@@ -686,11 +816,11 @@ const AddLease = () => {
 
       {/* Progress Bar */}
       <div className="form-progress">
-        <div className={`progress-step ${currentStep >= 1 ? 'active' : ''}`}>1</div>
-        <div className={`progress-line ${currentStep >= 2 ? 'active' : ''}`}></div>
-        <div className={`progress-step ${currentStep >= 2 ? 'active' : ''}`}>2</div>
-        <div className={`progress-line ${currentStep >= 3 ? 'active' : ''}`}></div>
-        <div className={`progress-step ${currentStep >= 3 ? 'active' : ''}`}>3</div>
+        <div className={`progress-step ${currentSection >= 1 ? 'active' : ''}`}>1</div>
+        <div className={`progress-line ${currentSection >= 2 ? 'active' : ''}`}></div>
+        <div className={`progress-step ${currentSection >= 2 ? 'active' : ''}`}>2</div>
+        <div className={`progress-line ${currentSection >= 3 ? 'active' : ''}`}></div>
+        <div className={`progress-step ${currentSection >= 3 ? 'active' : ''}`}>3</div>
       </div>
 
       {/* Form Section */}
@@ -703,7 +833,7 @@ const AddLease = () => {
 
           {/* Navigation Buttons */}
           <div className="form-buttons">
-            {currentStep > 1 ? (
+            {currentSection > 1 ? (
               <button 
                 type="button" 
                 className="back-btn"
@@ -721,7 +851,7 @@ const AddLease = () => {
               </button>
             )}
             
-            {currentStep < 3 ? (
+            {currentSection < 3 ? (
               <button 
                 type="button" 
                 className="next-btn"
@@ -730,12 +860,8 @@ const AddLease = () => {
                 Continue
               </button>
             ) : (
-              <button 
-                type="submit" 
-                className="submit-btn"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Submitting...' : 'Submit Listing'}
+              <button type="submit" className="submit-btn" disabled={isLoading}>
+                {isLoading ? "Saving..." : (editMode ? "Update Property" : "Submit Listing")}
               </button>
             )}
           </div>

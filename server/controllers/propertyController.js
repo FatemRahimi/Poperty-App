@@ -476,7 +476,7 @@ const getUserProperties = async (req, res) => {
       LEFT JOIN property_images pi ON p.id = pi.property_id
       ${whereClause}
       GROUP BY p.id
-      ORDER BY p.created_at DESC
+      ORDER BY p.updated_at DESC, p.created_at DESC
     `;
 
     // Only add LIMIT and OFFSET if limit is reasonable (not trying to get all records)
@@ -576,7 +576,7 @@ const getAllProperties = async (req, res) => {
       LEFT JOIN property_images pi ON p.id = pi.property_id
       ${whereClause}
       GROUP BY p.id, u.first_name, u.last_name, u.email
-      ORDER BY p.created_at DESC
+      ORDER BY p.updated_at DESC, p.created_at DESC
     `;
 
     // Only add LIMIT and OFFSET if limit is reasonable (not trying to get all records)
@@ -738,9 +738,9 @@ const getDashboardStats = async (req, res) => {
   try {
     const statsQuery = `
       SELECT 
-        COUNT(*) FILTER (WHERE property_type = 'sale') as total_for_sale,
-        COUNT(*) FILTER (WHERE property_type = 'rent') as total_for_rent,
-        COUNT(*) FILTER (WHERE property_type = 'lease') as total_for_lease,
+        COUNT(*) FILTER (WHERE category = 'sale') as total_for_sale,
+        COUNT(*) FILTER (WHERE category = 'rent') as total_for_rent,
+        COUNT(*) FILTER (WHERE category = 'lease') as total_for_lease,
         COUNT(*) FILTER (WHERE status = 'pending') as pending_approval,
         COUNT(*) FILTER (WHERE status = 'approved') as approved,
         COUNT(*) FILTER (WHERE status = 'rejected') as rejected,
@@ -887,8 +887,324 @@ const loadAllProperties = async () => {
   return allProperties;
 };
 
+// Update existing property
+const updateProperty = async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const { id } = req.params;
+    const user_id = req.user.id;
+    
+    // Check if property exists and belongs to user
+    const existingPropertyResult = await client.query(
+      'SELECT * FROM properties WHERE id = $1 AND user_id = $2',
+      [id, user_id]
+    );
+    
+    if (existingPropertyResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Property not found or you do not have permission to edit it'
+      });
+    }
+    
+    const existingProperty = existingPropertyResult.rows[0];
+    
+    const {
+      title: providedTitle,
+      propertyTitle, // Alternative field name from frontend
+      description,
+      category, // Property category (rent/sale/lease)
+      property_type, // Property type (flat/house/detached/etc)
+      propertyType, // Alternative field name from frontend
+      property_category,
+      address_line1, 
+      streetAddress, // Alternative field name from frontend
+      address_line2, 
+      city, 
+      state, 
+      region, // Alternative field name from frontend
+      zip_code, 
+      postcode, // Alternative field name from frontend
+      country,
+      bedrooms, 
+      bathrooms, 
+      square_feet, 
+      lot_size, 
+      year_built,
+      price, 
+      askingPrice, // Alternative field name from frontend
+      weekly_rent,
+      weeklyRent, // Alternative field name from frontend
+      monthly_rent, 
+      monthlyRent, // Alternative field name from frontend
+      rentalPrice, // Alternative field name from frontend
+      lease_term, 
+      tenancyLength, // Alternative field name from frontend
+      deposit_amount,
+      depositAmount, // Alternative field name from frontend
+      parking_spaces, 
+      has_garage, 
+      has_pool, 
+      has_garden, 
+      furnished, 
+      furnishedStatus, // Alternative field name from frontend
+      pets_allowed,
+      student_housing,
+      studentHousing, // Alternative field name from frontend
+      availability_date, 
+      availableFrom, // Alternative field name from frontend
+      contact_name, 
+      contactName, // Alternative field name from frontend
+      contact_phone, 
+      contactPhone, // Alternative field name from frontend
+      contact_email, 
+      contactEmail, // Alternative field name from frontend
+      amenities = [], 
+      images = []
+    } = req.body;
+
+    // Map frontend field names to backend field names
+    const title = providedTitle || propertyTitle || existingProperty.title;
+    const category_mapped = category || existingProperty.category;
+    const property_type_mapped = property_type || propertyType || existingProperty.property_type;
+    const address_line1_mapped = address_line1 || streetAddress || existingProperty.address_line1;
+    const state_mapped = state || region || existingProperty.state;
+    const zip_code_mapped = zip_code || postcode || existingProperty.zip_code;
+    const price_mapped = price || askingPrice || existingProperty.price;
+    
+    // Convert rent values to numbers and map them
+    const weekly_rent_value = weekly_rent || weeklyRent;
+    const monthly_rent_value = monthly_rent || monthlyRent || rentalPrice;
+    
+    const weekly_rent_mapped = weekly_rent_value ? parseFloat(weekly_rent_value) : existingProperty.weekly_rent;
+    const monthly_rent_mapped = monthly_rent_value ? parseFloat(monthly_rent_value) : existingProperty.monthly_rent;
+    
+    const lease_term_mapped = lease_term || tenancyLength || existingProperty.lease_term;
+    const deposit_amount_mapped = deposit_amount || depositAmount || existingProperty.deposit_amount;
+    const furnished_mapped = furnished !== undefined ? furnished : (furnishedStatus === 'furnished') || existingProperty.furnished;
+    const student_housing_mapped = student_housing !== undefined ? student_housing : (studentHousing || existingProperty.student_housing);
+    const availability_date_mapped = availability_date || availableFrom || existingProperty.availability_date;
+    const contact_name_mapped = contact_name || contactName || existingProperty.contact_name;
+    const contact_phone_mapped = contact_phone || contactPhone || existingProperty.contact_phone;
+    const contact_email_mapped = contact_email || contactEmail || existingProperty.contact_email;
+
+    // Data conversion for numeric fields
+    const convertBathrooms = (bathrooms) => {
+      if (!bathrooms) return existingProperty.bathrooms;
+      if (typeof bathrooms === 'string') {
+        if (bathrooms.includes('+')) {
+          return parseInt(bathrooms.replace('+', ''));
+        }
+        return parseInt(bathrooms) || existingProperty.bathrooms;
+      }
+      return bathrooms;
+    };
+
+    const convertBedrooms = (bedrooms) => {
+      if (!bedrooms) return existingProperty.bedrooms;
+      if (typeof bedrooms === 'string') {
+        if (bedrooms.includes('+')) {
+          return parseInt(bedrooms.replace('+', ''));
+        }
+        return parseInt(bedrooms) || existingProperty.bedrooms;
+      }
+      return bedrooms;
+    };
+
+    const bedrooms_converted = convertBedrooms(bedrooms);
+    const bathrooms_converted = convertBathrooms(bathrooms);
+
+    console.log('🔄 UPDATE DEBUG - Values being updated:');
+    console.log('Property ID:', id);
+    console.log('User ID:', user_id);
+    console.log('Title:', title);
+    console.log('Category:', category_mapped);
+    console.log('Property Type:', property_type_mapped);
+
+    // Update property
+    const propertyResult = await client.query(
+      `UPDATE properties SET 
+        title = $1, description = $2, category = $3, property_type = $4, property_category = $5,
+        address_line1 = $6, address_line2 = $7, city = $8, state = $9, zip_code = $10, country = $11,
+        bedrooms = $12, bathrooms = $13, square_feet = $14, lot_size = $15, year_built = $16,
+        price = $17, weekly_rent = $18, monthly_rent = $19, lease_term = $20, deposit_amount = $21,
+        parking_spaces = $22, has_garage = $23, has_pool = $24, has_garden = $25, furnished = $26, pets_allowed = $27,
+        student_housing = $28, availability_date = $29, contact_name = $30, contact_phone = $31, contact_email = $32,
+        updated_at = CURRENT_TIMESTAMP, status = 'pending'
+       WHERE id = $33 AND user_id = $34
+       RETURNING *`,
+      [
+        title, description || existingProperty.description, category_mapped, property_type_mapped, property_category || existingProperty.property_category,
+        address_line1_mapped, address_line2 || existingProperty.address_line2, city || existingProperty.city, state_mapped, zip_code_mapped, country || existingProperty.country,
+        bedrooms_converted, bathrooms_converted, square_feet || existingProperty.square_feet, lot_size || existingProperty.lot_size, year_built || existingProperty.year_built,
+        price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
+        parking_spaces || existingProperty.parking_spaces, has_garage || existingProperty.has_garage, has_pool || existingProperty.has_pool, 
+        has_garden || existingProperty.has_garden, furnished_mapped, pets_allowed || existingProperty.pets_allowed,
+        student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped,
+        id, user_id
+      ]
+    );
+
+    if (propertyResult.rows.length === 0) {
+      throw new Error('Failed to update property');
+    }
+
+    const property = propertyResult.rows[0];
+
+    // Handle deleted photos (remove from database and file system)
+    const deletedPhotos = req.body.deletedPhotos;
+    if (deletedPhotos && deletedPhotos.length > 0) {
+      console.log('🗑️ Processing deleted photos:', deletedPhotos);
+      
+      for (const deletedPhotoIdentifier of deletedPhotos) {
+        console.log('🔍 Looking for photo to delete:', deletedPhotoIdentifier);
+        
+        // Try to find by exact URL match first
+        let existingImage = await client.query(
+          'SELECT * FROM property_images WHERE property_id = $1 AND image_url = $2',
+          [property.id, deletedPhotoIdentifier]
+        );
+        
+        // If not found by exact URL, try filename pattern matching
+        if (existingImage.rows.length === 0) {
+          const filename = deletedPhotoIdentifier.split('/').pop();
+          existingImage = await client.query(
+            'SELECT * FROM property_images WHERE property_id = $1 AND image_url LIKE $2',
+            [property.id, `%${filename}%`]
+          );
+        }
+        
+        if (existingImage.rows.length > 0) {
+          const imageRecord = existingImage.rows[0];
+          console.log('✅ Found image to delete:', imageRecord.image_url);
+          
+          // Delete from database
+          await client.query(
+            'DELETE FROM property_images WHERE id = $1',
+            [imageRecord.id]
+          );
+          
+          // Delete physical file
+          try {
+            const fullPath = path.join(__dirname, '..', imageRecord.image_url);
+            if (fs.existsSync(fullPath)) {
+              fs.unlinkSync(fullPath);
+              console.log(`🗑️ Successfully deleted file: ${imageRecord.image_url}`);
+            } else {
+              console.log(`⚠️ File not found on disk: ${fullPath}`);
+            }
+          } catch (fileDeleteError) {
+            console.error(`❌ Error deleting file ${imageRecord.image_url}:`, fileDeleteError);
+          }
+        } else {
+          console.log(`⚠️ Could not find image to delete: ${deletedPhotoIdentifier}`);
+        }
+      }
+    }
+
+    // Handle uploaded files from multer (if any new photos)
+    if (req.files && req.files.length > 0) {
+      // Ensure uploads directory exists
+      const uploadsDir = path.join(__dirname, '..', 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        
+        // Create unique filename
+        const filename = `${property.id}_${Date.now()}_${i}_${file.originalname}`;
+        const filepath = path.join(uploadsDir, filename);
+        
+        // Save file to disk
+        try {
+          fs.writeFileSync(filepath, file.buffer);
+          console.log(`📁 New file saved: ${filename}`);
+        } catch (fileError) {
+          console.error(`❌ Error saving file ${filename}:`, fileError);
+          continue;
+        }
+        
+        // Store URL in database
+        const imageUrl = `/uploads/${filename}`;
+        
+        await client.query(
+          `INSERT INTO property_images (property_id, image_url, image_type, image_order, alt_text)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [property.id, imageUrl, file.mimetype.startsWith('video/') ? 'video' : 'image', i, title]
+        );
+      }
+    }
+
+    // Insert property images (legacy support for image URLs from frontend)
+    if (images && images.length > 0) {
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        await client.query(
+          `INSERT INTO property_images (property_id, image_url, image_type, image_order, alt_text)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [property.id, image.url, image.type || 'interior', i, image.alt_text || title]
+        );
+      }
+    }
+
+    // Update amenities (clear existing and add new ones)
+    if (amenities && amenities.length > 0) {
+      // Delete existing amenities
+      await client.query('DELETE FROM property_amenities WHERE property_id = $1', [property.id]);
+      
+      // Insert new amenities
+      for (const amenity of amenities) {
+        await client.query(
+          `INSERT INTO property_amenities (property_id, amenity_name, amenity_category)
+           VALUES ($1, $2, $3)`,
+          [property.id, amenity.name, amenity.category || 'general']
+        );
+      }
+    }
+
+    // Insert submission tracking
+    await client.query(
+      `INSERT INTO property_submissions (property_id, user_id, submission_type)
+       VALUES ($1, $2, 'edit')`,
+      [property.id, user_id]
+    );
+
+    await client.query('COMMIT');
+
+    console.log(`🔄 Property updated successfully: ${property.title} (ID: ${property.id})`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Property updated successfully! Changes are pending review.',
+      property: {
+        id: property.id,
+        title: property.title,
+        status: property.status,
+        slug: property.slug
+      }
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Property update error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update property. Please try again.',
+      error: error.message
+    });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   submitProperty,
+  updateProperty,
   getUserProperties,
   getAllProperties,
   updatePropertyStatus,

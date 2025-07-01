@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const {
   submitProperty,
+  updateProperty,
   getUserProperties,
   getAllProperties,
   updatePropertyStatus,
@@ -91,6 +92,7 @@ const requireAdmin = (req, res, next) => {
 // Property submission routes (protected - user must be authenticated)
 // Use multer to handle FormData with file uploads
 router.post('/submit', authenticateJWT, upload.array('photos', 15), handleMulterError, submitProperty);
+router.put('/update/:id', authenticateJWT, upload.array('photos', 15), handleMulterError, updateProperty);
 router.get('/my-properties', authenticateJWT, getUserProperties);
 router.delete('/:id', authenticateJWT, deleteProperty);
 
