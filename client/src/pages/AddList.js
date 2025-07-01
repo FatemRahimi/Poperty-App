@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import SelectInput from "../components/inputs/SelectInput";
 import TextInput from "../components/inputs/TextInput";
 import EarnestDepositSection from "../components/formSections/EarnestDepositSection";
@@ -60,6 +60,12 @@ const councilTaxOptions = ["A", "B", "C", "D", "E", "F", "G", "H"].map((b) => ({
 
 const AddList = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if we're in edit mode and get return path
+  const editMode = location.state?.editMode || false;
+  const propertyData = location.state?.propertyData || null;
+  const returnPath = location.state?.returnPath || '/seller';
   const [currentStep, setCurrentStep] = useState(1);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [mediaFiles, setMediaFiles] = useState([]);
@@ -825,7 +831,7 @@ const AddList = () => {
               <button 
                 type="button" 
                 className="back-btn"
-                onClick={() => navigate('/seller')}
+                onClick={() => navigate(returnPath)}
               >
                 Cancel
               </button>

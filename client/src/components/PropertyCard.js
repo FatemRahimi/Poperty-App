@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './PropertyCard.css';
 
-const PropertyCard = ({ property, showActions = true, compact = false, onPropertyDeleted }) => {
+const PropertyCard = ({ property, showActions = true, compact = false, onPropertyDeleted, sourcePage }) => {
   const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -388,11 +388,29 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                 e.stopPropagation();
                 // Redirect to appropriate form based on property category
                 if (property.category === 'rent') {
-                  navigate('/addrent', { state: { editMode: true, propertyData: property } });
+                  navigate('/addrent', { 
+                    state: { 
+                      editMode: true, 
+                      propertyData: property,
+                      returnPath: sourcePage || window.location.pathname
+                    } 
+                  });
                 } else if (property.category === 'lease') {
-                  navigate('/addlease', { state: { editMode: true, propertyData: property } });
+                  navigate('/addlease', { 
+                    state: { 
+                      editMode: true, 
+                      propertyData: property,
+                      returnPath: sourcePage || window.location.pathname
+                    } 
+                  });
                 } else if (property.category === 'sale') {
-                  navigate('/addlist', { state: { editMode: true, propertyData: property } });
+                  navigate('/addlist', { 
+                    state: { 
+                      editMode: true, 
+                      propertyData: property,
+                      returnPath: sourcePage || window.location.pathname
+                    } 
+                  });
                 } else {
                   alert('Edit functionality not available for this property category');
                 }
