@@ -61,6 +61,7 @@ const AddLease = () => {
   const editMode = location.state?.editMode || false;
   const propertyData = location.state?.propertyData || null;
   const propertyId = propertyData?.id || null;
+  const returnPath = location.state?.returnPath || '/seller';
   
   // Helper function to format date for input field
   const formatDateForInput = (dateString) => {
@@ -528,16 +529,16 @@ const AddLease = () => {
       
       setSuccess(successMessage);
       
-      // Set success flags for dashboard if updating
-      if (editMode) {
+      // Set success flags for dashboard if updating and returning to dashboard
+      if (editMode && returnPath === '/dashboard') {
         sessionStorage.setItem('propertyUpdateSuccess', 'true');
         sessionStorage.setItem('updatedPropertyId', propertyData.id);
       }
       
-      // Clear form data and redirect to dashboard after short delay
+      // Clear form data and redirect after short delay
       setTimeout(() => {
         sessionStorage.removeItem(storageKey);
-        navigate("/dashboard");
+        navigate(editMode ? returnPath : "/dashboard");
       }, 2000);
       
     } catch (err) {
@@ -845,7 +846,7 @@ const AddLease = () => {
               <button 
                 type="button" 
                 className="back-btn"
-                onClick={() => navigate('/seller')}
+                onClick={() => navigate(returnPath)}
               >
                 Cancel
               </button>

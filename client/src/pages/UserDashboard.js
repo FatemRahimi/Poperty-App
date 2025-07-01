@@ -87,6 +87,18 @@ const UserDashboard = () => {
     }
   }, []);
 
+  // Check for tab parameter in URL and set active tab
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    
+    if (tabParam === 'properties') {
+      setActiveTab('properties');
+      // Clear the URL parameter to keep URL clean
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, []);
+
   // Redirect if not authenticated
   useEffect(() => {
     console.log('🏠 UserDashboard: Component loaded');
@@ -1615,6 +1627,7 @@ const UserDashboard = () => {
                     key={property.id} 
                     property={property} 
                     onPropertyDeleted={handlePropertyDeleted}
+                    sourcePage="/dashboard?tab=properties"
                   />
                 ))}
               </div>

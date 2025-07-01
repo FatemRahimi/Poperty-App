@@ -129,6 +129,7 @@ const AddRent = () => {
   const editMode = location.state?.editMode || false;
   const propertyData = location.state?.propertyData || null;
   const propertyId = propertyData?.id || null;
+  const returnPath = location.state?.returnPath || '/seller';
   
   // Helper function to format date for input field
   const formatDateForInput = (dateString) => {
@@ -754,10 +755,12 @@ const AddRent = () => {
         // Clear form data and redirect quickly
         setTimeout(() => {
           sessionStorage.removeItem(storageKey);
-          // Add a flag to show the success message on dashboard
-          sessionStorage.setItem('propertyUpdateSuccess', 'true');
-          sessionStorage.setItem('updatedPropertyId', propertyId);
-          navigate("/dashboard");
+          // Add a flag to show the success message on dashboard (only if returning to dashboard)
+          if (returnPath === '/dashboard') {
+            sessionStorage.setItem('propertyUpdateSuccess', 'true');
+            sessionStorage.setItem('updatedPropertyId', propertyId);
+          }
+          navigate(returnPath);
         }, 2000); // Quick redirect for updates
       } else {
         // For new submissions, show longer message
@@ -1265,7 +1268,7 @@ const AddRent = () => {
               <button 
                 type="button" 
                 className="back-btn"
-                onClick={() => navigate('/seller')}
+                onClick={() => navigate(returnPath)}
                 disabled={isLoading}
               >
                 Cancel
