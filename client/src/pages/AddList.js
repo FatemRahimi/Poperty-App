@@ -293,22 +293,101 @@ const AddList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validation
+    const missingFields = [];
+    if (!formData.propertyType) missingFields.push("Property Type");
+    if (!formData.propertyName) missingFields.push("Property Name");
+    if (!formData.askingPrice && !formData.unpriced) missingFields.push("Asking Price");
+    if (!formData.streetAddress) missingFields.push("Street Address");
+    if (!formData.city) missingFields.push("City");
+    if (!formData.postalCode) missingFields.push("Postal Code");
+    if (!formData.bedrooms) missingFields.push("Bedrooms");
+    if (!formData.bathrooms) missingFields.push("Bathrooms");
+    if (!formData.description?.trim()) missingFields.push("Property Description");
+    if (!formData.contactPhone?.trim()) missingFields.push("Contact Phone Number");
+    
+    if (missingFields.length > 0) {
+      alert(`Please fill in the following required fields: ${missingFields.join(", ")}`);
+      return;
+    }
+    
     try {
       const formDataToSend = new FormData();
       
-      // Add all form fields
-      Object.keys(formData).forEach(key => {
-        if (key !== 'mediaFiles') {
-          formDataToSend.append(key, formData[key]);
+      // Map AddList form fields to backend expected fields
+      const fieldMapping = {
+        // Basic property info
+        title: formData.propertyName,
+        propertyTitle: formData.propertyName,
+        description: formData.description,
+        category: 'sale', // Property category (rent/sale/lease)
+        property_type: formData.propertyType, // Building type (flat/house/detached/etc)
+        propertyType: formData.propertyType,
+        
+        // Address fields
+        address_line1: formData.streetAddress,
+        streetAddress: formData.streetAddress,
+        city: formData.city,
+        zip_code: formData.postalCode,
+        postcode: formData.postalCode,
+        country: formData.country || 'United Kingdom',
+        
+        // Property details
+        bedrooms: formData.bedrooms,
+        bathrooms: formData.bathrooms,
+        square_feet: formData.floorArea,
+        year_built: formData.builtYear,
+        
+        // Sale-specific fields
+        price: formData.askingPrice,
+        askingPrice: formData.askingPrice,
+        
+        // Contact information
+        contact_phone: formData.contactPhone,
+        contactPhone: formData.contactPhone,
+        
+        // Property features
+        has_garden: formData.garden,
+        garden: formData.garden,
+        parking_spaces: formData.parking === 'garage' || formData.parking === 'driveway' ? 1 : 0,
+        furnished: formData.furnished === 'furnished',
+        furnishedStatus: formData.furnished,
+        
+        // Additional fields
+        tenure: formData.tenure,
+        epcRating: formData.epcRating,
+        councilTaxBand: formData.councilTaxBand,
+        builtYear: formData.builtYear,
+        nearestStation: formData.nearestStation,
+        primarySchoolNearby: formData.primarySchoolNearby,
+        secondarySchoolNearby: formData.secondarySchoolNearby,
+        interestRate: formData.interestRate,
+        mortgageEstimate: formData.mortgageEstimate,
+        chainFree: formData.chainFree,
+        newBuild: formData.newBuild,
+        renovated: formData.renovated,
+        historic: formData.historic,
+        investment: formData.investment
+      };
+      
+      // Add all mapped fields to FormData
+      Object.keys(fieldMapping).forEach(key => {
+        if (fieldMapping[key] !== undefined && fieldMapping[key] !== null && fieldMapping[key] !== '') {
+          formDataToSend.append(key, fieldMapping[key]);
         }
       });
       
+      // Add listing type
+      formDataToSend.append('listingType', 'sale');
+      
       // Add media files
       mediaFiles.forEach(file => {
-        formDataToSend.append('images', file);
+        formDataToSend.append('photos', file);
       });
       
-      const response = await fetch('/api/properties', {
+      console.log('Submitting sale property data...');
+      
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/submit`, {
         method: 'POST',
         body: formDataToSend,
         headers: {
@@ -317,13 +396,16 @@ const AddList = () => {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to submit property');
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Server error: ${response.status}`);
       }
       
       const data = await response.json();
       
       if (data.success) {
-        alert('Property submitted successfully!');
+        alert('Property submitted successfully! You will receive a confirmation email shortly.');
+        // Clear form data and redirect to dashboard
+        sessionStorage.removeItem("propertyListingForm");
         navigate('/dashboard');
       } else {
         throw new Error(data.message || 'Failed to submit property');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import SelectInput from "../components/inputs/SelectInput";
 import TextInput from "../components/inputs/TextInput";
 import DateInput from "../components/inputs/DateInput";
@@ -118,59 +118,194 @@ const billsOptions = [
 
 const AddRent = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [currentSection, setCurrentSection] = useState(1);
-  const [formData, setFormData] = useSessionStorage("addRentForm", {
-    // Property Details - Essential only
-    propertyTitle: "",
-    propertyType: "",
-    bedrooms: "",
-    bathrooms: "",
-    furnishedStatus: "",
-    weeklyRent: "",
-    monthlyRent: "",
-    depositAmount: "",
-    availableFrom: "",
-    tenancyLength: "",
-    councilTaxBand: "",
-    councilTaxStatus: "", // Required by Trading Standards
+  
+  // Check if we're in edit mode
+  const editMode = location.state?.editMode || false;
+  const propertyData = location.state?.propertyData || null;
+  const propertyId = propertyData?.id || null;
+  
+  // Helper function to format date for input field
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
+  };
+
+  // Helper function to extract house number and street name from address
+  const parseAddress = (address) => {
+    if (!address) return { houseNumber: "", streetName: "" };
     
-    // Location Information
-    postcode: "",
-    houseNumber: "",
-    streetName: "",
-    city: "",
-    region: "",
-    country: "",
+    // Try to split address into house number and street name
+    const parts = address.trim().split(' ');
+    if (parts.length === 0) return { houseNumber: "", streetName: "" };
     
-    // Essential Property Features
-    garden: false,
-    parking: false,
-    balconyTerrace: false,
-    billsIncluded: "",
-    petsAllowed: false,
-    studentHousing: false,
-    epcRating: "",
+    // If first part looks like a number or number+letter (e.g., "123", "45A"), treat it as house number
+    const firstPart = parts[0];
+    if (/^\d+[A-Za-z]*$/.test(firstPart)) {
+      return {
+        houseNumber: firstPart,
+        streetName: parts.slice(1).join(' ')
+      };
+    }
     
-    // Description & Media
-    description: "",
-    photos: [],
-    contactPhone: ""
-  });
+    // Otherwise, put everything in street name
+    return {
+      houseNumber: "",
+      streetName: address
+    };
+  };
+
+  // Set initial form data based on edit mode
+  const getInitialFormData = () => {
+    if (editMode && propertyData) {
+      const addressParts = parseAddress(propertyData.address_line1);
+      
+      return {
+        // Property Details
+        propertyTitle: propertyData.title || "",
+        propertyType: propertyData.property_type || "",
+        bedrooms: propertyData.bedrooms?.toString() || "",
+        bathrooms: propertyData.bathrooms?.toString() || "",
+        furnishedStatus: propertyData.furnished ? "furnished" : "unfurnished",
+        weeklyRent: propertyData.weekly_rent ? propertyData.weekly_rent.toString() : "",
+        monthlyRent: propertyData.monthly_rent ? propertyData.monthly_rent.toString() : "",
+        depositAmount: propertyData.deposit_amount ? propertyData.deposit_amount.toString() : "",
+        availableFrom: formatDateForInput(propertyData.availability_date),
+        tenancyLength: propertyData.lease_term?.toString() || "",
+        councilTaxBand: "", // This data might not be in the existing properties
+        councilTaxStatus: "",
+        
+        // Location Information
+        postcode: propertyData.zip_code || "",
+        houseNumber: addressParts.houseNumber,
+        streetName: addressParts.streetName,
+        city: propertyData.city || "",
+        region: propertyData.state || "",
+        country: propertyData.country || "United Kingdom",
+        
+        // Property Features
+        garden: propertyData.has_garden || false,
+        parking: propertyData.parking_spaces > 0 || propertyData.has_garage || false,
+        balconyTerrace: false, // This data might not be in existing properties
+        billsIncluded: "none", // Default value
+        petsAllowed: propertyData.pets_allowed || false,
+        studentHousing: propertyData.student_housing || false,
+        epcRating: "", // This data might not be in existing properties
+        
+        // Description & Media
+        description: propertyData.description || "",
+        photos: [],
+        contactPhone: propertyData.contact_phone || ""
+      };
+    }
+    
+    // Default empty form data for new properties
+    return {
+      propertyTitle: "",
+      propertyType: "",
+      bedrooms: "",
+      bathrooms: "",
+      furnishedStatus: "",
+      weeklyRent: "",
+      monthlyRent: "",
+      depositAmount: "",
+      availableFrom: "",
+      tenancyLength: "",
+      councilTaxBand: "",
+      councilTaxStatus: "",
+      postcode: "",
+      houseNumber: "",
+      streetName: "",
+      city: "",
+      region: "",
+      country: "",
+      garden: false,
+      parking: false,
+      balconyTerrace: false,
+      billsIncluded: "",
+      petsAllowed: false,
+      studentHousing: false,
+      epcRating: "",
+      description: "",
+      photos: [],
+      contactPhone: ""
+    };
+  };
+
+  // Use different storage keys for new vs edit mode
+  const storageKey = editMode ? `editRentForm_${propertyId}` : "addRentForm";
+  const [formData, setFormData] = useSessionStorage(storageKey, getInitialFormData());
   
   const [photoFiles, setPhotoFiles] = useState([]);
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
+  const [deletedExistingPhotos, setDeletedExistingPhotos] = useState([]); // Track deleted existing photos
+
+  // Load existing property images if in edit mode
+  useEffect(() => {
+    if (editMode && propertyData && propertyData.images) {
+      const imageUrls = propertyData.images.map((img, index) => {
+        // Extract filename from URL for deletion matching
+        const imageUrl = img.url || img.image_url;
+        const filename = imageUrl.split('/').pop(); // Get the actual filename
+        
+        return {
+          url: imageUrl,
+          type: img.type || 'image/jpeg',
+          name: filename, // Use actual filename instead of generic name
+          originalUrl: imageUrl, // Keep original URL for backend matching
+          size: 0,
+          isExisting: true // Flag to identify existing images
+        };
+      });
+      setPhotoPreviewUrls(imageUrls);
+      console.log('📷 Loaded existing photos:', imageUrls);
+    }
+  }, [editMode, propertyData]);
+
+  // Update form data when in edit mode
+  useEffect(() => {
+    if (editMode && propertyData) {
+      setFormData(getInitialFormData());
+    }
+  }, [editMode, propertyData]);
+
+  // Clear form data when creating a new property (not in edit mode)
+  useEffect(() => {
+    if (!editMode) {
+      // Clear any existing form data from previous sessions
+      const emptyFormData = getInitialFormData();
+      setFormData(emptyFormData);
+      setPhotoFiles([]);
+      setPhotoPreviewUrls([]);
+      setDeletedExistingPhotos([]); // Clear deleted photos list
+      console.log('🆕 NEW PROPERTY MODE - Form cleared');
+    }
+  }, [editMode]);
 
   useEffect(() => {
     if (!isAuthenticated && !loading) {
-      // Store the current path to redirect back after login
       sessionStorage.setItem('redirectAfterLogin', '/addrent');
       navigate("/login");
     }
   }, [isAuthenticated, loading, navigate]);
+
+  // Cleanup effect to remove edit session data when component unmounts
+  useEffect(() => {
+    return () => {
+      // Only cleanup edit session data, not new property drafts
+      if (editMode && propertyId) {
+        const editStorageKey = `editRentForm_${propertyId}`;
+        sessionStorage.removeItem(editStorageKey);
+        console.log('🧹 CLEANUP - Removed edit session data');
+      }
+    };
+  }, [editMode, propertyId]);
 
   const handleChange = (e) => {
     const { name, type, value, checked } = e.target;
@@ -191,6 +326,58 @@ const AddRent = () => {
     }
   };
 
+  const removePhoto = (index) => {
+    console.log('🗑️ REMOVE PHOTO CALLED - Index:', index, 'Total photos:', photoPreviewUrls.length);
+    
+    const photoToRemove = photoPreviewUrls[index];
+    console.log('📷 Photo to remove:', photoToRemove);
+    
+    if (photoToRemove.isExisting) {
+      // Removing an existing photo - add to deleted list and remove from preview
+      console.log('🗑️ Removing existing photo:', photoToRemove.name);
+      setDeletedExistingPhotos(prev => {
+        const updated = [...prev, photoToRemove];
+        console.log('🗑️ Updated deleted photos list:', updated);
+        return updated;
+      });
+      const newPhotoPreviewUrls = [...photoPreviewUrls];
+      newPhotoPreviewUrls.splice(index, 1);
+      setPhotoPreviewUrls(newPhotoPreviewUrls);
+      console.log('✅ Existing photo removed from preview');
+    } else {
+      // Removing a new upload - need to adjust indices for photoFiles
+      console.log('🗑️ Removing new upload at index:', index);
+      const existingPhotosCount = photoPreviewUrls.filter(url => url.isExisting).length;
+      const newPhotoIndex = index - existingPhotosCount;
+      
+      console.log('📊 Photo removal calculation:', {
+        existingPhotosCount,
+        newPhotoIndex,
+        totalPreviewUrls: photoPreviewUrls.length,
+        totalPhotoFiles: photoFiles.length
+      });
+      
+      // Revoke the object URL to avoid memory leaks
+      if (photoPreviewUrls[index] && !photoPreviewUrls[index].isExisting) {
+        URL.revokeObjectURL(photoPreviewUrls[index].url);
+      }
+      
+      // Remove from both arrays
+      const newPhotoFiles = [...photoFiles];
+      const newPhotoPreviewUrls = [...photoPreviewUrls];
+      
+      if (newPhotoIndex >= 0 && newPhotoIndex < newPhotoFiles.length) {
+        newPhotoFiles.splice(newPhotoIndex, 1);
+        console.log('✅ New photo file removed from files array');
+      }
+      newPhotoPreviewUrls.splice(index, 1);
+      
+      setPhotoFiles(newPhotoFiles);
+      setPhotoPreviewUrls(newPhotoPreviewUrls);
+      console.log('✅ New photo removed from preview and files');
+    }
+  };
+
   const handlePhotoChange = (e) => {
     const files = Array.from(e.target.files);
     
@@ -203,13 +390,16 @@ const AddRent = () => {
       return;
     }
     
-    // Limit to 15 photos
-    if (photoFiles.length + files.length > 15) {
-      alert("You can upload a maximum of 15 photos");
+    // Calculate current total (existing + new)
+    const currentTotal = photoPreviewUrls.length;
+    
+    // Limit to 15 photos total
+    if (currentTotal + files.length > 15) {
+      alert(`You can upload a maximum of 15 photos total. You currently have ${currentTotal} photos.`);
       return;
     }
     
-    // Check total size limit
+    // Check total size limit for new files only
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
     const maxTotalSize = 15 * 1024 * 1024 * 1024; // 15GB total (15 files x 1GB each)
     
@@ -218,25 +408,21 @@ const AddRent = () => {
       return;
     }
     
+    console.log('📷 Adding new photos:', files.length, 'Current total:', currentTotal);
+    
+    // Add new files to photoFiles array
     setPhotoFiles((prevFiles) => [...prevFiles, ...files]);
     
-    // Create preview URLs
-    const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+    // Create preview URLs for new files and add to preview array
+    const newPreviewUrls = files.map(file => ({
+      url: URL.createObjectURL(file),
+      type: file.type,
+      name: file.name,
+      size: file.size,
+      isExisting: false // Flag to identify new uploads
+    }));
+    
     setPhotoPreviewUrls((prevUrls) => [...prevUrls, ...newPreviewUrls]);
-  };
-
-  const removePhoto = (index) => {
-    const newPhotoFiles = [...photoFiles];
-    const newPhotoPreviewUrls = [...photoPreviewUrls];
-    
-    // Revoke the object URL to avoid memory leaks
-    URL.revokeObjectURL(photoPreviewUrls[index]);
-    
-    newPhotoFiles.splice(index, 1);
-    newPhotoPreviewUrls.splice(index, 1);
-    
-    setPhotoFiles(newPhotoFiles);
-    setPhotoPreviewUrls(newPhotoPreviewUrls);
   };
 
   const nextSection = () => {
@@ -254,8 +440,12 @@ const AddRent = () => {
       if (!formData.depositAmount) missingFields.push("Deposit Amount");
       if (!formData.availableFrom) missingFields.push("Available From");
       if (!formData.tenancyLength) missingFields.push("Tenancy Length");
-      if (!formData.councilTaxBand) missingFields.push("Council Tax Band");
-      if (!formData.councilTaxStatus) missingFields.push("Council Tax Status");
+      
+      // These fields are required for new properties but optional for edits
+      if (!editMode) {
+        if (!formData.councilTaxBand) missingFields.push("Council Tax Band");
+        if (!formData.councilTaxStatus) missingFields.push("Council Tax Status");
+      }
       
       if (missingFields.length > 0) {
         alert(`Please fill in the following required fields: ${missingFields.join(", ")}`);
@@ -277,8 +467,11 @@ const AddRent = () => {
     } else if (currentSection === 3) {
       const missingFields = [];
       
-      if (!formData.billsIncluded) missingFields.push("Bills Included");
-      if (!formData.epcRating) missingFields.push("EPC Rating");
+      // These fields are required for new properties but optional for edits
+      if (!editMode) {
+        if (!formData.billsIncluded) missingFields.push("Bills Included");
+        if (!formData.epcRating) missingFields.push("EPC Rating");
+      }
       
       if (missingFields.length > 0) {
         alert(`Please fill in the following required fields: ${missingFields.join(", ")}`);
@@ -299,10 +492,27 @@ const AddRent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Final validation with specific field names
+    console.log('🚀 FORM SUBMISSION STARTED');
+    console.log('📝 Edit Mode:', editMode);
+    console.log('📝 Property ID:', propertyId);
+    console.log('📝 Current Section:', currentSection);
+    
+    // Add a simple alert to confirm the function is being called
+    if (editMode) {
+      console.log('🔄 EDIT MODE DETECTED - Property ID:', propertyId);
+      if (!propertyId) {
+        console.error('❌ NO PROPERTY ID FOUND IN EDIT MODE');
+        alert('Error: No property ID found for editing');
+        return;
+      }
+    } else {
+      console.log('➕ CREATE MODE DETECTED - New property submission');
+    }
+    
+    // Check all required fields with relaxed validation for edit mode
     const missingFields = [];
     
-    // Check all required fields (property title is NOT required, both weekly and monthly rent ARE required)
+    // Basic required fields for all modes
     if (!formData.propertyType) missingFields.push("Property Type");
     if (!formData.bedrooms) missingFields.push("Bedrooms");
     if (!formData.bathrooms) missingFields.push("Bathrooms");
@@ -312,27 +522,56 @@ const AddRent = () => {
     if (!formData.depositAmount) missingFields.push("Deposit Amount");
     if (!formData.availableFrom) missingFields.push("Available From");
     if (!formData.tenancyLength) missingFields.push("Tenancy Length");
-    if (!formData.councilTaxBand) missingFields.push("Council Tax Band");
-    if (!formData.councilTaxStatus) missingFields.push("Council Tax Status");
     if (!formData.postcode) missingFields.push("Postcode");
     if (!formData.houseNumber) missingFields.push("House Number");
     if (!formData.streetName) missingFields.push("Street Name");
     if (!formData.city) missingFields.push("City/Town");
     if (!formData.country) missingFields.push("Country");
-    if (!formData.billsIncluded) missingFields.push("Bills Included");
-    if (!formData.epcRating) missingFields.push("EPC Rating");
     if (!formData.description?.trim()) missingFields.push("Property Description");
     if (!formData.contactPhone?.trim()) missingFields.push("Contact Phone Number");
     
-    // Check if photos/videos are uploaded (mandatory)
-    if (photoFiles.length === 0) missingFields.push("Photos or Videos");
+    // These fields are required for new properties but optional for edits (older properties might not have them)
+    if (!editMode) {
+      if (!formData.councilTaxBand) missingFields.push("Council Tax Band");
+      if (!formData.councilTaxStatus) missingFields.push("Council Tax Status");
+      if (!formData.billsIncluded) missingFields.push("Bills Included");
+      if (!formData.epcRating) missingFields.push("EPC Rating");
+    }
+    
+    // Check if photos/videos are uploaded (mandatory for new properties, optional for edits)
+    const hasExistingPhotos = editMode && photoPreviewUrls.some(photoItem => photoItem.isExisting);
+    const hasNewPhotos = photoFiles.length > 0;
+    
+    console.log('📷 Photo validation:', {
+      editMode,
+      hasExistingPhotos,
+      hasNewPhotos,
+      photoPreviewUrls: photoPreviewUrls.length,
+      photoFiles: photoFiles.length,
+      photoPreviewUrlsDetails: photoPreviewUrls.map(p => ({ name: p.name, isExisting: p.isExisting }))
+    });
+    
+    if (!hasExistingPhotos && !hasNewPhotos) {
+      missingFields.push("Photos or Videos");
+    }
+    
+    console.log('✅ Validation check - Missing fields:', missingFields);
     
     if (missingFields.length > 0) {
       alert(`Please fill in the following required fields: ${missingFields.join(", ")}`);
+      console.log('❌ FORM SUBMISSION STOPPED - Missing fields');
       return;
     }
     
+    console.log('✅ All validations passed - Proceeding with submission');
     setError("");
+    
+    // Prevent double submissions
+    if (isLoading) {
+      console.log('⚠️ Already submitting, ignoring duplicate submission');
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -350,8 +589,9 @@ const AddRent = () => {
         title: formData.propertyTitle || `Property for Rent - ${formData.propertyType || 'Property'}`,
         propertyTitle: formData.propertyTitle || `Property for Rent - ${formData.propertyType || 'Property'}`,
         description: formData.description,
-        property_type: 'rent',
-        propertyType: 'rent',
+        category: 'rent', // Property category (rent/sale/lease)
+        property_type: formData.propertyType, // Building type (flat/house/detached/etc)
+        propertyType: formData.propertyType,
         
         // Address fields
         address_line1: `${formData.houseNumber} ${formData.streetName}`.trim(),
@@ -434,6 +674,24 @@ const AddRent = () => {
         submitFormData.append('photos', file);
       });
       
+      // In edit mode, send information about deleted existing photos
+      if (editMode && deletedExistingPhotos.length > 0) {
+        deletedExistingPhotos.forEach((deletedPhoto, index) => {
+          // Send the original URL or filename for better backend matching
+          const photoIdentifier = deletedPhoto.originalUrl || deletedPhoto.name;
+          submitFormData.append('deletedPhotos', photoIdentifier);
+        });
+        console.log('🗑️ Deleted photos to remove:', deletedExistingPhotos.map(p => p.originalUrl || p.name));
+      }
+      
+      console.log('📷 Photo status for submission:', {
+        editMode,
+        totalPhotosToUpload: photoFiles.length,
+        existingPhotosKept: photoPreviewUrls.filter(p => p.isExisting).length,
+        newPhotosToAdd: photoFiles.length,
+        photosToDelete: deletedExistingPhotos.length
+      });
+      
       console.log('Submitting rent property data...');
       
       // Debug logging
@@ -446,13 +704,34 @@ const AddRent = () => {
         }
       }
       
-      // Make API call to submit property
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/submit`, {
-        method: 'POST',
+      // Determine API endpoint and method based on edit mode
+      const apiEndpoint = editMode 
+        ? `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/update/${propertyId}`
+        : `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/submit`;
+      
+      const httpMethod = editMode ? 'PUT' : 'POST';
+      
+      console.log(`🌐 API Call Details:`);
+      console.log(`  - Endpoint: ${apiEndpoint}`);
+      console.log(`  - Method: ${httpMethod}`);
+      console.log(`  - Property ID: ${propertyId}`);
+      console.log(`  - Edit Mode: ${editMode}`);
+      
+      console.log(`${editMode ? 'Updating' : 'Creating'} property...`);
+      
+      // Make API call to submit or update property
+      const response = await fetch(apiEndpoint, {
+        method: httpMethod,
         body: submitFormData,
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
+      });
+      
+      console.log(`📡 Response received:`, {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
       });
       
       if (!response.ok) {
@@ -464,20 +743,43 @@ const AddRent = () => {
       }
       
       const result = await response.json();
-      console.log('✅ Rent Property Submitted Successfully:', result);
+      console.log(`✅ Rent Property ${editMode ? 'Updated' : 'Submitted'} Successfully:`, result);
       
-      setSuccess("Property submitted successfully! You will receive a confirmation email shortly.");
-      
-      // Clear form data and redirect to dashboard after short delay
-      setTimeout(() => {
-        sessionStorage.removeItem("addRentForm");
-        navigate("/dashboard");
-      }, 2000);
+      if (editMode) {
+        // For updates, show success message and redirect immediately
+        setSuccess("🎉 Property updated successfully! Redirecting to dashboard...");
+        setError("");
+        console.log('✅ UPDATE SUCCESS - Property updated, redirecting...');
+        
+        // Clear form data and redirect quickly
+        setTimeout(() => {
+          sessionStorage.removeItem(storageKey);
+          // Add a flag to show the success message on dashboard
+          sessionStorage.setItem('propertyUpdateSuccess', 'true');
+          sessionStorage.setItem('updatedPropertyId', propertyId);
+          navigate("/dashboard");
+        }, 2000); // Quick redirect for updates
+      } else {
+        // For new submissions, show longer message
+        setSuccess("🎉 Property submitted successfully! You will receive a confirmation email shortly. Redirecting to dashboard...");
+        setError("");
+        
+        setTimeout(() => {
+          sessionStorage.removeItem(storageKey);
+          navigate("/dashboard");
+        }, 4000); // Longer delay for new submissions
+      }
       
     } catch (err) {
-      console.error('Submission error:', err);
+      console.error('❌ FORM SUBMISSION ERROR:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      });
       setError(err.message || "Failed to submit property. Please try again.");
     } finally {
+      console.log('🏁 FORM SUBMISSION FINISHED - Setting loading to false');
       setIsLoading(false);
     }
   };
@@ -826,49 +1128,66 @@ const AddRent = () => {
                   multiple
                   onChange={handlePhotoChange}
                   style={{ display: 'none' }}
-                  required
                 />
               </div>
               
               {photoPreviewUrls.length > 0 && (
                 <>
                   <div className="media-grid">
-                    {photoPreviewUrls.map((url, index) => (
+                    {photoPreviewUrls.map((photoItem, index) => (
                       <div key={index} className="media-item">
                         <div className="media-content">
-                          {photoFiles[index]?.type?.startsWith('video/') ? (
+                          {/* Handle both existing images and new file uploads */}
+                          {photoItem.isExisting ? (
+                            <div className="image-container">
+                              <img src={photoItem.url} alt={`Existing ${index + 1}`} />
+                              <div className="media-type-badge">Existing Photo</div>
+                            </div>
+                          ) : photoItem.type?.startsWith('video/') ? (
                             <div className="video-container">
-                              <video src={url} controls>
+                              <video src={photoItem.url} controls>
                                 Your browser does not support the video tag.
                               </video>
                               <div className="media-type-badge">Video</div>
                             </div>
                           ) : (
                             <div className="image-container">
-                              <img src={url} alt={`Preview ${index + 1}`} />
-                              <div className="media-type-badge">Photo</div>
+                              <img src={photoItem.url} alt={`New ${index + 1}`} />
+                              <div className="media-type-badge">New Photo</div>
                             </div>
                           )}
                         </div>
                         <button 
                           type="button" 
                           className="remove-media-btn"
-                          onClick={() => removePhoto(index)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('🗑️ Remove button clicked for index:', index);
+                            removePhoto(index);
+                            return false; // Extra prevention
+                          }}
                           title="Remove file"
                         >
                           <span>×</span>
                         </button>
                         <div className="media-info">
-                          <span className="media-name">{photoFiles[index]?.name}</span>
-                          <span className="media-size">{(photoFiles[index]?.size / 1024 / 1024).toFixed(2)} MB</span>
+                          <span className="media-name">
+                            {photoItem.name}
+                          </span>
+                          <span className="media-size">
+                            {photoItem.isExisting ? 'Existing' : `${(photoItem.size / 1024 / 1024).toFixed(2)} MB`}
+                          </span>
                         </div>
                       </div>
                     ))}
                   </div>
                   <div className="media-summary">
-                    <span className="file-count">{photoFiles.length} file(s) selected</span>
+                    <span className="file-count">{photoPreviewUrls.length} file(s) total</span>
                     <span className="total-size">
-                      Total: {(photoFiles.reduce((total, file) => total + (file?.size || 0), 0) / 1024 / 1024).toFixed(2)} MB
+                      Existing: {photoPreviewUrls.filter(p => p.isExisting).length} | 
+                      New: {photoPreviewUrls.filter(p => !p.isExisting).length} | 
+                      New files size: {(photoFiles.reduce((total, file) => total + (file?.size || 0), 0) / 1024 / 1024).toFixed(2)} MB
                     </span>
                   </div>
                 </>
@@ -904,7 +1223,9 @@ const AddRent = () => {
         <div className="form-title-brand">
           <Logo />
         </div>
-        <div className="form-title-add">ADD PROPERTY FOR RENT</div>
+        <div className="form-title-add">
+          {editMode ? 'EDIT RENTAL PROPERTY' : 'ADD PROPERTY FOR RENT'}
+        </div>
         <ul className="form-title-find-link">
           <li><Link to="/seller">Back to Add Listing</Link></li>
         </ul>
@@ -961,8 +1282,12 @@ const AddRent = () => {
                 Continue
               </button>
             ) : (
-              <button type="submit" className="submit-btn" disabled={isLoading}>
-                {isLoading ? "Saving..." : "Submit Listing"}
+              <button 
+                type="submit" 
+                className="submit-btn" 
+                disabled={isLoading}
+              >
+                {isLoading ? "Saving..." : (editMode ? "Update Property" : "Submit Listing")}
               </button>
             )}
           </div>

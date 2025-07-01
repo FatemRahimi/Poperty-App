@@ -61,11 +61,31 @@ const UserDashboard = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
+  const [updateSuccessMessage, setUpdateSuccessMessage] = useState('');
   
   const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const profileFormRef = useRef(null);
   const navRef = useRef(null);
+
+  // Check for property update success message
+  useEffect(() => {
+    const updateSuccess = sessionStorage.getItem('propertyUpdateSuccess');
+    const updatedPropertyId = sessionStorage.getItem('updatedPropertyId');
+    
+    if (updateSuccess === 'true') {
+      setUpdateSuccessMessage('🎉 Property updated successfully! Your changes are now live.');
+      
+      // Clear the flags
+      sessionStorage.removeItem('propertyUpdateSuccess');
+      sessionStorage.removeItem('updatedPropertyId');
+      
+      // Clear message after 5 seconds
+      setTimeout(() => {
+        setUpdateSuccessMessage('');
+      }, 5000);
+    }
+  }, []);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -1007,6 +1027,23 @@ const UserDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Success Message */}
+      {updateSuccessMessage && (
+        <div className="success-message-banner" style={{
+          backgroundColor: '#d4edda',
+          color: '#155724',
+          padding: '1rem',
+          margin: '1rem 0',
+          borderRadius: '8px',
+          border: '1px solid #c3e6cb',
+          textAlign: 'center',
+          fontSize: '1.1rem',
+          fontWeight: '500'
+        }}>
+          {updateSuccessMessage}
+        </div>
+      )}
 
       {/* Modern Navigation */}
       <div className="dashboard-nav-modern" ref={navRef}>
