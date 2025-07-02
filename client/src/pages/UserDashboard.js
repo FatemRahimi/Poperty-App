@@ -1083,146 +1083,14 @@ const UserDashboard = () => {
               <button 
                 className={`nav-tab-modern properties-tab ${activeTab === 'properties' ? 'active' : ''}`}
                 onClick={() => {
-                  if (activeTab === 'properties') {
-                    // If already on properties tab, just toggle dropdown
-                    // Clear any existing timeout
-                    if (autoCloseTimeout) {
-                      clearTimeout(autoCloseTimeout);
-                      setAutoCloseTimeout(null);
-                    }
-                    if (!showPropertiesDropdown) {
-                      // Initialize temp filters when opening dropdown
-                      setTempFilters({
-                        propertyType: searchFilters.propertyType,
-                        status: searchFilters.status
-                      });
-                    }
-                    setShowPropertiesDropdown(!showPropertiesDropdown);
-                  } else {
-                    // If switching to properties tab, set active and show dropdown for 2 seconds
-                    setActiveTab('properties');
-                    // Initialize temp filters when opening dropdown
-                    setTempFilters({
-                      propertyType: searchFilters.propertyType,
-                      status: searchFilters.status
-                    });
-                    setShowPropertiesDropdown(true);
-                    
-                    // Auto-close dropdown after 2 seconds and reset to current applied filters
-                    const timeoutId = setTimeout(() => {
-                      // Reset temporary filters to current applied filters when auto-closing
-                      setTempFilters({
-                        propertyType: searchFilters.propertyType,
-                        status: searchFilters.status
-                      });
-                      setShowPropertiesDropdown(false);
-                      setAutoCloseTimeout(null);
-                    }, 2000);
-                    setAutoCloseTimeout(timeoutId);
-                  }
+                  setActiveTab('properties');
+                  setShowPropertiesDropdown(false);
                 }}
               >
                 <i className="fas fa-building"></i>
                 My Properties
-                <svg 
-                  className={`dropdown-arrow ${showPropertiesDropdown ? 'open' : ''}`}
-                  width="12" 
-                  height="12" 
-                  viewBox="0 0 12 12" 
-                  fill="none"
-                >
-                  <path 
-                    d="M3 4.5L6 7.5L9 4.5" 
-                    stroke="currentColor" 
-                    strokeWidth="1.5" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                            </button>
-              
-              {activeTab === 'properties' && showPropertiesDropdown && createPortal(
-                <div className="properties-dropdown">
-                  <div className="dropdown-content">
-                    <div className="dropdown-section">
-                      <h4>
-                        <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M20 7h-9"/>
-                          <path d="M14 17H5"/>
-                          <circle cx="17" cy="17" r="3"/>
-                          <circle cx="7" cy="7" r="3"/>
-                        </svg>
-                        Categories
-                      </h4>
-                      <div className="filter-options-simple">
-                        {propertyTypeOptions.map(option => (
-                          <label key={option.value} className="simple-option">
-                            <input
-                              type="radio"
-                              name="propertyType"
-                              value={option.value}
-                              checked={tempFilters.propertyType === option.value}
-                              onChange={(e) => {
-                                const newTempFilters = {...tempFilters, propertyType: e.target.value};
-                                setTempFilters(newTempFilters);
-                                // Apply filters immediately and close dropdown
-                                setSearchFilters({...searchFilters, propertyType: e.target.value});
-                                setTimeout(() => {
-                                  setShowPropertiesDropdown(false);
-                                  if (autoCloseTimeout) {
-                                    clearTimeout(autoCloseTimeout);
-                                    setAutoCloseTimeout(null);
-                                  }
-                                }, 300);
-                              }}
-                            />
-                            <span className="option-text">{option.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="dropdown-section">
-                      <h4>
-                        <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="12" cy="12" r="10"/>
-                          <path d="M12 8v4"/>
-                          <path d="M12 16h.01"/>
-                        </svg>
-                        Status
-                      </h4>
-                      <div className="filter-options-simple">
-                        {statusOptions.map(option => (
-                          <label key={option.value} className="simple-option">
-                            <input
-                              type="radio"
-                              name="status"
-                              value={option.value}
-                              checked={tempFilters.status === option.value}
-                              onChange={(e) => {
-                                const newTempFilters = {...tempFilters, status: e.target.value};
-                                setTempFilters(newTempFilters);
-                                // Apply filters immediately and close dropdown
-                                setSearchFilters({...searchFilters, status: e.target.value});
-                                setTimeout(() => {
-                                  setShowPropertiesDropdown(false);
-                                  if (autoCloseTimeout) {
-                                    clearTimeout(autoCloseTimeout);
-                                    setAutoCloseTimeout(null);
-                                  }
-                                }, 300);
-                              }}
-                            />
-                            <span className="option-text">{option.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>,
-                document.body
-              )}
-              </div>
+              </button>
+            </div>
             <button 
               className={`nav-tab-modern ${activeTab === 'profile' ? 'active' : ''}`}
               onClick={async () => {
@@ -1599,39 +1467,102 @@ const UserDashboard = () => {
         )}
 
         {activeTab === 'properties' && (
-          <div className="properties-section">
-            <div className="properties-header-modern">
-              <div className="properties-title">
-                <h2>My Properties</h2>
-                <span className="property-count">{filteredProperties.length}</span>
+          <div className="properties-section-with-sidebar">
+            {/* Left Sidebar with Filters */}
+            <div className="properties-sidebar">
+              <div className="sidebar-section">
+                <h4>
+                  <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 7h-9"/>
+                    <path d="M14 17H5"/>
+                    <circle cx="17" cy="17" r="3"/>
+                    <circle cx="7" cy="7" r="3"/>
+                  </svg>
+                  Categories
+                </h4>
+                <div className="sidebar-filter-options">
+                  {propertyTypeOptions.map(option => (
+                    <label key={option.value} className="sidebar-option">
+                      <input
+                        type="radio"
+                        name="propertyType"
+                        value={option.value}
+                        checked={searchFilters.propertyType === option.value}
+                        onChange={(e) => {
+                          setSearchFilters({...searchFilters, propertyType: e.target.value});
+                        }}
+                        className="category-radio"
+                      />
+                      <span className="option-text">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="sidebar-section">
+                <h4>
+                  <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 8v4"/>
+                    <path d="M12 16h.01"/>
+                  </svg>
+                  Status
+                </h4>
+                <div className="sidebar-filter-options">
+                  {statusOptions.map(option => (
+                    <label key={option.value} className="sidebar-option">
+                      <input
+                        type="radio"
+                        name="status"
+                        value={option.value}
+                        checked={searchFilters.status === option.value}
+                        onChange={(e) => {
+                          setSearchFilters({...searchFilters, status: e.target.value});
+                        }}
+                        className="status-radio"
+                      />
+                      <span className="option-text">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
+            
+            {/* Main Properties Content */}
+            <div className="properties-main-content">
+              <div className="properties-header-modern">
+                <div className="properties-title">
+                  <h2>My Properties</h2>
+                  <span className="property-count">{filteredProperties.length}</span>
+                </div>
+              </div>
 
-            {filteredProperties.length === 0 ? (
-              <div className="no-properties-modern">
-                <i className="fas fa-home"></i>
-                <h3>No Properties Found</h3>
-                <p>You haven't submitted any properties yet, or no properties match your current filters.</p>
-                <button 
-                  className="btn-add-first"
-                  onClick={() => navigate('/addlist')}
-                >
-                  <i className="fas fa-plus"></i>
-                  Add Your First Property
-                </button>
-              </div>
-            ) : (
-              <div className="properties-grid-modern">
-                {filteredProperties.map(property => (
-                  <PropertyCard 
-                    key={property.id} 
-                    property={property} 
-                    onPropertyDeleted={handlePropertyDeleted}
-                    sourcePage="/dashboard?tab=properties"
-                  />
-                ))}
-              </div>
-            )}
+              {filteredProperties.length === 0 ? (
+                <div className="no-properties-modern">
+                  <i className="fas fa-home"></i>
+                  <h3>No Properties Found</h3>
+                  <p>You haven't submitted any properties yet, or no properties match your current filters.</p>
+                  <button 
+                    className="btn-add-first"
+                    onClick={() => navigate('/addlist')}
+                  >
+                    <i className="fas fa-plus"></i>
+                    Add Your First Property
+                  </button>
+                </div>
+              ) : (
+                <div className="properties-grid-modern">
+                  {filteredProperties.map(property => (
+                    <PropertyCard 
+                      key={property.id} 
+                      property={property} 
+                      onPropertyDeleted={handlePropertyDeleted}
+                      sourcePage="/dashboard?tab=properties"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
