@@ -593,9 +593,9 @@
 .property-card-content .property-type-badge {
   background: transparent;
   color: #3b82f6; /* Blue text color */
-  padding: 0.3rem 0.6rem;
+  padding: 0rem 0.7rem;
   border-radius: 0;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -603,7 +603,7 @@
 }
 
 .property-card-content .property-meta-modern small {
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   color: #94a3b8;
   font-weight: 500;
 }

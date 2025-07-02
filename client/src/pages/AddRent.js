@@ -598,7 +598,15 @@ const AddRent = () => {
     if (!formData.streetName) missingFields.push("Street Name");
     if (!formData.city) missingFields.push("City/Town");
     if (!formData.country) missingFields.push("Country");
-    if (!formData.description?.trim()) missingFields.push("Property Description");
+    if (!formData.description?.trim()) {
+      missingFields.push("Property Description");
+    } else {
+      // Check minimum word count (100 words)
+      const wordCount = formData.description.trim().split(/\s+/).length;
+      if (wordCount < 100) {
+        missingFields.push(`Property Description (minimum 100 words required, currently ${wordCount} words)`);
+      }
+    }
     if (!formData.contactPhone?.trim()) missingFields.push("Contact Phone Number");
     
     // These fields are required for new properties but optional for edits (older properties might not have them)
@@ -1057,7 +1065,7 @@ const AddRent = () => {
               />
               
               <TextInput
-                label="Street Name"
+                label="Street Name (Line1, Line2 separate with comma)"
                 name="streetName"
                 value={formData.streetName}
                 onChange={handleChange}
@@ -1216,6 +1224,17 @@ const AddRent = () => {
                 placeholder="Provide a detailed description of your property..."
                 required
               ></textarea>
+              <small className="word-count-helper">
+                {(() => {
+                  const wordCount = (formData.description || '').trim().split(/\s+/).filter(word => word.length > 0).length;
+                  const isValid = wordCount >= 100;
+                  return (
+                    <span style={{ color: isValid ? '#10b981' : '#ef4444' }}>
+                      {wordCount}/100 words minimum {isValid ? '✓' : ''}
+                    </span>
+                  );
+                })()}
+              </small>
             </div>
             
 

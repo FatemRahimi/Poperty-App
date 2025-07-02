@@ -357,7 +357,7 @@ const submitProperty = async (req, res) => {
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="color: #667eea; margin-top: 0;">${title}</h3>
           <p><strong>Category:</strong> ${category_mapped.charAt(0).toUpperCase() + category_mapped.slice(1)}</p>
-          <p><strong>Type:</strong> ${property_type_mapped ? property_type_mapped.charAt(0).toUpperCase() + property_type_mapped.slice(1) : 'Not specified'}</p>
+          <p><strong>Type:</strong> ${property_type_mapped ? property_type_mapped.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) : 'Not specified'}</p>
           <p><strong>Address:</strong> ${address_line1_mapped}, ${city}, ${state_mapped} ${zip_code_mapped}</p>
           <p><strong>Price:</strong> $${price_mapped ? price_mapped.toLocaleString() : monthly_rent_mapped?.toLocaleString() + '/month'}</p>
           <p><strong>Status:</strong> Pending Review</p>
@@ -394,7 +394,7 @@ const submitProperty = async (req, res) => {
           <h3 style="color: #667eea; margin-top: 0;">${title}</h3>
           <p><strong>Submitted by:</strong> ${user.first_name} ${user.last_name} (${user.email})</p>
           <p><strong>Category:</strong> ${category_mapped.charAt(0).toUpperCase() + category_mapped.slice(1)}</p>
-          <p><strong>Type:</strong> ${property_type_mapped ? property_type_mapped.charAt(0).toUpperCase() + property_type_mapped.slice(1) : 'Not specified'}</p>
+          <p><strong>Type:</strong> ${property_type_mapped ? property_type_mapped.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) : 'Not specified'}</p>
           <p><strong>Address:</strong> ${address_line1_mapped}, ${city}, ${state_mapped} ${zip_code_mapped}</p>
           <p><strong>Price:</strong> $${price_mapped ? price_mapped.toLocaleString() : monthly_rent_mapped?.toLocaleString() + '/month'}</p>
           <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>

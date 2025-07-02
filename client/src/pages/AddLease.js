@@ -70,27 +70,70 @@ const AddLease = () => {
     return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
   };
 
+  // Helper function to combine house number and street name into full address
+  const combineAddress = (houseNumber, streetName) => {
+    const parts = [];
+    
+    if (houseNumber && houseNumber.trim()) {
+      parts.push(houseNumber.trim());
+    }
+    
+    if (streetName && streetName.trim()) {
+      parts.push(streetName.trim());
+    }
+    
+    return parts.join(' ');
+  };
+
   // Helper function to extract house number and street name from address
   const parseAddress = (address) => {
     if (!address) return { houseNumber: "", streetName: "" };
     
-    // Try to split address into house number and street name
-    const parts = address.trim().split(' ');
-    if (parts.length === 0) return { houseNumber: "", streetName: "" };
+    // Clean and trim the address
+    const cleanAddress = address.trim();
+    if (!cleanAddress) return { houseNumber: "", streetName: "" };
     
-    // If first part looks like a number or number+letter (e.g., "123", "45A"), treat it as house number
-    const firstPart = parts[0];
-    if (/^\d+[A-Za-z]*$/.test(firstPart)) {
+    // Try to extract house number and street name more intelligently
+    // Handle various formats like:
+    // "123 Main Street" -> house: "123", street: "Main Street"
+    // "45A Oak Avenue" -> house: "45A", street: "Oak Avenue"
+    // "Flat 2, 67 High Street" -> house: "Flat 2, 67", street: "High Street"
+    // "Apartment 5B, Building 10, Park Road" -> house: "Apartment 5B, Building 10", street: "Park Road"
+    
+    // Pattern 1: Look for flat/apartment/unit designations followed by numbers and building numbers
+    const flatPattern = /^((?:Flat|Apartment|Unit|Suite)\s+\d+[A-Za-z]*(?:,\s*\d+[A-Za-z]*)?)\s*,?\s*(.+)$/i;
+    const flatMatch = cleanAddress.match(flatPattern);
+    if (flatMatch) {
       return {
-        houseNumber: firstPart,
-        streetName: parts.slice(1).join(' ')
+        houseNumber: flatMatch[1].trim(),
+        streetName: flatMatch[2].trim()
       };
     }
     
-    // Otherwise, put everything in street name
+    // Pattern 2: Look for simple number + letter combinations at the start
+    const simplePattern = /^(\d+[A-Za-z]*)\s+(.+)$/;
+    const simpleMatch = cleanAddress.match(simplePattern);
+    if (simpleMatch) {
+      return {
+        houseNumber: simpleMatch[1],
+        streetName: simpleMatch[2]
+      };
+    }
+    
+    // Pattern 3: Look for complex flat designations (e.g., "Flat 2A, 123 Main St")
+    const complexFlatPattern = /^(Flat\s+\d+[A-Za-z]*),?\s*(\d+[A-Za-z]*)\s+(.+)$/i;
+    const complexFlatMatch = cleanAddress.match(complexFlatPattern);
+    if (complexFlatMatch) {
+      return {
+        houseNumber: `${complexFlatMatch[1]}, ${complexFlatMatch[2]}`,
+        streetName: complexFlatMatch[3]
+      };
+    }
+    
+    // If no patterns match, put everything in street name
     return {
       houseNumber: "",
-      streetName: address
+      streetName: cleanAddress
     };
   };
 
@@ -392,8 +435,8 @@ const AddLease = () => {
         propertyType: formData.spaceType,
         
         // Address fields
-        address_line1: `${formData.houseNumber} ${formData.streetName}`.trim(),
-        streetAddress: `${formData.houseNumber} ${formData.streetName}`.trim(),
+        address_line1: combineAddress(formData.houseNumber, formData.streetName),
+        streetAddress: combineAddress(formData.houseNumber, formData.streetName),
         house_number: formData.houseNumber,
         street_name: formData.streetName,
         city: formData.city,
@@ -570,8 +613,34 @@ const AddLease = () => {
       {showAddress && (
         <>
           <div className="form-row">
-            <TextInput label="Street Address*" name="streetAddress" value={formData.streetAddress} onChange={handleChange} placeholder="e.g., 123 Main Street, Unit 2A Oak Avenue" />
+            <TextInput 
+              label="House Number / Unit" 
+              name="houseNumber" 
+              value={formData.houseNumber} 
+              onChange={handleChange} 
+              placeholder="123 or Unit 2A, 67" 
+              required 
+            />
+            <TextInput 
+              label="Street Name" 
+              name="streetName" 
+              value={formData.streetName} 
+              onChange={handleChange} 
+              placeholder="Industrial Estate" 
+              required 
+            />
           </div>
+          
+          <div className="address-help-text" style={{ 
+            fontSize: '0.85em', 
+            color: '#666', 
+            marginTop: '-10px', 
+            marginBottom: '15px',
+            fontStyle: 'italic'
+          }}>
+            <strong>Tip:</strong> For units, enter the full unit reference (e.g., "Unit 2A, 67") in the first field and just the street name in the second field.
+          </div>
+          
           <div className="form-row">
             <TextInput label="City" name="city" value={formData.city} onChange={handleChange} />
             <TextInput label="Postal Code" name="postcode" value={formData.postcode} onChange={handleChange} />
