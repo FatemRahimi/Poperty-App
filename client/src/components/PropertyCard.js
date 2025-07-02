@@ -53,40 +53,45 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
       return str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
     };
     
-    // Add street name only (without house number)
+    // Get street name parts only (up to 2 parts separated by comma)
     if (property.street_name) {
       // Use the separate street_name field (new format) and apply title case
-      parts.push(toTitleCase(property.street_name));
+      const streetParts = property.street_name.split(',').map(part => toTitleCase(part.trim()));
+      parts.push(...streetParts.slice(0, 2)); // Take only first 2 parts
     } else if (property.address_line1) {
       // Fallback: if street_name is not available, try to extract street name from address_line1
       // by removing potential house numbers and flat numbers at the beginning
       let cleanedAddress = property.address_line1
         .replace(/^[0-9]+[a-zA-Z]?\s+/, '')  // Remove numbers like "123 ", "45A "
-        .replace(/^Flat\s+[0-9]+[a-zA-Z]?\s+/, '')  // Remove "Flat 2A "
-        .replace(/^Apartment\s+[0-9]+[a-zA-Z]?\s+/, '')  // Remove "Apartment 5B "
-        .replace(/^Unit\s+[0-9]+[a-zA-Z]?\s+/, '')  // Remove "Unit 7 "
+        .replace(/^Flat\s+[0-9]+[a-zA-Z]?\s*,?\s*[0-9]+[a-zA-Z]?\s+/, '')  // Remove "Flat 2A, 67 "
+        .replace(/^Apartment\s+[0-9]+[a-zA-Z]?\s*,?\s*[0-9]+[a-zA-Z]?\s+/, '')  // Remove "Apartment 5B, 67 "
+        .replace(/^Unit\s+[0-9]+[a-zA-Z]?\s*,?\s*[0-9]+[a-zA-Z]?\s+/, '')  // Remove "Unit 7, 67 "
         .trim();
       
       if (cleanedAddress && cleanedAddress !== property.address_line1) {
-        // Apply title case to the cleaned street name
-        parts.push(toTitleCase(cleanedAddress));
+        // Split by comma and take up to 2 parts
+        const streetParts = cleanedAddress.split(',').map(part => toTitleCase(part.trim()));
+        parts.push(...streetParts.slice(0, 2));
       } else {
         // If we couldn't clean it, use the original address_line1 with title case
-        parts.push(toTitleCase(property.address_line1));
+        const streetParts = property.address_line1.split(',').map(part => toTitleCase(part.trim()));
+        parts.push(...streetParts.slice(0, 2));
       }
     }
     
-    // Add city with title case
+    // Add city after street name parts
     if (property.city) {
       parts.push(toTitleCase(property.city));
     }
     
-    // Add first 3 characters of postcode (keep uppercase)
-    const postcode = property.zip_code || property.postcode;
-    if (postcode && postcode.length >= 3) {
-      parts.push(postcode.substring(0, 3).toUpperCase());
+    // Add first 3 letters of postcode if available
+    if (property.zip_code || property.postcode) {
+      const postcode = property.zip_code || property.postcode;
+      const postcodePrefix = postcode.substring(0, 3).toUpperCase();
+      parts.push(postcodePrefix);
     }
     
+    // Join all parts with comma and space
     return parts.length > 0 ? parts.join(', ') : 'Location not specified';
   };
 
@@ -307,7 +312,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
           <div className="feature-icon">
             <i className="fas fa-building"></i>
           </div>
-          <span>{property.property_type.charAt(0).toUpperCase() + property.property_type.slice(1).replace('-', ' ')}</span>
+          <span>{property.property_type.replace('-', ' ').replace(/\b\w/g, char => char.toUpperCase())}</span>
         </div>
       )}
             {property.bedrooms && (

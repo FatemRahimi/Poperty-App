@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import PropertyCard from '../components/PropertyCard';
-import SearchDropdown from '../components/SearchDropdown';
+import SearchFilterHeader from '../components/dashboard/SearchFilterHeader';
+import DashboardTabs from '../components/dashboard/DashboardTabs';
+import OverviewStats from '../components/dashboard/OverviewStats';
+import PropertiesSection from '../components/dashboard/PropertiesSection';
 import './UserDashboard.css';
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
@@ -520,6 +521,26 @@ const UserDashboard = () => {
     });
   };
 
+  // Helper function for radius-based filtering
+  const isWithinRadius = (property, searchLocation, radiusInMiles) => {
+    if (!searchLocation || !radiusInMiles || radiusInMiles === '0') return true;
+    
+    // Simple implementation - check if search location appears in property location fields
+    // This is a basic implementation that can be enhanced with proper geocoding
+    const searchLower = searchLocation.toLowerCase();
+    const propertyLocation = [
+      property.city,
+      property.state, 
+      property.zip_code,
+      property.postcode,
+      property.address_line1,
+      property.street_name
+    ].filter(Boolean).join(' ').toLowerCase();
+    
+    // If search location is found in property location, consider it within radius
+    return propertyLocation.includes(searchLower);
+  };
+
   const filteredProperties = properties.filter(property => {
     // Status filter
     const statusMatch = searchFilters.status === 'all' || property.status === searchFilters.status;
@@ -530,9 +551,19 @@ const UserDashboard = () => {
     // Property type (flat/house/detached) filter
     const propertyTypeMatch = searchFilters.propertyBuildingType === 'all' || property.property_type === searchFilters.propertyBuildingType;
     
-    // Price filters
-    const minPriceMatch = searchFilters.minPrice === 'any' || property.price >= parseInt(searchFilters.minPrice);
-    const maxPriceMatch = searchFilters.maxPrice === 'any' || property.price <= parseInt(searchFilters.maxPrice);
+    // Monthly rent price filters (for rental properties)
+    let minPriceMatch = true;
+    let maxPriceMatch = true;
+    
+    if (property.category === 'rent') {
+      const monthlyRent = property.monthly_rent || property.monthlyRent || 0;
+      minPriceMatch = searchFilters.minPrice === 'any' || monthlyRent >= parseInt(searchFilters.minPrice);
+      maxPriceMatch = searchFilters.maxPrice === 'any' || monthlyRent <= parseInt(searchFilters.maxPrice);
+    } else {
+      // For sale/lease properties, use the original price field
+      minPriceMatch = searchFilters.minPrice === 'any' || property.price >= parseInt(searchFilters.minPrice);
+      maxPriceMatch = searchFilters.maxPrice === 'any' || property.price <= parseInt(searchFilters.maxPrice);
+    }
     
     // Bedroom filters
     const minBedsMatch = searchFilters.minBeds === 'any' || property.bedrooms >= parseInt(searchFilters.minBeds);
@@ -546,18 +577,64 @@ const UserDashboard = () => {
     const gardenMatch = !moreFilters.hasGarden || property.has_garden;
     const parkingMatch = !moreFilters.hasParking || property.has_garage || property.parking_spaces > 0;
     const studentMatch = !moreFilters.studentAccommodation || property.student_housing;
+    const houseShareMatch = !moreFilters.houseShare || property.property_type === 'house-share';
+    const retirementMatch = !moreFilters.retirementHome || property.property_type === 'retirement-home';
     
-    // Search functionality
+    // More Filters - Type of Let
+    const typeOfLetMatch = moreFilters.typeOfLet === 'any' || 
+      (moreFilters.typeOfLet === 'long-term' && property.lease_term >= 12) ||
+      (moreFilters.typeOfLet === 'short-term' && property.lease_term < 12);
+    
+    // More Filters - Date Added
+    let dateAddedMatch = true;
+    if (moreFilters.dateAdded !== 'anytime' && property.created_at) {
+      const propertyDate = new Date(property.created_at);
+      const now = new Date();
+      const daysDiff = Math.floor((now - propertyDate) / (1000 * 60 * 60 * 24));
+      
+      switch (moreFilters.dateAdded) {
+        case '3days':
+          dateAddedMatch = daysDiff <= 3;
+          break;
+        case '7days':
+          dateAddedMatch = daysDiff <= 7;
+          break;
+        case '14days':
+          dateAddedMatch = daysDiff <= 14;
+          break;
+        default:
+          dateAddedMatch = true;
+      }
+    }
+    
+    // More Filters - Move in Date
+    let moveInDateMatch = true;
+    if (moreFilters.moveInDate && property.availability_date) {
+      const moveInDate = new Date(moreFilters.moveInDate);
+      const availableDate = new Date(property.availability_date);
+      moveInDateMatch = availableDate <= moveInDate;
+    }
+    
+    // Enhanced search functionality - includes location, postcode, and all property details
     const searchMatch = searchQuery === '' || 
       property.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       property.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       property.address_line1?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.street_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       property.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.zip_code?.toLowerCase().includes(searchQuery.toLowerCase());
+      property.state?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.zip_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.postcode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.property_type?.toLowerCase().replace('-', ' ').includes(searchQuery.toLowerCase()) ||
+      property.category?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Radius-based location filtering
+    const radiusMatch = isWithinRadius(property, searchQuery, searchFilters.radius);
     
     return statusMatch && categoryMatch && propertyTypeMatch && minPriceMatch && maxPriceMatch && 
            minBedsMatch && maxBedsMatch && minBathMatch && maxBathMatch && 
-           gardenMatch && parkingMatch && studentMatch && searchMatch;
+           gardenMatch && parkingMatch && studentMatch && houseShareMatch && retirementMatch &&
+           typeOfLetMatch && dateAddedMatch && moveInDateMatch && searchMatch && radiusMatch;
   });
 
   // Dropdown options for search filters
@@ -575,76 +652,65 @@ const UserDashboard = () => {
     { value: '30', label: 'Within 30 miles' }
   ];
 
+  // Price options for monthly rent (rental properties)
   const priceOptions = {
     min: [
-      { value: 'any', label: 'Min Price' },
-      { value: '100', label: '£100' },
-      { value: '200', label: '£200' },
-      { value: '300', label: '£300' },
-      { value: '400', label: '£400' },
-      { value: '500', label: '£500' },
-      { value: '600', label: '£600' },
-      { value: '700', label: '£700' },
-      { value: '800', label: '£800' },
-      { value: '900', label: '£900' },
-      { value: '1000', label: '£1,000' },
-      { value: '1250', label: '£1,250' },
-      { value: '1500', label: '£1,500' },
-      { value: '1750', label: '£1,750' },
-      { value: '2000', label: '£2,000' },
-      { value: '2500', label: '£2,500' },
-      { value: '3000', label: '£3,000' },
-      { value: '3500', label: '£3,500' },
-      { value: '4000', label: '£4,000' },
-      { value: '4500', label: '£4,500' },
-      { value: '5000', label: '£5,000' },
-      { value: '6000', label: '£6,000' },
-      { value: '7000', label: '£7,000' },
-      { value: '8000', label: '£8,000' },
-      { value: '9000', label: '£9,000' },
-      { value: '10000', label: '£10,000' },
-      { value: '12500', label: '£12,500' },
-      { value: '15000', label: '£15,000' },
-      { value: '17500', label: '£17,500' },
-      { value: '20000', label: '£20,000' },
-      { value: '25000', label: '£25,000' },
-      { value: '30000', label: '£30,000' },
-      { value: '35000', label: '£35,000' }
+      { value: 'any', label: 'Min Rent' },
+      { value: '500', label: '£500 pcm' },
+      { value: '600', label: '£600 pcm' },
+      { value: '700', label: '£700 pcm' },
+      { value: '800', label: '£800 pcm' },
+      { value: '900', label: '£900 pcm' },
+      { value: '1000', label: '£1,000 pcm' },
+      { value: '1100', label: '£1,100 pcm' },
+      { value: '1200', label: '£1,200 pcm' },
+      { value: '1300', label: '£1,300 pcm' },
+      { value: '1400', label: '£1,400 pcm' },
+      { value: '1500', label: '£1,500 pcm' },
+      { value: '1750', label: '£1,750 pcm' },
+      { value: '2000', label: '£2,000 pcm' },
+      { value: '2250', label: '£2,250 pcm' },
+      { value: '2500', label: '£2,500 pcm' },
+      { value: '2750', label: '£2,750 pcm' },
+      { value: '3000', label: '£3,000 pcm' },
+      { value: '3500', label: '£3,500 pcm' },
+      { value: '4000', label: '£4,000 pcm' },
+      { value: '4500', label: '£4,500 pcm' },
+      { value: '5000', label: '£5,000 pcm' },
+      { value: '6000', label: '£6,000 pcm' },
+      { value: '7000', label: '£7,000 pcm' },
+      { value: '8000', label: '£8,000 pcm' },
+      { value: '10000', label: '£10,000 pcm' },
+      { value: '15000', label: '£15,000 pcm' }
     ],
     max: [
-      { value: 'any', label: 'Max Price' },
-      { value: '100', label: '£100' },
-      { value: '200', label: '£200' },
-      { value: '300', label: '£300' },
-      { value: '400', label: '£400' },
-      { value: '500', label: '£500' },
-      { value: '600', label: '£600' },
-      { value: '700', label: '£700' },
-      { value: '800', label: '£800' },
-      { value: '900', label: '£900' },
-      { value: '1000', label: '£1,000' },
-      { value: '1250', label: '£1,250' },
-      { value: '1500', label: '£1,500' },
-      { value: '1750', label: '£1,750' },
-      { value: '2000', label: '£2,000' },
-      { value: '2500', label: '£2,500' },
-      { value: '3000', label: '£3,000' },
-      { value: '3500', label: '£3,500' },
-      { value: '4000', label: '£4,000' },
-      { value: '4500', label: '£4,500' },
-      { value: '5000', label: '£5,000' },
-      { value: '6000', label: '£6,000' },
-      { value: '7000', label: '£7,000' },
-      { value: '8000', label: '£8,000' },
-      { value: '9000', label: '£9,000' },
-      { value: '10000', label: '£10,000' },
-      { value: '12500', label: '£12,500' },
-      { value: '15000', label: '£15,000' },
-      { value: '17500', label: '£17,500' },
-      { value: '20000', label: '£20,000' },
-      { value: '25000', label: '£25,000' },
-      { value: '30000', label: '£30,000' },
-      { value: '35000', label: '£35,000' }
+      { value: 'any', label: 'Max Rent' },
+      { value: '500', label: '£500 pcm' },
+      { value: '600', label: '£600 pcm' },
+      { value: '700', label: '£700 pcm' },
+      { value: '800', label: '£800 pcm' },
+      { value: '900', label: '£900 pcm' },
+      { value: '1000', label: '£1,000 pcm' },
+      { value: '1100', label: '£1,100 pcm' },
+      { value: '1200', label: '£1,200 pcm' },
+      { value: '1300', label: '£1,300 pcm' },
+      { value: '1400', label: '£1,400 pcm' },
+      { value: '1500', label: '£1,500 pcm' },
+      { value: '1750', label: '£1,750 pcm' },
+      { value: '2000', label: '£2,000 pcm' },
+      { value: '2250', label: '£2,250 pcm' },
+      { value: '2500', label: '£2,500 pcm' },
+      { value: '2750', label: '£2,750 pcm' },
+      { value: '3000', label: '£3,000 pcm' },
+      { value: '3500', label: '£3,500 pcm' },
+      { value: '4000', label: '£4,000 pcm' },
+      { value: '4500', label: '£4,500 pcm' },
+      { value: '5000', label: '£5,000 pcm' },
+      { value: '6000', label: '£6,000 pcm' },
+      { value: '7000', label: '£7,000 pcm' },
+      { value: '8000', label: '£8,000 pcm' },
+      { value: '10000', label: '£10,000 pcm' },
+      { value: '15000', label: '£15,000 pcm' }
     ]
   };
 
@@ -1067,503 +1133,47 @@ const UserDashboard = () => {
           Home <i className="fas fa-chevron-right"></i>
         </span>
         <span className="dashboard-text">Dashboard</span>
-        <div className="nav-container">
-          <div className="nav-tabs-modern">
-            <button 
-              className={`nav-tab-modern ${activeTab === 'overview' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab('overview');
-                setShowPropertiesDropdown(false);
-              }}
-            >
-              <i className="fas fa-chart-line"></i>
-              Overview
-            </button>
-            <div className="properties-tab-container">
-              <button 
-                className={`nav-tab-modern properties-tab ${activeTab === 'properties' ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveTab('properties');
-                  setShowPropertiesDropdown(false);
-                }}
-              >
-                <i className="fas fa-building"></i>
-                My Properties
-              </button>
-            </div>
-            <button 
-              className={`nav-tab-modern ${activeTab === 'profile' ? 'active' : ''}`}
-              onClick={async () => {
-                setActiveTab('profile');
-                setShowPropertiesDropdown(false);
-                // Auto-refresh profile data when switching to profile tab
-                if (activeTab !== 'profile') {
-                  await refreshUserProfile();
-                }
-              }}
-            >
-              <i className="fas fa-user"></i>
-              Profile
-            </button>
-          </div>
-        </div>
+        <DashboardTabs
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          setShowPropertiesDropdown={setShowPropertiesDropdown}
+          refreshUserProfile={refreshUserProfile}
+        />
       </div>
 
-      {/* Professional Search/Filter Bar - Show only when properties tab is active */}
-      {activeTab === 'properties' && (
-        <div className="professional-search-header">
-          <div className="search-filter-container">
-            {/* Location Search */}
-            <div className="filter-group location-group">
-              <input
-                type="text"
-                placeholder="Search location..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="location-input"
-              />
-              <SearchDropdown
-                value={searchFilters.radius}
-                onChange={(value) => setSearchFilters({...searchFilters, radius: value})}
-                options={radiusOptions}
-                placeholder="Select radius"
-                className="search-dropdown-radius"
-                style={{minWidth: '150px'}}
-                theme="dark"
-              />
-            </div>
-
-            {/* Price Filters */}
-            <div className="filter-group price-group">
-              <SearchDropdown
-                value={searchFilters.minPrice}
-                onChange={(value) => setSearchFilters({...searchFilters, minPrice: value})}
-                options={priceOptions.min}
-                placeholder="Min Price"
-                className="search-dropdown-price-min"
-                style={{minWidth: '100px'}}
-                theme="dark"
-              />
-              <span className="separator">to</span>
-            
-              <SearchDropdown
-                value={searchFilters.maxPrice}
-                onChange={(value) => setSearchFilters({...searchFilters, maxPrice: value})}
-                options={priceOptions.max}
-                placeholder="Max Price"
-                className="search-dropdown-price-max"
-                style={{minWidth: '100px'}}
-                theme="dark"
-              />
-            </div>
-
-            {/* Bedroom Filters */}
-            <div className="filter-group bedroom-group">
-              <SearchDropdown
-                value={searchFilters.minBeds}
-                onChange={(value) => setSearchFilters({...searchFilters, minBeds: value})}
-                options={bedroomOptions.min}
-                placeholder="Min Beds"
-                className="search-dropdown-beds-min"
-                style={{minWidth: '95px'}}
-                theme="dark"
-              />
-              <span className="separator">to</span>
-              <SearchDropdown
-                value={searchFilters.maxBeds}
-                onChange={(value) => setSearchFilters({...searchFilters, maxBeds: value})}
-                options={bedroomOptions.max}
-                placeholder="Max Beds"
-                className="search-dropdown-beds-max"
-                style={{minWidth: '95px'}}
-                theme="dark"
-              />
-            </div>
-
-            {/* Property Type */}
-            <div className="filter-group property-type-group">
-              <SearchDropdown
-                value={searchFilters.propertyBuildingType}
-                onChange={(value) => setSearchFilters({...searchFilters, propertyBuildingType: value})}
-                options={propertyBuildingTypeOptions}
-                placeholder="Property Type"
-                className="search-dropdown-property-building-type"
-                style={{minWidth: '140px'}}
-                theme="dark"
-              />
-            </div>
-
-            {/* More Filters */}
-            <div className="filter-group dashboard-more-filters-container">
-              <div 
-                className={`dashboard-more-filters-button ${showMoreFilters ? 'open' : ''}`}
-                onClick={() => setShowMoreFilters(!showMoreFilters)}
-              >
-                <span className="dashboard-more-filters-text">More Filters</span>
-                <i className={`fas fa-chevron-down dashboard-more-filters-arrow ${showMoreFilters ? 'open' : ''}`}></i>
-              </div>
-
-              {showMoreFilters && (
-                <div className="dashboard-more-filters-dropdown">
-                  <div className="dashboard-more-filters-content">
-                    
-                    {/* Bathroom Section */}
-                    <div className="dashboard-filter-section">
-                      <h4 className="dashboard-filter-section-title">
-                        <i className="fas fa-bath"></i>
-                        Bathroom
-                      </h4>
-                      <div className="dashboard-filter-row">
-                        <div className="filter-field">
-                          <SearchDropdown
-                            value={moreFilters.minBathrooms}
-                            onChange={(value) => setMoreFilters({...moreFilters, minBathrooms: value})}
-                            options={bathroomOptions.min}
-                            placeholder="Min Bath"
-                            className="dashboard-more-filter-dropdown"
-                            style={{minWidth: '140px'}}
-                            theme="light"
-                          />
-                        </div>
-                        <div className="filter-field">
-                          <SearchDropdown
-                            value={moreFilters.maxBathrooms}
-                            onChange={(value) => setMoreFilters({...moreFilters, maxBathrooms: value})}
-                            options={bathroomOptions.max}
-                            placeholder="Max Bath"
-                            className="dashboard-more-filter-dropdown"
-                            style={{minWidth: '140px'}}
-                            theme="light"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="dashboard-filter-divider"></div>
-
-                    {/* Property Details Section */}
-                    <div className="dashboard-filter-section">
-                      <h4 className="dashboard-filter-section-title">
-                        <i className="fas fa-home"></i>
-                        Property Details
-                      </h4>
-                      <div className="dashboard-filter-row">
-                        <div className="filter-field">
-                          <label className="filter-field-label">Date Added</label>
-                          <SearchDropdown
-                            value={moreFilters.dateAdded}
-                            onChange={(value) => setMoreFilters({...moreFilters, dateAdded: value})}
-                            options={[
-                              { value: 'anytime', label: 'Anytime' },
-                              { value: '3days', label: 'Last 3 days' },
-                              { value: '7days', label: 'Last 7 days' },
-                              { value: '14days', label: 'Last 14 days' }
-                            ]}
-                            placeholder="Anytime"
-                            className="dashboard-more-filter-dropdown"
-                            style={{minWidth: '280px'}}
-                            theme="light"
-                          />
-                        </div>
-                        <div className="filter-field">
-                          <label className="filter-field-label">Move in by Date</label>
-                          <div className="date-input-container">
-                            <input
-                              type="date"
-                              className="date-input"
-                              value={moreFilters.moveInDate}
-                              onChange={(e) => setMoreFilters({...moreFilters, moveInDate: e.target.value})}
-                              placeholder="dd/mm/yyyy"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="dashboard-filter-row">
-                        <label className="dashboard-filter-checkbox-option">
-                          <input
-                            type="checkbox"
-                            checked={moreFilters.letAgreed}
-                            onChange={(e) => setMoreFilters({...moreFilters, letAgreed: e.target.checked})}
-                          />
-                          <span className="checkbox-custom"></span>
-                          <span className="checkbox-label">Include Let Agreed</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="dashboard-filter-divider"></div>
-
-                    {/* Type of Let Section */}
-                    <div className="dashboard-filter-section">
-                      <h4 className="dashboard-filter-section-title">
-                        <i className="fas fa-key"></i>
-                        Type of Let
-                      </h4>
-                      <div className="dashboard-filter-list">
-                        <label className="dashboard-filter-radio-option">
-                          <input
-                            type="radio"
-                            name="typeOfLet"
-                            value="any"
-                            checked={moreFilters.typeOfLet === 'any'}
-                            onChange={(e) => setMoreFilters({...moreFilters, typeOfLet: e.target.value})}
-                          />
-                          <span className="radio-custom"></span>
-                          <span className="radio-label">Any</span>
-                        </label>
-                        <label className="dashboard-filter-radio-option">
-                          <input
-                            type="radio"
-                            name="typeOfLet"
-                            value="long-term"
-                            checked={moreFilters.typeOfLet === 'long-term'}
-                            onChange={(e) => setMoreFilters({...moreFilters, typeOfLet: e.target.value})}
-                          />
-                          <span className="radio-custom"></span>
-                          <span className="radio-label">Long Term</span>
-                        </label>
-                        <label className="dashboard-filter-radio-option">
-                          <input
-                            type="radio"
-                            name="typeOfLet"
-                            value="short-term"
-                            checked={moreFilters.typeOfLet === 'short-term'}
-                            onChange={(e) => setMoreFilters({...moreFilters, typeOfLet: e.target.value})}
-                          />
-                          <span className="radio-custom"></span>
-                          <span className="radio-label">Short Term</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Property Features Section */}
-                    <div className="dashboard-filter-section">
-                      <div className="dashboard-filter-checkboxes-row">
-                        <label className="dashboard-filter-checkbox-option">
-                          <input
-                            type="checkbox"
-                            checked={moreFilters.hasGarden}
-                            onChange={(e) => setMoreFilters({...moreFilters, hasGarden: e.target.checked})}
-                          />
-                          <span className="checkbox-custom"></span>
-                          <span className="checkbox-label">Garden</span>
-                        </label>
-                        <label className="dashboard-filter-checkbox-option">
-                          <input
-                            type="checkbox"
-                            checked={moreFilters.hasParking}
-                            onChange={(e) => setMoreFilters({...moreFilters, hasParking: e.target.checked})}
-                          />
-                          <span className="checkbox-custom"></span>
-                          <span className="checkbox-label">Parking</span>
-                        </label>
-                        <label className="dashboard-filter-checkbox-option">
-                          <input
-                            type="checkbox"
-                            checked={moreFilters.houseShare}
-                            onChange={(e) => setMoreFilters({...moreFilters, houseShare: e.target.checked})}
-                          />
-                          <span className="checkbox-custom"></span>
-                          <span className="checkbox-label">House Share</span>
-                        </label>
-                        <label className="dashboard-filter-checkbox-option">
-                          <input
-                            type="checkbox"
-                            checked={moreFilters.retirementHome}
-                            onChange={(e) => setMoreFilters({...moreFilters, retirementHome: e.target.checked})}
-                          />
-                          <span className="checkbox-custom"></span>
-                          <span className="checkbox-label">Retirement Home</span>
-                        </label>
-                        <label className="dashboard-filter-checkbox-option">
-                          <input
-                            type="checkbox"
-                            checked={moreFilters.studentAccommodation}
-                            onChange={(e) => setMoreFilters({...moreFilters, studentAccommodation: e.target.checked})}
-                          />
-                          <span className="checkbox-custom"></span>
-                          <span className="checkbox-label">Student Accommodation</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Filter Actions */}
-                    <div className="dashboard-filter-actions">
-                      <button 
-                        className="dashboard-filter-clear-btn"
-                        onClick={() => setMoreFilters({
-                          minBathrooms: '',
-                          maxBathrooms: '',
-                          typeOfLet: 'any',
-                          dateAdded: 'anytime',
-                          moveInDate: '',
-                          letAgreed: false,
-                          hasGarden: false,
-                          hasParking: false,
-                          houseShare: false,
-                          retirementHome: false,
-                          studentAccommodation: false
-                        })}
-                      >
-                        Clear
-                      </button>
-                      <button 
-                        className="dashboard-filter-done-btn"
-                        onClick={() => {
-                          // Apply filters logic here
-                          setShowMoreFilters(false);
-                        }}
-                      >
-                        Done
-                      </button>
-                    </div>
-
-                  </div>
-                </div>
-              )}
-            </div>
-
-
-          </div>
-        </div>
+      {/* Professional Search/Filter Bar - Show only when properties tab is active AND "For Rent" is selected */}
+      {activeTab === 'properties' && searchFilters.propertyType === 'rent' && (
+        <SearchFilterHeader
+          searchFilters={searchFilters}
+          setSearchFilters={setSearchFilters}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          moreFilters={moreFilters}
+          setMoreFilters={setMoreFilters}
+          showMoreFilters={showMoreFilters}
+          setShowMoreFilters={setShowMoreFilters}
+          priceOptions={priceOptions}
+          bedroomOptions={bedroomOptions}
+          propertyBuildingTypeOptions={propertyBuildingTypeOptions}
+          bathroomOptions={bathroomOptions}
+        />
       )}
 
       {/* Main Content */}
       <div className="dashboard-main">
         {activeTab === 'overview' && (
-          <>
-            <div className="stats-section">
-              <div className="stats-header">
-                <h2>Property Statistics</h2>
-              </div>
-              <div className="stats-grid-modern">
-                <StatCard 
-                  title="Total Properties" 
-                  value={stats.total || 0} 
-                  icon="fa-home" 
-                  color="primary"
-                />
-                <StatCard 
-                  title="Approved Listings" 
-                  value={stats.approved || 0} 
-                  icon="fa-check-circle" 
-                  color="success"
-                />
-                <StatCard 
-                  title="Pending Review" 
-                  value={stats.pending || 0} 
-                  icon="fa-clock" 
-                  color="warning"
-                />
-                <StatCard 
-                  title="Need Updates" 
-                  value={stats.rejected || 0} 
-                  icon="fa-edit" 
-                  color="danger"
-                />
-              </div>
-            </div>
-          </>
+          <OverviewStats stats={stats} />
         )}
 
         {activeTab === 'properties' && (
-          <div className="properties-section-with-sidebar">
-            {/* Left Sidebar with Filters */}
-            <div className="properties-sidebar">
-              <div className="sidebar-section">
-                <h4>
-                  <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 7h-9"/>
-                    <path d="M14 17H5"/>
-                    <circle cx="17" cy="17" r="3"/>
-                    <circle cx="7" cy="7" r="3"/>
-                  </svg>
-                  Categories
-                </h4>
-                <div className="sidebar-filter-options">
-                  {propertyTypeOptions.map(option => (
-                    <label key={option.value} className="sidebar-option">
-                      <input
-                        type="radio"
-                        name="propertyType"
-                        value={option.value}
-                        checked={searchFilters.propertyType === option.value}
-                        onChange={(e) => {
-                          setSearchFilters({...searchFilters, propertyType: e.target.value});
-                        }}
-                        className="category-radio"
-                      />
-                      <span className="option-text">{option.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="sidebar-section">
-                <h4>
-                  <svg className="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 8v4"/>
-                    <path d="M12 16h.01"/>
-                  </svg>
-                  Status
-                </h4>
-                <div className="sidebar-filter-options">
-                  {statusOptions.map(option => (
-                    <label key={option.value} className="sidebar-option">
-                      <input
-                        type="radio"
-                        name="status"
-                        value={option.value}
-                        checked={searchFilters.status === option.value}
-                        onChange={(e) => {
-                          setSearchFilters({...searchFilters, status: e.target.value});
-                        }}
-                        className="status-radio"
-                      />
-                      <span className="option-text">{option.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            {/* Main Properties Content */}
-            <div className="properties-main-content">
-              <div className="properties-header-modern">
-                <div className="properties-title">
-                  <h2>My Properties</h2>
-                  <span className="property-count">{filteredProperties.length}</span>
-                </div>
-              </div>
-
-              {filteredProperties.length === 0 ? (
-                <div className="no-properties-modern">
-                  <i className="fas fa-home"></i>
-                  <h3>No Properties Found</h3>
-                  <p>You haven't submitted any properties yet, or no properties match your current filters.</p>
-                  <button 
-                    className="btn-add-first"
-                    onClick={() => navigate('/addlist')}
-                  >
-                    <i className="fas fa-plus"></i>
-                    Add Your First Property
-                  </button>
-                </div>
-              ) : (
-                <div className="properties-grid-modern">
-                  {filteredProperties.map(property => (
-                    <PropertyCard 
-                      key={property.id} 
-                      property={property} 
-                      onPropertyDeleted={handlePropertyDeleted}
-                      sourcePage="/dashboard?tab=properties"
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <PropertiesSection
+            filteredProperties={filteredProperties}
+            searchFilters={searchFilters}
+            setSearchFilters={setSearchFilters}
+            propertyTypeOptions={propertyTypeOptions}
+            statusOptions={statusOptions}
+            handlePropertyDeleted={handlePropertyDeleted}
+          />
         )}
 
         {activeTab === 'profile' && (
