@@ -674,7 +674,7 @@
 .filter-group:not(:last-child)::after {
   content: '';
   position: absolute;
-  right: -1.5rem;
+  right: -0.5rem;
   top: 50%;
   transform: translateY(-50%);
   width: 2px;
@@ -702,9 +702,9 @@
   background: white;
   border-radius: 8px;
   overflow: hidden;
-  min-width: 400px;
+  min-width: 320px;
   border: 1px solid #e2e8f0;
-  margin-right: 2rem;
+  margin-right: 1rem;
 }
 
 /* Special styling for radius dropdown inside location group */
@@ -781,7 +781,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-right: 2rem;
+  margin-right: 1rem;
 }
 
 /* Bedroom Filter Group */
@@ -789,17 +789,17 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-right: 2rem;
+  margin-right: 1rem;
 }
 
 /* Property Building Type Group */
 .property-type-group {
-  margin-right: 3rem;
+  margin-right: 1rem;
 }
 
 /* Property Type Group */
 .type-group {
-  margin-right: 2rem;
+  margin-right: 1rem;
 }
 
 .type-select {
