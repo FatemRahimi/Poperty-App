@@ -522,11 +522,60 @@
   }
 }
 
-/* Main Content Container */
+/* Main Content Container - Responsive */
 .dashboard-main {
-  max-width: 1200px;
+  max-width: 2000px; /* 16-inch laptops and larger displays */
   margin: 0 auto;
   padding: 2rem;
+  width: 100%;
+  /* Allow content to extend more to the left for sidebar */
+  margin-left: 3rem;
+  padding-left: 1rem;
+}
+
+/* Responsive Dashboard Width for Different Screen Sizes */
+@media (max-width: 1920px) and (min-width: 1600px) {
+  .dashboard-main {
+    max-width: 1600px; /* Large desktops */
+  }
+}
+
+@media (max-width: 1599px) and (min-width: 1400px) {
+  .dashboard-main {
+    max-width: 1400px; /* Standard laptops 15-16 inch */
+  }
+}
+
+@media (max-width: 1399px) and (min-width: 1200px) {
+  .dashboard-main {
+    max-width: 1200px; /* Smaller laptops 13-14 inch */
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 992px) {
+  .dashboard-main {
+    max-width: 1000px; /* Small laptops and large tablets landscape */
+    padding: 1.5rem;
+    margin-left: 2rem; /* Reduce left margin on smaller laptops */
+  }
+}
+
+@media (max-width: 991px) and (min-width: 768px) {
+  .dashboard-main {
+    max-width: 100%; /* Tablets */
+    padding: 1rem;
+    margin-left: 0; /* Reset margin on tablets */
+    padding-left: 1rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard-main {
+    max-width: 100%; /* Mobile devices */
+    padding: 0.75rem;
+    margin-left: 0; /* Reset margin on mobile */
+    padding-left: 0.75rem;
+  }
 }
 
 /* Professional Stats Cards */
@@ -955,17 +1004,25 @@
   color: #c8d0dd !important;
 }
 
-/* ULTIMATE OVERRIDE - Force white text for ALL dark theme elements */
+/* ULTIMATE OVERRIDE - Force white text for ALL dark theme elements EXCEPT radius */
 .search-dropdown-dark .search-select-value,
 .search-dropdown-dark.search-dropdown-price-min .search-select-value,
 .search-dropdown-dark.search-dropdown-price-max .search-select-value,
 .search-dropdown-dark.search-dropdown-beds-min .search-select-value,
 .search-dropdown-dark.search-dropdown-beds-max .search-select-value,
-.search-dropdown-dark.search-dropdown-property-building-type .search-select-value,
-.search-dropdown-dark.search-dropdown-radius .search-select-value {
+.search-dropdown-dark.search-dropdown-property-building-type .search-select-value {
   color: white !important;
   font-weight: 500 !important;
   opacity: 1 !important;
+}
+
+/* OVERRIDE: Force black text for radius dropdown specifically */
+.search-dropdown-dark.search-dropdown-radius .search-select-value,
+.search-dropdown-dark.search-dropdown-radius .search-select-value.showing-placeholder,
+.search-dropdown-dark.search-dropdown-radius .search-select-box.placeholder .search-select-value {
+  color: #000000 !important;
+  font-weight: 500 !important;
+  opacity: 0.8 !important;
 }
 
 /* LIGHT THEME - For white background contexts */
@@ -1041,15 +1098,41 @@
   opacity: 1;
 }
 
-/* Special styling for radius dropdown - black text when selected, white placeholder */
+/* Special styling for radius dropdown - black theme */
 .search-dropdown-radius .search-select-value {
-  color: #101112;
-  font-weight: 400;
+  color: #000000;
+  font-weight: 500;
 }
 
 .search-dropdown-radius .search-select-box.placeholder .search-select-value {
-  color: white !important;
-  font-style: italic;
+  color: #000000 !important;
+  font-style: normal;
+  opacity: 0.7;
+}
+
+.search-dropdown-radius .search-select-value.showing-placeholder {
+  color: #000000 !important;
+  opacity: 0.7;
+}
+
+.search-dropdown-radius .search-select-box .search-select-value::placeholder {
+  color: #000000 !important;
+  opacity: 0.7;
+}
+
+.search-dropdown-radius .search-select-box {
+  background: #f8f9fa;
+  border: 1px solid #000000;
+}
+
+.search-dropdown-radius .search-select-box:hover {
+  border-color: #000000;
+  background: #e9ecef;
+}
+
+.search-dropdown-radius .search-select-box:focus {
+  border-color: #000000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
 /* ========================================
@@ -1123,9 +1206,9 @@
   margin-left: 0.5rem;
 }
 
-/* Special styling for radius dropdown arrow - keep blue but adjust for white background */
+/* Special styling for radius dropdown arrow - black theme */
 .search-dropdown-radius .search-select-arrow {
-  color: #2563eb;
+  color: #000000;
 }
 
 .search-select-arrow.open {
@@ -3238,3 +3321,306 @@
     transform: translateY(0);
   }
 } 
+
+/* Properties Section with Sidebar Layout - Responsive */
+.properties-section-with-sidebar {
+  display: flex;
+  gap: 3.5rem;
+  align-items: flex-start;
+  margin-left: -3rem;
+  width: calc(100% + 4rem);
+}
+
+/* Responsive Sidebar Layout */
+@media (max-width: 1599px) and (min-width: 1200px) {
+  .properties-section-with-sidebar {
+    gap: 3rem;
+    margin-left: -2.5rem;
+    width: calc(100% + 3rem);
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 992px) {
+  .properties-section-with-sidebar {
+    gap: 2rem;
+    margin-left: -1rem;
+  }
+  
+  .properties-sidebar {
+    width: 240px;
+  }
+  
+  .properties-main-content {
+    margin-left: 0.5rem;
+  }
+}
+
+/* Left Sidebar */
+.properties-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+ 
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+
+  position: sticky;
+  top: 80px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+/* Sidebar Sections */
+.sidebar-section {
+  margin-bottom: 2rem;
+}
+
+.sidebar-section:last-child {
+  margin-bottom: 0;
+}
+
+.sidebar-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sidebar-section .section-icon {
+  width: 18px;
+  height: 18px;
+  color: #6b7280;
+}
+
+/* Sidebar Filter Options */
+.sidebar-filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sidebar-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 0.5rem;
+  padding-left: 0.5rem;
+}
+
+.sidebar-option:hover {
+  background: #f8fafc;
+}
+
+.sidebar-option input[type="radio"] {
+  appearance: none;
+  width: 8px;
+  height: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 50%;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  background: white;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-option input[type="radio"]:checked {
+  border-color: #667eea;
+  background: #667eea;
+}
+
+.sidebar-option input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: white;
+}
+
+.sidebar-option input[type="radio"]:hover {
+  border-color: #667eea;
+}
+
+.sidebar-option .option-text {
+  font-size: 1.2rem;
+  color: #374151;
+  font-weight: 500;
+  flex: 1;
+}
+
+.sidebar-option:hover .option-text {
+  color: #1f2937;
+}
+
+.sidebar-option input[type="radio"]:checked + .option-text {
+  color: #667eea;
+  font-weight: 600;
+}
+
+/* Professional radio button styling for category and status filters */
+.category-radio,
+.status-radio {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 50%;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  background: white;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.category-radio:checked,
+.status-radio:checked {
+  background: #667eea;
+  border-color: #667eea;
+}
+
+.category-radio:checked::after,
+.status-radio:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: white;
+}
+
+.category-radio:hover,
+.status-radio:hover {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+/* Main Properties Content */
+.properties-main-content {
+  flex: 1;
+  min-width: 0; /* Allows proper flex shrinking */
+  margin-left: 1rem;
+}
+
+/* Update existing properties section for better compatibility */
+.properties-section {
+  margin-bottom: 2rem;
+}
+
+/* Responsive Design for Sidebar - Tablets and Mobile */
+@media (max-width: 991px) {
+  .properties-section-with-sidebar {
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-left: 0; /* Reset margin on smaller screens */
+  }
+  
+  .properties-sidebar {
+    width: 100%;
+    position: static;
+    max-height: none;
+    order: -1; /* Place sidebar above content on mobile */
+    margin-left: 0; /* Reset sidebar margin */
+  }
+  
+  .properties-main-content {
+    margin-left: 0; /* Reset main content margin */
+  }
+  
+  .sidebar-section {
+    margin-bottom: 1.5rem;
+  }
+  
+  .sidebar-filter-options {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .sidebar-option {
+    padding: 0.375rem 0.75rem;
+    background: #f8fafc;
+    border-radius: 2rem;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  
+  .sidebar-option:hover {
+    background: #e2e8f0;
+  }
+  
+  .sidebar-option input[type="radio"]:checked {
+    border-color: #667eea;
+    background: #667eea;
+  }
+  
+  .sidebar-option input[type="radio"]:checked + .option-text {
+    color: #667eea;
+  }
+}
+
+@media (max-width: 768px) {
+  .properties-sidebar {
+    padding: 1rem;
+    border-radius: 0.75rem;
+  }
+  
+  .sidebar-section h4 {
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .sidebar-filter-options {
+    gap: 0.375rem;
+  }
+  
+  .sidebar-option {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+  }
+  
+  .sidebar-option .option-text {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .properties-section-with-sidebar {
+    gap: 1rem;
+  }
+  
+  .properties-sidebar {
+    padding: 0.75rem;
+  }
+  
+  .sidebar-section {
+    margin-bottom: 1rem;
+  }
+  
+  .sidebar-section h4 {
+    font-size: 0.85rem;
+  }
+  
+  .sidebar-option {
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .sidebar-option .option-text {
+    font-size: 0.8rem;
+  }
+}
