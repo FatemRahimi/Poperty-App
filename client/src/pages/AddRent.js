@@ -121,6 +121,7 @@ const AddRent = () => {
   const location = useLocation();
   const { user, isAuthenticated, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitSuccess, setIsSubmitSuccess] = useState(false); // Track successful submission
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [currentSection, setCurrentSection] = useState(1);
@@ -844,21 +845,27 @@ const AddRent = () => {
       console.log(`✅ Rent Property ${editMode ? 'Updated' : 'Submitted'} Successfully:`, result);
       
       if (editMode) {
-        // For updates, show success message and redirect immediately
-        setSuccess("🎉 Property updated successfully! Redirecting to dashboard...");
+        // For updates, show brief success state then redirect
+        console.log('✅ UPDATE SUCCESS - Property updated, showing success animation...');
+        setIsSubmitSuccess(true);
         setError("");
-        console.log('✅ UPDATE SUCCESS - Property updated, redirecting...');
         
-        // Clear form data and redirect quickly
-        setTimeout(() => {
-          sessionStorage.removeItem(storageKey);
-          // Add a flag to show the success message on dashboard (only if returning to dashboard)
-          if (returnPath === '/dashboard') {
-            sessionStorage.setItem('propertyUpdateSuccess', 'true');
-            sessionStorage.setItem('updatedPropertyId', propertyId);
-          }
-          navigate(returnPath);
-        }, 2000); // Quick redirect for updates
+                  // Show success animation for 1.5 seconds then redirect
+          setTimeout(() => {
+            setIsLoading(false); // Stop loading state
+            setSuccess("🎉 Property updated successfully! Redirecting...");
+            
+            // Wait another 1 second for user to see success message, then redirect
+            setTimeout(() => {
+              sessionStorage.removeItem(storageKey);
+              // Add a flag to show the success message on dashboard (only if returning to dashboard)
+              if (returnPath === '/dashboard') {
+                sessionStorage.setItem('propertyUpdateSuccess', 'true');
+                sessionStorage.setItem('updatedPropertyId', propertyId);
+              }
+              navigate(returnPath);
+            }, 1000);
+          }, 1500);
       } else {
         // For new submissions, show longer message
         setSuccess("🎉 Property submitted successfully! You will receive a confirmation email shortly. Redirecting to dashboard...");
@@ -880,7 +887,10 @@ const AddRent = () => {
       setError(err.message || "Failed to submit property. Please try again.");
     } finally {
       console.log('🏁 FORM SUBMISSION FINISHED - Setting loading to false');
-      setIsLoading(false);
+      // Don't set loading to false immediately for updates - wait for success animation
+      if (!editMode) {
+        setIsLoading(false);
+      }
       setIsIntentionalSubmit(false); // Reset the intentional submit flag
     }
   };
@@ -1395,11 +1405,21 @@ const AddRent = () => {
             ) : (
               <button 
                 type="button" 
-                className="submit-btn" 
+                className={`submit-btn ${isSubmitSuccess ? 'success-state' : ''}`}
                 onClick={handleIntentionalSubmit}
-                disabled={isLoading}
+                disabled={isLoading || isSubmitSuccess}
               >
-                {isLoading ? "Saving..." : (editMode ? "Update Property" : "Submit Listing")}
+                {isSubmitSuccess ? (
+                  <span className="success-text">
+                    ✅ Updated Successfully!
+                  </span>
+                ) : isLoading ? (
+                  <span className="loading-text">
+                    {editMode ? "Processing Update..." : "Submitting..."}
+                  </span>
+                ) : (
+                  editMode ? "Submit Update" : "Submit Listing"
+                )}
               </button>
             )}
           </div>
