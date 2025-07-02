@@ -8,6 +8,7 @@ import Logo from "../components/Logo";
 import "../styles/AddList.css"; // your custom CSS file
 import useSessionStorage from "../Utils/useSessionStorage";
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
+import { useAuth } from "../context/AuthContext";
 
 // Property Type Options
 const propertyTypeOptions = [
@@ -61,6 +62,7 @@ const councilTaxOptions = ["A", "B", "C", "D", "E", "F", "G", "H"].map((b) => ({
 const AddList = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   
   // Check if we're in edit mode and get return path
   const editMode = location.state?.editMode || false;
@@ -113,7 +115,7 @@ const AddList = () => {
     description: "",
     features: [],
     mediaFiles: [],
-    contactPhone: "",
+    contactPhone: user?.phone || "", // Auto-populate with user's profile phone
     houseNumber: "",
     streetName: "",
     country: "",
@@ -771,7 +773,12 @@ const AddList = () => {
             placeholder="+44 7xxx xxx xxx"
             required
           />
-          <small>Potential buyers will use this number to contact you about viewings</small>
+          <small>
+            Potential buyers will use this number to contact you about viewings. 
+            {user?.phone && formData.contactPhone === user.phone && (
+              <span style={{color: '#666', fontStyle: 'italic'}}> (Using your profile phone - you can change this for this property if needed)</span>
+            )}
+          </small>
         </div>
       </>
     );

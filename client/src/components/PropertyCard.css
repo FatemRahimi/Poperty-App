@@ -180,22 +180,26 @@
   line-height: 1;
 }
 
-/* Short description styling */
+/* Short description styling - Enhanced */
 .property-short-description {
-  color: #666666;
-  font-size: 0.90rem;
-  font-weight: 400;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.6;
-  letter-spacing: 0.01em;
-  margin: 0.3rem 0 0.5rem 0; /* Better spacing */
+  color: rgb(85, 87, 100);
+  font-size: .95rem; /* Increased from 0.90rem */
+  font-weight: 400; /* Slightly bolder */
+  font-family:  BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.65; /* Slightly increased for better readability */
+  letter-spacing: 0.015em; /* Slightly increased for better readability */
+  margin: 0.4rem 0 0.6rem 0; /* Better spacing */
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 3rem; /* Adjusted for better line height */
+  min-height: 3.5rem; /* Adjusted for larger text */
   background: transparent; /* Ensure no background hiding content */
   opacity: 1; /* Ensure fully visible */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-transform: capitalize; /* Capitalize first letter of each word */
 }
 
 /* Professional compact features styling */
@@ -534,9 +538,56 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 0 0 2rem 0; /* Much more bottom margin for greater distance from description */
+  margin: 0 0 1rem 0; /* Reduced margin since contact info will be below */
   padding-top: 0.75rem;
   border-top: none;
+}
+
+/* Contact Information Section */
+.property-contact-info {
+  margin: 0 4rem 1rem 0; /* Right margin to avoid action buttons, reduced bottom margin */
+  padding: 0;
+  background: transparent; /* Remove background */
+  border: none; /* Remove border */
+  display: flex;
+  align-items: center; /* Align items horizontally */
+  gap: 1rem; /* Gap between name and phone */
+  flex-wrap: wrap; /* Allow wrapping on small screens */
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+  color: #374151;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.contact-item i {
+  width: 14px;
+  color: #6b7280;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.contact-name {
+  font-weight: 700; /* Increased from 600 */
+  color: #1f2937;
+  text-transform: capitalize;
+  white-space: nowrap; /* Prevent name from wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px; /* Limit width to prevent interference */
+}
+
+.contact-phone {
+  font-weight: 600; /* Increased from 500 */
+  color: #1f2937;
+  font-family: monospace;
+  letter-spacing: 0.3px;
+  white-space: nowrap; /* Prevent phone from wrapping */
+  font-size: 0.9rem;
 }
 
 .property-card-content .property-type-badge {
@@ -673,6 +724,31 @@
     padding: 3px 6px;
     font-size: 11px;
     min-width: 35px;
+  }
+  
+  .property-contact-info {
+    margin: 0 0 1rem 0; /* Remove right margin on mobile */
+    gap: 0.80rem; /* Smaller gap on mobile */
+    flex-direction: column; /* Stack vertically on mobile */
+    align-items: flex-start; /* Align to start */
+  }
+  
+  .contact-item {
+    font-size: 0.8rem;
+  }
+  
+  .contact-item i {
+    font-size: 0.7rem;
+    width: 12px;
+  }
+  
+  .contact-name {
+    max-width: 150px; /* Allow more width on mobile */
+    font-size: 0.75rem;
+  }
+  
+  .contact-phone {
+    font-size: 0.7rem;
   }
 }
 

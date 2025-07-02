@@ -210,6 +210,7 @@ const AddRent = () => {
     }
     
     // Default empty form data for new properties
+    // Auto-populate contactPhone with user's profile phone as default
     return {
       propertyTitle: "",
       propertyType: "",
@@ -238,7 +239,7 @@ const AddRent = () => {
       epcRating: "",
       description: "",
       photos: [],
-      contactPhone: ""
+      contactPhone: user?.phone || "" // Auto-populate with user's profile phone
     };
   };
 
@@ -1318,7 +1319,12 @@ const AddRent = () => {
                 placeholder="+44 7xxx xxx xxx"
                 required
               />
-              <small>Potential tenants will use this number to contact you about viewings</small>
+              <small>
+                Potential tenants will use this number to contact you about viewings. 
+                {user?.phone && formData.contactPhone === user.phone && (
+                  <span style={{color: '#666', fontStyle: 'italic'}}> (Using your profile phone - you can change this for this property if needed)</span>
+                )}
+              </small>
             </div>
           </div>
         );
@@ -1338,9 +1344,11 @@ const AddRent = () => {
         <div className="form-title-add">
           {editMode ? 'EDIT RENTAL PROPERTY' : 'ADD PROPERTY FOR RENT'}
         </div>
-        <ul className="form-title-find-link">
-          <li><Link to="/seller">Back to Add Listing</Link></li>
-        </ul>
+        {!editMode && (
+          <ul className="form-title-find-link">
+            <li><Link to="/seller">Back to Add Listing</Link></li>
+          </ul>
+        )}
       </div>
 
       {/* Progress Bar */}

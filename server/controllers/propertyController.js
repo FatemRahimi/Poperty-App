@@ -466,6 +466,7 @@ const getUserProperties = async (req, res) => {
     let query = `
       SELECT 
         p.*,
+        u.first_name, u.last_name, u.email as user_email, u.phone as user_phone,
         COUNT(pi.id) as image_count,
         ARRAY_AGG(
           CASE WHEN pi.id IS NOT NULL 
@@ -473,9 +474,10 @@ const getUserProperties = async (req, res) => {
           ELSE NULL END
         ) FILTER (WHERE pi.id IS NOT NULL) as images
       FROM properties p
+      LEFT JOIN users u ON p.user_id = u.id
       LEFT JOIN property_images pi ON p.id = pi.property_id
       ${whereClause}
-      GROUP BY p.id
+      GROUP BY p.id, u.first_name, u.last_name, u.email, u.phone
       ORDER BY p.updated_at DESC, p.created_at DESC
     `;
 
@@ -500,10 +502,22 @@ const getUserProperties = async (req, res) => {
         descriptionLength: firstProperty.description?.length || 0,
         allFields: Object.keys(firstProperty)
       });
+      
+      // Debug contact information specifically
+      console.log('👤 Contact Information Debug:', {
+        propertyId: firstProperty.id,
+        firstName: firstProperty.first_name,
+        lastName: firstProperty.last_name,
+        userEmail: firstProperty.user_email,
+        userPhone: firstProperty.user_phone,
+        contactName: firstProperty.contact_name,
+        contactPhone: firstProperty.contact_phone,
+        contactEmail: firstProperty.contact_email
+      });
     }
 
     // Get total count
-    const countQuery = `SELECT COUNT(*) FROM properties p ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) FROM properties p LEFT JOIN users u ON p.user_id = u.id ${whereClause}`;
     const countResult = await pool.query(countQuery, queryParams.slice(0, paramCount));
     const totalCount = parseInt(countResult.rows[0].count);
 
@@ -564,7 +578,7 @@ const getAllProperties = async (req, res) => {
     let query = `
       SELECT 
         p.*,
-        u.first_name, u.last_name, u.email as user_email,
+        u.first_name, u.last_name, u.email as user_email, u.phone as user_phone,
         COUNT(pi.id) as image_count,
         ARRAY_AGG(
           CASE WHEN pi.id IS NOT NULL 
@@ -575,7 +589,7 @@ const getAllProperties = async (req, res) => {
       LEFT JOIN users u ON p.user_id = u.id
       LEFT JOIN property_images pi ON p.id = pi.property_id
       ${whereClause}
-      GROUP BY p.id, u.first_name, u.last_name, u.email
+      GROUP BY p.id, u.first_name, u.last_name, u.email, u.phone
       ORDER BY p.updated_at DESC, p.created_at DESC
     `;
 
