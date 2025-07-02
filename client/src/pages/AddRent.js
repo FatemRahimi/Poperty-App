@@ -124,6 +124,7 @@ const AddRent = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [currentSection, setCurrentSection] = useState(1);
+  const [isIntentionalSubmit, setIsIntentionalSubmit] = useState(false); // Add this to track intentional submissions
   
   // Check if we're in edit mode
   const editMode = location.state?.editMode || false;
@@ -333,6 +334,11 @@ const AddRent = () => {
     const photoToRemove = photoPreviewUrls[index];
     console.log('📷 Photo to remove:', photoToRemove);
     
+    if (!photoToRemove) {
+      console.error('❌ Photo not found at index:', index);
+      return;
+    }
+    
     if (photoToRemove.isExisting) {
       // Removing an existing photo - add to deleted list and remove from preview
       console.log('🗑️ Removing existing photo:', photoToRemove.name);
@@ -341,41 +347,61 @@ const AddRent = () => {
         console.log('🗑️ Updated deleted photos list:', updated);
         return updated;
       });
-      const newPhotoPreviewUrls = [...photoPreviewUrls];
-      newPhotoPreviewUrls.splice(index, 1);
-      setPhotoPreviewUrls(newPhotoPreviewUrls);
-      console.log('✅ Existing photo removed from preview');
+      
+      // Remove from preview array
+      setPhotoPreviewUrls(prev => {
+        const newArray = [...prev];
+        newArray.splice(index, 1);
+        console.log('✅ Existing photo removed from preview. New length:', newArray.length);
+        return newArray;
+      });
     } else {
-      // Removing a new upload - need to adjust indices for photoFiles
+      // Removing a new upload - need to find the corresponding file in photoFiles
       console.log('🗑️ Removing new upload at index:', index);
-      const existingPhotosCount = photoPreviewUrls.filter(url => url.isExisting).length;
-      const newPhotoIndex = index - existingPhotosCount;
+      
+      // Find all new photos before this index to calculate the correct photoFiles index
+      let newPhotoIndex = -1;
+      let newPhotoCount = 0;
+      
+      for (let i = 0; i <= index; i++) {
+        if (photoPreviewUrls[i] && !photoPreviewUrls[i].isExisting) {
+          if (i === index) {
+            newPhotoIndex = newPhotoCount;
+            break;
+          }
+          newPhotoCount++;
+        }
+      }
       
       console.log('📊 Photo removal calculation:', {
-        existingPhotosCount,
-        newPhotoIndex,
+        targetIndex: index,
+        newPhotoIndex: newPhotoIndex,
         totalPreviewUrls: photoPreviewUrls.length,
         totalPhotoFiles: photoFiles.length
       });
       
       // Revoke the object URL to avoid memory leaks
-      if (photoPreviewUrls[index] && !photoPreviewUrls[index].isExisting) {
-        URL.revokeObjectURL(photoPreviewUrls[index].url);
+      if (photoToRemove.url && photoToRemove.url.startsWith('blob:')) {
+        URL.revokeObjectURL(photoToRemove.url);
       }
       
-      // Remove from both arrays
-      const newPhotoFiles = [...photoFiles];
-      const newPhotoPreviewUrls = [...photoPreviewUrls];
-      
-      if (newPhotoIndex >= 0 && newPhotoIndex < newPhotoFiles.length) {
-        newPhotoFiles.splice(newPhotoIndex, 1);
-        console.log('✅ New photo file removed from files array');
+      // Remove from photoFiles array using the calculated index
+      if (newPhotoIndex >= 0 && newPhotoIndex < photoFiles.length) {
+        setPhotoFiles(prev => {
+          const newArray = [...prev];
+          newArray.splice(newPhotoIndex, 1);
+          console.log('✅ New photo file removed from files array. New length:', newArray.length);
+          return newArray;
+        });
       }
-      newPhotoPreviewUrls.splice(index, 1);
       
-      setPhotoFiles(newPhotoFiles);
-      setPhotoPreviewUrls(newPhotoPreviewUrls);
-      console.log('✅ New photo removed from preview and files');
+      // Remove from preview array
+      setPhotoPreviewUrls(prev => {
+        const newArray = [...prev];
+        newArray.splice(index, 1);
+        console.log('✅ New photo removed from preview. New length:', newArray.length);
+        return newArray;
+      });
     }
   };
 
@@ -490,8 +516,26 @@ const AddRent = () => {
     setCurrentSection(prev => prev - 1);
   };
 
+  // Handle intentional submit button click
+  const handleIntentionalSubmit = () => {
+    setIsIntentionalSubmit(true);
+    // Trigger form submission programmatically
+    setTimeout(() => {
+      const form = document.querySelector('.property-form');
+      if (form) {
+        form.requestSubmit(); // This will trigger the handleSubmit function
+      }
+    }, 0);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevent accidental submissions - only proceed if it's an intentional submit
+    if (!isIntentionalSubmit) {
+      console.log('⚠️ ACCIDENTAL FORM SUBMISSION PREVENTED - User was not ready to submit');
+      return;
+    }
     
     console.log('🚀 FORM SUBMISSION STARTED');
     console.log('📝 Edit Mode:', editMode);
@@ -784,6 +828,7 @@ const AddRent = () => {
     } finally {
       console.log('🏁 FORM SUBMISSION FINISHED - Setting loading to false');
       setIsLoading(false);
+      setIsIntentionalSubmit(false); // Reset the intentional submit flag
     }
   };
 
@@ -1247,7 +1292,16 @@ const AddRent = () => {
 
       {/* Form Section */}
       <div className="form-wrapper">
-        <form onSubmit={handleSubmit} className="property-form">
+        <form 
+          onSubmit={handleSubmit} 
+          className="property-form"
+          onKeyDown={(e) => {
+            // Prevent Enter key from submitting the form unless on the submit button
+            if (e.key === 'Enter' && e.target.tagName !== 'BUTTON' && e.target.type !== 'submit') {
+              e.preventDefault();
+            }
+          }}
+        >
           {error && <div className="alert alert-danger">{error}</div>}
           {success && <div className="alert alert-success">{success}</div>}
           
@@ -1286,8 +1340,9 @@ const AddRent = () => {
               </button>
             ) : (
               <button 
-                type="submit" 
+                type="button" 
                 className="submit-btn" 
+                onClick={handleIntentionalSubmit}
                 disabled={isLoading}
               >
                 {isLoading ? "Saving..." : (editMode ? "Update Property" : "Submit Listing")}
