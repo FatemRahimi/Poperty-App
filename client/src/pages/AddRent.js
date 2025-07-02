@@ -125,6 +125,7 @@ const AddRent = () => {
   const [success, setSuccess] = useState("");
   const [currentSection, setCurrentSection] = useState(1);
   const [isIntentionalSubmit, setIsIntentionalSubmit] = useState(false); // Add this to track intentional submissions
+  const [isRemoving, setIsRemoving] = useState(false); // Prevent multiple simultaneous removals
   
   // Check if we're in edit mode
   const editMode = location.state?.editMode || false;
@@ -329,30 +330,49 @@ const AddRent = () => {
   };
 
   const removePhoto = (index) => {
+    // Prevent multiple simultaneous removals
+    if (isRemoving) {
+      console.log('⚠️ Photo removal already in progress, ignoring duplicate call');
+      return;
+    }
+    
+    setIsRemoving(true);
+    
     console.log('🗑️ REMOVE PHOTO CALLED - Index:', index, 'Total photos:', photoPreviewUrls.length);
+    console.log('📸 Current photos before removal:', photoPreviewUrls.map((p, i) => `${i}: ${p.name} (${p.isExisting ? 'existing' : 'new'})`));
     
     const photoToRemove = photoPreviewUrls[index];
     console.log('📷 Photo to remove:', photoToRemove);
     
     if (!photoToRemove) {
       console.error('❌ Photo not found at index:', index);
+      setIsRemoving(false);
       return;
     }
     
     if (photoToRemove.isExisting) {
       // Removing an existing photo - add to deleted list and remove from preview
       console.log('🗑️ Removing existing photo:', photoToRemove.name);
+      
+      // Check if photo is already in deleted list to prevent duplicates
+      const isAlreadyDeleted = deletedExistingPhotos.some(p => p.name === photoToRemove.name);
+      if (isAlreadyDeleted) {
+        console.log('⚠️ Photo already in deleted list, skipping');
+        setIsRemoving(false);
+        return;
+      }
+      
       setDeletedExistingPhotos(prev => {
         const updated = [...prev, photoToRemove];
-        console.log('🗑️ Updated deleted photos list:', updated);
+        console.log('✅ Added to deleted list. Total deleted:', updated.length);
         return updated;
       });
       
       // Remove from preview array
       setPhotoPreviewUrls(prev => {
-        const newArray = [...prev];
-        newArray.splice(index, 1);
+        const newArray = prev.filter((photo, idx) => idx !== index);
         console.log('✅ Existing photo removed from preview. New length:', newArray.length);
+        console.log('📸 Remaining photos:', newArray.map((p, i) => `${i}: ${p.name} (${p.isExisting ? 'existing' : 'new'})`));
         return newArray;
       });
     } else {
@@ -397,12 +417,16 @@ const AddRent = () => {
       
       // Remove from preview array
       setPhotoPreviewUrls(prev => {
-        const newArray = [...prev];
-        newArray.splice(index, 1);
+        const newArray = prev.filter((photo, idx) => idx !== index);
         console.log('✅ New photo removed from preview. New length:', newArray.length);
+        console.log('📸 Remaining photos:', newArray.map((p, i) => `${i}: ${p.name} (${p.isExisting ? 'existing' : 'new'})`));
         return newArray;
       });
     }
+    
+    // Reset the removal flag
+    console.log('🏁 Photo removal completed');
+    setTimeout(() => setIsRemoving(false), 100);
   };
 
   const handlePhotoChange = (e) => {
@@ -719,14 +743,43 @@ const AddRent = () => {
         submitFormData.append('photos', file);
       });
       
-      // In edit mode, send information about deleted existing photos
-      if (editMode && deletedExistingPhotos.length > 0) {
-        deletedExistingPhotos.forEach((deletedPhoto, index) => {
-          // Send the original URL or filename for better backend matching
-          const photoIdentifier = deletedPhoto.originalUrl || deletedPhoto.name;
-          submitFormData.append('deletedPhotos', photoIdentifier);
+      // In edit mode, handle existing photos (both deleted and kept)
+      if (editMode) {
+        // Send information about deleted existing photos
+        if (deletedExistingPhotos.length > 0) {
+          console.log('🗑️ DETAILED DELETION DEBUG:');
+          console.log('🗑️ Total deletedExistingPhotos:', deletedExistingPhotos.length);
+          deletedExistingPhotos.forEach((deletedPhoto, index) => {
+            console.log(`🗑️ Deleted photo ${index}:`, {
+              name: deletedPhoto.name,
+              originalUrl: deletedPhoto.originalUrl,
+              url: deletedPhoto.url,
+              isExisting: deletedPhoto.isExisting
+            });
+            
+            // Send the original URL or filename for better backend matching
+            const photoIdentifier = deletedPhoto.originalUrl || deletedPhoto.url || deletedPhoto.name;
+            submitFormData.append('deletedPhotos', photoIdentifier);
+            console.log(`🗑️ Sending to backend: "${photoIdentifier}"`);
+          });
+          console.log('🗑️ All deleted photos to remove:', deletedExistingPhotos.map(p => p.originalUrl || p.url || p.name));
+        }
+        
+        // CRITICAL: Send information about existing photos to KEEP
+        const existingPhotosToKeep = photoPreviewUrls
+          .filter(p => p.isExisting && !deletedExistingPhotos.some(d => d.name === p.name))
+          .map(p => p.originalUrl || p.url);
+        
+        console.log('✅ PHOTOS TO KEEP DEBUG:');
+        console.log('✅ Total existing photos in preview:', photoPreviewUrls.filter(p => p.isExisting).length);
+        console.log('✅ Photos to delete:', deletedExistingPhotos.length);
+        console.log('✅ Photos to keep:', existingPhotosToKeep.length);
+        console.log('✅ Keep list:', existingPhotosToKeep);
+        
+        existingPhotosToKeep.forEach((url) => {
+          submitFormData.append("keptPhotos", url);
+          console.log(`✅ Keeping photo: "${url}"`);
         });
-        console.log('🗑️ Deleted photos to remove:', deletedExistingPhotos.map(p => p.originalUrl || p.name));
       }
       
       console.log('📷 Photo status for submission:', {
@@ -1212,6 +1265,7 @@ const AddRent = () => {
                             e.preventDefault();
                             e.stopPropagation();
                             console.log('🗑️ Remove button clicked for index:', index);
+                            console.log('🗑️ Photo details:', photoItem);
                             removePhoto(index);
                             return false; // Extra prevention
                           }}

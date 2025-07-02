@@ -1054,8 +1054,29 @@ const updateProperty = async (req, res) => {
 
     const property = propertyResult.rows[0];
 
-    // Handle deleted photos (remove from database and file system)
-    const deletedPhotos = req.body.deletedPhotos;
+    // Handle photo management: Keep specific photos, delete specific photos, add new photos
+    let deletedPhotos = req.body.deletedPhotos;
+    let keptPhotos = req.body.keptPhotos;
+    
+    // CRITICAL FIX: Ensure deletedPhotos and keptPhotos are arrays, not strings
+    if (typeof deletedPhotos === 'string') {
+      deletedPhotos = [deletedPhotos]; // Convert single string to array
+    } else if (!Array.isArray(deletedPhotos)) {
+      deletedPhotos = []; // Default to empty array if not string or array
+    }
+    
+    if (typeof keptPhotos === 'string') {
+      keptPhotos = [keptPhotos]; // Convert single string to array
+    } else if (!Array.isArray(keptPhotos)) {
+      keptPhotos = []; // Default to empty array if not string or array
+    }
+    
+    console.log('📷 PHOTO MANAGEMENT DEBUG:');
+    console.log('📷 Deleted photos received (type:', typeof req.body.deletedPhotos, '):', deletedPhotos);
+    console.log('📷 Kept photos received (type:', typeof req.body.keptPhotos, '):', keptPhotos);
+    console.log('📷 New photos to upload:', req.files ? req.files.length : 0);
+    
+    // Step 1: Handle deleted photos (remove from database and file system)
     if (deletedPhotos && deletedPhotos.length > 0) {
       console.log('🗑️ Processing deleted photos:', deletedPhotos);
       
@@ -1104,14 +1125,39 @@ const updateProperty = async (req, res) => {
         }
       }
     }
+    
+    // Step 2: Verify kept photos still exist in database (no action needed, just validation)
+    if (keptPhotos && keptPhotos.length > 0) {
+      console.log('✅ Verifying kept photos are preserved:');
+      for (const keptPhotoUrl of keptPhotos) {
+        const keptImage = await client.query(
+          'SELECT * FROM property_images WHERE property_id = $1 AND image_url = $2',
+          [property.id, keptPhotoUrl]
+        );
+        if (keptImage.rows.length > 0) {
+          console.log(`✅ Kept photo verified: ${keptPhotoUrl}`);
+        } else {
+          console.log(`⚠️ Kept photo not found in DB: ${keptPhotoUrl}`);
+        }
+      }
+    }
 
-    // Handle uploaded files from multer (if any new photos)
+    // Step 3: Handle uploaded files from multer (add new photos)
     if (req.files && req.files.length > 0) {
+      console.log('📁 Processing new photo uploads...');
+      
       // Ensure uploads directory exists
       const uploadsDir = path.join(__dirname, '..', 'uploads');
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
+
+      // Get current max image_order to append new photos
+      const maxOrderResult = await client.query(
+        'SELECT COALESCE(MAX(image_order), -1) as max_order FROM property_images WHERE property_id = $1',
+        [property.id]
+      );
+      let currentMaxOrder = maxOrderResult.rows[0].max_order;
 
       for (let i = 0; i < req.files.length; i++) {
         const file = req.files[i];
@@ -1129,14 +1175,17 @@ const updateProperty = async (req, res) => {
           continue;
         }
         
-        // Store URL in database
+        // Store URL in database with proper ordering
         const imageUrl = `/uploads/${filename}`;
+        const newOrder = currentMaxOrder + 1 + i;
         
         await client.query(
           `INSERT INTO property_images (property_id, image_url, image_type, image_order, alt_text)
            VALUES ($1, $2, $3, $4, $5)`,
-          [property.id, imageUrl, file.mimetype.startsWith('video/') ? 'video' : 'image', i, title]
+          [property.id, imageUrl, file.mimetype.startsWith('video/') ? 'video' : 'image', newOrder, title]
         );
+        
+        console.log(`✅ Added new photo to DB: ${imageUrl} (order: ${newOrder})`);
       }
     }
 
@@ -1166,6 +1215,19 @@ const updateProperty = async (req, res) => {
         );
       }
     }
+
+    // Final verification: Log current photo status
+    const finalPhotoCount = await client.query(
+      'SELECT COUNT(*) as total_photos FROM property_images WHERE property_id = $1',
+      [property.id]
+    );
+    
+    console.log('📷 FINAL PHOTO STATUS:');
+    console.log(`📷 Property ID: ${property.id}`);
+    console.log(`📷 Total photos after update: ${finalPhotoCount.rows[0].total_photos}`);
+    console.log(`📷 Photos deleted: ${deletedPhotos ? deletedPhotos.length : 0}`);
+    console.log(`📷 Photos kept: ${keptPhotos ? keptPhotos.length : 0}`);
+    console.log(`📷 New photos added: ${req.files ? req.files.length : 0}`);
 
     // Insert submission tracking
     await client.query(
