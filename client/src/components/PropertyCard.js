@@ -377,6 +377,26 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
               <small>Added: {formatDate(property.created_at)}</small>
             )}
           </div>
+
+          {/* Contact Information Section */}
+          <div className="property-contact-info">
+            <div className="contact-item">
+              <i className="fas fa-user"></i>
+              <span className="contact-name">
+                {property.first_name && property.last_name 
+                  ? `${property.first_name} ${property.last_name}` 
+                  : property.owner_name || property.contact_name || 'Owner'}
+              </span>
+            </div>
+            {(property.contact_phone || property.user_phone || property.phone || property.contact_number) && (
+              <div className="contact-item">
+                <i className="fas fa-phone"></i>
+                <span className="contact-phone">
+                  {property.contact_phone || property.user_phone || property.phone || property.contact_number}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Action Icons - Outside clickable area */}
