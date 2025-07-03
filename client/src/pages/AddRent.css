@@ -757,6 +757,54 @@ textarea.form-input-base:hover {
   font-family: var(--font-family-heading);
 }
 
+/* Professional Dashboard Link Styling */
+.form-title-dashboard-link {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.dashboard-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family-primary);
+  letter-spacing: 0.02em;
+}
+
+.dashboard-link-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  color: white;
+  text-decoration: none;
+}
+
+.dashboard-link-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.dashboard-link-btn i {
+  font-size: 0.9rem;
+  transition: transform 0.3s ease;
+}
+
+.dashboard-link-btn:hover i {
+  transform: translateX(-2px);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .add-rent-container {
@@ -800,6 +848,19 @@ textarea.form-input-base:hover {
     width: 100%;
     justify-content: center;
   }
+  
+  /* Dashboard link responsive */
+  .dashboard-link-btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.9rem;
+    gap: 0.4rem;
+  }
+  
+  /* Left links responsive */
+  .left-links {
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 480px) {
@@ -832,6 +893,17 @@ textarea.form-input-base:hover {
   .upload-icon {
     font-size: 2rem;
   }
+  
+  /* Dashboard link small screens */
+  .dashboard-link-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    gap: 0.35rem;
+  }
+  
+  .dashboard-link-btn i {
+    font-size: 0.8rem;
+  }
 }
 
 /* High DPI display support */
@@ -850,6 +922,42 @@ textarea.form-input-base:hover {
   width: 100%;
   margin-top: 30px;
   padding: 0 20px;
+}
+
+/* Left links container */
+.left-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Link button styling - simple links with subtle border */
+.link-btn {
+  background: none;
+  border: .5px solid #e5e7eb;
+  color: #2563eb;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  border-radius: 6px;
+}
+
+.link-btn:hover:not(:disabled) {
+  color: #1d4ed8;
+  text-decoration: underline;
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+}
+
+.link-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .back-btn, .next-btn, .submit-btn {
