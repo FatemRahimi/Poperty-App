@@ -5,6 +5,7 @@ import SearchFilterHeader from '../components/dashboard/SearchFilterHeader';
 import DashboardTabs from '../components/dashboard/DashboardTabs';
 import OverviewStats from '../components/dashboard/OverviewStats';
 import PropertiesSection from '../components/dashboard/PropertiesSection';
+import { filterPropertiesByRadius } from '../Utils/GeocodingService';
 import './UserDashboard.css';
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
@@ -18,7 +19,7 @@ const UserDashboard = () => {
   
   // Search dropdown states
   const [searchFilters, setSearchFilters] = useState({
-    radius: '0.5',
+    radius: '1',
     minPrice: 'any',
     maxPrice: 'any',
     minBeds: 'any',
@@ -521,34 +522,55 @@ const UserDashboard = () => {
     });
   };
 
-  // Helper function for radius-based filtering
-  const isWithinRadius = (property, searchLocation, radiusInMiles) => {
-    if (!searchLocation || !radiusInMiles || radiusInMiles === '0') return true;
-    
-    // Simple implementation - check if search location appears in property location fields
-    // This is a basic implementation that can be enhanced with proper geocoding
-    const searchLower = searchLocation.toLowerCase();
-    const propertyLocation = [
-      property.city,
-      property.state, 
-      property.zip_code,
-      property.postcode,
-      property.address_line1,
-      property.street_name
-    ].filter(Boolean).join(' ').toLowerCase();
-    
-    // If search location is found in property location, consider it within radius
-    return propertyLocation.includes(searchLower);
-  };
+  // State for radius filtering
+  const [radiusFilteredProperties, setRadiusFilteredProperties] = useState([]);
+  const [isRadiusFiltering, setIsRadiusFiltering] = useState(false);
 
-  const filteredProperties = properties.filter(property => {
-    // Status filter
-    const statusMatch = searchFilters.status === 'all' || property.status === searchFilters.status;
-    
-    // Property category (rent/sale/lease) filter
-    const categoryMatch = searchFilters.propertyType === 'all' || property.category === searchFilters.propertyType;
-    
-    // Property type (flat/house/detached) filter
+  // Apply location filtering when search query or radius changes
+  useEffect(() => {
+    const applyLocationFilter = async () => {
+      // First apply sidebar filters (category and status)
+      let sidebarFilteredProperties = properties.filter(property => {
+        // Category filter (rent/sale/lease)
+        const categoryMatch = searchFilters.propertyType === 'all' || property.category === searchFilters.propertyType;
+        // Status filter
+        const statusMatch = searchFilters.status === 'all' || property.status === searchFilters.status;
+        
+        return categoryMatch && statusMatch;
+      });
+
+      // If no search query, use sidebar filtered properties
+      if (!searchQuery || !searchQuery.trim()) {
+        setRadiusFilteredProperties(sidebarFilteredProperties);
+        return;
+      }
+
+      setIsRadiusFiltering(true);
+      try {
+        // Apply location filtering to the sidebar-filtered properties
+        // Always use geographic search with the selected radius
+        const radius = searchFilters.radius || '1';
+        const locationFiltered = await filterPropertiesByRadius(sidebarFilteredProperties, searchQuery, radius);
+        setRadiusFilteredProperties(locationFiltered);
+      } catch (error) {
+        console.error('Location filtering error:', error);
+        setRadiusFilteredProperties(sidebarFilteredProperties);
+      } finally {
+        setIsRadiusFiltering(false);
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      applyLocationFilter();
+    }, 300); // Debounce by 300ms to avoid too many API calls
+
+    return () => clearTimeout(timeoutId);
+  }, [properties, searchQuery, searchFilters.radius, searchFilters.propertyType, searchFilters.status]);
+
+  // Apply professional search filters to location-filtered properties
+  // Note: Category and status filters are already applied in the location filtering above
+  const filteredProperties = radiusFilteredProperties.filter(property => {
+    // Property building type (flat/house/detached) filter - only for professional search
     const propertyTypeMatch = searchFilters.propertyBuildingType === 'all' || property.property_type === searchFilters.propertyBuildingType;
     
     // Monthly rent price filters (for rental properties)
@@ -615,26 +637,10 @@ const UserDashboard = () => {
       moveInDateMatch = availableDate <= moveInDate;
     }
     
-    // Enhanced search functionality - includes location, postcode, and all property details
-    const searchMatch = searchQuery === '' || 
-      property.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.address_line1?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.street_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.state?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.zip_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.postcode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.property_type?.toLowerCase().replace('-', ' ').includes(searchQuery.toLowerCase()) ||
-      property.category?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Radius-based location filtering
-    const radiusMatch = isWithinRadius(property, searchQuery, searchFilters.radius);
-    
-    return statusMatch && categoryMatch && propertyTypeMatch && minPriceMatch && maxPriceMatch && 
+    return propertyTypeMatch && minPriceMatch && maxPriceMatch && 
            minBedsMatch && maxBedsMatch && minBathMatch && maxBathMatch && 
            gardenMatch && parkingMatch && studentMatch && houseShareMatch && retirementMatch &&
-           typeOfLetMatch && dateAddedMatch && moveInDateMatch && searchMatch && radiusMatch;
+           typeOfLetMatch && dateAddedMatch && moveInDateMatch;
   });
 
   // Dropdown options for search filters
@@ -1032,6 +1038,47 @@ const UserDashboard = () => {
     loadDashboardData();
   };
 
+  // Custom handler for sidebar filter changes
+  const handleSidebarFilterChange = (filterType, value) => {
+    // Update the filter
+    const newFilters = { ...searchFilters, [filterType]: value };
+    
+    // If switching to "All" categories or "All" status, reset professional search filters
+    if ((filterType === 'propertyType' && value === 'all') || 
+        (filterType === 'status' && value === 'all')) {
+      
+      // Reset professional search query and filters
+      setSearchQuery('');
+      setSearchFilters({
+        ...newFilters,
+        radius: '1',
+        minPrice: 'any',
+        maxPrice: 'any',
+        minBeds: 'any',
+        maxBeds: 'any',
+        propertyBuildingType: 'all'
+      });
+      
+      // Also reset more filters
+      setMoreFilters({
+        minBathrooms: 'any',
+        maxBathrooms: 'any',
+        typeOfLet: 'any',
+        dateAdded: 'anytime',
+        moveInDate: '',
+        letAgreed: false,
+        hasGarden: false,
+        hasParking: false,
+        houseShare: false,
+        retirementHome: false,
+        studentAccommodation: false
+      });
+    } else {
+      // Normal filter change
+      setSearchFilters(newFilters);
+    }
+  };
+
   if (loading) {
     return (
       <div className="dashboard-loading-modern">
@@ -1169,10 +1216,11 @@ const UserDashboard = () => {
           <PropertiesSection
             filteredProperties={filteredProperties}
             searchFilters={searchFilters}
-            setSearchFilters={setSearchFilters}
+            setSearchFilters={handleSidebarFilterChange}
             propertyTypeOptions={propertyTypeOptions}
             statusOptions={statusOptions}
             handlePropertyDeleted={handlePropertyDeleted}
+            isRadiusFiltering={isRadiusFiltering}
           />
         )}
 

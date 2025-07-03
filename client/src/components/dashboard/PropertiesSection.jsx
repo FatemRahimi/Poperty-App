@@ -9,7 +9,8 @@ const PropertiesSection = ({
   setSearchFilters,
   propertyTypeOptions,
   statusOptions,
-  handlePropertyDeleted
+  handlePropertyDeleted,
+  isRadiusFiltering
 }) => {
   const navigate = useNavigate();
 
@@ -28,7 +29,15 @@ const PropertiesSection = ({
         <div className="properties-header-modern">
           <div className="properties-title">
             <h2>My Properties</h2>
-            <span className="property-count">{filteredProperties.length}</span>
+            <span className="property-count">
+              {isRadiusFiltering ? (
+                <span style={{ color: '#667eea' }}>
+                  <i className="fas fa-spinner fa-spin"></i> Searching...
+                </span>
+              ) : (
+                filteredProperties.length
+              )}
+            </span>
           </div>
         </div>
 
@@ -36,14 +45,22 @@ const PropertiesSection = ({
           <div className="no-properties-modern">
             <i className="fas fa-home"></i>
             <h3>No Properties Found</h3>
-            <p>You haven't submitted any properties yet, or no properties match your current filters.</p>
-            <button 
-              className="btn-add-first"
-              onClick={() => navigate('/addlist')}
-            >
-              <i className="fas fa-plus"></i>
-              Add Your First Property
-            </button>
+            <p>
+              {isRadiusFiltering ? (
+                "Searching for properties in your area..."
+              ) : (
+                "You haven't submitted any properties yet, or no properties match your current filters."
+              )}
+            </p>
+            {!isRadiusFiltering && (
+              <button 
+                className="btn-add-first"
+                onClick={() => navigate('/addlist')}
+              >
+                <i className="fas fa-plus"></i>
+                Add Your First Property
+              </button>
+            )}
           </div>
         ) : (
           <div className="properties-grid-modern">

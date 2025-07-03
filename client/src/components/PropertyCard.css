@@ -199,7 +199,6 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-transform: capitalize; /* Capitalize first letter of each word */
 }
 
 /* Professional compact features styling */
