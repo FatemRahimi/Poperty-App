@@ -37,7 +37,7 @@ const SearchFilterHeader = ({
         <div className="filter-group location-group location-group-wide">
           <input
             type="text"
-            placeholder="Enter location, postcode, or area..."
+            placeholder="Enter postcode or address to find nearby properties..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="location-input location-input-wide"

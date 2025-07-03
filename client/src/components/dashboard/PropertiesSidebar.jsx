@@ -28,7 +28,7 @@ const PropertiesSidebar = ({
                 value={option.value}
                 checked={searchFilters.propertyType === option.value}
                 onChange={(e) => {
-                  setSearchFilters({...searchFilters, propertyType: e.target.value});
+                  setSearchFilters('propertyType', e.target.value);
                 }}
                 className="category-radio"
               />
@@ -58,7 +58,7 @@ const PropertiesSidebar = ({
                 value={option.value}
                 checked={searchFilters.status === option.value}
                 onChange={(e) => {
-                  setSearchFilters({...searchFilters, status: e.target.value});
+                  setSearchFilters('status', e.target.value);
                 }}
                 className="status-radio"
               />

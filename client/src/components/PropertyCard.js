@@ -45,6 +45,33 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
     });
   };
 
+  // Helper function to format description text with proper capitalization
+  const formatDescription = (text) => {
+    if (!text || !text.trim()) return text;
+    
+    let formattedText = text.trim();
+    
+    // Capitalize first character of the entire text
+    formattedText = formattedText.charAt(0).toUpperCase() + formattedText.slice(1);
+    
+    // Capitalize first character after each dot followed by space
+    formattedText = formattedText.replace(/\.\s+([a-z])/g, (match, char) => {
+      return '. ' + char.toUpperCase();
+    });
+    
+    // Capitalize first character after paragraph breaks (double newlines)
+    formattedText = formattedText.replace(/\n\s*\n\s*([a-z])/g, (match, char) => {
+      return match.slice(0, -1) + char.toUpperCase();
+    });
+    
+    // Capitalize first character after single newlines (new lines)
+    formattedText = formattedText.replace(/\n\s*([a-z])/g, (match, char) => {
+      return match.slice(0, -1) + char.toUpperCase();
+    });
+    
+    return formattedText;
+  };
+
   const formatAddress = (property) => {
     const parts = [];
     
@@ -84,10 +111,11 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
       parts.push(toTitleCase(property.city));
     }
     
-    // Add first 3 letters of postcode if available
+    // Add first 3 characters of postcode (ignoring spaces) if available
     if (property.zip_code || property.postcode) {
       const postcode = property.zip_code || property.postcode;
-      const postcodePrefix = postcode.substring(0, 3).toUpperCase();
+      const postcodeNoSpaces = postcode.replace(/\s+/g, ''); // Remove all spaces
+      const postcodePrefix = postcodeNoSpaces.substring(0, 3).toUpperCase();
       parts.push(postcodePrefix);
     }
     
@@ -305,16 +333,16 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
             {formatAddress(property)}
           </p>
           
-          {/* Property Features - Moved above description */}
+          {/* Property Features - Limited to 3 essential features only */}
           <div className="property-features">
-                  {property.property_type && (
-        <div className="property-feature-item property-building-type">
-          <div className="feature-icon">
-            <i className="fas fa-building"></i>
-          </div>
-          <span>{property.property_type.replace('-', ' ').replace(/\b\w/g, char => char.toUpperCase())}</span>
-        </div>
-      )}
+            {property.property_type && (
+              <div className="property-feature-item property-building-type">
+                <div className="feature-icon">
+                  <i className="fas fa-building"></i>
+                </div>
+                <span>{property.property_type.replace('-', ' ').replace(/\b\w/g, char => char.toUpperCase())}</span>
+              </div>
+            )}
             {property.bedrooms && (
               <div className="property-feature-item">
                 <div className="feature-icon">
@@ -331,30 +359,6 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                 <span>{Math.floor(property.bathrooms)} Bath{Math.floor(property.bathrooms) !== 1 ? 's' : ''}</span>
               </div>
             )}
-            {property.square_feet && (
-              <div className="property-feature-item">
-                <div className="feature-icon">
-                  <i className="fas fa-ruler-combined"></i>
-                </div>
-                <span>{Number(property.square_feet).toLocaleString()} sqft</span>
-              </div>
-            )}
-            {property.parking_spots && (
-              <div className="property-feature-item">
-                <div className="feature-icon">
-                  <i className="fas fa-car"></i>
-                </div>
-                <span>{property.parking_spots} Parking</span>
-              </div>
-            )}
-            {property.student_housing && (
-              <div className="property-feature-item">
-                <div className="feature-icon">
-                  <i className="fas fa-graduation-cap"></i>
-                </div>
-                <span>Student-Friendly</span>
-              </div>
-            )}
           </div>
 
           {/* Short Description - Moved below features */}
@@ -364,9 +368,12 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
             style={{ cursor: 'pointer' }}
           >
             {property.description && property.description.trim() ? (
-              property.description.length > 90
-                ? `${property.description.substring(0, 90)}...`
-                : property.description
+              (() => {
+                const formattedDesc = formatDescription(property.description);
+                return formattedDesc.length > 90
+                  ? `${formatDescription(formattedDesc.substring(0, 90))}...`
+                  : formattedDesc;
+              })()
             ) : (
               <span style={{ fontStyle: 'italic', color: '#999' }}>
                 No description available
