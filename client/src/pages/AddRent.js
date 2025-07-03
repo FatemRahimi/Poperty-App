@@ -127,6 +127,7 @@ const AddRent = () => {
   const [currentSection, setCurrentSection] = useState(1);
   const [isIntentionalSubmit, setIsIntentionalSubmit] = useState(false); // Add this to track intentional submissions
   const [isRemoving, setIsRemoving] = useState(false); // Prevent multiple simultaneous removals
+  const [addressValidationError, setAddressValidationError] = useState(""); // Address validation error
   
   // Check if we're in edit mode
   const editMode = location.state?.editMode || false;
@@ -322,6 +323,20 @@ const AddRent = () => {
       setFormData((prev) => ({
         ...prev,
         [name]: numericValue,
+      }));
+    } else if (name === "streetName") {
+      // Address validation - check for non-comma separators
+      const hasInvalidSeparators = /[;|\-|\/|:|\\]/.test(value);
+      
+      if (hasInvalidSeparators && value.trim()) {
+        setAddressValidationError("Please use comma(,) to separate address parts");
+      } else {
+        setAddressValidationError("");
+      }
+      
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
       }));
     } else {
       setFormData((prev) => ({
@@ -1065,11 +1080,11 @@ const AddRent = () => {
               />
               
               <TextInput
-                label="Street Name (Line1, Line2 separate with comma)"
+                label="Address (Area, Address Line 1, Line 2, Seperate with Comma)"
                 name="streetName"
                 value={formData.streetName}
                 onChange={handleChange}
-                placeholder="Main Street, Oak Avenue"
+                placeholder="e.g. Westminster, Main Street, Oak Avenue"
                 required
               />
             </div>
@@ -1117,6 +1132,29 @@ const AddRent = () => {
                 required
               />
             </div>
+            
+            {/* Address Validation Message */}
+            {addressValidationError && (
+              <div style={{ 
+                color: '#ef4444', 
+                fontSize: '0.85rem', 
+                fontWeight: '500', 
+                marginTop: '1rem',
+                padding: '0.75rem',
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                maxWidth: '400px'
+              }}>
+                <i className="fas fa-exclamation-triangle" style={{ color: '#ef4444' }}></i>
+                <span>
+                  <strong>Address Format:</strong> {addressValidationError}
+                </span>
+              </div>
+            )}
           </div>
         );
       
@@ -1227,10 +1265,10 @@ const AddRent = () => {
               <small className="word-count-helper">
                 {(() => {
                   const wordCount = (formData.description || '').trim().split(/\s+/).filter(word => word.length > 0).length;
-                  const isValid = wordCount >= 100;
+                  const isValid = wordCount >= 80;
                   return (
                     <span style={{ color: isValid ? '#10b981' : '#ef4444' }}>
-                      {wordCount}/100 words minimum {isValid ? '✓' : ''}
+                      {wordCount}/80 words minimum {isValid ? '✓' : ''}
                     </span>
                   );
                 })()}
@@ -1400,25 +1438,38 @@ const AddRent = () => {
 
           {/* Navigation Buttons */}
           <div className="form-buttons">
-            {currentSection > 1 ? (
-              <button 
-                type="button" 
-                className="back-btn"
-                onClick={prevSection}
-                disabled={isLoading}
-              >
-                Back
-              </button>
-            ) : (
-              <button 
-                type="button" 
-                className="back-btn"
-                onClick={() => navigate(returnPath)}
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-            )}
+            <div className="left-links">
+              {currentSection > 1 ? (
+                <button 
+                  type="button" 
+                  className="link-btn"
+                  onClick={prevSection}
+                  disabled={isLoading}
+                >
+                  Back
+                </button>
+              ) : (
+                <button 
+                  type="button" 
+                  className="link-btn"
+                  onClick={() => navigate(returnPath)}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+              )}
+              
+              {currentSection === 4 && (
+                <button 
+                  type="button" 
+                  className="link-btn"
+                  onClick={() => navigate(returnPath)}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
             
             {currentSection < 4 ? (
               <button 

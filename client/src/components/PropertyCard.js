@@ -370,9 +370,15 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
             {property.description && property.description.trim() ? (
               (() => {
                 const formattedDesc = formatDescription(property.description);
-                return formattedDesc.length > 90
-                  ? `${formatDescription(formattedDesc.substring(0, 90))}...`
-                  : formattedDesc;
+                const words = formattedDesc.split(/\s+/);
+                
+                // If description has more than 80 words, truncate to 80 words
+                if (words.length > 80) {
+                  const truncatedWords = words.slice(0, 80);
+                  return formatDescription(truncatedWords.join(' ')) + '...';
+                }
+                
+                return formattedDesc;
               })()
             ) : (
               <span style={{ fontStyle: 'italic', color: '#999' }}>
