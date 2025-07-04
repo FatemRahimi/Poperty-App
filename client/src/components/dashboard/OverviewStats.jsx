@@ -6,11 +6,6 @@ const StatCard = ({ title, value, icon, color, description, actionText }) => (
       <div className="stat-content-modern">
         <div className="stat-number">
           <h3>{value || 0}</h3>
-          {value > 0 && (
-            <div className="stat-badge">
-              <i className={`fas ${icon}`}></i>
-            </div>
-          )}
         </div>
         <div className="stat-info">
           <p className="stat-title">{title}</p>
@@ -67,7 +62,6 @@ const OverviewStats = ({ stats }) => {
           <i className="fas fa-chart-bar"></i>
           Property Dashboard Overview
         </h2>
-        <p>Track your property listings and their current status</p>
       </div>
       <div className="stats-grid-modern">
         <StatCard 
