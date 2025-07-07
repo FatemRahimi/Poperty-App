@@ -616,10 +616,10 @@ const AddRent = () => {
     if (!formData.description?.trim()) {
       missingFields.push("Property Description");
     } else {
-      // Check minimum word count (100 words)
+      // Check minimum word count (80 words)
       const wordCount = formData.description.trim().split(/\s+/).length;
-      if (wordCount < 100) {
-        missingFields.push(`Property Description (minimum 100 words required, currently ${wordCount} words)`);
+      if (wordCount < 80) {
+        missingFields.push(`Property Description (minimum 80 words required, currently ${wordCount} words)`);
       }
     }
     if (!formData.contactPhone?.trim()) missingFields.push("Contact Phone Number");
@@ -886,8 +886,10 @@ const AddRent = () => {
               if (returnPath === '/dashboard') {
                 sessionStorage.setItem('propertyUpdateSuccess', 'true');
                 sessionStorage.setItem('updatedPropertyId', propertyId);
+                navigate('/dashboard?tab=properties');
+              } else {
+                navigate(returnPath);
               }
-              navigate(returnPath);
             }, 1000);
           }, 1500);
       } else {
@@ -897,7 +899,7 @@ const AddRent = () => {
         
         setTimeout(() => {
           sessionStorage.removeItem(storageKey);
-          navigate("/dashboard");
+          navigate("/dashboard?tab=properties");
         }, 4000); // Longer delay for new submissions
       }
       

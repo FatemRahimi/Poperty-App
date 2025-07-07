@@ -29,11 +29,12 @@ const PropertiesSection = ({
         <div className="properties-header-modern">
           <div className="properties-title">
             <h2>My Properties</h2>
-            <span className="property-count">
+            <span className={`property-count ${isRadiusFiltering ? 'loading' : ''}`}>
               {isRadiusFiltering ? (
-                <span style={{ color: '#667eea' }}>
-                  <i className="fas fa-spinner fa-spin"></i> Searching...
-                </span>
+                <>
+                  <i className="fas fa-spinner fa-spin" style={{ marginRight: '0.3rem' }}></i>
+                  <span>Loading</span>
+                </>
               ) : (
                 filteredProperties.length
               )}
