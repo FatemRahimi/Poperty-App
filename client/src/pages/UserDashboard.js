@@ -1,13 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SearchFilterHeader from '../components/dashboard/SearchFilterHeader';
 import DashboardTabs from '../components/dashboard/DashboardTabs';
 import OverviewStats from '../components/dashboard/OverviewStats';
 import PropertiesSection from '../components/dashboard/PropertiesSection';
-import { filterPropertiesByRadius } from '../Utils/GeocodingService';
+import { filterDashboardProperties } from '../Utils/DashboardSearch';
 import './UserDashboard.css';
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
+
+// 🏆 Professional search API endpoint
+const PROFESSIONAL_SEARCH_API = process.env.NODE_ENV === 'production' 
+  ? '/api/properties/search'
+  : 'http://localhost:5050/api/properties/search';
 
 const UserDashboard = () => {
   const [properties, setProperties] = useState([]);
@@ -16,6 +21,12 @@ const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddListingDropdown, setShowAddListingDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // 🏆 Professional Search State
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchAnalytics, setSearchAnalytics] = useState(null);
+  const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
   
   // Search dropdown states
   const [searchFilters, setSearchFilters] = useState({
@@ -528,7 +539,7 @@ const UserDashboard = () => {
 
   // Apply location filtering when search query or radius changes
   useEffect(() => {
-    const applyLocationFilter = async () => {
+    const applyLocationFilter = () => {
       // First apply sidebar filters (category and status)
       let sidebarFilteredProperties = properties.filter(property => {
         // Category filter (rent/sale/lease)
@@ -542,34 +553,51 @@ const UserDashboard = () => {
       // If no search query, use sidebar filtered properties
       if (!searchQuery || !searchQuery.trim()) {
         setRadiusFilteredProperties(sidebarFilteredProperties);
+        setIsRadiusFiltering(false);
         return;
       }
 
+      // Show brief loading for UX (instant search is so fast we barely see it)
       setIsRadiusFiltering(true);
-      try {
-        // Apply location filtering to the sidebar-filtered properties
-        // Always use geographic search with the selected radius
-        const radius = searchFilters.radius || '1';
-        const locationFiltered = await filterPropertiesByRadius(sidebarFilteredProperties, searchQuery, radius);
-        setRadiusFilteredProperties(locationFiltered);
-      } catch (error) {
-        console.error('Location filtering error:', error);
-        setRadiusFilteredProperties(sidebarFilteredProperties);
-      } finally {
-        setIsRadiusFiltering(false);
-      }
+      
+      // Use fast dashboard search (no external API calls!)
+      const radius = searchFilters.radius || '1';
+      const locationFiltered = filterDashboardProperties(sidebarFilteredProperties, searchQuery, radius);
+      setRadiusFilteredProperties(locationFiltered);
+      
+      // Hide loading immediately (search is instant)
+      setTimeout(() => setIsRadiusFiltering(false), 100);
     };
+
+    // For category/status changes: Apply immediately (no debounce)
+    // For search text changes: Apply with minimal debounce
+    const isTextSearch = searchQuery && searchQuery.trim();
+    const debounceTime = isTextSearch ? 50 : 0; // Minimal debounce for typing, instant for category changes
 
     const timeoutId = setTimeout(() => {
       applyLocationFilter();
-    }, 300); // Debounce by 300ms to avoid too many API calls
+    }, debounceTime);
 
     return () => clearTimeout(timeoutId);
   }, [properties, searchQuery, searchFilters.radius, searchFilters.propertyType, searchFilters.status]);
 
   // Apply professional search filters to location-filtered properties
   // Note: Category and status filters are already applied in the location filtering above
-  const filteredProperties = radiusFilteredProperties.filter(property => {
+  // 🏆 Professional search ONLY works when "For Rent" is selected
+  // For other categories (sale, lease), always use normal category filtering
+  
+  // SIMPLIFIED LOGIC: Choose the right properties based on current state
+  let propertiesForFiltering;
+  if (hasPerformedSearch && searchFilters.propertyType === 'rent') {
+    // Using professional search results for "For Rent"
+    propertiesForFiltering = searchResults;
+    console.log('🔍 Using professional search results:', searchResults.length, 'properties');
+  } else {
+    // Using normal filtered properties for all other cases
+    propertiesForFiltering = radiusFilteredProperties;
+    console.log('🏠 Using normal filtered properties:', radiusFilteredProperties.length, 'properties');
+  }
+  const filteredProperties = propertiesForFiltering.filter(property => {
     // Property building type (flat/house/detached) filter - only for professional search
     const propertyTypeMatch = searchFilters.propertyBuildingType === 'all' || property.property_type === searchFilters.propertyBuildingType;
     
@@ -1040,15 +1068,36 @@ const UserDashboard = () => {
 
   // Custom handler for sidebar filter changes
   const handleSidebarFilterChange = (filterType, value) => {
-    // Update the filter
+    console.log(`🔄 Filter change: ${filterType} = ${value}`);
+    
+    // Update the filter immediately
     const newFilters = { ...searchFilters, [filterType]: value };
+    setSearchFilters(newFilters);
+    
+    // If switching away from "rent" category, clear professional search results IMMEDIATELY
+    if (filterType === 'propertyType' && value !== 'rent' && hasPerformedSearch) {
+      console.log('🔄 Switching away from "For Rent" - clearing professional search results');
+      setHasPerformedSearch(false);
+      setSearchResults([]);
+      setSearchAnalytics(null);
+      setSearchQuery('');
+      setIsSearching(false);
+    }
     
     // If switching to "All" categories or "All" status, reset professional search filters
     if ((filterType === 'propertyType' && value === 'all') || 
         (filterType === 'status' && value === 'all')) {
       
-      // Reset professional search query and filters
+      console.log('🔄 Resetting to "All" - clearing search and filters');
+      
+      // Clear all search states
+      setHasPerformedSearch(false);
+      setSearchResults([]);
+      setSearchAnalytics(null);
       setSearchQuery('');
+      setIsSearching(false);
+      
+      // Reset professional search filters
       setSearchFilters({
         ...newFilters,
         radius: '1',
@@ -1073,11 +1122,98 @@ const UserDashboard = () => {
         retirementHome: false,
         studentAccommodation: false
       });
-    } else {
-      // Normal filter change
-      setSearchFilters(newFilters);
     }
   };
+
+  // 🏆 Professional Search Handler (like top property websites)
+  const handleProfessionalSearch = useCallback(async (query, filters) => {
+    if (!query || !query.trim()) {
+      console.log('🏆 Professional Search: Empty query, skipping search');
+      return;
+    }
+
+    setIsSearching(true);
+    setHasPerformedSearch(true);
+    
+    console.log(`🏆 Professional Search: Starting search for "${query}"`);
+    console.log('🏆 Search filters:', filters);
+
+    try {
+      // Build professional search parameters
+      const searchParams = new URLSearchParams({
+        q: query.trim(),
+        limit: '50', // Get more results for dashboard
+        page: '1',
+        show_all_statuses: 'true' // Show all statuses in UserDashboard (pending, approved, rejected)
+      });
+
+      // Add filters if they have values
+      if (filters.radius && filters.radius !== 'any') {
+        searchParams.append('radius', filters.radius);
+      }
+      if (filters.minPrice && filters.minPrice !== 'any') {
+        searchParams.append('min_price', filters.minPrice);
+      }
+      if (filters.maxPrice && filters.maxPrice !== 'any') {
+        searchParams.append('max_price', filters.maxPrice);
+      }
+      if (filters.minBeds && filters.minBeds !== 'any') {
+        searchParams.append('bedrooms_min', filters.minBeds);
+      }
+      if (filters.maxBeds && filters.maxBeds !== 'any') {
+        searchParams.append('bedrooms_max', filters.maxBeds);
+      }
+      if (filters.propertyBuildingType && filters.propertyBuildingType !== 'all') {
+        searchParams.append('property_type', filters.propertyBuildingType);
+      }
+
+      const searchUrl = `${PROFESSIONAL_SEARCH_API}?${searchParams}`;
+      console.log('🏆 Professional Search URL:', searchUrl);
+
+      const response = await fetch(searchUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('🏆 Professional Search Results:', data);
+
+      if (data.success) {
+        // Update search results
+        setSearchResults(data.properties || []);
+        setSearchAnalytics(data.debug || null);
+        
+        console.log(`🏆 Professional Search: Found ${data.properties?.length || 0} properties`);
+        
+        if (data.debug) {
+          console.log('🏆 Search Analytics:', data.debug);
+        }
+      } else {
+        console.error('🏆 Professional Search: Server returned error:', data.error);
+        setSearchResults([]);
+        setSearchAnalytics(null);
+      }
+
+    } catch (error) {
+      console.error('🏆 Professional Search Error:', error);
+      setSearchResults([]);
+      setSearchAnalytics(null);
+      
+      // Show user-friendly error
+      alert(`Search failed: ${error.message}. Please try again.`);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []); // Empty dependency array since function doesn't depend on any state
+
+  // 🔄 Auto-trigger search when filters change (radius, price, etc.) - but only if we have a search query
+  useEffect(() => {
+    if (searchQuery.trim() && hasPerformedSearch && !isSearching) {
+      console.log('🔄 Filter changed, re-running search for:', searchQuery);
+      handleProfessionalSearch(searchQuery, searchFilters);
+    }
+  }, [searchFilters.radius, searchFilters.minPrice, searchFilters.maxPrice, searchFilters.minBeds, searchFilters.maxBeds, searchFilters.propertyBuildingType]);
 
   if (loading) {
     return (
@@ -1203,6 +1339,11 @@ const UserDashboard = () => {
           bedroomOptions={bedroomOptions}
           propertyBuildingTypeOptions={propertyBuildingTypeOptions}
           bathroomOptions={bathroomOptions}
+          // 🏆 Professional Search Props
+          onProfessionalSearch={handleProfessionalSearch}
+          isSearching={isSearching}
+          searchResults={searchResults}
+          searchAnalytics={searchAnalytics}
         />
       )}
 

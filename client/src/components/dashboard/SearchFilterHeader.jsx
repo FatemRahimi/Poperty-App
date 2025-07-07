@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import SearchDropdown from '../SearchDropdown';
 
-const SearchFilterHeader = ({ 
+const SearchFilterHeader = memo(({ 
   searchFilters, 
   setSearchFilters, 
   searchQuery, 
@@ -13,8 +13,16 @@ const SearchFilterHeader = ({
   priceOptions,
   bedroomOptions,
   propertyBuildingTypeOptions,
-  bathroomOptions
+  bathroomOptions,
+  onProfessionalSearch,
+  isSearching = false,
+  searchResults = [],
+  searchAnalytics = null
 }) => {
+
+  const [lastSearchQuery, setLastSearchQuery] = useState('');
+  const [searchDebounceTimeout, setSearchDebounceTimeout] = useState(null);
+  const searchInputRef = useRef(null);
 
   const radiusOptions = [
     { value: '0.25', label: 'Within 1/4 mile' },
@@ -30,18 +38,107 @@ const SearchFilterHeader = ({
     { value: '30', label: 'Within 30 miles' }
   ];
 
+  const triggerProfessionalSearch = () => {
+    if (!searchQuery.trim() || searchQuery === lastSearchQuery) return;
+    
+    console.log(`🔍 Professional Dashboard Search: "${searchQuery}"`);
+    setLastSearchQuery(searchQuery);
+    
+    if (onProfessionalSearch) {
+      onProfessionalSearch(searchQuery, searchFilters);
+    }
+  };
+
+  useEffect(() => {
+    if (searchDebounceTimeout) {
+      clearTimeout(searchDebounceTimeout);
+    }
+
+    if (searchQuery.trim() && searchQuery !== lastSearchQuery) {
+      const timeout = setTimeout(() => {
+        triggerProfessionalSearch();
+      }, 1000); // Longer delay to allow complete typing
+      
+      setSearchDebounceTimeout(timeout);
+    }
+
+    return () => {
+      if (searchDebounceTimeout) {
+        clearTimeout(searchDebounceTimeout);
+      }
+    };
+  }, [searchQuery]); // Only depend on searchQuery for smooth typing
+
+
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // Clear debounce and search immediately
+      if (searchDebounceTimeout) {
+        clearTimeout(searchDebounceTimeout);
+        setSearchDebounceTimeout(null);
+      }
+      triggerProfessionalSearch();
+    }
+  };
+
   return (
     <div className="professional-search-header">
+      {searchAnalytics && (
+        <div className="professional-search-analytics">
+          <div className="search-analytics-content">
+            <div className="search-results-summary">
+              <h4>
+                {searchResults.length} properties found
+                {searchAnalytics.searchMode === 'geographic' && searchAnalytics.searchRadius && (
+                  <> within {searchAnalytics.searchRadius} miles of "{searchAnalytics.originalQuery}"</>
+                )}
+                {searchAnalytics.searchMode === 'text' && (
+                  <> matching "{searchAnalytics.originalQuery}"</>
+                )}
+              </h4>
+              <div className="search-analytics-details">
+                <span className={`search-mode-badge ${searchAnalytics.searchMode}`}>
+                  {searchAnalytics.searchMode === 'geographic' ? '🌍 Geographic Search' : '📝 Text Search'}
+                </span>
+                {searchAnalytics.usedFuzzyMatch && (
+                  <span className="fuzzy-match-badge">✨ Typo corrected</span>
+                )}
+                {searchAnalytics.wasGeocoded && (
+                  <span className="geocoded-badge">📍 Location found</span>
+                )}
+              </div>
+              <p className="search-strategy-description">
+                {searchAnalytics.searchDescription}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="search-filter-container">
-        {/* Location Search - Made wider */}
         <div className="filter-group location-group location-group-wide">
-          <input
-            type="text"
-            placeholder="Enter postcode or address to find nearby properties..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="location-input location-input-wide"
-          />
+          <div className="professional-search-input-wrapper">
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="🔍 Enter location (e.g.'M1 4DY', 'Stone Road', 'Birmingham', 'M1 4DY')..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className={`location-input location-input-wide ${isSearching ? 'searching' : ''}`}
+              disabled={isSearching}
+              autoComplete="off"
+              id="professional-search-input"
+            />
+            {isSearching && (
+              <div className="search-loading-indicator">
+                <i className="fas fa-spinner fa-spin"></i>
+                <span>Searching...</span>
+              </div>
+            )}
+          </div>
           <SearchDropdown
             value={searchFilters.radius}
             onChange={(value) => setSearchFilters({...searchFilters, radius: value})}
@@ -53,7 +150,6 @@ const SearchFilterHeader = ({
           />
         </div>
 
-        {/* Price Filters */}
         <div className="filter-group price-group">
           <SearchDropdown
             value={searchFilters.minPrice}
@@ -76,7 +172,6 @@ const SearchFilterHeader = ({
           />
         </div>
 
-        {/* Bedroom Filters */}
         <div className="filter-group bedroom-group">
           <SearchDropdown
             value={searchFilters.minBeds}
@@ -99,7 +194,6 @@ const SearchFilterHeader = ({
           />
         </div>
 
-        {/* Property Type */}
         <div className="filter-group property-type-group">
           <SearchDropdown
             value={searchFilters.propertyBuildingType}
@@ -112,7 +206,6 @@ const SearchFilterHeader = ({
           />
         </div>
 
-        {/* More Filters */}
         <div className="filter-group dashboard-more-filters-container">
           <div 
             className={`dashboard-more-filters-button ${showMoreFilters ? 'open' : ''}`}
@@ -126,7 +219,6 @@ const SearchFilterHeader = ({
             <div className="dashboard-more-filters-dropdown">
               <div className="dashboard-more-filters-content">
                 
-                {/* Bathroom Section */}
                 <div className="dashboard-filter-section">
                   <h4 className="dashboard-filter-section-title">
                     <i className="fas fa-bath"></i>
@@ -160,7 +252,6 @@ const SearchFilterHeader = ({
 
                 <div className="dashboard-filter-divider"></div>
 
-                {/* Property Details Section */}
                 <div className="dashboard-filter-section">
                   <h4 className="dashboard-filter-section-title">
                     <i className="fas fa-home"></i>
@@ -212,7 +303,6 @@ const SearchFilterHeader = ({
 
                 <div className="dashboard-filter-divider"></div>
 
-                {/* Type of Let Section */}
                 <div className="dashboard-filter-section">
                   <h4 className="dashboard-filter-section-title">
                     <i className="fas fa-key"></i>
@@ -255,7 +345,6 @@ const SearchFilterHeader = ({
                   </div>
                 </div>
 
-                {/* Property Features Section */}
                 <div className="dashboard-filter-section">
                   <div className="dashboard-filter-checkboxes-row">
                     <label className="dashboard-filter-checkbox-option">
@@ -306,7 +395,6 @@ const SearchFilterHeader = ({
                   </div>
                 </div>
 
-                {/* Filter Actions */}
                 <div className="dashboard-filter-actions">
                   <button 
                     className="dashboard-filter-clear-btn"
@@ -343,6 +431,8 @@ const SearchFilterHeader = ({
       </div>
     </div>
   );
-};
+});
+
+SearchFilterHeader.displayName = 'SearchFilterHeader';
 
 export default SearchFilterHeader; 

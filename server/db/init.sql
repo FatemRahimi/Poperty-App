@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS properties (
   state VARCHAR(100),
   zip_code VARCHAR(20),
   country VARCHAR(100) DEFAULT 'USA',
+  latitude DECIMAL(10,8),
+  longitude DECIMAL(11,8),
   
   -- Property details
   bedrooms INTEGER,
@@ -162,6 +164,25 @@ CREATE INDEX IF NOT EXISTS idx_properties_building_type ON properties(property_t
 CREATE INDEX IF NOT EXISTS idx_properties_created_at ON properties(created_at);
 CREATE INDEX IF NOT EXISTS idx_property_images_property_id ON property_images(property_id);
 CREATE INDEX IF NOT EXISTS idx_property_amenities_property_id ON property_amenities(property_id);
+
+-- Smart search indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_properties_city ON properties(city);
+CREATE INDEX IF NOT EXISTS idx_properties_street_name ON properties(street_name);
+CREATE INDEX IF NOT EXISTS idx_properties_category ON properties(category);
+CREATE INDEX IF NOT EXISTS idx_properties_zip_code ON properties(zip_code);
+CREATE INDEX IF NOT EXISTS idx_properties_state ON properties(state);
+CREATE INDEX IF NOT EXISTS idx_properties_coordinates ON properties(latitude, longitude);
+CREATE INDEX IF NOT EXISTS idx_properties_price ON properties(price);
+CREATE INDEX IF NOT EXISTS idx_properties_monthly_rent ON properties(monthly_rent);
+CREATE INDEX IF NOT EXISTS idx_properties_bedrooms ON properties(bedrooms);
+CREATE INDEX IF NOT EXISTS idx_properties_bathrooms ON properties(bathrooms);
+
+-- Full-text search indexes for title and description
+CREATE INDEX IF NOT EXISTS idx_properties_title_trgm ON properties USING gin(title gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_properties_description_trgm ON properties USING gin(description gin_trgm_ops);
+
+-- Enable PostgreSQL trigram extension for fuzzy text search (if not already enabled)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Create initial super admin using ENV variables
 -- This will be handled by the setup script

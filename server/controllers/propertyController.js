@@ -31,6 +31,35 @@ const generateSlug = (title) => {
     .trim('-') + '-' + Date.now();
 };
 
+// Convert lease term to proper integer value
+const convertLeaseTerm = (leaseTerm) => {
+  if (!leaseTerm) return null;
+  
+  // Handle string values
+  if (typeof leaseTerm === 'string') {
+    const term = leaseTerm.toLowerCase().trim();
+    
+    // Handle common lease term mappings
+    switch (term) {
+      case 'flexible':
+      case 'rolling':
+      case 'month-to-month':
+        return null; // No fixed term
+      case 'short-term':
+        return 6; // 6 months
+      case 'long-term':
+        return 12; // 12 months
+      default:
+        // Try to parse as number (e.g., "12", "6")
+        const parsed = parseInt(leaseTerm);
+        return !isNaN(parsed) ? parsed : null;
+    }
+  }
+  
+  // If already a number
+  return parseInt(leaseTerm) || null;
+};
+
 // Send email notification
 const sendEmailNotification = async (notificationData) => {
   try {
@@ -140,7 +169,14 @@ const submitProperty = async (req, res) => {
     const weekly_rent_mapped = weekly_rent_value ? parseFloat(weekly_rent_value) : null;
     const monthly_rent_mapped = monthly_rent_value ? parseFloat(monthly_rent_value) : null;
     
-    const lease_term_mapped = lease_term || tenancyLength;
+
+    
+    const lease_term_mapped = convertLeaseTerm(lease_term || tenancyLength);
+    console.log('🔧 LEASE TERM DEBUG:');
+    console.log('🔧 Raw lease_term:', lease_term);
+    console.log('🔧 Raw tenancyLength:', tenancyLength);
+    console.log('🔧 Converted lease_term_mapped:', lease_term_mapped);
+    console.log('🔧 Type of lease_term_mapped:', typeof lease_term_mapped);
     const deposit_amount_mapped = deposit_amount || depositAmount;
     const furnished_mapped = furnished || (furnishedStatus === 'furnished');
     const student_housing_mapped = student_housing || studentHousing || false;
@@ -241,7 +277,9 @@ const submitProperty = async (req, res) => {
     console.log('📝 INSERT DEBUG - Values being inserted:');
     console.log('weekly_rent_mapped:', weekly_rent_mapped);
     console.log('monthly_rent_mapped:', monthly_rent_mapped);
-    console.log('Values array:', [
+    console.log('🔧 FINAL lease_term_mapped value:', lease_term_mapped, typeof lease_term_mapped);
+    
+    const valuesArray = [
       user_id, title, description, category_mapped, property_type_mapped, property_category,
       address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
       bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built,
@@ -249,7 +287,10 @@ const submitProperty = async (req, res) => {
       parking_spaces || 0, has_garage || false, has_pool || false, 
       has_garden || false, furnished_mapped || false, pets_allowed || false,
       student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, slug
-    ]);
+    ];
+    
+    console.log('Values array position 21 (lease_term):', valuesArray[20]);
+    console.log('Values array:', valuesArray);
     
     const propertyResult = await client.query(
       `INSERT INTO properties (
@@ -263,15 +304,7 @@ const submitProperty = async (req, res) => {
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34
       ) RETURNING *`,
-      [
-        user_id, title, description, category_mapped, property_type_mapped, property_category,
-        address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
-        bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built,
-        price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
-        parking_spaces || 0, has_garage || false, has_pool || false, 
-        has_garden || false, furnished_mapped || false, pets_allowed || false,
-        student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, slug
-      ]
+      valuesArray
     );
 
     const property = propertyResult.rows[0];
@@ -996,7 +1029,7 @@ const updateProperty = async (req, res) => {
     const weekly_rent_mapped = weekly_rent_value ? parseFloat(weekly_rent_value) : existingProperty.weekly_rent;
     const monthly_rent_mapped = monthly_rent_value ? parseFloat(monthly_rent_value) : existingProperty.monthly_rent;
     
-    const lease_term_mapped = lease_term || tenancyLength || existingProperty.lease_term;
+    const lease_term_mapped = convertLeaseTerm(lease_term || tenancyLength) || existingProperty.lease_term;
     const deposit_amount_mapped = deposit_amount || depositAmount || existingProperty.deposit_amount;
     const furnished_mapped = furnished !== undefined ? furnished : (furnishedStatus === 'furnished') || existingProperty.furnished;
     const student_housing_mapped = student_housing !== undefined ? student_housing : (studentHousing || existingProperty.student_housing);

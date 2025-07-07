@@ -745,6 +745,8 @@
   flex-wrap: wrap;
   gap: 1rem;
   position: relative;
+  order: -1; /* Position this header above property cards */
+  z-index: 10; /* Ensure it stays on top */
 }
 /* linear-gradient(135deg, #1e293b, #334155);
   padding: 0.75rem 2rem;*/
@@ -756,6 +758,116 @@
   box-shadow: 0 4px 20px rgba(30, 41, 59, 0.15);
   position: relative;
   z-index: 2147483646;
+}
+
+/* 🏆 Professional Search Analytics */
+.professional-search-analytics {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  padding: 1.5rem;
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.search-analytics-content h4 {
+  font-size: 1.1rem;
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.search-analytics-details {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.8rem;
+}
+
+.search-mode-badge, .fuzzy-match-badge, .geocoded-badge {
+  padding: 0.3rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.search-mode-badge.geographic {
+  background: rgba(76, 175, 80, 0.3);
+  border: 1px solid rgba(76, 175, 80, 0.5);
+}
+
+.search-mode-badge.text {
+  background: rgba(33, 150, 243, 0.3);
+  border: 1px solid rgba(33, 150, 243, 0.5);
+}
+
+.fuzzy-match-badge {
+  background: rgba(255, 193, 7, 0.3);
+  border: 1px solid rgba(255, 193, 7, 0.5);
+}
+
+.geocoded-badge {
+  background: rgba(233, 30, 99, 0.3);
+  border: 1px solid rgba(233, 30, 99, 0.5);
+}
+
+.search-strategy-description {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  font-style: italic;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.professional-search-input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.search-loading-indicator {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #666;
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.search-loading-indicator i {
+  color: #3498db;
+}
+
+.manual-search-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.manual-search-button:hover {
+  background: #2980b9;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.location-input.searching {
+  background: #f8f9fa;
+  color: #666;
+  cursor: not-allowed;
 }
 
 .search-filter-container {
@@ -1650,6 +1762,37 @@
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
+  /* Fix layout shift - consistent sizing */
+  min-width: 80px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+/* Loading state for property count */
+.property-count .fa-spinner {
+  font-size: 0.7rem;
+  color: inherit;
+}
+
+/* Professional loading animation - better browser support */
+.property-count.loading {
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  animation: propertyCountPulse 2s ease-in-out infinite;
+}
+
+@keyframes propertyCountPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
 }
 
 .active-filters {
@@ -2436,6 +2579,8 @@
   .property-count {
     padding: 0.2rem 0.6rem;
     font-size: 0.7rem;
+    /* Mobile responsive with consistent sizing */
+    min-width: 70px;
   }
 
   .filter-select {
@@ -2881,6 +3026,8 @@
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
+    order: -1; /* Maintain top position on mobile */
+    margin-bottom: 1.5rem;
   }
   
   .professional-search-header {
@@ -3416,6 +3563,18 @@
   }
 } 
 
+/* Properties Section Wrapper - Contains header and content */
+.properties-section-wrapper {
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+/* Properties Header - Positioned at top */
+.properties-section-wrapper .properties-header-modern {
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+}
+
 /* Properties Section with Sidebar Layout - Responsive */
 .properties-section-with-sidebar {
   display: flex;
@@ -3696,6 +3855,11 @@
 
 /* Responsive Design for Sidebar - Tablets and Mobile */
 @media (max-width: 991px) {
+  .properties-section-wrapper .properties-header-modern {
+    padding: 0; /* Remove padding on mobile */
+    margin-bottom: 1.5rem;
+  }
+  
   .properties-section-with-sidebar {
     flex-direction: column;
     gap: 1.5rem;
