@@ -11,6 +11,8 @@
  * - Common abbreviation handling
  * - TYPO TOLERANCE
  * - PROFESSIONAL GEOGRAPHIC SEARCH (NEW!)
+ * - ENHANCED INPUT PARSING (NEW!)
+ * - MULTI-FORMAT SUPPORT (NEW!)
  */
 
 const https = require('https');
@@ -368,43 +370,386 @@ const parseSearchQuery = (query) => {
 };
 
 /**
- * Professional Geocoding Service
- * Converts "Stone Road" to coordinates for radius-based search
- * Like top property websites (Rightmove, Zoopla, etc.)
+ * Enhanced Input Parsing for Multiple Location Formats
+ * Handles: postcodes, cities, streets, areas, mixed inputs, reverse formats
  */
-const geocodeLocation = async (location) => {
+const parseLocationInput = (input) => {
+  if (!input || typeof input !== 'string') {
+    return { type: 'unknown', components: [], confidence: 0 };
+  }
+
+  const cleaned = input.trim().toLowerCase();
+  const original = input.trim();
+  
+  // UK Postcode patterns (comprehensive)
+  const fullPostcodeRegex = /\b([a-z]{1,2}[0-9][a-z0-9]?\s*[0-9][a-z]{2})\b/i;
+  const partialPostcodeRegex = /\b([a-z]{1,2}[0-9][a-z0-9]?)\b/i;
+  
+  // Enhanced postcode detection with location
+  const postcodeMatch = original.match(fullPostcodeRegex);
+  if (postcodeMatch) {
+    const postcode = postcodeMatch[1].replace(/\s/g, '').toUpperCase();
+    const remaining = original.replace(postcodeMatch[0], '').trim();
+    
+    return {
+      type: 'postcode_with_location',
+      postcode: postcode,
+      location: remaining,
+      components: [postcode, remaining].filter(Boolean),
+      confidence: 0.95,
+      searchStrategy: 'postcode_primary'
+    };
+  }
+
+  // Partial postcode detection
+  const partialMatch = original.match(partialPostcodeRegex);
+  if (partialMatch && !cleaned.includes('road') && !cleaned.includes('street') && !cleaned.includes('avenue')) {
+    return {
+      type: 'partial_postcode',
+      postcode: partialMatch[1].toUpperCase(),
+      components: [partialMatch[1]],
+      confidence: 0.8,
+      searchStrategy: 'postcode_area'
+    };
+  }
+
+  // Street patterns with enhanced detection
+  const streetIndicators = ['road', 'street', 'st', 'avenue', 'ave', 'lane', 'ln', 'drive', 'dr', 'close', 'cl', 'way', 'court', 'ct', 'place', 'pl', 'crescent', 'grove', 'gardens', 'park', 'square', 'terrace'];
+  const hasStreetIndicator = streetIndicators.some(indicator => cleaned.includes(indicator));
+  
+  if (hasStreetIndicator) {
+    // Parse street + area combinations
+    const parts = original.split(/[,\s]+/).filter(Boolean);
+    const streetPart = parts.find(part => 
+      streetIndicators.some(indicator => part.toLowerCase().includes(indicator))
+    );
+    
+    return {
+      type: 'street_with_area',
+      street: streetPart || parts[0],
+      area: parts.filter(p => p !== streetPart).join(' '),
+      components: parts,
+      fullAddress: original,
+      confidence: 0.85,
+      searchStrategy: 'street_geographic'
+    };
+  }
+
+  // Enhanced city detection with common UK cities
+  const ukCities = [
+    'london', 'birmingham', 'manchester', 'liverpool', 'leeds', 'sheffield', 
+    'bristol', 'newcastle', 'nottingham', 'leicester', 'coventry', 'bradford', 
+    'stoke', 'wolverhampton', 'plymouth', 'derby', 'southampton', 'portsmouth',
+    'brighton', 'reading', 'northampton', 'luton', 'warrington', 'bournemouth',
+    'peterborough', 'cambridge', 'oxford', 'york', 'carlisle', 'preston',
+    'chester', 'gloucester', 'worcester', 'exeter', 'bath', 'salisbury'
+  ];
+  
+  // Check for city matches (case insensitive)
+  const cityMatch = ukCities.find(city => {
+    const cityRegex = new RegExp(`\\b${city}\\b`, 'i');
+    return cityRegex.test(cleaned);
+  });
+  
+  if (cityMatch) {
+    const cityRegex = new RegExp(`\\b${cityMatch}\\b`, 'i');
+    const remaining = original.replace(cityRegex, '').trim().replace(/^,\s*|,\s*$/, '');
+    
+    return {
+      type: 'city_with_area',
+      city: cityMatch,
+      area: remaining,
+      components: [cityMatch, remaining].filter(Boolean),
+      confidence: 0.9,
+      searchStrategy: 'city_geographic'
+    };
+  }
+
+  // Area/suburb detection (common London areas, Birmingham areas, etc.)
+  const commonAreas = [
+    'finchley', 'hampstead', 'islington', 'camden', 'chelsea', 'kensington', 'paddington',
+    'shoreditch', 'hoxton', 'dalston', 'hackney', 'stratford', 'canary wharf', 'greenwich',
+    'richmond', 'wimbledon', 'putney', 'clapham', 'brixton', 'streatham', 'croydon',
+    'ealing', 'acton', 'harrow', 'wembley', 'barnet', 'enfield', 'edmonton',
+    // Birmingham areas
+    'erdington', 'handsworth', 'aston', 'saltley', 'small heath', 'sparkbrook', 'moseley',
+    'kings heath', 'bournville', 'selly oak', 'edgbaston', 'harborne', 'quinton',
+    // Manchester areas
+    'didsbury', 'chorlton', 'fallowfield', 'rusholme', 'withington', 'burnage', 'gorton'
+  ];
+  
+  const areaMatch = commonAreas.find(area => cleaned.includes(area));
+  if (areaMatch) {
+    return {
+      type: 'known_area',
+      area: areaMatch,
+      location: original,
+      components: [areaMatch],
+      confidence: 0.8,
+      searchStrategy: 'area_geographic'
+    };
+  }
+
+  // Mixed format detection (reverse order handling)
+  const words = original.split(/\s+/).filter(Boolean);
+  if (words.length > 1) {
+    // Check for reverse format: "Manchester M1" or "Birmingham Stone Road"
+    const lastWord = words[words.length - 1].toLowerCase();
+    const firstWords = words.slice(0, -1).join(' ').toLowerCase();
+    
+    // Check if last word is a postcode area
+    if (partialPostcodeRegex.test(lastWord)) {
+      return {
+        type: 'reverse_city_postcode',
+        city: firstWords,
+        postcodeArea: lastWord.toUpperCase(),
+        components: [firstWords, lastWord],
+        confidence: 0.75,
+        searchStrategy: 'mixed_geographic'
+      };
+    }
+    
+    // Check if first word is a city and rest is area/street
+    if (ukCities.includes(firstWords) || commonAreas.includes(firstWords)) {
+      return {
+        type: 'reverse_location_area',
+        location: firstWords,
+        area: words.slice(1).join(' '),
+        components: words,
+        confidence: 0.75,
+        searchStrategy: 'mixed_geographic'
+      };
+    }
+  }
+
+  // Default to general location with smart analysis
+  return {
+    type: 'general_location',
+    location: original,
+    components: [original],
+    confidence: 0.6,
+    searchStrategy: 'text_fuzzy'
+  };
+};
+
+/**
+ * Enhanced Multi-API Geocoding with Fallback Strategy
+ */
+const geocodeLocationEnhanced = async (location, parsedInput = null) => {
   if (!location || typeof location !== 'string') {
     return null;
   }
 
+  const parsed = parsedInput || parseLocationInput(location);
+  console.log(`🔍 Enhanced Geocoding Analysis: ${JSON.stringify(parsed)}`);
+
   try {
-    // Try multiple geocoding services for reliability
-    
-    // 1. OpenStreetMap Nominatim (free, reliable)
-    const nominatimResult = await geocodeWithNominatim(location);
+    // Strategy 1: UK Postcodes API (best for UK postcodes and places)
+    if (parsed.type.includes('postcode') || parsed.searchStrategy === 'postcode_primary') {
+      const postcodeResult = await geocodeWithUKPostcodes(parsed.postcode || location);
+      if (postcodeResult) {
+        console.log(`✅ UK Postcodes API success: ${postcodeResult.display_name}`);
+        return postcodeResult;
+      }
+    }
+
+    // Strategy 2: UK Places API (best for cities and known areas)
+    if (['city_with_area', 'known_area', 'area_geographic'].includes(parsed.searchStrategy)) {
+      const placesResult = await geocodeWithUKPlaces(parsed.city || parsed.area || location);
+      if (placesResult) {
+        console.log(`✅ UK Places API success: ${placesResult.display_name}`);
+        return placesResult;
+      }
+    }
+
+    // Strategy 3: Enhanced Nominatim with UK focus
+    const nominatimResult = await geocodeWithNominatimEnhanced(location, parsed);
     if (nominatimResult) {
-      console.log(`🌍 Geocoded "${location}" via Nominatim: ${nominatimResult.lat}, ${nominatimResult.lng}`);
+      console.log(`✅ Enhanced Nominatim success: ${nominatimResult.display_name}`);
       return nominatimResult;
     }
 
-    // 2. Fallback to LocationIQ (free tier available)
-    const locationIqResult = await geocodeWithLocationIQ(location);
-    if (locationIqResult) {
-      console.log(`🌍 Geocoded "${location}" via LocationIQ: ${locationIqResult.lat}, ${locationIqResult.lng}`);
-      return locationIqResult;
+    // Strategy 4: Fallback to original geocoding
+    const originalResult = await geocodeWithNominatim(location);
+    if (originalResult) {
+      console.log(`✅ Original Nominatim fallback: ${originalResult.display_name}`);
+      return originalResult;
     }
 
-    console.log(`⚠️  Could not geocode location: "${location}"`);
+    // Strategy 5: Custom fallback database
+    const fallbackResult = getFallbackCoordinates(location, parsed);
+    if (fallbackResult) {
+      console.log(`✅ Fallback database: ${fallbackResult.display_name}`);
+      return fallbackResult;
+    }
+
+    console.log(`⚠️ No geocoding result for: "${location}"`);
     return null;
 
   } catch (error) {
-    console.error(`❌ Geocoding error for "${location}":`, error.message);
+    console.error(`❌ Enhanced geocoding error for "${location}":`, error.message);
     return null;
   }
 };
 
 /**
+ * UK Postcodes API Integration
+ */
+const geocodeWithUKPostcodes = async (postcode) => {
+  return new Promise((resolve, reject) => {
+    const cleanPostcode = postcode.replace(/\s/g, '').toUpperCase();
+    const url = `https://api.postcodes.io/postcodes/${encodeURIComponent(cleanPostcode)}`;
+    
+    const request = https.get(url, (response) => {
+      let data = '';
+      
+      response.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      response.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          if (result.status === 200 && result.result) {
+            const postcodeData = result.result;
+            resolve({
+              lat: postcodeData.latitude,
+              lng: postcodeData.longitude,
+              display_name: `${postcodeData.postcode}, ${postcodeData.admin_district}, ${postcodeData.country}`,
+              confidence: 0.95,
+              source: 'uk_postcodes_api'
+            });
+          } else {
+            resolve(null);
+          }
+        } catch (parseError) {
+          reject(parseError);
+        }
+      });
+    });
+    
+    request.on('error', (error) => {
+      resolve(null); // Don't reject, just return null for fallback
+    });
+    
+    request.setTimeout(3000, () => {
+      request.destroy();
+      resolve(null);
+    });
+  });
+};
+
+/**
+ * UK Places API Integration
+ */
+const geocodeWithUKPlaces = async (placeName) => {
+  return new Promise((resolve, reject) => {
+    const url = `https://api.postcodes.io/places?q=${encodeURIComponent(placeName)}&limit=1`;
+    
+    const request = https.get(url, (response) => {
+      let data = '';
+      
+      response.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      response.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          if (result.status === 200 && result.result && result.result.length > 0) {
+            const place = result.result[0];
+            resolve({
+              lat: parseFloat(place.latitude),
+              lng: parseFloat(place.longitude),
+              display_name: `${place.name_1}, ${place.admin_county || place.admin_district}, UK`,
+              confidence: 0.9,
+              source: 'uk_places_api'
+            });
+          } else {
+            resolve(null);
+          }
+        } catch (parseError) {
+          reject(parseError);
+        }
+      });
+    });
+    
+    request.on('error', (error) => {
+      resolve(null);
+    });
+    
+    request.setTimeout(3000, () => {
+      request.destroy();
+      resolve(null);
+    });
+  });
+};
+
+/**
+ * Enhanced Nominatim with better UK handling
+ */
+const geocodeWithNominatimEnhanced = async (location, parsedInput) => {
+  return new Promise((resolve, reject) => {
+    // Build smarter query based on parsed input
+    let searchQuery = location;
+    
+    if (parsedInput.type === 'street_with_area' && parsedInput.area) {
+      searchQuery = `${parsedInput.street}, ${parsedInput.area}, UK`;
+    } else if (parsedInput.type === 'city_with_area' && parsedInput.area) {
+      searchQuery = `${parsedInput.area}, ${parsedInput.city}, UK`;
+    } else {
+      searchQuery = `${location}, UK`;
+    }
+    
+    const encodedLocation = encodeURIComponent(searchQuery);
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedLocation}&limit=1&countrycodes=gb&addressdetails=1`;
+    
+    const request = https.get(url, {
+      headers: {
+        'User-Agent': 'PropertyPlatform/2.0 Enhanced'
+      }
+    }, (response) => {
+      let data = '';
+      
+      response.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      response.on('end', () => {
+        try {
+          const results = JSON.parse(data);
+          if (results && results.length > 0) {
+            const result = results[0];
+            resolve({
+              lat: parseFloat(result.lat),
+              lng: parseFloat(result.lon),
+              display_name: result.display_name,
+              confidence: 0.8,
+              source: 'nominatim_enhanced'
+            });
+          } else {
+            resolve(null);
+          }
+        } catch (parseError) {
+          reject(parseError);
+        }
+      });
+    });
+    
+    request.on('error', (error) => {
+      resolve(null);
+    });
+    
+    request.setTimeout(5000, () => {
+      request.destroy();
+      resolve(null);
+    });
+  });
+};
+
+/**
  * Geocode using OpenStreetMap Nominatim (free, no API key needed)
+ * Original function kept for fallback
  */
 const geocodeWithNominatim = (location) => {
   return new Promise((resolve, reject) => {
@@ -504,6 +849,73 @@ const geocodeWithLocationIQ = (location) => {
 };
 
 /**
+ * Custom Fallback Database for Common UK Locations
+ */
+const getFallbackCoordinates = (location, parsedInput) => {
+  const cleaned = location.toLowerCase().trim();
+  
+  // Extended fallback database
+  const fallbackDB = {
+    // Major cities
+    'london': { lat: 51.5074, lng: -0.1278, name: 'London, England, UK' },
+    'birmingham': { lat: 52.4862, lng: -1.8904, name: 'Birmingham, England, UK' },
+    'manchester': { lat: 53.4808, lng: -2.2426, name: 'Manchester, England, UK' },
+    'liverpool': { lat: 53.4084, lng: -2.9916, name: 'Liverpool, England, UK' },
+    'leeds': { lat: 53.8008, lng: -1.5491, name: 'Leeds, England, UK' },
+    
+    // London areas
+    'finchley': { lat: 51.5958, lng: -0.1883, name: 'Finchley, London, UK' },
+    'north finchley': { lat: 51.6130, lng: -0.1772, name: 'North Finchley, London, UK' },
+    'hampstead': { lat: 51.5581, lng: -0.1755, name: 'Hampstead, London, UK' },
+    'islington': { lat: 51.5362, lng: -0.1034, name: 'Islington, London, UK' },
+    'camden': { lat: 51.5392, lng: -0.1426, name: 'Camden, London, UK' },
+    
+    // Birmingham areas
+    'erdington': { lat: 52.5292, lng: -1.8441, name: 'Erdington, Birmingham, UK' },
+    'handsworth': { lat: 52.5184, lng: -1.9286, name: 'Handsworth, Birmingham, UK' },
+    'edgbaston': { lat: 52.4539, lng: -1.9248, name: 'Edgbaston, Birmingham, UK' },
+    
+    // Common postcodes
+    'b15': { lat: 52.4539, lng: -1.8909, name: 'B15 Area, Birmingham, UK' },
+    'b4': { lat: 52.4796, lng: -1.9026, name: 'B4 Area, Birmingham, UK' },
+    'm1': { lat: 53.4808, lng: -2.2426, name: 'M1 Area, Manchester, UK' },
+    'sw1': { lat: 51.4975, lng: -0.1357, name: 'SW1 Area, London, UK' },
+    
+    // Stone Road specific
+    'stone road': { lat: 52.4539, lng: -1.8909, name: 'Stone Road, Birmingham, UK' },
+    'stone road birmingham': { lat: 52.4539, lng: -1.8909, name: 'Stone Road, Birmingham, UK' },
+    'birmingham stone road': { lat: 52.4539, lng: -1.8909, name: 'Stone Road, Birmingham, UK' },
+  };
+  
+  // Check for exact matches
+  if (fallbackDB[cleaned]) {
+    const coords = fallbackDB[cleaned];
+    return {
+      lat: coords.lat,
+      lng: coords.lng,
+      display_name: coords.name,
+      confidence: 0.7,
+      source: 'fallback_database'
+    };
+  }
+  
+  // Check for partial matches
+  for (const [key, coords] of Object.entries(fallbackDB)) {
+    if (cleaned.includes(key) || key.includes(cleaned)) {
+      return {
+        lat: coords.lat,
+        lng: coords.lng,
+        display_name: coords.name,
+        confidence: 0.6,
+        source: 'fallback_database_partial'
+      };
+    }
+  }
+  
+  return null;
+};
+
+/**
  * Calculate distance between two points using Haversine formula
  * Returns distance in miles
  */
@@ -538,7 +950,7 @@ const analyzeSearchType = async (query, knownCities = []) => {
   console.log(`🔍 Analyzing search type for: "${query}"`);
   
   // Try geocoding (this is what makes us professional)
-  const coordinates = await geocodeLocation(query);
+  const coordinates = await geocodeLocationEnhanced(query);
   
   if (coordinates) {
     console.log(`✅ Geographic search mode: Found coordinates for "${query}"`);
@@ -582,9 +994,15 @@ module.exports = {
   generateSearchConditions,
   calculateSearchRank,
   parseSearchQuery,
-  geocodeLocation,
-  geocodeWithNominatim,
-  geocodeWithLocationIQ,
+  parseLocationInput,
+  geocodeLocationEnhanced,
+  geocodeWithUKPostcodes,
+  geocodeWithUKPlaces,
+  geocodeWithNominatimEnhanced,
+  getFallbackCoordinates,
+  geocodeLocation: geocodeLocationEnhanced, // Alias for backwards compatibility
+  geocodeWithNominatim, // Keep original for fallback
+  geocodeWithLocationIQ, // Keep original for fallback
   calculateDistance,
   analyzeSearchType
 }; 
