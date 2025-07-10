@@ -117,206 +117,219 @@ router.get('/search', async (req, res) => {
       min_price, 
       max_price, 
       bedrooms,
-      radius = '5',
+      radius = '3', // Default to 3 miles as requested
       page = 1,
       limit = 12,
-      show_all_statuses = 'false' // New parameter to control status filtering
+      show_all_statuses = 'false',
+      user_id = null // For dashboard context
     } = req.query;
 
     console.log(`🔍 Professional Search: "${query}" within ${radius} miles`);
     console.log('📍 Radius value:', radius, 'Type:', typeof radius);
+    console.log('🏷️ Category filter:', category);
+    console.log('👤 Context:', show_all_statuses === 'true' ? 'User Dashboard' : 'Public Search');
 
     const offset = (page - 1) * limit;
-    // Show all statuses only for UserDashboard professional search, otherwise show only approved
-    let whereClause = show_all_statuses === 'true' ? "WHERE 1=1" : "WHERE p.status = 'approved'";
+    
+    // CONTEXT-AWARE STATUS FILTERING
+    let whereClause;
+    if (show_all_statuses === 'true') {
+      // User Dashboard: Show all user's properties regardless of status
+      whereClause = user_id ? `WHERE p.user_id = ${user_id}` : "WHERE 1=1";
+      console.log('🏠 Dashboard mode: Showing all user properties');
+    } else {
+      // Public Search: Only approved properties
+      whereClause = "WHERE p.status = 'approved'";
+      console.log('🌐 Public mode: Showing only approved properties');
+    }
+    
     let queryParams = [];
     let paramCount = 0;
 
-    // 🎯 SMART LOCATION SEARCH - Enhanced for UK postcodes, cities, and streets
-    if (query) {
-      const searchTerm = query.trim();
+    // 🌍 GEOGRAPHIC SEARCH LOGIC - Primary approach for location-based queries
+    if (query && radius && radius.trim() !== '') {
+      console.log('🌍 Geographic search mode. Radius:', radius, 'Query:', query);
+      
+      // Enhanced geocoding using the new smart search utilities
+      const { geocodeLocationEnhanced, parseLocationInput } = require('../utils/smartSearch');
+      
+      const geocodeLocation = async (searchTerm) => {
+        console.log(`🌍 Enhanced Geocoding "${searchTerm}" using smart detection...`);
+        
+        // Parse the input to understand what type of location it is
+        const parsedInput = parseLocationInput(searchTerm);
+        console.log(`🔍 Input Analysis: ${JSON.stringify(parsedInput)}`);
+        
+        // Use enhanced geocoding with multiple API strategy
+        const result = await geocodeLocationEnhanced(searchTerm, parsedInput);
+        
+        if (result) {
+          console.log(`✅ Enhanced geocoding success: ${result.display_name} (${result.lat}, ${result.lng}) - Source: ${result.source}`);
+          return { lat: result.lat, lng: result.lng, success: true };
+        }
+        
+        console.log(`⚠️ No coordinates found for "${searchTerm}"`);
+        return { success: false };
+      };
+      
+      const radiusFloat = parseFloat(radius);
+      console.log('📏 Parsed radius:', radiusFloat);
+      
+      if (radiusFloat >= 0) {
+        // Get proper coordinates for the search term
+        const coords = await geocodeLocation(query);
+        
+        if (coords.success) {
+          const searchLat = coords.lat;
+          const searchLng = coords.lng;
+          console.log(`📍 Using coordinates for "${query}": ${searchLat}, ${searchLng}`);
+          
+          // PURE GEOGRAPHIC SEARCH - Only properties with coordinates within radius
+          paramCount += 3;
+          const radiusCondition = ` AND (
+            p.latitude IS NOT NULL AND p.longitude IS NOT NULL AND
+            (6371 * acos(
+              cos(radians($${paramCount - 2})) 
+              * cos(radians(p.latitude)) 
+              * cos(radians(p.longitude) - radians($${paramCount - 1})) 
+              + sin(radians($${paramCount - 2})) 
+              * sin(radians(p.latitude))
+            )) <= $${paramCount}
+          )`;
+          whereClause += radiusCondition;
+          queryParams.push(searchLat, searchLng, radiusFloat);
+          console.log('🎯 Added PURE GEOGRAPHIC radius condition:', radiusCondition);
+          console.log('📊 Query params:', queryParams);
+        } else {
+          // If geocoding fails, fall back to text search
+          console.log('🔍 Geocoding failed, falling back to text search');
+          paramCount++;
+          const textSearchCondition = ` AND (
+            p.title ILIKE $${paramCount} OR 
+            p.description ILIKE $${paramCount} OR 
+            p.address_line1 ILIKE $${paramCount} OR 
+            p.address_line2 ILIKE $${paramCount} OR 
+            p.city ILIKE $${paramCount} OR 
+            p.zip_code ILIKE $${paramCount} OR
+            p.property_type ILIKE $${paramCount}
+          )`;
+          whereClause += textSearchCondition;
+          queryParams.push(`%${query}%`);
+          console.log('🔧 Added text search fallback for query:', query);
+        }
+      }
+    } else if (query) {
+      // 📝 TEXT SEARCH MODE - When no radius specified or radius is empty
+      console.log('📝 Text-based search mode (Any distance). Query:', query);
       
       // Build smart postcode patterns for UK postcodes
-      let postcodeSearchTerms = [`%${searchTerm}%`];
+      let postcodeSearchTerms = [`%${query.trim()}%`];
       
-      // Enhanced UK postcode pattern matching for formats like "b46", "b46ge", "b192yf"
-      const postcodeMatch = searchTerm.match(/^([a-z]{1,2})(\d{1,2})([a-z]?\d?[a-z]{0,2})$/i);
+      // Enhanced UK postcode pattern matching
+      const postcodeMatch = query.trim().match(/^([a-z]{1,2})(\d{1,2})([a-z]?\d?[a-z]{0,2})$/i);
       if (postcodeMatch) {
         const [, letters, numbers, suffix] = postcodeMatch;
-        
-        // Create various patterns to match different postcode formats
         const area = letters.toUpperCase();
         const district = numbers;
         
-        // For searches like "b46", we need to handle both:
-        // 1. "B46xx" (compact format)
-        // 2. "B4 6xx" (UK standard spaced format)
-        
         if (district.length === 2 && !suffix) {
-          // "b46" should match both "B46xx" and "B4 6xx"
           const firstDigit = district[0];
           const secondDigit = district[1];
-          
-          // Pattern 1: Compact format "B46%"
           postcodeSearchTerms.push(`${area}${district}%`);
-          
-          // Pattern 2: Standard UK spaced format "B4 6%"  
           postcodeSearchTerms.push(`${area}${firstDigit} ${secondDigit}%`);
-          
-          // Pattern 3: Spaced format "B 46%"
           postcodeSearchTerms.push(`${area} ${district}%`);
         } else if (suffix) {
-          // For formats like "b46ge" or "b192yf"
-          // Check if suffix starts with a digit (like "2yf" in "b192yf")
           const sectorMatch = suffix.match(/^(\d)([a-z]{0,2})$/i);
-          
           if (sectorMatch) {
-            // This is a full postcode like "b192yf" -> "B19 2YF"
             const [, sector, unit] = sectorMatch;
             const fullSuffix = sector + unit.toUpperCase();
-            
-            // Pattern 1: Standard UK format "B19 2YF"
             postcodeSearchTerms.push(`${area}${district} ${sector}${unit.toUpperCase()}`);
-            
-            // Pattern 2: Compact format "B192YF"  
             postcodeSearchTerms.push(`${area}${district}${fullSuffix}`);
-            
-            // Pattern 3: Partial matches
             postcodeSearchTerms.push(`${area}${district} ${sector}%`);
             postcodeSearchTerms.push(`${area}${district}%`);
           } else {
-            // This is like "b46ge" -> district + letters
-            // Pattern 1: Compact format "B46GE"
             postcodeSearchTerms.push(`${area}${district}${suffix.toUpperCase()}`);
-            
-            // Pattern 2: Standard spaced format - need to split district properly
             if (district.length === 2) {
               const firstDigit = district[0];
               const secondDigit = district[1];
               postcodeSearchTerms.push(`${area}${firstDigit} ${secondDigit}${suffix.toUpperCase()}`);
             }
-            
-            // Pattern 3: Partial matches
             postcodeSearchTerms.push(`${area}${district}%`);
           }
         }
-        
-        // Pattern: Just the area
         postcodeSearchTerms.push(`${area}%`);
       }
       
       paramCount++;
       const generalSearchParam = paramCount;
+      queryParams.push(`%${query.trim()}%`);
       
-      // Add the general search parameter first
-      queryParams.push(`%${searchTerm}%`);
-      
-      // Add postcode-specific parameters
       const postcodeParams = [];
-      postcodeSearchTerms.forEach(term => {
+      postcodeSearchTerms.slice(1).forEach(term => { // Skip first one as it's already added as general
         paramCount++;
         postcodeParams.push(paramCount);
         queryParams.push(term);
       });
       
-      // Build the WHERE clause - LOCATION ONLY (no description search)
       const postcodeConditions = postcodeParams.map(param => `p.zip_code ILIKE $${param}`).join(' OR ');
       
       whereClause += ` AND (
         p.city ILIKE $${generalSearchParam} OR
         p.address_line1 ILIKE $${generalSearchParam} OR
         p.address_line2 ILIKE $${generalSearchParam} OR
-        ${postcodeConditions}
+        p.title ILIKE $${generalSearchParam} OR 
+        p.description ILIKE $${generalSearchParam} OR 
+        p.zip_code ILIKE $${generalSearchParam} OR
+        p.property_type ILIKE $${generalSearchParam}
+        ${postcodeConditions ? ' OR ' + postcodeConditions : ''}
       )`;
     }
 
-    // Add filters
-    if (category) {
+    // 🏷️ CATEGORY FILTER (rent/sale/lease) - This is the main filter
+    if (category && category !== 'all') {
       paramCount++;
       whereClause += ` AND p.category = $${paramCount}`;
       queryParams.push(category);
+      console.log(`🏷️ Added category filter: ${category}`);
     }
 
-    if (property_type) {
+    // 🏠 PROPERTY TYPE FILTER (flat/house/studio etc.)
+    if (property_type && property_type !== 'all') {
       paramCount++;
       whereClause += ` AND p.property_type = $${paramCount}`;
       queryParams.push(property_type);
+      console.log(`🏠 Added property type filter: ${property_type}`);
     }
 
+    // 🌆 CITY FILTER
     if (city) {
       paramCount++;
       whereClause += ` AND p.city ILIKE $${paramCount}`;
       queryParams.push(`%${city}%`);
+      console.log(`🌆 Added city filter: ${city}`);
     }
 
+    // 💰 PRICE FILTERS
     if (min_price) {
       paramCount++;
       whereClause += ` AND (p.price >= $${paramCount} OR p.monthly_rent >= $${paramCount})`;
       queryParams.push(min_price);
+      console.log(`💰 Added min price filter: ${min_price}`);
     }
 
     if (max_price) {
       paramCount++;
       whereClause += ` AND (p.price <= $${paramCount} OR p.monthly_rent <= $${paramCount})`;
       queryParams.push(max_price);
+      console.log(`💰 Added max price filter: ${max_price}`);
     }
 
+    // 🛏️ BEDROOMS FILTER
     if (bedrooms) {
       paramCount++;
       whereClause += ` AND p.bedrooms >= $${paramCount}`;
       queryParams.push(bedrooms);
-    }
-
-    // 🌍 RADIUS FILTERING - Geographic distance search with proper geocoding
-    if (radius && query) {
-      console.log('🌍 Radius filtering triggered. Radius:', radius, 'Query:', query);
-      
-      // Simple geocoding function for UK locations
-      const geocodeLocation = (searchTerm) => {
-        const term = searchTerm.toLowerCase().trim();
-        
-        // UK Postcode patterns
-        if (term.match(/^b152?/)) return { lat: 52.4539, lng: -1.8909 }; // B15 area (Stone Road area)
-        if (term.match(/^b46?/)) return { lat: 52.4796, lng: -1.9026 }; // B4 area
-        if (term.match(/^b19/)) return { lat: 52.4908, lng: -1.9108 }; // B19 area
-        if (term.match(/^b69/)) return { lat: 52.5031, lng: -2.0137 }; // B69 area (Oldbury)
-        
-        // Common areas/streets
-        if (term.includes('stone road')) return { lat: 52.4539, lng: -1.8909 }; // Stone Road, Birmingham
-        if (term.includes('hospital street')) return { lat: 52.4908, lng: -1.9108 }; // Hospital Street area
-        if (term.includes('halesowen')) return { lat: 52.5031, lng: -2.0137 }; // Halesowen area
-        
-        // Default to Birmingham city center if not found
-        console.log(`⚠️ No specific coordinates found for "${searchTerm}", using Birmingham center`);
-        return { lat: 52.4796, lng: -1.9026 };
-      };
-      
-      const radiusFloat = parseFloat(radius);
-      console.log('📏 Parsed radius:', radiusFloat);
-      if (radiusFloat >= 0) {
-        // Get proper coordinates for the search term
-        const coords = geocodeLocation(query);
-        const searchLat = coords.lat;
-        const searchLng = coords.lng;
-        console.log(`📍 Using coordinates for "${query}": ${searchLat}, ${searchLng}`);
-        
-        paramCount += 3;
-        const radiusCondition = ` AND (
-          (p.latitude IS NOT NULL AND p.longitude IS NOT NULL AND
-          (6371 * acos(
-            cos(radians($${paramCount - 2})) 
-            * cos(radians(p.latitude)) 
-            * cos(radians(p.longitude) - radians($${paramCount - 1})) 
-            + sin(radians($${paramCount - 2})) 
-            * sin(radians(p.latitude))
-          )) <= $${paramCount})
-          OR (p.latitude IS NULL OR p.longitude IS NULL)
-        )`;
-        whereClause += radiusCondition;
-        queryParams.push(searchLat, searchLng, radiusFloat);
-        console.log('🔧 Added radius condition:', radiusCondition);
-        console.log('📊 Query params:', queryParams);
-      }
+      console.log(`🛏️ Added bedrooms filter: ${bedrooms}`);
     }
 
     const searchQuery = `
@@ -336,7 +349,11 @@ router.get('/search', async (req, res) => {
     `;
 
     queryParams.push(limit, offset);
+    console.log('🔍 Final search query WHERE clause:', whereClause);
+    console.log('📊 Final query params:', queryParams);
+    
     const result = await pool.query(searchQuery, queryParams);
+    console.log('📊 Total properties returned:', result.rows.length);
 
     res.json({
       success: true,
@@ -394,6 +411,203 @@ router.get('/search/suggestions', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get suggestions',
+      error: error.message
+    });
+  }
+});
+
+// Add this new route after the existing search/suggestions route
+
+router.get('/search/location-suggestions', async (req, res) => {
+  try {
+    const { geocodeLocationEnhanced, parseLocationInput, geocodeWithUKPostcodes, geocodeWithUKPlaces } = require('../utils/smartSearch');
+    const { q } = req.query;
+    
+    if (!q || q.length < 2) {
+      return res.json({ suggestions: [] });
+    }
+
+    console.log(`🔍 Location suggestions requested for: "${q}"`);
+    
+    // Parse the input to understand what type of location it is
+    const parsedInput = parseLocationInput(q);
+    console.log(`📋 Parsed input: ${JSON.stringify(parsedInput)}`);
+    
+    const suggestions = [];
+
+    try {
+      // Strategy 1: UK Postcodes API for postcodes
+      if (parsedInput.type.includes('postcode') || parsedInput.confidence > 0.8) {
+        try {
+          const https = require('https');
+          const postcodeResponse = await new Promise((resolve, reject) => {
+            const url = `https://api.postcodes.io/postcodes?q=${encodeURIComponent(q)}&limit=5`;
+            https.get(url, (response) => {
+              let data = '';
+              response.on('data', chunk => data += chunk);
+              response.on('end', () => {
+                try {
+                  resolve(JSON.parse(data));
+                } catch (e) {
+                  resolve(null);
+                }
+              });
+            }).on('error', () => resolve(null));
+          });
+
+          if (postcodeResponse && postcodeResponse.status === 200 && postcodeResponse.result) {
+            postcodeResponse.result.forEach(item => {
+              suggestions.push({
+                type: 'postcode',
+                display: `${item.postcode} - ${item.admin_district}`,
+                value: item.postcode,
+                coordinates: { lat: item.latitude, lng: item.longitude },
+                icon: '📮',
+                confidence: 0.95
+              });
+            });
+          }
+        } catch (e) {
+          console.warn('Postcode API error:', e);
+        }
+      }
+
+      // Strategy 2: UK Places API for cities and areas
+      if (['city_with_area', 'known_area', 'general_location'].includes(parsedInput.searchStrategy)) {
+        try {
+          const https = require('https');
+          const placesResponse = await new Promise((resolve, reject) => {
+            const url = `https://api.postcodes.io/places?q=${encodeURIComponent(q)}&limit=5`;
+            https.get(url, (response) => {
+              let data = '';
+              response.on('data', chunk => data += chunk);
+              response.on('end', () => {
+                try {
+                  resolve(JSON.parse(data));
+                } catch (e) {
+                  resolve(null);
+                }
+              });
+            }).on('error', () => resolve(null));
+          });
+
+          if (placesResponse && placesResponse.status === 200 && placesResponse.result) {
+            placesResponse.result.forEach(place => {
+              suggestions.push({
+                type: 'place',
+                display: `${place.name_1} - ${place.admin_county || place.admin_district}`,
+                value: place.name_1,
+                coordinates: { lat: place.latitude, lng: place.longitude },
+                icon: '🏙️',
+                confidence: 0.9
+              });
+            });
+          }
+        } catch (e) {
+          console.warn('Places API error:', e);
+        }
+      }
+
+      // Strategy 3: Fallback to database search for properties
+      if (suggestions.length < 3) {
+        const { Pool } = require('pg');
+        const pool = new Pool({
+          connectionString: process.env.DATABASE_URL || 'postgres://fatemehrahimi@localhost:5432/propertydb'
+        });
+
+        const dbSuggestions = await pool.query(`
+          SELECT DISTINCT 
+            COALESCE(p.city, '') as city,
+            COALESCE(p.address_line1, '') as address,
+            COALESCE(p.zip_code, '') as postcode,
+            COUNT(*) as property_count
+          FROM properties p 
+          WHERE 
+            p.city ILIKE $1 OR 
+            p.address_line1 ILIKE $1 OR 
+            p.zip_code ILIKE $1 OR
+            p.address_line2 ILIKE $1
+          GROUP BY p.city, p.address_line1, p.zip_code
+          ORDER BY property_count DESC
+          LIMIT 5
+        `, [`%${q}%`]);
+
+        dbSuggestions.rows.forEach(row => {
+          if (row.city) {
+            suggestions.push({
+              type: 'database_city',
+              display: `${row.city} (${row.property_count} properties)`,
+              value: row.city,
+              icon: '🏘️',
+              confidence: 0.7,
+              propertyCount: row.property_count
+            });
+          }
+          if (row.address && row.address !== row.city) {
+            suggestions.push({
+              type: 'database_address',
+              display: `${row.address}, ${row.city}`,
+              value: `${row.address} ${row.city}`,
+              icon: '🏠',
+              confidence: 0.75,
+              propertyCount: row.property_count
+            });
+          }
+        });
+      }
+
+      // Strategy 4: Common location fallbacks
+      if (suggestions.length < 2) {
+        const commonLocations = [
+          { name: 'London', icon: '🏙️', type: 'major_city' },
+          { name: 'Birmingham', icon: '🏙️', type: 'major_city' },
+          { name: 'Manchester', icon: '🏙️', type: 'major_city' },
+          { name: 'Liverpool', icon: '🏙️', type: 'major_city' },
+          { name: 'Leeds', icon: '🏙️', type: 'major_city' },
+          { name: 'Finchley', icon: '🏘️', type: 'area' },
+          { name: 'Stone Road', icon: '🛣️', type: 'street' }
+        ];
+
+        const qLower = q.toLowerCase();
+        commonLocations.forEach(location => {
+          if (location.name.toLowerCase().includes(qLower) && 
+              !suggestions.some(s => s.value.toLowerCase() === location.name.toLowerCase())) {
+            suggestions.push({
+              type: location.type,
+              display: location.name,
+              value: location.name,
+              icon: location.icon,
+              confidence: 0.6
+            });
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('Location suggestions error:', error);
+    }
+
+    // Remove duplicates and limit results
+    const uniqueSuggestions = suggestions
+      .filter((suggestion, index, self) => 
+        index === self.findIndex(s => s.display === suggestion.display)
+      )
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 8);
+
+    console.log(`📍 Returning ${uniqueSuggestions.length} location suggestions`);
+
+    res.json({
+      success: true,
+      suggestions: uniqueSuggestions,
+      parsedInput: parsedInput
+    });
+
+  } catch (error) {
+    console.error('Location suggestions error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get location suggestions',
       error: error.message
     });
   }

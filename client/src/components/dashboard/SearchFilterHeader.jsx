@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import SearchDropdown from '../SearchDropdown';
+import LocationSearch from '../LocationSearch';
 
 const SearchFilterHeader = memo(({ 
   searchFilters, 
@@ -23,20 +24,6 @@ const SearchFilterHeader = memo(({
   const [lastSearchQuery, setLastSearchQuery] = useState('');
   const [searchDebounceTimeout, setSearchDebounceTimeout] = useState(null);
   const searchInputRef = useRef(null);
-
-  const radiusOptions = [
-    { value: '0.25', label: 'Within 1/4 mile' },
-    { value: '0.5', label: 'Within 1/2 mile' },
-    { value: '1', label: 'Within 1 mile' },
-    { value: '2', label: 'Within 2 miles' },
-    { value: '3', label: 'Within 3 miles' },
-    { value: '5', label: 'Within 5 miles' },
-    { value: '10', label: 'Within 10 miles' },
-    { value: '15', label: 'Within 15 miles' },
-    { value: '20', label: 'Within 20 miles' },
-    { value: '25', label: 'Within 25 miles' },
-    { value: '30', label: 'Within 30 miles' }
-  ];
 
   const triggerProfessionalSearch = () => {
     if (!searchQuery.trim() || searchQuery === lastSearchQuery) return;
@@ -118,37 +105,16 @@ const SearchFilterHeader = memo(({
       )}
 
       <div className="search-filter-container">
-        <div className="filter-group location-group location-group-wide">
-          <div className="professional-search-input-wrapper">
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="🔍 Enter location (e.g.'M1 4DY', 'Stone Road', 'Birmingham', 'M1 4DY')..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className={`location-input location-input-wide ${isSearching ? 'searching' : ''}`}
-              disabled={isSearching}
-              autoComplete="off"
-              id="professional-search-input"
-            />
-            {isSearching && (
-              <div className="search-loading-indicator">
-                <i className="fas fa-spinner fa-spin"></i>
-                <span>Searching...</span>
-              </div>
-            )}
-          </div>
-          <SearchDropdown
-            value={searchFilters.radius}
-            onChange={(value) => setSearchFilters({...searchFilters, radius: value})}
-            options={radiusOptions}
-            placeholder="Select radius"
-            className="search-dropdown-radius"
-            style={{minWidth: '150px'}}
-            theme="dark"
-          />
-        </div>
+        <LocationSearch
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          radius={searchFilters.radius}
+          onRadiusChange={(value) => setSearchFilters({...searchFilters, radius: value})}
+          placeholder="🔍 Enter location (e.g.'M1 4DY', 'Stone Road', 'Birmingham', 'M1 4DY')..."
+          isSearching={isSearching}
+          onKeyPress={handleKeyPress}
+          inputRef={searchInputRef}
+        />
 
         <div className="filter-group price-group">
           <SearchDropdown
