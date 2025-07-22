@@ -28,7 +28,7 @@ const PropertiesSection = ({
       <div className="properties-main-content">
         <div className="properties-header-modern">
           <div className="properties-title">
-            <h2>My Properties</h2>
+            <h2>Result</h2>
             <span className={`property-count ${isRadiusFiltering ? 'loading' : ''}`}>
               {isRadiusFiltering ? (
                 <>
