@@ -80,7 +80,7 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   const profileFormRef = useRef(null);
   const navRef = useRef(null);
-  const [lastResultCount, setLastResultCount] = useState(0);
+  const [lastStableCount, setLastStableCount] = useState(0);
   const prevIsSearching = useRef(false);
 
   // Check for property update success message
@@ -1250,14 +1250,21 @@ const UserDashboard = () => {
     }
   }, [searchFilters.radius, searchFilters.minPrice, searchFilters.maxPrice, searchFilters.minBeds, searchFilters.maxBeds, searchFilters.propertyBuildingType]);
 
-  // Track last completed result count
+  // Track last stable result count (only update after search completes)
   useEffect(() => {
-    // When search completes (isSearching goes from true to false), update lastResultCount
-    if (prevIsSearching.current && !isSearching) {
-      setLastResultCount(filteredProperties.length);
+    // When search completes (isSearching goes from true to false) and a search was performed, update lastStableCount
+    if (prevIsSearching.current && !isSearching && hasPerformedSearch) {
+      setLastStableCount(filteredProperties.length);
     }
     prevIsSearching.current = isSearching;
-  }, [isSearching, filteredProperties.length]);
+  }, [isSearching, filteredProperties.length, hasPerformedSearch]);
+
+  // On first load, set lastStableCount to initial property count
+  useEffect(() => {
+    if (!hasPerformedSearch && !isSearching) {
+      setLastStableCount(filteredProperties.length);
+    }
+  }, [filteredProperties.length, hasPerformedSearch, isSearching]);
 
   if (loading) {
     return (
@@ -1407,7 +1414,7 @@ const UserDashboard = () => {
             handlePropertyDeleted={handlePropertyDeleted}
             isRadiusFiltering={isRadiusFiltering}
             isSearching={isSearching}
-            totalCount={isSearching ? lastResultCount : filteredProperties.length}
+            totalCount={lastStableCount}
           />
         )}
 
