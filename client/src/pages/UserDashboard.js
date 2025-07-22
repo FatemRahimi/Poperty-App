@@ -80,6 +80,8 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   const profileFormRef = useRef(null);
   const navRef = useRef(null);
+  const [lastResultCount, setLastResultCount] = useState(0);
+  const prevIsSearching = useRef(false);
 
   // Check for property update success message
   useEffect(() => {
@@ -1248,6 +1250,15 @@ const UserDashboard = () => {
     }
   }, [searchFilters.radius, searchFilters.minPrice, searchFilters.maxPrice, searchFilters.minBeds, searchFilters.maxBeds, searchFilters.propertyBuildingType]);
 
+  // Track last completed result count
+  useEffect(() => {
+    // When search completes (isSearching goes from true to false), update lastResultCount
+    if (prevIsSearching.current && !isSearching) {
+      setLastResultCount(filteredProperties.length);
+    }
+    prevIsSearching.current = isSearching;
+  }, [isSearching, filteredProperties.length]);
+
   if (loading) {
     return (
       <div className="dashboard-loading-modern">
@@ -1395,6 +1406,8 @@ const UserDashboard = () => {
             statusOptions={statusOptions}
             handlePropertyDeleted={handlePropertyDeleted}
             isRadiusFiltering={isRadiusFiltering}
+            isSearching={isSearching}
+            totalCount={isSearching ? lastResultCount : filteredProperties.length}
           />
         )}
 
