@@ -918,10 +918,11 @@
   align-items: center;
   background: white;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible; /* FIXED: Allow suggestions dropdown to show */
   min-width: 320px;
   border: 1px solid #e2e8f0;
   margin-right: 1rem;
+  position: relative; /* For suggestions positioning */
 }
 
 /* Wider location group for better search experience */
@@ -932,6 +933,13 @@
 }
 
 .location-input-wide {
+  flex: 1;
+  min-width: 280px;
+}
+
+/* Location Input Container */
+.location-input-container {
+  position: relative;
   flex: 1;
   min-width: 280px;
 }
@@ -968,6 +976,7 @@
   transition: all 0.2s ease;
   flex: 1;
   min-width: 240px;
+  width: 100%;
 }
 
 .location-input:focus {
@@ -979,30 +988,161 @@
   font-weight: 400;
 }
 
-.radius-select {
-  background: transparent;
-  border: none;
-  border-left: 1px solid #d1d5db;
-  border-radius: 0;
+/* Location Suggestions Dropdown */
+.location-suggestions {
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: white !important;
+  border: 2px solid #fbbf24 !important; /* Bright border for visibility */
+  border-top: none !important;
+  border-radius: 0 0 8px 8px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+  z-index: 999999 !important; /* Very high z-index */
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  margin-top: 2px !important; /* Small gap for visibility */
+}
+
+/* Suggestion Item */
+.suggestion-item {
+  display: flex;
+  align-items: center;
   padding: 0.75rem 1rem;
-  font-size: 0.95rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', 'Helvetica Neue', Arial, sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: #1e293b;
-  outline: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 150px;
-  appearance: none;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+  font-family: Effra-Medium, Effra, sans-serif;
 }
 
-.radius-select:hover {
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover,
+.suggestion-item.selected {
   background: rgba(102, 126, 234, 0.05);
+  color: #667eea;
 }
 
-.radius-select:focus {
-  background: rgba(102, 126, 234, 0.1);
+.suggestion-item.loading {
+  cursor: default;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.suggestion-item.loading:hover {
+  background: transparent;
+  color: #6b7280;
+}
+
+/* Suggestion Icon */
+.suggestion-icon {
+  margin-right: 0.75rem;
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Suggestion Text */
+.suggestion-text {
+  flex: 1;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.suggestion-item:hover .suggestion-text,
+.suggestion-item.selected .suggestion-text {
+  color: #667eea;
+}
+
+/* Suggestion Radius */
+.suggestion-radius {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+
+.suggestion-item:hover .suggestion-radius,
+.suggestion-item.selected .suggestion-radius {
+  color: #667eea;
+}
+
+/* Loading Spinner */
+.suggestion-item.loading .suggestion-icon {
+  color: #667eea;
+}
+
+/* Scrollbar for suggestions */
+.location-suggestions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.location-suggestions::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.location-suggestions::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.location-suggestions::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Focus states for accessibility */
+.suggestion-item:focus {
+  outline: 2px solid #667eea;
+  outline-offset: -2px;
+}
+
+/* Animation for suggestions */
+.location-suggestions {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .location-group-wide {
+    min-width: 300px;
+    max-width: 100%;
+  }
+  
+  .location-input-wide {
+    min-width: 200px;
+  }
+  
+  .suggestion-item {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+  
+  .suggestion-icon {
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .suggestion-radius {
+    font-size: 0.75rem;
+  }
 }
 
 /* Price Filter Group */
