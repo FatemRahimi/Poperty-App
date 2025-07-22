@@ -2,6 +2,7 @@ const { Pool } = require('pg');
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
+const { geocodeLocationEnhanced } = require('../utils/smartSearch');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgres://fatemehrahimi@localhost:5432/propertydb'
@@ -273,6 +274,20 @@ const submitProperty = async (req, res) => {
     const user_id = req.user.id;
     const slug = generateSlug(title);
 
+    // Geocode location for all properties
+    let latitude = null;
+    let longitude = null;
+    const locationString = `${address_line1_mapped || ''} ${city || ''} ${zip_code_mapped || ''} ${country || ''}`;
+    try {
+      const geoResult = await geocodeLocationEnhanced(locationString);
+      if (geoResult && geoResult.lat && geoResult.lng) {
+        latitude = geoResult.lat;
+        longitude = geoResult.lng;
+      }
+    } catch (e) {
+      console.warn('Geocoding failed:', e.message);
+    }
+
     // Insert property
     console.log('📝 INSERT DEBUG - Values being inserted:');
     console.log('weekly_rent_mapped:', weekly_rent_mapped);
@@ -286,7 +301,8 @@ const submitProperty = async (req, res) => {
       price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
       parking_spaces || 0, has_garage || false, has_pool || false, 
       has_garden || false, furnished_mapped || false, pets_allowed || false,
-      student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, slug
+      student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, slug,
+      latitude, longitude
     ];
     
     console.log('Values array position 21 (lease_term):', valuesArray[20]);
@@ -299,10 +315,11 @@ const submitProperty = async (req, res) => {
         bedrooms, bathrooms, square_feet, lot_size, year_built,
         price, weekly_rent, monthly_rent, lease_term, deposit_amount,
         parking_spaces, has_garage, has_pool, has_garden, furnished, pets_allowed,
-        student_housing, availability_date, contact_name, contact_phone, contact_email, slug
+        student_housing, availability_date, contact_name, contact_phone, contact_email, slug,
+        latitude, longitude
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-        $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34
+        $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35
       ) RETURNING *`,
       valuesArray
     );
@@ -1038,6 +1055,20 @@ const updateProperty = async (req, res) => {
     const contact_phone_mapped = contact_phone || contactPhone || existingProperty.contact_phone;
     const contact_email_mapped = contact_email || contactEmail || existingProperty.contact_email;
 
+    // Geocode location for all properties
+    let latitude = null;
+    let longitude = null;
+    const locationString = `${address_line1_mapped || ''} ${city || ''} ${zip_code_mapped || ''} ${country || ''}`;
+    try {
+      const geoResult = await geocodeLocationEnhanced(locationString);
+      if (geoResult && geoResult.lat && geoResult.lng) {
+        latitude = geoResult.lat;
+        longitude = geoResult.lng;
+      }
+    } catch (e) {
+      console.warn('Geocoding failed:', e.message);
+    }
+
     // Data conversion for numeric fields
     const convertBathrooms = (bathrooms) => {
       if (!bathrooms) return existingProperty.bathrooms;
@@ -1080,7 +1111,8 @@ const updateProperty = async (req, res) => {
         price = $17, weekly_rent = $18, monthly_rent = $19, lease_term = $20, deposit_amount = $21,
         parking_spaces = $22, has_garage = $23, has_pool = $24, has_garden = $25, furnished = $26, pets_allowed = $27,
         student_housing = $28, availability_date = $29, contact_name = $30, contact_phone = $31, contact_email = $32,
-        updated_at = CURRENT_TIMESTAMP, status = 'pending'
+        updated_at = CURRENT_TIMESTAMP, status = 'pending',
+        latitude = $35, longitude = $36
        WHERE id = $33 AND user_id = $34
        RETURNING *`,
       [
@@ -1091,7 +1123,8 @@ const updateProperty = async (req, res) => {
         parking_spaces || existingProperty.parking_spaces, has_garage || existingProperty.has_garage, has_pool || existingProperty.has_pool, 
         has_garden || existingProperty.has_garden, furnished_mapped, pets_allowed || existingProperty.pets_allowed,
         student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped,
-        id, user_id
+        id, user_id,
+        latitude, longitude
       ]
     );
 
