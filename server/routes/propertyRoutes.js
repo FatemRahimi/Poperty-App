@@ -137,7 +137,7 @@ router.get('/search', async (req, res) => {
       // User Dashboard: Show all user's properties regardless of status
       whereClause = user_id ? `WHERE p.user_id = ${user_id}` : "WHERE 1=1";
       console.log('🏠 Dashboard mode: Showing all user properties');
-    } else {
+      } else {
       // Public Search: Only approved properties
       whereClause = "WHERE p.status = 'approved'";
       console.log('🌐 Public mode: Showing only approved properties');
@@ -166,56 +166,73 @@ router.get('/search', async (req, res) => {
         if (result) {
           console.log(`✅ Enhanced geocoding success: ${result.display_name} (${result.lat}, ${result.lng}) - Source: ${result.source}`);
           return { lat: result.lat, lng: result.lng, success: true };
-        }
+          }
+          
+          console.log(`⚠️ No coordinates found for "${searchTerm}"`);
+          return { success: false };
+        };
         
-        console.log(`⚠️ No coordinates found for "${searchTerm}"`);
-        return { success: false };
-      };
-      
       const radiusFloat = parseFloat(radius);
       console.log('📏 Parsed radius:', radiusFloat);
       
       if (radiusFloat >= 0) {
-        // Get proper coordinates for the search term
-        const coords = await geocodeLocation(query);
+        // Check if this is a city search first (NO GEOCODING for cities)
+        const { isCityPattern } = require('../utils/smartSearch');
         
-        if (coords.success) {
-          const searchLat = coords.lat;
-          const searchLng = coords.lng;
-          console.log(`📍 Using coordinates for "${query}": ${searchLat}, ${searchLng}`);
-          
-          // PURE GEOGRAPHIC SEARCH - Only properties with coordinates within radius
-          paramCount += 3;
-          const radiusCondition = ` AND (
-            p.latitude IS NOT NULL AND p.longitude IS NOT NULL AND
-            (6371 * acos(
-              cos(radians($${paramCount - 2})) 
-              * cos(radians(p.latitude)) 
-              * cos(radians(p.longitude) - radians($${paramCount - 1})) 
-              + sin(radians($${paramCount - 2})) 
-              * sin(radians(p.latitude))
-            )) <= $${paramCount}
+        if (isCityPattern(query)) {
+          console.log(`🏙️ City search detected for "${query}" - using direct database query (NO GEOCODING)`);
+          paramCount++;
+          const citySearchCondition = ` AND (
+            LOWER(p.city) = LOWER($${paramCount}) OR 
+            p.city ILIKE $${paramCount + 1}
           )`;
-          whereClause += radiusCondition;
-          queryParams.push(searchLat, searchLng, radiusFloat);
-          console.log('🎯 Added PURE GEOGRAPHIC radius condition:', radiusCondition);
+          whereClause += citySearchCondition;
+          queryParams.push(query.trim(), `%${query.trim()}%`);
+          paramCount++; // Increment for the second parameter
+          console.log('🏙️ Added DIRECT CITY search condition:', citySearchCondition);
           console.log('📊 Query params:', queryParams);
         } else {
-          // If geocoding fails, fall back to text search
-          console.log('🔍 Geocoding failed, falling back to text search');
-          paramCount++;
-          const textSearchCondition = ` AND (
-            p.title ILIKE $${paramCount} OR 
-            p.description ILIKE $${paramCount} OR 
-            p.address_line1 ILIKE $${paramCount} OR 
-            p.address_line2 ILIKE $${paramCount} OR 
-            p.city ILIKE $${paramCount} OR 
-            p.zip_code ILIKE $${paramCount} OR
-            p.property_type ILIKE $${paramCount}
-          )`;
-          whereClause += textSearchCondition;
-          queryParams.push(`%${query}%`);
-          console.log('🔧 Added text search fallback for query:', query);
+          // Get proper coordinates for non-city searches (postcodes, streets, areas)
+          const coords = await geocodeLocation(query);
+          
+          if (coords.success) {
+            const searchLat = coords.lat;
+            const searchLng = coords.lng;
+            console.log(`📍 Using coordinates for "${query}": ${searchLat}, ${searchLng}`);
+            
+            // PURE GEOGRAPHIC SEARCH - Only properties with coordinates within radius
+            paramCount += 3;
+            const radiusCondition = ` AND (
+              p.latitude IS NOT NULL AND p.longitude IS NOT NULL AND
+              (6371 * acos(
+                cos(radians($${paramCount - 2})) 
+                * cos(radians(p.latitude)) 
+                * cos(radians(p.longitude) - radians($${paramCount - 1})) 
+                + sin(radians($${paramCount - 2})) 
+                * sin(radians(p.latitude))
+              )) <= $${paramCount}
+            )`;
+            whereClause += radiusCondition;
+            queryParams.push(searchLat, searchLng, radiusFloat);
+            console.log('🎯 Added PURE GEOGRAPHIC radius condition:', radiusCondition);
+            console.log('📊 Query params:', queryParams);
+          } else {
+            // If geocoding fails, fall back to text search
+            console.log('🔍 Geocoding failed, falling back to text search');
+            paramCount++;
+            const textSearchCondition = ` AND (
+              p.title ILIKE $${paramCount} OR 
+              p.description ILIKE $${paramCount} OR 
+              p.address_line1 ILIKE $${paramCount} OR 
+              p.address_line2 ILIKE $${paramCount} OR 
+              p.city ILIKE $${paramCount} OR 
+              p.zip_code ILIKE $${paramCount} OR
+              p.property_type ILIKE $${paramCount}
+            )`;
+            whereClause += textSearchCondition;
+            queryParams.push(`%${query}%`);
+            console.log('🔧 Added text search fallback for query:', query);
+          }
         }
       }
     } else if (query) {
@@ -266,14 +283,14 @@ router.get('/search', async (req, res) => {
       
       const postcodeParams = [];
       postcodeSearchTerms.slice(1).forEach(term => { // Skip first one as it's already added as general
-        paramCount++;
+          paramCount++;
         postcodeParams.push(paramCount);
         queryParams.push(term);
       });
-      
+          
       const postcodeConditions = postcodeParams.map(param => `p.zip_code ILIKE $${param}`).join(' OR ');
       
-      whereClause += ` AND (
+          whereClause += ` AND (
         p.city ILIKE $${generalSearchParam} OR
         p.address_line1 ILIKE $${generalSearchParam} OR
         p.address_line2 ILIKE $${generalSearchParam} OR
@@ -375,7 +392,8 @@ router.get('/search', async (req, res) => {
   }
 });
 
-router.get('/search/suggestions', async (req, res) => {
+// Legacy simple suggestions (keeping for backwards compatibility)
+router.get('/search/simple-suggestions', async (req, res) => {
   try {
     const { Pool } = require('pg');
     const pool = new Pool({
@@ -462,7 +480,6 @@ router.get('/search/location-suggestions', async (req, res) => {
                 display: `${item.postcode} - ${item.admin_district}`,
                 value: item.postcode,
                 coordinates: { lat: item.latitude, lng: item.longitude },
-                icon: '📮',
                 confidence: 0.95
               });
             });
@@ -498,7 +515,6 @@ router.get('/search/location-suggestions', async (req, res) => {
                 display: `${place.name_1} - ${place.admin_county || place.admin_district}`,
                 value: place.name_1,
                 coordinates: { lat: place.latitude, lng: place.longitude },
-                icon: '🏙️',
                 confidence: 0.9
               });
             });
@@ -523,10 +539,12 @@ router.get('/search/location-suggestions', async (req, res) => {
             COUNT(*) as property_count
           FROM properties p 
           WHERE 
-            p.city ILIKE $1 OR 
-            p.address_line1 ILIKE $1 OR 
-            p.zip_code ILIKE $1 OR
-            p.address_line2 ILIKE $1
+            p.status = 'approved' AND (
+              p.city ILIKE $1 OR 
+              p.address_line1 ILIKE $1 OR 
+              p.zip_code ILIKE $1 OR
+              p.address_line2 ILIKE $1
+            )
           GROUP BY p.city, p.address_line1, p.zip_code
           ORDER BY property_count DESC
           LIMIT 5
@@ -538,7 +556,6 @@ router.get('/search/location-suggestions', async (req, res) => {
               type: 'database_city',
               display: `${row.city} (${row.property_count} properties)`,
               value: row.city,
-              icon: '🏘️',
               confidence: 0.7,
               propertyCount: row.property_count
             });
@@ -548,7 +565,6 @@ router.get('/search/location-suggestions', async (req, res) => {
               type: 'database_address',
               display: `${row.address}, ${row.city}`,
               value: `${row.address} ${row.city}`,
-              icon: '🏠',
               confidence: 0.75,
               propertyCount: row.property_count
             });
@@ -559,13 +575,13 @@ router.get('/search/location-suggestions', async (req, res) => {
       // Strategy 4: Common location fallbacks
       if (suggestions.length < 2) {
         const commonLocations = [
-          { name: 'London', icon: '🏙️', type: 'major_city' },
-          { name: 'Birmingham', icon: '🏙️', type: 'major_city' },
-          { name: 'Manchester', icon: '🏙️', type: 'major_city' },
-          { name: 'Liverpool', icon: '🏙️', type: 'major_city' },
-          { name: 'Leeds', icon: '🏙️', type: 'major_city' },
-          { name: 'Finchley', icon: '🏘️', type: 'area' },
-          { name: 'Stone Road', icon: '🛣️', type: 'street' }
+          { name: 'London', type: 'major_city' },
+          { name: 'Birmingham', type: 'major_city' },
+          { name: 'Manchester', type: 'major_city' },
+          { name: 'Liverpool', type: 'major_city' },
+          { name: 'Leeds', type: 'major_city' },
+          { name: 'Finchley', type: 'area' },
+          { name: 'Stone Road', type: 'street' }
         ];
 
         const qLower = q.toLowerCase();
@@ -576,7 +592,6 @@ router.get('/search/location-suggestions', async (req, res) => {
               type: location.type,
               display: location.name,
               value: location.name,
-              icon: location.icon,
               confidence: 0.6
             });
           }
@@ -596,7 +611,7 @@ router.get('/search/location-suggestions', async (req, res) => {
       .slice(0, 8);
 
     console.log(`📍 Returning ${uniqueSuggestions.length} location suggestions`);
-
+    
     res.json({
       success: true,
       suggestions: uniqueSuggestions,
@@ -608,6 +623,344 @@ router.get('/search/location-suggestions', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get location suggestions',
+      error: error.message
+    });
+  }
+});
+
+// Smart Geographic Suggestions - Pure Location Search (No Mile Filtering)
+router.get('/search/suggestions', async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q || q.length < 3) {
+      return res.json({ 
+        success: true, 
+        suggestions: [],
+        inputType: 'too_short'
+      });
+    }
+
+    console.log(`🔍 Smart geographic suggestions for: "${q}"`);
+    
+    // Smart input analysis - Geographic locations only
+    const analyzeInput = (input) => {
+      if (!input || !input.trim()) return { type: 'empty' };
+      
+      const trimmed = input.trim().toLowerCase();
+      
+      // UK Postcode patterns (Full & Partial)
+      const fullPostcodePattern = /^[a-z]{1,2}\d[a-z\d]?\s*\d[a-z]{2}$/i;
+      const partialPostcodePattern = /^[a-z]{1,2}\d[a-z0-9]?$/i;
+      
+      if (fullPostcodePattern.test(trimmed)) {
+        return { type: 'postcode', value: trimmed.toUpperCase().replace(/\s+/g, ' ') };
+      }
+      
+      if (partialPostcodePattern.test(trimmed)) {
+        return { type: 'partial_postcode', value: trimmed.toUpperCase() };
+      }
+      
+      // Known UK cities and areas (comprehensive list)
+      const knownLocations = ['london', 'birmingham', 'manchester', 'liverpool', 'leeds', 'sheffield', 'bristol', 'edinburgh', 'glasgow', 'cardiff', 'belfast', 'newcastle', 'nottingham', 'leicester', 'coventry', 'bradford', 'stoke', 'wolverhampton', 'plymouth', 'derby', 'southampton', 'portsmouth', 'brighton', 'reading', 'oxford', 'cambridge', 'york', 'bath', 'finchley', 'ealing', 'camden', 'westminster', 'kensington', 'chelsea', 'islington', 'hackney', 'tower hamlets', 'greenwich', 'lewisham', 'southwark', 'lambeth', 'wandsworth', 'hammersmith', 'fulham', 'richmond', 'kingston', 'croydon', 'bromley', 'bexley', 'havering', 'barking', 'redbridge', 'waltham forest', 'haringey', 'enfield', 'barnet', 'harrow', 'brent', 'hillingdon', 'hounslow', 'ealing', 'acton', 'chiswick', 'putney', 'wimbledon', 'clapham', 'brixton', 'dulwich', 'peckham', 'bermondsey', 'canary wharf'];
+      
+      if (knownLocations.includes(trimmed)) {
+        return { type: 'city_area', value: trimmed };
+      }
+      
+      // Street indicators (including hospital as potential street name)
+      const streetWords = ['road', 'street', 'st', 'avenue', 'ave', 'lane', 'ln', 'drive', 'dr', 'close', 'cl', 'way', 'court', 'ct', 'place', 'pl', 'crescent', 'grove', 'gardens', 'park', 'square', 'terrace', 'hill', 'hospital'];
+      const hasStreetIndicator = streetWords.some(word => trimmed.includes(word));
+      
+      if (hasStreetIndicator) {
+        return { type: 'street', value: trimmed };
+      }
+      
+      return { type: 'general_location', value: trimmed };
+    };
+
+    // Simple fuzzy matching for typos
+    const calculateSimilarity = (str1, str2) => {
+      const len1 = str1.length;
+      const len2 = str2.length;
+      const matrix = Array(len2 + 1).fill(null).map(() => Array(len1 + 1).fill(null));
+      
+      for (let i = 0; i <= len1; i++) matrix[0][i] = i;
+      for (let j = 0; j <= len2; j++) matrix[j][0] = j;
+      
+      for (let j = 1; j <= len2; j++) {
+        for (let i = 1; i <= len1; i++) {
+          const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+          matrix[j][i] = Math.min(
+            matrix[j][i - 1] + 1,
+            matrix[j - 1][i] + 1,
+            matrix[j - 1][i - 1] + cost
+          );
+        }
+      }
+      
+      const distance = matrix[len2][len1];
+      return 1 - (distance / Math.max(len1, len2));
+    };
+    
+    const inputAnalysis = analyzeInput(q);
+    console.log(`📋 Input type: ${inputAnalysis.type} for "${q}"`);
+    
+    const suggestions = [];
+    const processedItems = new Set();
+
+    const addSuggestion = (suggestion) => {
+      const key = `${suggestion.type}:${suggestion.value.toLowerCase()}`;
+      if (!processedItems.has(key)) {
+        processedItems.add(key);
+        suggestions.push(suggestion);
+      }
+    };
+
+    // Strategy 1: Postcode Search (All types - no filtering)
+    if (['postcode', 'partial_postcode'].includes(inputAnalysis.type)) {
+      console.log(`📮 Postcode search for: "${q}"`);
+      
+      try {
+        const https = require('https');
+        
+        // Get ALL postcode matches - no limit filtering
+        const searchUrl = `https://api.postcodes.io/postcodes?q=${encodeURIComponent(q)}&limit=12`;
+        const postcodeResponse = await new Promise((resolve) => {
+          const request = https.get(searchUrl, (response) => {
+            let data = '';
+            response.on('data', chunk => data += chunk);
+            response.on('end', () => {
+              try {
+                resolve(JSON.parse(data));
+              } catch (e) {
+                resolve(null);
+              }
+            });
+          });
+          request.on('error', () => resolve(null));
+          request.setTimeout(3000, () => {
+            request.destroy();
+            resolve(null);
+          });
+        });
+
+        if (postcodeResponse && postcodeResponse.status === 200 && postcodeResponse.result) {
+          postcodeResponse.result.forEach((item) => {
+            addSuggestion({
+              type: 'postcode',
+              display: `${item.postcode} - ${item.admin_district}`,
+              value: item.postcode,
+              coordinates: { lat: item.latitude, lng: item.longitude },
+              icon: '📮'
+            });
+          });
+        }
+      } catch (e) {
+        console.warn('Postcode API error:', e);
+      }
+    }
+
+    // Strategy 2: Places API for cities and areas (Always run)
+    try {
+      const https = require('https');
+      const placesResponse = await new Promise((resolve) => {
+        const url = `https://api.postcodes.io/places?q=${encodeURIComponent(q)}&limit=8`;
+        const request = https.get(url, (response) => {
+          let data = '';
+          response.on('data', chunk => data += chunk);
+          response.on('end', () => {
+            try {
+              resolve(JSON.parse(data));
+            } catch (e) {
+              resolve(null);
+            }
+          });
+        });
+        request.on('error', () => resolve(null));
+        request.setTimeout(3000, () => {
+          request.destroy();
+          resolve(null);
+        });
+      });
+
+      if (placesResponse && placesResponse.status === 200 && placesResponse.result) {
+        placesResponse.result.forEach((place) => {
+          addSuggestion({
+            type: 'place',
+            display: `${place.name_1} - ${place.admin_county || place.admin_district}`,
+            value: place.name_1,
+            coordinates: { lat: place.latitude, lng: place.longitude },
+            icon: '🏙️'
+          });
+        });
+      }
+    } catch (e) {
+      console.warn('Places API error:', e);
+    }
+
+    // Strategy 3: Database search for existing properties (Always run)
+    try {
+      const { Pool } = require('pg');
+      const pool = new Pool({
+        connectionString: process.env.DATABASE_URL || 'postgres://fatemehrahimi@localhost:5432/propertydb'
+      });
+
+      const dbQuery = `
+        SELECT DISTINCT 
+          p.city,
+          p.address_line1,
+          p.zip_code,
+          COUNT(*) as property_count
+        FROM properties p 
+        WHERE 
+          p.status = 'approved' AND (
+            LOWER(p.city) ILIKE LOWER($1) OR 
+            LOWER(p.address_line1) ILIKE LOWER($1) OR 
+            LOWER(p.zip_code) ILIKE LOWER($1) OR
+            LOWER(p.address_line2) ILIKE LOWER($1)
+          )
+        GROUP BY p.city, p.address_line1, p.zip_code
+        ORDER BY property_count DESC
+        LIMIT 10
+      `;
+
+      const dbSuggestions = await pool.query(dbQuery, [`%${q}%`]);
+
+      dbSuggestions.rows.forEach((row) => {
+        if (row.city && row.city.toLowerCase().includes(q.toLowerCase())) {
+          addSuggestion({
+            type: 'database_city',
+            display: `${row.city} (${row.property_count} properties)`,
+            value: row.city,
+            propertyCount: row.property_count
+          });
+        }
+        if (row.address_line1 && row.address_line1 !== row.city && row.address_line1.toLowerCase().includes(q.toLowerCase())) {
+          addSuggestion({
+            type: 'database_address',
+            display: `${row.address_line1}, ${row.city}`,
+            value: `${row.address_line1} ${row.city}`,
+            propertyCount: row.property_count
+          });
+        }
+      });
+    } catch (e) {
+      console.warn('Database search error:', e);
+    }
+
+    // Strategy 4: OpenStreetMap for streets and areas (Geographic only)
+    if (['street', 'general_location'].includes(inputAnalysis.type)) {
+      try {
+        const https = require('https');
+        const osmResponse = await new Promise((resolve) => {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ' UK')}&limit=6&countrycodes=gb`;
+          const request = https.get(url, {
+            headers: {
+              'User-Agent': 'PropertySearchApp/1.0'
+            }
+          }, (response) => {
+            let data = '';
+            response.on('data', chunk => data += chunk);
+            response.on('end', () => {
+              try {
+                resolve(JSON.parse(data));
+              } catch (e) {
+                resolve(null);
+              }
+            });
+          });
+          request.on('error', () => resolve(null));
+          request.setTimeout(3000, () => {
+            request.destroy();
+            resolve(null);
+          });
+        });
+
+        if (osmResponse && osmResponse.length > 0) {
+          osmResponse.forEach((item) => {
+            // Focus on geographic locations only (streets, areas)
+            let type = 'location';
+            
+            if (item.class === 'highway' || item.type === 'road' || item.type === 'residential') {
+              type = 'street';
+            } else if (item.type === 'suburb' || item.type === 'neighbourhood' || item.type === 'quarter') {
+              type = 'area';
+            }
+
+            // Only add if it's a geographic location
+            if (['street', 'area', 'location'].includes(type)) {
+              addSuggestion({
+                type: type,
+                display: item.display_name.split(',').slice(0, 3).join(', '),
+                value: item.display_name.split(',')[0],
+                coordinates: { lat: parseFloat(item.lat), lng: parseFloat(item.lon) }
+              });
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('OSM API error:', e);
+      }
+    }
+
+    // Strategy 5: Fuzzy matching for common UK locations
+    const commonLocations = [
+      { name: 'London', type: 'major_city' },
+      { name: 'Birmingham', type: 'major_city' },
+      { name: 'Manchester', type: 'major_city' },
+      { name: 'Liverpool', type: 'major_city' },
+      { name: 'Leeds', type: 'major_city' },
+      { name: 'Sheffield', type: 'major_city' },
+      { name: 'Bristol', type: 'major_city' },
+      { name: 'Finchley', type: 'area' },
+      { name: 'Ealing', type: 'area' },
+      { name: 'Stone Road', type: 'street' },
+      { name: 'High Street', type: 'street' },
+      { name: 'Snow Hill', type: 'area' },
+      { name: 'Uxbridge Road', type: 'street' },
+      { name: 'Hospital Road', type: 'street' }
+    ];
+
+    const qLower = q.toLowerCase();
+    commonLocations.forEach(location => {
+      const similarity = calculateSimilarity(qLower, location.name.toLowerCase());
+      
+      if (similarity > 0.6) {
+        const isTypo = similarity < 0.95 && similarity > 0.7;
+        
+        if (!suggestions.some(s => s.value.toLowerCase() === location.name.toLowerCase())) {
+          addSuggestion({
+            type: isTypo ? 'fuzzy_match' : location.type,
+            display: isTypo ? `Did you mean "${location.name}"?` : location.name,
+            value: location.name,
+            isFuzzy: isTypo
+          });
+        }
+      }
+    });
+
+    // Return ALL suggestions (no artificial limits)
+    const finalSuggestions = suggestions.slice(0, 15); // Reasonable UI limit only
+
+    console.log(`📍 Found ${finalSuggestions.length} geographic suggestions for "${q}"`);
+
+    res.json({
+      success: true,
+      suggestions: finalSuggestions,
+      inputType: inputAnalysis.type,
+      meta: {
+        totalFound: suggestions.length,
+        query: q,
+        strategies: ['postcode', 'places', 'database', 'osm', 'fuzzy']
+      }
+    });
+
+  } catch (error) {
+    console.error('Geographic suggestions error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get geographic suggestions',
       error: error.message
     });
   }

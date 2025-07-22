@@ -540,19 +540,16 @@ const UserDashboard = () => {
   // Apply location filtering when search query or radius changes
   useEffect(() => {
     const applyLocationFilter = () => {
-      // First apply sidebar filters (category and status)
-      let sidebarFilteredProperties = properties.filter(property => {
-        // Category filter (rent/sale/lease)
+      // First apply ONLY category filter for location filtering (status will be applied later)
+      let categoryFilteredProperties = properties.filter(property => {
+        // Only apply category filter here - status filter will be applied later
         const categoryMatch = searchFilters.propertyType === 'all' || property.category === searchFilters.propertyType;
-        // Status filter
-        const statusMatch = searchFilters.status === 'all' || property.status === searchFilters.status;
-        
-        return categoryMatch && statusMatch;
+        return categoryMatch;
       });
 
-      // If no search query, use sidebar filtered properties
+      // If no search query, use category filtered properties (status will be applied later)
       if (!searchQuery || !searchQuery.trim()) {
-        setRadiusFilteredProperties(sidebarFilteredProperties);
+        setRadiusFilteredProperties(categoryFilteredProperties);
         setIsRadiusFiltering(false);
         return;
       }
@@ -562,7 +559,7 @@ const UserDashboard = () => {
       
       // Use fast dashboard search (no external API calls!)
       const radius = searchFilters.radius || '1';
-      const locationFiltered = filterDashboardProperties(sidebarFilteredProperties, searchQuery, radius);
+      const locationFiltered = filterDashboardProperties(categoryFilteredProperties, searchQuery, radius);
       setRadiusFilteredProperties(locationFiltered);
       
       // Hide loading immediately (search is instant)
@@ -581,24 +578,27 @@ const UserDashboard = () => {
     return () => clearTimeout(timeoutId);
   }, [properties, searchQuery, searchFilters.radius, searchFilters.propertyType, searchFilters.status]);
 
-  // Apply professional search filters to location-filtered properties
-  // Note: Category and status filters are already applied in the location filtering above
-  // 🏆 Professional search ONLY works when "For Rent" is selected
-  // For other categories (sale, lease), always use normal category filtering
-  
-  // SIMPLIFIED LOGIC: Choose the right properties based on current state
+  // UNIFIED FILTERING LOGIC: Apply all sidebar and search filters consistently
+  // This ensures status filtering works for BOTH search results and regular properties
   let propertiesForFiltering;
-  if (hasPerformedSearch && searchFilters.propertyType === 'rent') {
-    // Using professional search results for "For Rent"
+  if (hasPerformedSearch) {
+    // Using professional search results when user has performed a search
     propertiesForFiltering = searchResults;
-    console.log('🔍 Using professional search results:', searchResults.length, 'properties');
+    console.log('🔍 Using professional search results for status filtering:', searchResults.length, 'properties');
   } else {
-    // Using normal filtered properties for all other cases
+    // Using normal filtered properties when no search has been performed
     propertiesForFiltering = radiusFilteredProperties;
-    console.log('🏠 Using normal filtered properties:', radiusFilteredProperties.length, 'properties');
+    console.log('🏠 Using normal filtered properties for status filtering:', radiusFilteredProperties.length, 'properties');
   }
+  
   const filteredProperties = propertiesForFiltering.filter(property => {
-    // Property building type (flat/house/detached) filter - only for professional search
+    // CRITICAL: Apply status filter here for BOTH search results and regular properties
+    const statusMatch = searchFilters.status === 'all' || property.status === searchFilters.status;
+    
+    // Category filter (already applied for regular properties, but needed for search results)
+    const categoryMatch = searchFilters.propertyType === 'all' || property.category === searchFilters.propertyType;
+    
+    // Property building type (flat/house/detached) filter
     const propertyTypeMatch = searchFilters.propertyBuildingType === 'all' || property.property_type === searchFilters.propertyBuildingType;
     
     // Monthly rent price filters (for rental properties)
@@ -665,10 +665,19 @@ const UserDashboard = () => {
       moveInDateMatch = availableDate <= moveInDate;
     }
     
-    return propertyTypeMatch && minPriceMatch && maxPriceMatch && 
+    return categoryMatch && statusMatch && propertyTypeMatch && minPriceMatch && maxPriceMatch && 
            minBedsMatch && maxBedsMatch && minBathMatch && maxBathMatch && 
            gardenMatch && parkingMatch && studentMatch && houseShareMatch && retirementMatch &&
            typeOfLetMatch && dateAddedMatch && moveInDateMatch;
+  });
+
+  // 🔍 DEBUG: Track status filtering results
+  console.log(`🔍 Status Filter Debug:`, {
+    currentStatusFilter: searchFilters.status,
+    propertiesBeforeStatusFilter: propertiesForFiltering.length,
+    propertiesAfterStatusFilter: filteredProperties.length,
+    hasPerformedSearch: hasPerformedSearch,
+    statusFilterActive: searchFilters.status !== 'all'
   });
 
   // Dropdown options for search filters
@@ -1080,21 +1089,21 @@ const UserDashboard = () => {
       setHasPerformedSearch(false);
       setSearchResults([]);
       setSearchAnalytics(null);
-      setSearchQuery('');
+      setSearchQuery(''); // Clear search input when changing categories
       setIsSearching(false);
     }
     
-    // If switching to "All" categories or "All" status, reset professional search filters
-    if ((filterType === 'propertyType' && value === 'all') || 
-        (filterType === 'status' && value === 'all')) {
+    // If switching to "All" categories, reset professional search filters
+    // NOTE: Status changes should NOT clear search input - user wants to filter search results by status
+    if (filterType === 'propertyType' && value === 'all') {
       
-      console.log('🔄 Resetting to "All" - clearing search and filters');
+      console.log('🔄 Resetting to "All Categories" - clearing search and filters');
       
       // Clear all search states
       setHasPerformedSearch(false);
       setSearchResults([]);
       setSearchAnalytics(null);
-      setSearchQuery('');
+      setSearchQuery(''); // Clear search input when changing to "All Categories"
       setIsSearching(false);
       
       // Reset professional search filters
@@ -1139,18 +1148,24 @@ const UserDashboard = () => {
     console.log('🏆 Search filters:', filters);
 
     try {
-      // Build professional search parameters
+      // Build professional search parameters for user dashboard
+      // NOTE: Only send search query + user context, apply sidebar filters on frontend
       const searchParams = new URLSearchParams({
         q: query.trim(),
         limit: '50', // Get more results for dashboard
         page: '1',
-        show_all_statuses: 'true' // Show all statuses in UserDashboard (pending, approved, rejected)
+        show_all_statuses: 'true', // Get ALL user properties regardless of status
+        user_id: user.id, // Include user ID to search only user's properties
+        status: 'all' // Always get all statuses, filter on frontend
       });
 
-      // Add filters if they have values
+      // Add CRITICAL search-related filters that affect results
       if (filters.radius && filters.radius !== 'any') {
         searchParams.append('radius', filters.radius);
+        console.log(`📏 Including radius for mixed search: ${filters.radius} miles`);
       }
+      
+      // Add price and bedroom filters as they affect search relevance
       if (filters.minPrice && filters.minPrice !== 'any') {
         searchParams.append('min_price', filters.minPrice);
       }
@@ -1166,6 +1181,18 @@ const UserDashboard = () => {
       if (filters.propertyBuildingType && filters.propertyBuildingType !== 'all') {
         searchParams.append('property_type', filters.propertyBuildingType);
       }
+      
+      // Note: Sidebar filters (status, category, price, beds, property type) will be applied on frontend
+      console.log(`🔍 Professional Search: Getting all results for "${query}", will apply sidebar filters on frontend`);
+      console.log(`📊 Current sidebar filters to apply locally:`, {
+        status: filters.status,
+        propertyType: filters.propertyType,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+        minBeds: filters.minBeds,
+        maxBeds: filters.maxBeds,
+        propertyBuildingType: filters.propertyBuildingType
+      });
 
       const searchUrl = `${PROFESSIONAL_SEARCH_API}?${searchParams}`;
       console.log('🏆 Professional Search URL:', searchUrl);
@@ -1182,12 +1209,18 @@ const UserDashboard = () => {
       if (data.success) {
         // Update search results
         setSearchResults(data.properties || []);
-        setSearchAnalytics(data.debug || null);
+        setSearchAnalytics(data.searchInfo || null);
         
         console.log(`🏆 Professional Search: Found ${data.properties?.length || 0} properties`);
         
-        if (data.debug) {
-          console.log('🏆 Search Analytics:', data.debug);
+        if (data.searchInfo) {
+          console.log('🏆 Search Analytics:', data.searchInfo);
+          
+          // Log search strategy information
+          if (data.searchInfo.inputAnalysis) {
+            console.log(`🔍 Search Strategy: ${data.searchInfo.searchStrategy}`);
+            console.log(`📍 Input Analysis:`, data.searchInfo.inputAnalysis);
+          }
         }
       } else {
         console.error('🏆 Professional Search: Server returned error:', data.error);
@@ -1324,7 +1357,7 @@ const UserDashboard = () => {
         />
       </div>
 
-      {/* Professional Search/Filter Bar - Show only when properties tab is active AND "For Rent" is selected */}
+      {/* Professional Search/Filter Bar - Show ONLY when properties tab is active AND "For Rent" is selected */}
       {activeTab === 'properties' && searchFilters.propertyType === 'rent' && (
         <SearchFilterHeader
           searchFilters={searchFilters}
