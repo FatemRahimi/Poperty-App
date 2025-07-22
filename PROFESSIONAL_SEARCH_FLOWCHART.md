@@ -1,406 +1,296 @@
-# Professional Search Header & Location Search Strategy Flowchart
+# Professional Search Header Functionality - Complete Implementation Flowchart
 
 ## Overview
-This document outlines the complete flow for the professional search header and location search strategy, covering both frontend and backend functionality.
+This flowchart documents the current implementation of the professional search header based on code analysis of UserDashboard.js and all related components.
 
-## Frontend Flow (UserDashboard & SearchFilterHeader)
+## 1. Search Header Display Logic
 
 ```mermaid
 flowchart TD
-    A[User Dashboard Loads] --> B[SearchFilterHeader Component]
-    B --> C[LocationSearch Component]
-    C --> D[User Types in Search Input]
+    A[User Opens Dashboard] --> B[Check Active Tab]
+    B --> C{Tab = 'properties'?}
+    C -->|No| D[Hide Search Header]
+    C -->|Yes| E[Check Category Filter]
+    E --> F{Category = 'rent'?}
+    F -->|No| G[Hide Search Header]
+    F -->|Yes| H[✅ Show Professional Search Header]
     
-    D --> E{Input Length >= 2?}
-    E -->|No| F[Wait for more input]
-    E -->|Yes| G[Debounce Timer Starts]
-    
-    G --> H[1 Second Delay]
-    H --> I[Trigger Professional Search]
-    
-    D --> J[User Presses Enter]
-    J --> K[Clear Debounce Timer]
-    K --> I
-    
-    I --> L[Call Backend Search API]
-    L --> M[Set isSearching = true]
-    M --> N[Show Loading State]
-    
-    N --> O[Backend Processes Search]
-    O --> P[Receive Search Results]
-    P --> Q[Set isSearching = false]
-    Q --> R[Display Results in Dashboard]
-    
-    C --> S[Radius Dropdown]
-    S --> T[User Changes Radius]
-    T --> U[Update searchFilters.radius]
-    U --> V[Trigger New Search with New Radius]
+    G --> I[Show Properties Sidebar Only]
+    D --> J[Show Other Tab Content]
+    H --> K[Render SearchFilterHeader Component]
 ```
 
-## Backend Flow (propertyRoutes.js - Search API)
+## 2. Search Header Components Structure
 
 ```mermaid
 flowchart TD
-    A[Search API Request] --> B[Extract Query Parameters]
-    B --> C[Get: q, radius, category, property_type, etc.]
+    A[SearchFilterHeader] --> B[LocationSearch Component]
+    A --> C[Price Filters Min/Max]
+    A --> D[Bedroom Filters Min/Max]
+    A --> E[Property Type Dropdown]
+    A --> F[More Filters Toggle]
     
-    C --> D{Query Parameter Exists?}
-    D -->|No| E[Return All Properties]
-    D -->|Yes| F[Input Analysis Function]
+    B --> G[Search Input Field]
+    B --> H[Radius Dropdown 1/4-30 miles]
+    B --> I[Smart Suggestions Dropdown]
     
-    F --> G[analyzeSearchInput Function]
-    G --> H{Input Type Detection}
+    F --> J[Bathroom Filters]
+    F --> K[Property Features Checkboxes]
+    F --> L[Type of Let Options]
+    F --> M[Date Added Filters]
+    F --> N[Move-in Date Picker]
     
-    H -->|City Only| I[City Search Strategy]
-    H -->|Postcode| J[Postcode Search Strategy]
-    H -->|Partial Postcode| J
-    H -->|Postcode Priority| J
-    H -->|Area/Street| K[Area/Street Search Strategy]
-    
-    I --> L[Direct Database Query - Cities]
-    L --> M[SELECT FROM properties WHERE city = input_value]
-    M --> N[Show ALL properties in matching cities]
-    N --> O[Include all statuses: approved, pending, rejected]
-    O --> GG[Apply Additional Filters]
-    
-    J --> P[Geocoding Process]
-    P --> Q[Call UK Postcodes API]
-    Q --> R{Geocoding Successful?}
-    R -->|Yes| S[Get Coordinates]
-    R -->|No| T[Fallback to Text Search]
-    
-    S --> U[Geographic Radius Search]
-    U --> V[Calculate Distance Formula]
-    V --> W[WHERE distance <= radius_miles]
-    
-    T --> X[Text Search Fallback]
-    X --> Y[WHERE p.zip_code ILIKE %input%]
-    
-    K --> Z[Enhanced Geocoding]
-    Z --> AA[Call UK Places API]
-    AA --> BB{Geocoding Successful?}
-    BB -->|Yes| CC[Get Coordinates]
-    BB -->|No| DD[Fallback to Text Search]
-    
-    CC --> U
-    DD --> EE[Multi-field Text Search]
-    EE --> FF[WHERE title OR description OR address OR city ILIKE %input%]
-    
-    W --> GG
-    Y --> GG
-    FF --> GG
-    
-    GG --> HH[Category Filter]
-    GG --> II[Property Type Filter]
-    GG --> JJ[Price Range Filter]
-    GG --> KK[Bedroom Filter]
-    GG --> LL[Status Filter]
-    
-    HH --> MM[Execute Final Query]
-    II --> MM
-    JJ --> MM
-    KK --> MM
-    LL --> MM
-    
-    MM --> NN[Return Results to Frontend]
-    NN --> OO[Include Search Analytics]
-    OO --> PP[Search Strategy Info]
-    PP --> QQ[Input Analysis Results]
-    QQ --> RR[Radius Used]
-    RR --> SS[Results Count]
+    I --> O[Database City Suggestions]
+    I --> P[API Postcode Suggestions]
+    I --> Q[No Icons - Clean UI]
 ```
 
-## Database City Suggestions Flow
+## 3. Smart Debouncing & Input Analysis
 
 ```mermaid
 flowchart TD
-    A[User Types City Name] --> B[Input Length >= 3?]
-    B -->|No| C[Wait for more input]
-    B -->|Yes| D[Query Database for Cities]
+    A[User Types in Location Input] --> B[Detect Input Type]
+    B --> C{Input Analysis}
     
-    D --> E[SELECT DISTINCT city FROM properties]
-    E --> F[WHERE city ILIKE %input%]
-    F --> G[GROUP BY city]
-    G --> H[ORDER BY property_count DESC]
-    H --> I[LIMIT 8 suggestions]
+    C -->|Complete Postcode e.g. B46 2PQ| D[800ms Delay]
+    C -->|Partial Postcode e.g. B46| E[1200ms Delay]
+    C -->|City Name e.g. London| F[1000ms Delay]
+    C -->|Partial Text < 3 chars| G[1500ms Delay]
+    C -->|User Deleting| H[2000ms Delay]
     
-    I --> J[Format Suggestions]
-    J --> K[Display: "City Name (X properties)"]
-    K --> L[No Icons - Clean UI]
-    L --> M[Return Suggestions to Frontend]
-    
-    M --> N[User Selects City]
-    N --> O[Direct Database Search]
-    O --> P[No Geocoding Required]
-    P --> Q[WHERE city = selected_city]
-    Q --> R[Return All Properties in City]
-```
-
-## Input Analysis Logic
-
-```mermaid
-flowchart TD
-    A[Input: searchQuery] --> B[Trim and Lowercase]
-    B --> C{Check Postcode Pattern}
-    
-    C -->|Matches Full Postcode| D[Type: postcode]
-    C -->|Matches Partial Postcode| E[Type: partial_postcode]
-    C -->|No Match| F{Check City Pattern}
-    
-    F -->|Letters + Spaces Only| G[Type: city]
-    F -->|Contains Postcode| H[Type: postcode_priority]
-    F -->|Other| I[Type: area_street]
-    
-    D --> J[Return: postcode, value]
-    E --> K[Return: partial_postcode, value]
-    G --> L[Return: city, value - NO GEOCODING]
-    H --> M[Return: postcode_priority, value]
-    I --> N[Return: area_street, value]
-```
-
-## Search Strategy Decision Tree
-
-```mermaid
-flowchart TD
-    A[Input Analysis Result] --> B{Input Type?}
-    
-    B -->|city| C[City-Only Strategy]
-    B -->|postcode| D[Postcode Strategy]
-    B -->|partial_postcode| D
-    B -->|postcode_priority| D
-    B -->|area_street| E[Area/Street Strategy]
-    
-    C --> F[Database Query: WHERE city = input]
-    C --> G[Include ALL statuses]
-    C --> H[No geocoding needed]
-    C --> I[No geographic radius]
-    
-    D --> J[Geocoding: UK Postcodes API]
-    D --> K[Get coordinates]
-    D --> L[Geographic radius search]
-    D --> M[Default: 3 miles]
-    
-    E --> N[Geocoding: UK Places API]
-    E --> O[Get coordinates]
-    E --> P[Geographic radius search]
-    E --> Q[Default: 3 miles]
-    
-    F --> R[Return Results]
-    G --> R
-    H --> R
-    I --> R
-    
-    J --> S{Geocoding Success?}
-    S -->|Yes| T[Use coordinates + radius]
-    S -->|No| U[Fallback: text search]
-    
-    N --> V{Geocoding Success?}
-    V -->|Yes| W[Use coordinates + radius]
-    V -->|No| X[Fallback: multi-field search]
-    
-    T --> R
-    U --> R
-    W --> R
-    X --> R
-```
-
-## Radius Handling
-
-```mermaid
-flowchart TD
-    A[Radius Parameter] --> B{Input Type?}
-    
-    B -->|City Search| C[No Radius Applied]
-    B -->|Postcode/Area| D[Apply Radius Logic]
-    
-    C --> E[Return All Properties in City]
-    
-    D --> F{Radius Value?}
-    F -->|Not Provided| G[Default: 3 miles]
-    F -->|Provided| H[Use Provided Value]
-    
-    G --> I[Convert to Float]
+    D --> I[Trigger Search]
+    E --> I
+    F --> I
+    G --> I
     H --> I
     
-    I --> J[Validate Range: 0.25 - 30 miles]
-    J --> K{Valid Range?}
-    
-    K -->|Yes| L[Use Radius in Geographic Search]
-    K -->|No| M[Use Default: 3 miles]
-    
-    L --> N[Distance Calculation]
-    M --> N
-    
-    N --> O[WHERE distance <= radius_miles]
-    O --> P[Return Properties Within Radius]
+    I --> J{Query Length >= 3?}
+    J -->|No| K[Don't Search]
+    J -->|Yes| L[Execute Professional Search]
 ```
 
-## Frontend State Management
+## 4. Location Search & Suggestions Flow
 
 ```mermaid
 flowchart TD
-    A[UserDashboard State] --> B[searchQuery: string]
-    A --> C[searchFilters: object]
-    A --> D[isSearching: boolean]
-    A --> E[searchResults: array]
-    A --> F[searchAnalytics: object]
+    A[User Types 3+ Characters] --> B[Fetch Suggestions API Call]
+    B --> C[Backend: /api/properties/search/suggestions]
     
-    C --> G[radius: string]
-    C --> H[minPrice: string]
-    C --> I[maxPrice: string]
-    C --> J[minBeds: string]
-    C --> K[maxBeds: string]
-    C --> L[propertyType: string]
+    C --> D[Query Database for Cities]
+    C --> E[Call External APIs for Postcodes]
     
-    D --> M[Loading Indicator]
-    E --> N[Results Display]
-    F --> O[Search Strategy Info]
+    D --> F[Return Database Cities]
+    E --> G[Return API Postcodes/Places]
     
-    G --> P[Radius Dropdown - Only for Postcodes/Areas]
-    P --> Q[User Changes Radius]
-    Q --> R[Update State]
-    R --> S[Trigger New Search]
+    F --> H[Merge Suggestions]
+    G --> H
+    
+    H --> I[Generate Local Suggestions]
+    I --> J[Sort by Confidence]
+    J --> K[Display Max 8 Suggestions]
+    
+    K --> L[User Selects Suggestion]
+    L --> M[Fill Search Input]
+    M --> N[Auto-set Radius for Postcodes Only]
+    N --> O[Trigger Professional Search]
 ```
 
-## Error Handling
+## 5. Professional Search Execution Logic
 
 ```mermaid
 flowchart TD
-    A[Search Request] --> B{API Call Success?}
+    A[Professional Search Triggered] --> B[Build Search Parameters]
+    B --> C[Add Query + User Context]
+    C --> D[Add Search Filters: radius, price, beds, property_type]
     
-    B -->|Yes| C[Process Results]
-    B -->|No| D[Handle Error]
+    D --> E[Call Backend: /api/properties/search]
+    E --> F[Backend: Check Input Type]
     
-    D --> E[Network Error]
-    D --> F[Server Error]
-    D --> G[Invalid Response]
+    F --> G{Is City Pattern?}
+    G -->|Yes| H[🏙️ Direct Database Query]
+    G -->|No| I[🌍 Geocoding + Geographic Search]
     
-    E --> H[Show Network Error Message]
-    F --> I[Show Server Error Message]
-    G --> J[Show Invalid Response Message]
+    H --> J[WHERE city = query OR city ILIKE %query%]
+    I --> K[Geocode with UK APIs]
+    K --> L[Geographic Radius Search]
     
-    H --> K[Retry Option]
-    I --> K
-    J --> K
+    J --> M[Return Search Results]
+    L --> M
     
-    K --> L[User Can Retry Search]
-    L --> A
-    
-    C --> M[Validate Results]
-    M --> N{Results Valid?}
-    
-    N -->|Yes| O[Display Results]
-    N -->|No| P[Show No Results Message]
-    
-    O --> Q[Update Dashboard]
-    P --> R[Empty Results State]
+    M --> N[Frontend: Set Search Results]
+    N --> O[Set hasPerformedSearch = true]
+    O --> P[Apply Sidebar Filters]
 ```
 
-## Performance Optimizations
+## 6. Search Input Persistence Logic
 
 ```mermaid
 flowchart TD
-    A[User Input] --> B[Debounce Timer]
-    B --> C[300ms Delay]
-    C --> D[Clear Previous Timer]
-    D --> E[Set New Timer]
+    A[Search Input Contains Text] --> B[User Action]
     
-    E --> F[Timer Expires]
-    F --> G[Trigger Search]
+    B --> C{Action Type?}
+    C -->|Changes Status Filter| D[✅ Keep Search Text]
+    C -->|Changes Category Filter| E[❌ Clear Search Text]
+    C -->|Switches to Other Tab| F[❌ Clear Search Text]
+    C -->|Manually Clears Input| G[❌ Clear Search Text]
     
-    G --> H[Cancel Previous Request]
-    H --> I[Make New Request]
+    D --> H[Filter Search Results by Status]
+    E --> I[Reset All Search States]
+    F --> J[Hide Search Header]
+    G --> K[Clear Search Results]
     
-    I --> J[Request in Progress]
-    J --> K[User Types Again]
-    
-    K --> L[Cancel Current Request]
-    L --> B
-    
-    J --> M[Request Complete]
-    M --> N[Update Results]
+    H --> L[Update Filtered Properties]
+    I --> M[Show Category Properties]
+    J --> N[Show Other Tab Content]
+    K --> O[Show All Properties]
 ```
 
-## Database Query Optimization for Cities
+## 7. Sidebar Filtering Integration
 
 ```mermaid
 flowchart TD
-    A[City Search Parameters] --> B[Build City Query]
+    A[Properties Display Logic] --> B{Has Search Results?}
     
-    B --> C[Input Analysis]
-    C --> D{Search Type}
+    B -->|Yes| C[Use Search Results as Base]
+    B -->|No| D[Use All User Properties as Base]
     
-    D -->|City| E[Direct Database Query]
-    D -->|Postcode| F[Complex Geographic Query]
-    D -->|Text| G[ILIKE Search]
+    C --> E[Apply Sidebar Filters to Search Results]
+    D --> F[Apply Sidebar Filters to All Properties]
     
-    E --> H[WHERE city = input_value]
-    H --> I[No Geocoding Required]
-    I --> J[No Distance Calculation]
-    J --> K[Return All City Properties]
+    E --> G[Filter by Category rent/sale/lease]
+    E --> H[Filter by Status pending/approved/rejected]
     
-    F --> L[Coordinate Calculation]
-    L --> M[Distance Formula]
-    M --> N[Radius Comparison]
+    F --> G
+    F --> H
     
-    G --> O[Multiple Field Search]
-    O --> P[Title, Description, Address, City]
+    G --> I[Filter by Property Building Type]
+    H --> I
     
-    K --> Q[Add Additional Filters]
-    N --> Q
-    P --> Q
+    I --> J[Filter by Price Range]
+    J --> K[Filter by Bedroom Range]
+    K --> L[Filter by More Filters Options]
     
-    Q --> R[Category Filter]
-    Q --> S[Property Type Filter]
-    Q --> T[Price Filter]
-    Q --> U[Bedroom Filter]
-    Q --> V[Status Filter]
+    L --> M[Display Final Filtered Properties]
+```
+
+## 8. Backend Search Strategy Decision Tree
+
+```mermaid
+flowchart TD
+    A[Backend Receives Search Request] --> B[Parse Query Parameters]
+    B --> C[Extract: q, radius, user_id, show_all_statuses]
     
-    R --> W[Execute Query]
-    S --> W
-    T --> W
-    U --> W
-    V --> W
+    C --> D{Has Query + Radius?}
+    D -->|No| E[Return All User Properties]
+    D -->|Yes| F[Analyze Input with isCityPattern]
     
-    W --> X[Return Results]
-    X --> Y[No Pagination for Cities]
-    Y --> Z[Send to Frontend]
+    F --> G{Is City?}
+    G -->|Yes| H[🏙️ City Strategy - No Geocoding]
+    G -->|No| I[🌍 Geographic Strategy - With Geocoding]
+    
+    H --> J[Direct Database Query]
+    J --> K[WHERE LOWER(city) = LOWER(query)]
+    K --> L[Include ALL Statuses]
+    
+    I --> M[Geocode with Multiple APIs]
+    M --> N{Geocoding Success?}
+    N -->|Yes| O[Geographic Radius Search]
+    N -->|No| P[Fallback Text Search]
+    
+    O --> Q[Calculate Distance Formula]
+    Q --> R[WHERE distance <= radius_miles]
+    
+    P --> S[Multi-field Text Search]
+    S --> T[WHERE title/description/address ILIKE %query%]
+    
+    L --> U[Apply Additional Filters]
+    R --> U
+    T --> U
+    
+    U --> V[Category/Type/Price/Bedroom Filters]
+    V --> W[Return Results to Frontend]
+```
+
+## 9. Error Handling & Fallback Strategy
+
+```mermaid
+flowchart TD
+    A[Search Request] --> B{Frontend Network Error?}
+    B -->|Yes| C[Show 'Search failed: Failed to fetch']
+    B -->|No| D[Backend Processing]
+    
+    D --> E{Geocoding APIs Down?}
+    E -->|Yes| F[Fallback to Text Search]
+    E -->|No| G[Normal Geographic Search]
+    
+    F --> H[Search in title/description/address/city]
+    G --> I[Geographic Radius Search]
+    
+    H --> J[Return Fallback Results]
+    I --> K[Return Geographic Results]
+    
+    J --> L[Frontend Receives Results]
+    K --> L
+    
+    L --> M{Empty Results?}
+    M -->|Yes| N[Show 'No Properties Found']
+    M -->|No| O[Display Properties]
+    
+    C --> P[User Can Retry Search]
+    N --> Q[Show 'Add First Property' Button]
+    O --> R[Show Property Cards]
+```
+
+## 10. Complete User Journey Flow
+
+```mermaid
+flowchart TD
+    A[User Opens Dashboard] --> B[Clicks Properties Tab]
+    B --> C[Selects 'For Rent' Category]
+    C --> D[✅ Professional Search Header Appears]
+    
+    D --> E[User Types Location e.g. 'B46']
+    E --> F[Smart Debouncing 1.2s for Partial Postcode]
+    F --> G[Show Suggestions: B46 District, API Results]
+    
+    G --> H[User Selects Suggestion]
+    H --> I[Auto-fill Input + Set Radius]
+    I --> J[Trigger Professional Search]
+    
+    J --> K[Backend: Detect Non-City = Geocoding]
+    K --> L[Get Coordinates + Geographic Search]
+    L --> M[Return B46 Properties]
+    
+    M --> N[Frontend: Display Search Results]
+    N --> O['B46' Text Stays in Input ✅]
+    
+    O --> P[User Changes Status to 'Rejected']
+    P --> Q[Filter B46 Results by Rejected Status]
+    Q --> R['B46' Text Still in Input ✅]
+    
+    R --> S[User Changes Category to 'For Sale']
+    S --> T[Clear Search Input ❌]
+    T --> U[Hide Search Header]
+    U --> V[Show All Sale Properties]
 ```
 
 ## Key Features Summary
 
-### Frontend Features:
-- ✅ Debounced search input (1 second delay)
-- ✅ Enter key to search immediately
-- ✅ Loading states during search
-- ✅ Radius selection (0.25 to 30 miles, default 3) - Only for postcodes/areas
-- ✅ Real-time search results
-- ✅ Error handling and retry options
-- ✅ Clean suggestions without icons
+### ✅ Professional Search Header Features:
+- **Conditional Display**: Only for "For Rent" category
+- **Smart Debouncing**: Different delays based on input type
+- **Input Persistence**: Keeps text for status changes, clears for category changes
+- **Clean Suggestions**: Database cities + API postcodes, no icons
+- **Dual Search Strategy**: Direct DB for cities, geocoding for postcodes/addresses
+- **Comprehensive Filtering**: Price, bedrooms, property types, more filters
+- **Status Integration**: Works on both search results and regular properties
+- **Error Handling**: Graceful fallbacks for API failures
+- **User-Friendly**: Loading states, empty states, retry options
 
-### Backend Features:
-- ✅ Input type analysis (city, postcode, area/street)
-- ✅ **City-only search (direct database query, NO geocoding)**
-- ✅ Postcode geocoding with UK Postcodes API
-- ✅ Area/street geocoding with UK Places API
-- ✅ Geographic radius search (default 3 miles) - Only for postcodes/areas
-- ✅ Postcode priority when both postcode and city entered
-- ✅ Fallback to text search when geocoding fails
-- ✅ Comprehensive filtering (category, type, price, bedrooms)
-- ✅ Search analytics and strategy information
+### 🎯 Search Strategies:
+1. **City Search**: Direct database query (no geocoding)
+2. **Postcode Search**: UK Postcodes API + geographic radius
+3. **Address/Street Search**: Enhanced geocoding + geographic radius
+4. **Fallback Search**: Multi-field text search when geocoding fails
 
-### Search Strategies:
-1. **City Search**: Direct database query, all statuses, **NO GEOCODING**
-2. **Postcode Search**: Geocoding + geographic radius
-3. **Area/Street Search**: Geocoding + geographic radius
-4. **Postcode Priority**: When both postcode and city present
-5. **Fallback**: Text search when geocoding fails
-
-### Database City Suggestions:
-- ✅ Cities retrieved from properties table
-- ✅ No external API calls for city suggestions
-- ✅ Grouped by city with property counts
-- ✅ Clean UI without icons
-- ✅ Fast database-only queries
-
-This flowchart represents the complete professional search system with **direct database city searches (no geocoding)**, comprehensive UK location handling, default 3-mile radius for postcodes/areas only, and intelligent search strategy selection based on input type. 
+This implementation provides a professional, performant search experience similar to major property websites while maintaining clean code separation and robust error handling. 
