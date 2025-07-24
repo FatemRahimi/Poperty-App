@@ -146,37 +146,15 @@ router.get('/search', async (req, res) => {
     let queryParams = [];
     let paramCount = 0;
 
-    // 🌍 GEOGRAPHIC SEARCH LOGIC - Primary approach for location-based queries
+    // 🌍 PROFESSIONAL MIXED SEARCH STRATEGY - Database + Geocoding
     if (query && radius && radius.trim() !== '') {
-      console.log('🌍 Geographic search mode. Radius:', radius, 'Query:', query);
+      console.log('🌍 Professional mixed search mode. Radius:', radius, 'Query:', query);
       
-      // Enhanced geocoding using the new smart search utilities
-      const { geocodeLocationEnhanced, parseLocationInput } = require('../utils/smartSearch');
-      
-      const geocodeLocation = async (searchTerm) => {
-        console.log(`🌍 Enhanced Geocoding "${searchTerm}" using smart detection...`);
-        
-        // Parse the input to understand what type of location it is
-        const parsedInput = parseLocationInput(searchTerm);
-        console.log(`🔍 Input Analysis: ${JSON.stringify(parsedInput)}`);
-        
-        // Use enhanced geocoding with multiple API strategy
-        const result = await geocodeLocationEnhanced(searchTerm, parsedInput);
-        
-        if (result) {
-          console.log(`✅ Enhanced geocoding success: ${result.display_name} (${result.lat}, ${result.lng}) - Source: ${result.source}`);
-          return { lat: result.lat, lng: result.lng, success: true };
-          }
-          
-          console.log(`⚠️ No coordinates found for "${searchTerm}"`);
-          return { success: false };
-        };
-        
       const radiusFloat = parseFloat(radius);
       console.log('📏 Parsed radius:', radiusFloat);
       
       if (radiusFloat >= 0) {
-        // Check if this is a city search first (NO GEOCODING for cities)
+        // Check if this is a city search first (KEEP UNCHANGED)
         const { isCityPattern } = require('../utils/smartSearch');
         
         if (isCityPattern(query)) {
@@ -192,17 +170,54 @@ router.get('/search', async (req, res) => {
           console.log('🏙️ Added DIRECT CITY search condition:', citySearchCondition);
           console.log('📊 Query params:', queryParams);
         } else {
-          // Get proper coordinates for non-city searches (postcodes, streets, areas)
+          // PROFESSIONAL MIXED STRATEGY for postcodes and street names
+          console.log(`🔍 Professional mixed strategy for "${query}" - Database search + Geocoding`);
+          
+          // STEP 1: DATABASE SEARCH (Exact Matches)
+          paramCount++;
+          const databaseSearchCondition = ` AND (
+            p.title ILIKE $${paramCount} OR 
+            p.description ILIKE $${paramCount} OR 
+            p.address_line1 ILIKE $${paramCount} OR 
+            p.address_line2 ILIKE $${paramCount} OR 
+            p.city ILIKE $${paramCount} OR 
+            p.zip_code ILIKE $${paramCount} OR
+            p.property_type ILIKE $${paramCount}
+          )`;
+          whereClause += databaseSearchCondition;
+          queryParams.push(`%${query}%`);
+          console.log('📊 Added DATABASE SEARCH condition for exact matches');
+          
+          // STEP 2: GEOCODING + RADIUS SEARCH (Nearby Properties)
+          const { geocodeLocationEnhanced, parseLocationInput } = require('../utils/smartSearch');
+          
+          const geocodeLocation = async (searchTerm) => {
+            console.log(`🌍 Enhanced Geocoding "${searchTerm}" for radius search...`);
+            
+            const parsedInput = parseLocationInput(searchTerm);
+            console.log(`🔍 Input Analysis: ${JSON.stringify(parsedInput)}`);
+            
+            const result = await geocodeLocationEnhanced(searchTerm, parsedInput);
+            
+            if (result) {
+              console.log(`✅ Enhanced geocoding success: ${result.display_name} (${result.lat}, ${result.lng}) - Source: ${result.source}`);
+              return { lat: result.lat, lng: result.lng, success: true };
+            }
+            
+            console.log(`⚠️ No coordinates found for "${searchTerm}"`);
+            return { success: false };
+          };
+          
           const coords = await geocodeLocation(query);
           
           if (coords.success) {
             const searchLat = coords.lat;
             const searchLng = coords.lng;
-            console.log(`📍 Using coordinates for "${query}": ${searchLat}, ${searchLng}`);
+            console.log(`📍 Using coordinates for radius search: ${searchLat}, ${searchLng}`);
             
-            // PURE GEOGRAPHIC SEARCH - Only properties with coordinates within radius
+            // Add radius condition for nearby properties
             paramCount += 3;
-            const radiusCondition = ` AND (
+            const radiusCondition = ` OR (
               p.latitude IS NOT NULL AND p.longitude IS NOT NULL AND
               (6371 * acos(
                 cos(radians($${paramCount - 2})) 
@@ -214,24 +229,10 @@ router.get('/search', async (req, res) => {
             )`;
             whereClause += radiusCondition;
             queryParams.push(searchLat, searchLng, radiusFloat);
-            console.log('🎯 Added PURE GEOGRAPHIC radius condition:', radiusCondition);
+            console.log('🎯 Added RADIUS SEARCH condition for nearby properties');
             console.log('📊 Query params:', queryParams);
           } else {
-            // If geocoding fails, fall back to text search
-            console.log('🔍 Geocoding failed, falling back to text search');
-            paramCount++;
-            const textSearchCondition = ` AND (
-              p.title ILIKE $${paramCount} OR 
-              p.description ILIKE $${paramCount} OR 
-              p.address_line1 ILIKE $${paramCount} OR 
-              p.address_line2 ILIKE $${paramCount} OR 
-              p.city ILIKE $${paramCount} OR 
-              p.zip_code ILIKE $${paramCount} OR
-              p.property_type ILIKE $${paramCount}
-            )`;
-            whereClause += textSearchCondition;
-            queryParams.push(`%${query}%`);
-            console.log('🔧 Added text search fallback for query:', query);
+            console.log('⚠️ Geocoding failed, using database search only');
           }
         }
       }
