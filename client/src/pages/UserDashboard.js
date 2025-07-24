@@ -30,7 +30,7 @@ const UserDashboard = () => {
   
   // Search dropdown states
   const [searchFilters, setSearchFilters] = useState({
-    radius: '1',
+    radius: '10', // default to 10 miles
     minPrice: 'any',
     maxPrice: 'any',
     minBeds: 'any',
