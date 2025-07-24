@@ -269,7 +269,7 @@ const SearchFilterHeader = memo(({
           </div>
 
           {showMoreFilters && (
-            <div className="dashboard-more-filters-dropdown">
+            <div className="dashboard-more-filters-dropdown dashboard-more-filters-dropdown--expanded">
               <div className="dashboard-more-filters-content">
                 
                 <div className="dashboard-filter-section">

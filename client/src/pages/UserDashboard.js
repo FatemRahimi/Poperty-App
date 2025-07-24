@@ -1398,152 +1398,154 @@ const UserDashboard = () => {
         />
       )}
 
-      {/* Main Content */}
-      <div className="dashboard-main">
-        {activeTab === 'overview' && (
-          <OverviewStats stats={stats} />
-        )}
+      {/* Main Content - hidden when More Filters is open */}
+      {!showMoreFilters && (
+        <div className="dashboard-main">
+          {activeTab === 'overview' && (
+            <OverviewStats stats={stats} />
+          )}
 
-        {activeTab === 'properties' && (
-          <PropertiesSection
-            filteredProperties={filteredProperties}
-            searchFilters={searchFilters}
-            setSearchFilters={handleSidebarFilterChange}
-            propertyTypeOptions={propertyTypeOptions}
-            statusOptions={statusOptions}
-            handlePropertyDeleted={handlePropertyDeleted}
-            isRadiusFiltering={isRadiusFiltering}
-            isSearching={isSearching}
-            totalCount={lastStableCount}
-          />
-        )}
+          {activeTab === 'properties' && (
+            <PropertiesSection
+              filteredProperties={filteredProperties}
+              searchFilters={searchFilters}
+              setSearchFilters={handleSidebarFilterChange}
+              propertyTypeOptions={propertyTypeOptions}
+              statusOptions={statusOptions}
+              handlePropertyDeleted={handlePropertyDeleted}
+              isRadiusFiltering={isRadiusFiltering}
+              isSearching={isSearching}
+              totalCount={lastStableCount}
+            />
+          )}
 
-        {activeTab === 'profile' && (
-          <div className={`profile-section ${isEditing ? 'editing' : ''}`}>
-            <div className="profile-header">
-              <h2>
-                <i className="fas fa-user"></i>
-                Profile Information
-              </h2>
-              {isEditing && (
-                <small style={{color: '#64748b', fontStyle: 'italic'}}>
-                  Make your changes and click Save or Cancel
-                </small>
-              )}
-            </div>
-            
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                console.log('🚫 Form submission prevented');
-                if (isEditing) {
-                  handleProfileSave();
-                }
-              }}
-            >
-              <div className="profile-form" ref={profileFormRef}>
-                <div className="form-group-modern">
-                  <label className="form-label-modern">First Name</label>
-                  <input
-                    type="text"
-                    className="form-input-modern"
-                    value={profileData.first_name}
-                    onChange={(e) => setProfileData({...profileData, first_name: e.target.value})}
-                    disabled={!isEditing}
-                  />
-                </div>
-                
-                <div className="form-group-modern">
-                  <label className="form-label-modern">Last Name</label>
-                  <input
-                    type="text"
-                    className="form-input-modern"
-                    value={profileData.last_name}
-                    onChange={(e) => setProfileData({...profileData, last_name: e.target.value})}
-                    disabled={!isEditing}
-                  />
-                </div>
-                
-                <div className="form-group-modern">
-                  <label className="form-label-modern">Email Address</label>
-                  <input
-                    type="email"
-                    className="form-input-modern"
-                    value={profileData.email}
-                    disabled
-                    title="Email cannot be changed for security reasons"
-                  />
-                </div>
-                
-                <div className="form-group-modern">
-                  <label className="form-label-modern">Phone Number</label>
-                  <input
-                    type="tel"
-                    className="form-input-modern"
-                    value={profileData.phone}
-                    onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
-                    disabled={!isEditing}
-                    placeholder="+1 (555) 123-4567"
-                  />
-                </div>
+          {activeTab === 'profile' && (
+            <div className={`profile-section ${isEditing ? 'editing' : ''}`}>
+              <div className="profile-header">
+                <h2>
+                  <i className="fas fa-user"></i>
+                  Profile Information
+                </h2>
+                {isEditing && (
+                  <small style={{color: '#64748b', fontStyle: 'italic'}}>
+                    Make your changes and click Save or Cancel
+                  </small>
+                )}
               </div>
-            </form>
-            
-            <div className="profile-actions">
-              {saveMessage.text && (
-                <div className={`save-message ${saveMessage.type}`}>
-                  <i className={`fas ${saveMessage.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i>
-                  {saveMessage.text}
-                </div>
-              )}
               
-              {!isEditing ? (
-                <button 
-                  className="btn-save"
-                  onClick={async () => {
-                    // Refresh profile data before editing to ensure latest values
-                    await refreshUserProfile();
-                    setIsEditing(true);
-                  }}
-                >
-                  <i className="fas fa-edit"></i>
-                  Edit Profile
-                </button>
-              ) : (
-                <div className="edit-buttons-container">
-                  <button 
-                    type="button"
-                    className="btn-cancel"
-                    onClick={handleCancelEdit}
-                    disabled={isSaving}
-                  >
-                    <i className="fas fa-times"></i>
-                    Cancel
-                  </button>
-                  <button 
-                    type="button"
-                    className="btn-save"
-                    onClick={handleProfileSave}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <>
-                        <i className="fas fa-spinner fa-spin"></i>
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-save"></i>
-                        Save Changes
-                      </>
-                    )}
-                  </button>
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  console.log('🚫 Form submission prevented');
+                  if (isEditing) {
+                    handleProfileSave();
+                  }
+                }}
+              >
+                <div className="profile-form" ref={profileFormRef}>
+                  <div className="form-group-modern">
+                    <label className="form-label-modern">First Name</label>
+                    <input
+                      type="text"
+                      className="form-input-modern"
+                      value={profileData.first_name}
+                      onChange={(e) => setProfileData({...profileData, first_name: e.target.value})}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  
+                  <div className="form-group-modern">
+                    <label className="form-label-modern">Last Name</label>
+                    <input
+                      type="text"
+                      className="form-input-modern"
+                      value={profileData.last_name}
+                      onChange={(e) => setProfileData({...profileData, last_name: e.target.value})}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  
+                  <div className="form-group-modern">
+                    <label className="form-label-modern">Email Address</label>
+                    <input
+                      type="email"
+                      className="form-input-modern"
+                      value={profileData.email}
+                      disabled
+                      title="Email cannot be changed for security reasons"
+                    />
+                  </div>
+                  
+                  <div className="form-group-modern">
+                    <label className="form-label-modern">Phone Number</label>
+                    <input
+                      type="tel"
+                      className="form-input-modern"
+                      value={profileData.phone}
+                      onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
+                      disabled={!isEditing}
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
                 </div>
-              )}
+              </form>
+              
+              <div className="profile-actions">
+                {saveMessage.text && (
+                  <div className={`save-message ${saveMessage.type}`}>
+                    <i className={`fas ${saveMessage.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i>
+                    {saveMessage.text}
+                  </div>
+                )}
+                
+                {!isEditing ? (
+                  <button 
+                    className="btn-save"
+                    onClick={async () => {
+                      // Refresh profile data before editing to ensure latest values
+                      await refreshUserProfile();
+                      setIsEditing(true);
+                    }}
+                  >
+                    <i className="fas fa-edit"></i>
+                    Edit Profile
+                  </button>
+                ) : (
+                  <div className="edit-buttons-container">
+                    <button 
+                      type="button"
+                      className="btn-cancel"
+                      onClick={handleCancelEdit}
+                      disabled={isSaving}
+                    >
+                      <i className="fas fa-times"></i>
+                      Cancel
+                    </button>
+                    <button 
+                      type="button"
+                      className="btn-save"
+                      onClick={handleProfileSave}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <>
+                          <i className="fas fa-spinner fa-spin"></i>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-save"></i>
+                          Save Changes
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
 
     </div>
