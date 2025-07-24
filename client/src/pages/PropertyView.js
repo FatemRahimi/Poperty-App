@@ -14,6 +14,20 @@ const PropertyView = () => {
     fetchProperty();
   }, [slug]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const propertyId = params.get('propertyId');
+    if (propertyId) {
+      const card = document.getElementById(`property-card-${propertyId}`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Optionally highlight the card
+        card.classList.add('highlight');
+        setTimeout(() => card.classList.remove('highlight'), 2000);
+      }
+    }
+  }, []);
+
   const fetchProperty = async () => {
     try {
       const response = await fetch(`/api/properties/property/${slug}`);
@@ -94,10 +108,18 @@ const PropertyView = () => {
     return null;
   }
 
+  const handleBack = () => {
+    if (window.history.state?.fromDashboard) {
+      navigate(`/dashboard?tab=${window.history.state.tab || 'overview'}&propertyId=${window.history.state.propertyId}`);
+    } else {
+      navigate(-1);
+    }
+  };
+
   return (
     <div className="property-view-container">
       <div className="property-view-header">
-        <button onClick={() => navigate(-1)} className="back-btn">
+        <button onClick={handleBack} className="back-btn">
           <i className="fas fa-arrow-left"></i> Back
         </button>
         <div className="property-status">
@@ -108,8 +130,8 @@ const PropertyView = () => {
       </div>
 
       <div className="property-view-content">
-        {/* Media Gallery */}
-        <div className="property-media-gallery">
+        {/* Media Gallery (shorter height) */}
+        <div className="property-media-gallery property-media-gallery--short">
           {property.images && property.images.length > 0 ? (
             <div className="media-viewer">
               <div className="main-media">
@@ -147,7 +169,6 @@ const PropertyView = () => {
                     />
                   );
                 })()}
-                
                 {property.images.length > 1 && (
                   <>
                     <button className="media-nav prev" onClick={prevMedia}>
@@ -159,7 +180,6 @@ const PropertyView = () => {
                   </>
                 )}
               </div>
-              
               {property.images.length > 1 && (
                 <div className="media-thumbnails">
                   {property.images.map((media, index) => {
@@ -204,19 +224,89 @@ const PropertyView = () => {
           )}
         </div>
 
-        {/* Property Details */}
+
+        {/* New Property Info Section below gallery */}
+        <div className="property-info-section">
+          <div className="property-info-item">
+            <i className="fas fa-home property-info-icon"></i>
+            <span className="property-info-label">{property.title}</span>
+          </div>
+          <div className="property-info-item">
+            <i className="fas fa-tag property-info-icon"></i>
+            <span className="property-info-label">Property for {property.category ? property.category.charAt(0).toUpperCase() + property.category.slice(1) : ''}</span>
+          </div>
+          <div className="property-info-item">
+            <i className="fas fa-map-marker-alt property-info-icon"></i>
+            <span className="property-info-label">{formatAddress(property)}</span>
+          </div>
+          {/* More categorized info will be added here in the next step */}
+        </div>
+
+        {/* Property Details Sidebar (Contact Info, Description, etc.) */}
         <div className="view-property-details">
-          <div className="view-property-header">
-            <h1 className="view-property-title">{property.title}</h1>
-            <div className="view-property-price">{formatPrice(property)}</div>
+          {/* Heading with property for rent/sale/lease - property type - address - prices */}
+          <div className="property-details-heading" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            <div className="property-details-main-row">
+              <span className="property-details-category" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                Property for {property.category ? property.category.charAt(0).toUpperCase() + property.category.slice(1) : ''}
+              </span>
+              <span className="property-details-dash" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}> - </span>
+              <span className="property-details-type" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                {property.property_type || property.propertyType || 'Property'}
+              </span>
+            </div>
+            <div className="property-details-location-prices" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 8 }}>
+              <div className="property-details-address" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", fontWeight: 500, fontSize: '1.1rem', flex: 1 }}>
+                <i className="fas fa-map-marker-alt" style={{ color: '#667eea', marginRight: 6 }}></i>
+                {(() => {
+                  // Modern address formatting (like PropertyCard)
+                  const parts = [];
+                  // Helper: Title case
+                  const toTitleCase = (str) => str ? str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase()) : '';
+                  let street = '';
+                  if (property.street_name) {
+                    // Use street_name, up to 2 parts
+                    const streetParts = property.street_name.split(',').map(part => toTitleCase(part.trim()));
+                    street = streetParts.slice(0, 2).join(', ');
+                  } else if (property.address_line1) {
+                    // Remove house number and flat/unit from address_line1
+                    let cleaned = property.address_line1
+                      .replace(/^[0-9]+[a-zA-Z]?\s+/, '')
+                      .replace(/^Flat\s+[0-9]+[a-zA-Z]?\s*,?\s*[0-9]+[a-zA-Z]?\s+/, '')
+                      .replace(/^Apartment\s+[0-9]+[a-zA-Z]?\s*,?\s*[0-9]+[a-zA-Z]?\s+/, '')
+                      .replace(/^Unit\s+[0-9]+[a-zA-Z]?\s*,?\s*[0-9]+[a-zA-Z]?\s+/, '')
+                      .trim();
+                    const streetParts = cleaned.split(',').map(part => toTitleCase(part.trim()));
+                    street = streetParts.slice(0, 2).join(', ');
+                  }
+                  if (street) parts.push(street);
+                  if (property.city) parts.push(toTitleCase(property.city));
+                  if (property.zip_code || property.postcode) {
+                    const postcode = (property.zip_code || property.postcode).replace(/\s+/g, '').toUpperCase();
+                    parts.push(postcode.substring(0, 3));
+                  }
+                  return parts.length > 0 ? parts.join(', ') : 'Location not specified';
+                })()}
+              </div>
+              <div className="property-details-prices" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: 20 }}>
+                {property.monthly_rent || property.monthlyRent ? (
+                  <span className="property-details-price" style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: 4, fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                    £{Number(property.monthly_rent || property.monthlyRent).toLocaleString()}/month
+                  </span>
+                ) : null}
+                {property.weekly_rent || property.weeklyRent ? (
+                  <span className="property-details-price" style={{ fontSize: '1rem', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                    £{Number(property.weekly_rent || property.weeklyRent).toLocaleString()}/week
+                  </span>
+                ) : null}
+              </div>
+            </div>
           </div>
 
-          <div className="view-property-address">
-            <i className="fas fa-map-marker-alt"></i>
-            <span>{formatAddress(property)}</span>
-          </div>
-g
-          <div className="view-property-features">
+          {/* Bold separator line */}
+          <div style={{ borderTop: '2px solid #333', margin: '20px 0', width: '100%' }}></div>
+
+          <div className="view-property-features" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
             {property.bedrooms && (
               <div className="view-feature">
                 <i className="fas fa-bed"></i>
@@ -243,12 +333,12 @@ g
             )}
           </div>
 
-          <div className="view-property-description">
+          <div className="view-property-description" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
             <h3>Description</h3>
             <p>{property.description || 'No description available.'}</p>
           </div>
 
-          <div className="view-property-contact">
+          <div className="view-property-contact" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
             <h3>Contact Information</h3>
             <div className="view-contact-details">
               {property.contact_phone && (
