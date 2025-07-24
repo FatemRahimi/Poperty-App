@@ -201,8 +201,23 @@ const isCityPattern = (input) => {
     normalized.includes(indicator)
   );
   
-  // If it's 1-3 words and contains no numbers, likely a city
-  return (wordCount >= 1 && wordCount <= 3 && !/\d/.test(normalized)) || hasIndicators;
+  // Common street/area names that are NOT cities (exclude these)
+  const notCities = [
+    'snow hill', 'high street', 'main street', 'church street', 'station road',
+    'queensway', 'moor street', 'bull street', 'new street', 'old street',
+    'market street', 'king street', 'queen street', 'prince street',
+    'hospital road', 'school lane', 'park road', 'church lane',
+    'finchley', 'finchley central', 'north finchley', 'east finchley',
+    'ballards lane', 'tally ho', 'clive passage', 'shadwell street',
+    'hospital street', 'monmouth street', 'camden'
+  ];
+  
+  const isNotCity = notCities.some(notCity => 
+    normalized.includes(notCity) || notCity.includes(normalized)
+  );
+  
+  // If it's 1-3 words and contains no numbers, likely a city (but exclude known non-cities)
+  return (wordCount >= 1 && wordCount <= 3 && !/\d/.test(normalized) && !isNotCity) || hasIndicators;
 };
 
 /**
