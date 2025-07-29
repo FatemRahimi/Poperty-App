@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import './PropertyView.css';
 
 const PropertyView = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -109,10 +110,16 @@ const PropertyView = () => {
   }
 
   const handleBack = () => {
-    if (window.history.state?.fromDashboard) {
-      navigate(`/dashboard?tab=${window.history.state.tab || 'overview'}&propertyId=${window.history.state.propertyId}`);
+    // Use the same pattern as the edit forms - check for returnPath in location state
+    if (location.state?.returnPath) {
+      navigate(location.state.returnPath);
+    } else if (window.history.state?.fromDashboard) {
+      // Ensure we go back to My Properties tab with all the original parameters
+      const dashboardUrl = `/dashboard?tab=properties&propertyId=${window.history.state.propertyId}`;
+      navigate(dashboardUrl);
     } else {
-      navigate(-1);
+      // Fallback: go back to My Properties tab
+      navigate('/dashboard?tab=properties');
     }
   };
 

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './PropertyCard.css';
 
 const PropertyCard = ({ property, showActions = true, compact = false, onPropertyDeleted, sourcePage }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -198,7 +199,19 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                       className={`image-container ${index === currentImageIndex ? 'active' : ''}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/property/${property.slug || property.id}`);
+                        const returnPath = location.pathname + location.search;
+                        console.log('🔍 PropertyCard Image Click Debug:', {
+                          currentLocation: location.pathname + location.search,
+                          returnPath: returnPath,
+                          propertyId: property.id,
+                          propertySlug: property.slug,
+                          fullUrl: window.location.href,
+                          pathname: location.pathname,
+                          search: location.search
+                        });
+                        navigate(`/property/${property.slug || property.id}`, {
+                          state: { returnPath: returnPath }
+                        });
                       }}
                     >
                       <img
@@ -364,7 +377,21 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
           {/* Short Description - Moved below features */}
           <div 
             className="property-short-description"
-            onClick={() => navigate(`/property/${property.slug || property.id}`)}
+            onClick={() => {
+              const returnPath = location.pathname + location.search;
+              console.log('🔍 PropertyCard Description Click Debug:', {
+                currentLocation: location.pathname + location.search,
+                returnPath: returnPath,
+                propertyId: property.id,
+                propertySlug: property.slug,
+                fullUrl: window.location.href,
+                pathname: location.pathname,
+                search: location.search
+              });
+              navigate(`/property/${property.slug || property.id}`, {
+                state: { returnPath: returnPath }
+              });
+            }}
             style={{ cursor: 'pointer' }}
           >
             {property.description && property.description.trim() ? (
@@ -460,7 +487,19 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                 className="property-action-icon view-icon fas fa-eye"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/property/${property.slug || property.id}`);
+                  const returnPath = location.pathname + location.search;
+                  console.log('🔍 PropertyCard View Icon Click Debug:', {
+                    currentLocation: location.pathname + location.search,
+                    returnPath: returnPath,
+                    propertyId: property.id,
+                    propertySlug: property.slug,
+                    fullUrl: window.location.href,
+                    pathname: location.pathname,
+                    search: location.search
+                  });
+                  navigate(`/property/${property.slug || property.id}`, {
+                    state: { returnPath: returnPath }
+                  });
                 }}
                 title="View Property"
               ></i>
