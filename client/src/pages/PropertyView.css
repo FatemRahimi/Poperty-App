@@ -63,14 +63,13 @@
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 3fr 1fr;
   gap: 2rem;
 }
 
 /* Media Gallery */
 .property-media-gallery {
   background: white;
-  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
@@ -81,7 +80,7 @@
 
 .main-media {
   position: relative;
-  height: 500px;
+  height: 600px;
   overflow: hidden;
 }
 
@@ -139,7 +138,6 @@
   flex-shrink: 0;
   width: 80px;
   height: 60px;
-  border-radius: 6px;
   overflow: hidden;
   cursor: pointer;
   border: 2px solid transparent;
@@ -382,14 +380,13 @@
 .modern-gallery-layout {
   display: flex;
   gap: 12px;
-  height: 500px;
+  height: 600px;
   width: 100%;
 }
 
 .main-image-container {
   flex: 2;
   position: relative;
-  border-radius: 12px;
   overflow: hidden;
   background: #f8fafc;
 }
@@ -399,7 +396,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 12px;
 }
 
 .side-images-container {
@@ -407,12 +403,15 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .side-image {
   flex: 1;
+  min-height: 180px;
   position: relative;
-  border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -434,7 +433,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
 }
 
 /* Responsive design for modern layout */
@@ -457,4 +455,38 @@
   .side-image {
     flex: 1;
   }
+} 
+
+/* Scrollable row for all remaining images */
+.all-images-row {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  background: #f8fafc;
+  margin-top: 12px;
+  max-height: 120px;
+}
+
+.all-images-item {
+  flex-shrink: 0;
+  width: 100px;
+  height: 80px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  background: #fff;
+}
+
+.all-images-item:hover {
+  border-color: #3b82f6;
+  transform: scale(1.05);
+}
+
+.all-images-item img,
+.all-images-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 } 
