@@ -11,6 +11,13 @@ const {
   getDashboardStats,
   deleteProperty
 } = require('../controllers/propertyController');
+const { 
+  parseSearchQuery, 
+  geocodeLocationEnhanced, 
+  filterPropertiesByRadius, 
+  calculateDistance,
+  correctPropertyCoordinates
+} = require('../utils/smartSearch');
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage(); // Store files in memory for processing
@@ -128,25 +135,8 @@ router.get('/search', async (req, res) => {
     console.log('📍 Radius value:', radius, 'Type:', typeof radius);
     console.log('🏷️ Category filter:', category);
     console.log('👤 Context:', show_all_statuses === 'true' ? 'User Dashboard' : 'Public Search');
-    console.log('🔍 DEBUG: Query analysis for "Ealing" - isCityPattern:', require('../utils/smartSearch').isCityPattern(query));
-    console.log('🔍 DEBUG: Query analysis for "Ealing" - isPostcodePattern:', require('../utils/smartSearch').isPostcodePattern(query));
-    console.log('🔍 DEBUG: Query analysis for "Ealing" - isStreetPattern:', require('../utils/smartSearch').isStreetPattern(query));
-
-    const offset = (page - 1) * limit;
     
-    // DEBUG: Check if there are properties with "Ealing" in the database
-    try {
-      const debugQuery = await pool.query(`
-        SELECT COUNT(*) as count, 
-               array_agg(DISTINCT city) as cities,
-               array_agg(DISTINCT address_line1) as addresses
-        FROM properties 
-        WHERE city ILIKE '%ealing%' OR address_line1 ILIKE '%ealing%'
-      `);
-      console.log('🔍 DEBUG: Properties with "Ealing":', debugQuery.rows[0]);
-    } catch (debugError) {
-      console.log('🔍 DEBUG: Error checking for Ealing properties:', debugError.message);
-    }
+    const offset = (page - 1) * limit;
     
     // CONTEXT-AWARE STATUS FILTERING
     let whereClause;
@@ -188,7 +178,6 @@ router.get('/search', async (req, res) => {
           paramCount++; // Increment for the second parameter
           console.log('🏙️ Added DIRECT CITY search condition:', citySearchCondition);
           console.log('📊 Query params:', queryParams);
-          console.log('🔍 DEBUG: Final WHERE clause for city search:', whereClause);
         } else {
           // PROFESSIONAL MIXED STRATEGY for postcodes and street names
           console.log(`🔍 Professional mixed strategy for "${query}" - Database search + Geocoding`);
@@ -389,19 +378,40 @@ router.get('/search', async (req, res) => {
     queryParams.push(limit, offset);
     console.log('🔍 Final search query WHERE clause:', whereClause);
     console.log('📊 Final query params:', queryParams);
-    console.log('🔍 DEBUG: Final SQL query:', searchQuery);
     
     const result = await pool.query(searchQuery, queryParams);
     console.log('📊 Total properties returned:', result.rows.length);
 
+    let properties = result.rows;
+    let coordinates = null;
+
+    // Apply radius filtering if coordinates were found
+    if (query && radius && radius.trim() !== '') {
+      const radiusFloat = parseFloat(radius);
+      if (radiusFloat >= 0) {
+        const { geocodeLocationEnhanced, parseLocationInput } = require('../utils/smartSearch');
+        const parsedInput = parseLocationInput(query);
+        if (parsedInput.success && parsedInput.lat && parsedInput.lng) {
+          coordinates = { lat: parsedInput.lat, lng: parsedInput.lng };
+          console.log(`📍 Using geographic search with coordinates: ${coordinates.lat}, ${coordinates.lng}`);
+          properties = filterPropertiesByRadius(properties, coordinates.lat, coordinates.lng, radiusFloat);
+        } else {
+          console.log(`📝 Using text-based search (no coordinates found)`);
+        }
+      }
+    }
+
+    // Auto-correct coordinates for all properties before returning
+    properties = properties.map(property => correctPropertyCoordinates(property));
+
     res.json({
       success: true,
-      properties: result.rows,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: result.rows.length
-      }
+      properties,
+      total: properties.length,
+      searchQuery: query,
+      coordinates: coordinates || null,
+      radius: radius,
+      searchMode: coordinates ? 'geographic' : 'text'
     });
 
   } catch (error) {
@@ -1058,10 +1068,20 @@ router.get('/public', async (req, res) => {
     queryParams.push(limit, offset);
 
     const result = await pool.query(query, queryParams);
+    console.log('📊 Total properties returned:', result.rows.length);
+
+    // Auto-correct coordinates for all properties before returning
+    let properties = result.rows.map(property => correctPropertyCoordinates(property));
 
     res.json({
       success: true,
-      properties: result.rows
+      properties,
+      total: properties.length,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: properties.length
+      }
     });
 
   } catch (error) {
