@@ -135,56 +135,102 @@ const PropertyView = () => {
           {property.images && property.images.length > 0 ? (
             <div className="media-viewer">
               {property.images.length >= 4 ? (
-                // Modern Rightmove-style layout for 4+ images
-                <div className="modern-gallery-layout">
-                  <div className="main-image-container">
-                    {(() => {
-                      const currentMedia = property.images[currentMediaIndex];
-                      const isVideo = currentMedia?.type === 'video' || 
-                        currentMedia?.image_type === 'video' || 
-                        (currentMedia?.url && (
-                          currentMedia.url.toLowerCase().endsWith('.mp4') ||
-                          currentMedia.url.toLowerCase().endsWith('.mov') ||
-                          currentMedia.url.toLowerCase().endsWith('.avi') ||
-                          currentMedia.url.toLowerCase().endsWith('.webm') ||
-                          currentMedia.url.toLowerCase().endsWith('.ogg')
-                        ));
+                // Modern layout with 3 main pictures + scrollable row below
+                <>
+                  <div className="modern-gallery-layout">
+                    <div className="main-image-container">
+                      {(() => {
+                        const currentMedia = property.images[currentMediaIndex];
+                        const isVideo = currentMedia?.type === 'video' || 
+                          currentMedia?.image_type === 'video' || 
+                          (currentMedia?.url && (
+                            currentMedia.url.toLowerCase().endsWith('.mp4') ||
+                            currentMedia.url.toLowerCase().endsWith('.mov') ||
+                            currentMedia.url.toLowerCase().endsWith('.avi') ||
+                            currentMedia.url.toLowerCase().endsWith('.webm') ||
+                            currentMedia.url.toLowerCase().endsWith('.ogg')
+                          ));
 
-                      return isVideo ? (
-                        <video
-                          src={currentMedia.url}
-                          controls
-                          className="main-video"
-                          onError={(e) => {
-                            console.error('Video load error:', currentMedia.url, e);
-                          }}
-                        >
-                          Your browser does not support the video tag.
-                        </video>
-                      ) : (
-                        <img
-                          src={currentMedia.url}
-                          alt={`${property.title} - Media ${currentMediaIndex + 1}`}
-                          className="main-image"
-                          onError={(e) => {
-                            console.error('Image load error:', currentMedia.url, e);
-                          }}
-                        />
-                      );
-                    })()}
-                    {property.images.length > 1 && (
-                      <>
-                        <button className="media-nav prev" onClick={prevMedia}>
-                          <i className="fas fa-chevron-left"></i>
-                        </button>
-                        <button className="media-nav next" onClick={nextMedia}>
-                          <i className="fas fa-chevron-right"></i>
-                        </button>
-                      </>
-                    )}
+                        return isVideo ? (
+                          <video
+                            src={currentMedia.url}
+                            controls
+                            className="main-video"
+                            onError={(e) => {
+                              console.error('Video load error:', currentMedia.url, e);
+                            }}
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                        ) : (
+                          <img
+                            src={currentMedia.url}
+                            alt={`${property.title} - Media ${currentMediaIndex + 1}`}
+                            className="main-image"
+                            onError={(e) => {
+                              console.error('Image load error:', currentMedia.url, e);
+                            }}
+                          />
+                        );
+                      })()}
+                      {property.images.length > 1 && (
+                        <>
+                          <button className="media-nav prev" onClick={prevMedia}>
+                            <i className="fas fa-chevron-left"></i>
+                          </button>
+                          <button className="media-nav next" onClick={nextMedia}>
+                            <i className="fas fa-chevron-right"></i>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <div className="side-images-container">
+                      {/* Show next 2 images as side images */}
+                      {[1, 2].map((offset) => {
+                        const index = (currentMediaIndex + offset) % property.images.length;
+                        const media = property.images[index];
+                        const isVideo = media.type === 'video' || media.image_type === 'video' || 
+                          (media.url && (
+                            media.url.toLowerCase().endsWith('.mp4') ||
+                            media.url.toLowerCase().endsWith('.mov') ||
+                            media.url.toLowerCase().endsWith('.avi') ||
+                            media.url.toLowerCase().endsWith('.webm') ||
+                            media.url.toLowerCase().endsWith('.ogg')
+                          ));
+
+                        return (
+                          <div
+                            key={index}
+                            className="side-image"
+                            onClick={() => setCurrentMediaIndex(index)}
+                          >
+                            {isVideo ? (
+                              <div className="video-thumbnail">
+                                <video src={media.url} muted>
+                                  <source src={media.url} />
+                                </video>
+                                <div className="property-video-overlay">
+                                  <i className="fas fa-play"></i>
+                                </div>
+                              </div>
+                            ) : (
+                              <img src={media.url} alt={`Side image ${index + 1}`} />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="side-images-container">
-                    {property.images.slice(0, 3).map((media, index) => {
+                  {/* Scrollable row with all remaining images */}
+                  <div className="all-images-row">
+                    {property.images.map((media, index) => {
+                      // Skip the 3 images already shown in main gallery
+                      const isCurrentlyShown = index === currentMediaIndex || 
+                        index === (currentMediaIndex + 1) % property.images.length ||
+                        index === (currentMediaIndex + 2) % property.images.length;
+                      
+                      if (isCurrentlyShown) return null;
+
                       const isVideo = media.type === 'video' || media.image_type === 'video' || 
                         (media.url && (
                           media.url.toLowerCase().endsWith('.mp4') ||
@@ -197,7 +243,7 @@ const PropertyView = () => {
                       return (
                         <div
                           key={index}
-                          className={`side-image ${index === currentMediaIndex ? 'active' : ''}`}
+                          className="all-images-item"
                           onClick={() => setCurrentMediaIndex(index)}
                         >
                           {isVideo ? (
@@ -210,13 +256,13 @@ const PropertyView = () => {
                               </div>
                             </div>
                           ) : (
-                            <img src={media.url} alt={`Side image ${index + 1}`} />
+                            <img src={media.url} alt={`Image ${index + 1}`} />
                           )}
                         </div>
                       );
                     })}
                   </div>
-                </div>
+                </>
               ) : (
                 // Original layout for less than 4 images
                 <>
