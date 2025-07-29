@@ -128,6 +128,7 @@ const AddRent = () => {
   const [isIntentionalSubmit, setIsIntentionalSubmit] = useState(false); // Add this to track intentional submissions
   const [isRemoving, setIsRemoving] = useState(false); // Prevent multiple simultaneous removals
   const [addressValidationError, setAddressValidationError] = useState(""); // Address validation error
+  const [approvedPropertyNotification, setApprovedPropertyNotification] = useState(""); // Notification for approved property edits
   
   // Check if we're in edit mode
   const editMode = location.state?.editMode || false;
@@ -135,6 +136,15 @@ const AddRent = () => {
   const propertyId = propertyData?.id || null;
   const returnPath = location.state?.returnPath || '/seller';
   
+  // Set notification for approved property edits
+  useEffect(() => {
+    if (editMode && propertyData?.status === 'approved') {
+      setApprovedPropertyNotification(
+        "⚠️ You are editing an approved property. After saving, it will require admin approval before being visible again."
+      );
+    }
+  }, [editMode, propertyData]);
+
   // Helper function to format date for input field
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
@@ -762,6 +772,13 @@ const AddRent = () => {
       submitFormData.append('userEmail', user.email);
       submitFormData.append('userId', user.id);
       submitFormData.append('listingType', 'rent');
+      
+      // Handle status for approved properties being edited
+      if (editMode && propertyData?.status === 'approved') {
+        // Change status to pending for admin review
+        submitFormData.append('status', 'pending');
+        console.log('🔄 Approved property being edited - Status changed to pending for admin review');
+      }
       
       // Add photos if any
       photoFiles.forEach((file, index) => {
@@ -1436,6 +1453,12 @@ const AddRent = () => {
           {error && <div className="alert alert-danger">{error}</div>}
           {success && <div className="alert alert-success">{success}</div>}
           
+          {approvedPropertyNotification && (
+            <div className="alert alert-warning" style={{ marginBottom: '1rem' }}>
+              {approvedPropertyNotification}
+            </div>
+          )}
+
           {renderSection()}
 
           {/* Navigation Buttons */}

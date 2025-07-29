@@ -63,7 +63,7 @@
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 4fr 1fr;
+  grid-template-columns: 5fr 1fr;
   gap: 2rem;
 }
 
@@ -80,7 +80,7 @@
 
 .main-media {
   position: relative;
-  height: 600px;
+  height: 400px;
   overflow: hidden;
 }
 
@@ -380,8 +380,9 @@
 .modern-gallery-layout {
   display: flex;
   gap: 12px;
-  height: 600px;
+  height: 500px;
   width: 100%;
+  
 }
 
 .main-image-container {

@@ -72,6 +72,7 @@ const AddList = () => {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [mediaFiles, setMediaFiles] = useState([]);
   const [mediaPreviewUrls, setMediaPreviewUrls] = useState([]);
+  const [approvedPropertyNotification, setApprovedPropertyNotification] = useState(""); // Notification for approved property edits
   
   const [formData, setFormData] = useSessionStorage("propertyListingForm", {
     // Step 1: Basic Property Information
@@ -129,6 +130,15 @@ const AddList = () => {
       return;
     }
   }, [navigate]);
+
+  // Set notification for approved property edits
+  useEffect(() => {
+    if (editMode && propertyData?.status === 'approved') {
+      setApprovedPropertyNotification(
+        "⚠️ You are editing an approved property. After saving, it will require admin approval before being visible again."
+      );
+    }
+  }, [editMode, propertyData]);
 
   const handleChange = (e) => {
     const { name, type, value, checked } = e.target;
@@ -387,6 +397,13 @@ const AddList = () => {
       
       // Add listing type
       formDataToSend.append('listingType', 'sale');
+      
+      // Handle status for approved properties being edited
+      if (editMode && propertyData?.status === 'approved') {
+        // Change status to pending for admin review
+        formDataToSend.append('status', 'pending');
+        console.log('🔄 Approved property being edited - Status changed to pending for admin review');
+      }
       
       // Add media files
       mediaFiles.forEach(file => {
@@ -821,6 +838,11 @@ const AddList = () => {
 
       {/* Form Section */}
       <div className="form-wrapper">
+        {approvedPropertyNotification && (
+          <div className="alert alert-warning" style={{ marginBottom: '1rem' }}>
+            {approvedPropertyNotification}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="property-form">
           {renderCurrentStep()}
 

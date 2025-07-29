@@ -117,7 +117,7 @@ router.get('/search', async (req, res) => {
       min_price, 
       max_price, 
       bedrooms,
-      radius = '3', // Default to 3 miles as requested
+      radius = '10', // Default to 10 miles as requested
       page = 1,
       limit = 12,
       show_all_statuses = 'false',
@@ -128,8 +128,25 @@ router.get('/search', async (req, res) => {
     console.log('📍 Radius value:', radius, 'Type:', typeof radius);
     console.log('🏷️ Category filter:', category);
     console.log('👤 Context:', show_all_statuses === 'true' ? 'User Dashboard' : 'Public Search');
+    console.log('🔍 DEBUG: Query analysis for "Ealing" - isCityPattern:', require('../utils/smartSearch').isCityPattern(query));
+    console.log('🔍 DEBUG: Query analysis for "Ealing" - isPostcodePattern:', require('../utils/smartSearch').isPostcodePattern(query));
+    console.log('🔍 DEBUG: Query analysis for "Ealing" - isStreetPattern:', require('../utils/smartSearch').isStreetPattern(query));
 
     const offset = (page - 1) * limit;
+    
+    // DEBUG: Check if there are properties with "Ealing" in the database
+    try {
+      const debugQuery = await pool.query(`
+        SELECT COUNT(*) as count, 
+               array_agg(DISTINCT city) as cities,
+               array_agg(DISTINCT address_line1) as addresses
+        FROM properties 
+        WHERE city ILIKE '%ealing%' OR address_line1 ILIKE '%ealing%'
+      `);
+      console.log('🔍 DEBUG: Properties with "Ealing":', debugQuery.rows[0]);
+    } catch (debugError) {
+      console.log('🔍 DEBUG: Error checking for Ealing properties:', debugError.message);
+    }
     
     // CONTEXT-AWARE STATUS FILTERING
     let whereClause;
@@ -162,13 +179,16 @@ router.get('/search', async (req, res) => {
           paramCount++;
           const citySearchCondition = ` AND (
             LOWER(p.city) = LOWER($${paramCount}) OR 
-            p.city ILIKE $${paramCount + 1}
+            p.city ILIKE $${paramCount + 1} OR
+            p.address_line1 ILIKE $${paramCount + 1} OR
+            p.address_line2 ILIKE $${paramCount + 1}
           )`;
           whereClause += citySearchCondition;
           queryParams.push(query.trim(), `%${query.trim()}%`);
           paramCount++; // Increment for the second parameter
           console.log('🏙️ Added DIRECT CITY search condition:', citySearchCondition);
           console.log('📊 Query params:', queryParams);
+          console.log('🔍 DEBUG: Final WHERE clause for city search:', whereClause);
         } else {
           // PROFESSIONAL MIXED STRATEGY for postcodes and street names
           console.log(`🔍 Professional mixed strategy for "${query}" - Database search + Geocoding`);
@@ -369,6 +389,7 @@ router.get('/search', async (req, res) => {
     queryParams.push(limit, offset);
     console.log('🔍 Final search query WHERE clause:', whereClause);
     console.log('📊 Final query params:', queryParams);
+    console.log('🔍 DEBUG: Final SQL query:', searchQuery);
     
     const result = await pool.query(searchQuery, queryParams);
     console.log('📊 Total properties returned:', result.rows.length);

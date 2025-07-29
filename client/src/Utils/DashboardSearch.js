@@ -126,7 +126,7 @@ const calculateRelevanceScore = (property, searchQuery) => {
  * Fast dashboard property filtering with instant results
  * Optimized for user dashboard - no external API calls
  */
-export const filterDashboardProperties = (properties, searchQuery, radius = '1') => {
+export const filterDashboardProperties = (properties, searchQuery, radius = '10') => {
   console.log(`🚀 Fast dashboard search: "${searchQuery}" (${properties.length} properties)`);
   
   if (!searchQuery || !searchQuery.trim()) {
