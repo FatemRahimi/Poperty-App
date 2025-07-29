@@ -560,7 +560,7 @@ const UserDashboard = () => {
       setIsRadiusFiltering(true);
       
       // Use fast dashboard search (no external API calls!)
-      const radius = searchFilters.radius || '1';
+      const radius = searchFilters.radius || '10';
       const locationFiltered = filterDashboardProperties(categoryFilteredProperties, searchQuery, radius);
       setRadiusFilteredProperties(locationFiltered);
       
@@ -1111,7 +1111,7 @@ const UserDashboard = () => {
       // Reset professional search filters
       setSearchFilters({
         ...newFilters,
-        radius: '1',
+        radius: '10',
         minPrice: 'any',
         maxPrice: 'any',
         minBeds: 'any',

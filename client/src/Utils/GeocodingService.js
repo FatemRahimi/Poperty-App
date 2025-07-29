@@ -520,7 +520,7 @@ export const filterPropertiesByRadius = async (properties, searchLocation, radiu
 
   // Always try geocoding first, fall back to text search if geocoding fails
   if (!radiusInMiles || radiusInMiles === '0') {
-    radiusInMiles = '1'; // Default to 1 mile if no radius specified
+    radiusInMiles = '10'; // Default to 10 miles if no radius specified
   }
 
   const filteredProperties = [];

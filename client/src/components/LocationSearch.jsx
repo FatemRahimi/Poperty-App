@@ -14,7 +14,7 @@ const LocationSearch = ({
   // Search values
   searchQuery = '',
   onSearchQueryChange,
-  radius = '3', // Default to 3 miles as requested
+  radius = '10', // Default to 10 miles as requested
   onRadiusChange,
   
   // UI options
@@ -95,7 +95,7 @@ const LocationSearch = ({
         type: 'full_postcode',
         value: original.toUpperCase(),
         searchStrategy: 'geocoding_with_radius',
-        defaultRadius: 1
+        defaultRadius: 10
       };
     }
     
@@ -105,7 +105,7 @@ const LocationSearch = ({
         type: 'partial_postcode',
         value: original.toUpperCase(),
         searchStrategy: 'geocoding_with_radius',
-        defaultRadius: 3
+        defaultRadius: 10
       };
     }
     
@@ -115,7 +115,7 @@ const LocationSearch = ({
         type: 'area_code',
         value: original.toUpperCase(),
         searchStrategy: 'geocoding_with_radius',
-        defaultRadius: 8
+        defaultRadius: 10
       };
     }
     
@@ -144,7 +144,7 @@ const LocationSearch = ({
         type: 'street',
         value: original,
         searchStrategy: 'geocoding_with_radius',
-        defaultRadius: 1
+        defaultRadius: 10
       };
     }
     
@@ -153,7 +153,7 @@ const LocationSearch = ({
       type: 'area',
       value: original,
       searchStrategy: 'geocoding_with_radius',
-      defaultRadius: 2
+      defaultRadius: 10
     };
   };
 
