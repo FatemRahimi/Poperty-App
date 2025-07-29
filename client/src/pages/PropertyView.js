@@ -97,7 +97,7 @@ const PropertyView = () => {
           <h3>Property Not Found</h3>
           <p>{error}</p>
           <button onClick={() => navigate(-1)} className="back-btn">
-            <i className="fas fa-arrow-left"></i> Go Back
+            <i className="fas fa-arrow-left"></i> Back to Properties
           </button>
         </div>
       </div>
@@ -120,7 +120,7 @@ const PropertyView = () => {
     <div className="property-view-container">
       <div className="property-view-header">
         <button onClick={handleBack} className="back-btn">
-          <i className="fas fa-arrow-left"></i> Back
+          <i className="fas fa-arrow-left"></i> Back to Properties
         </button>
         <div className="property-status">
           <span className={`status-badge status-${property.status}`}>
