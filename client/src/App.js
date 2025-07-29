@@ -28,7 +28,7 @@ function Layout() {
     const location = useLocation();
 
     // Hide Navbar on login, password, signup pages, admin login, and admin dashboard
-    const hideNavbar = ["/login", "/password", "/signup", "/addlist", "/addlistnext", "/addlease", "/additional-listing/sale", "/additional-listing/lease", "/addleasenext", "/addrent", "/admin-x9k7m2p5q8", "/admin/dashboard", "/dashboard"].includes(location.pathname);
+    const hideNavbar = ["/login", "/password", "/signup", "/addlist", "/addlistnext", "/addlease", "/additional-listing/sale", "/additional-listing/lease", "/addleasenext", "/addrent", "/admin-x9k7m2p5q8", "/admin/dashboard", "/dashboard", "/property"].includes(location.pathname) || location.pathname.startsWith("/property/");
 
     return (
         <div>
