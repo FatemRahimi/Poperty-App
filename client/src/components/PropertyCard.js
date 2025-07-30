@@ -199,7 +199,14 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                       className={`image-container ${index === currentImageIndex ? 'active' : ''}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        const returnPath = location.pathname + location.search;
+                        // Capture current location as returnPath
+                        const returnPath = location.pathname.includes('/dashboard')
+                          ? '/dashboard?tab=properties'
+                          : location.pathname + location.search;
+                        
+                        // Also store in sessionStorage as backup
+                        sessionStorage.setItem('lastDashboardPath', returnPath);
+                        
                         console.log('🔍 PropertyCard Image Click Debug:', {
                           currentLocation: location.pathname + location.search,
                           returnPath: returnPath,
@@ -207,7 +214,8 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                           propertySlug: property.slug,
                           fullUrl: window.location.href,
                           pathname: location.pathname,
-                          search: location.search
+                          search: location.search,
+                          sessionStorage: sessionStorage.getItem('lastDashboardPath')
                         });
                         navigate(`/property/${property.slug || property.id}`, {
                           state: { returnPath: returnPath }
@@ -378,7 +386,14 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
           <div 
             className="property-short-description"
             onClick={() => {
-              const returnPath = location.pathname + location.search;
+              // Capture current location as returnPath
+              const returnPath = location.pathname.includes('/dashboard')
+                ? '/dashboard?tab=properties'
+                : location.pathname + location.search;
+              
+              // Also store in sessionStorage as backup
+              sessionStorage.setItem('lastDashboardPath', returnPath);
+              
               console.log('🔍 PropertyCard Description Click Debug:', {
                 currentLocation: location.pathname + location.search,
                 returnPath: returnPath,
@@ -386,7 +401,8 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                 propertySlug: property.slug,
                 fullUrl: window.location.href,
                 pathname: location.pathname,
-                search: location.search
+                search: location.search,
+                sessionStorage: sessionStorage.getItem('lastDashboardPath')
               });
               navigate(`/property/${property.slug || property.id}`, {
                 state: { returnPath: returnPath }
@@ -487,7 +503,14 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                 className="property-action-icon view-icon fas fa-eye"
                 onClick={(e) => {
                   e.stopPropagation();
-                  const returnPath = location.pathname + location.search;
+                  // Capture current location as returnPath
+                  const returnPath = location.pathname.includes('/dashboard')
+                    ? '/dashboard?tab=properties'
+                    : location.pathname + location.search;
+                  
+                  // Also store in sessionStorage as backup
+                  sessionStorage.setItem('lastDashboardPath', returnPath);
+                  
                   console.log('🔍 PropertyCard View Icon Click Debug:', {
                     currentLocation: location.pathname + location.search,
                     returnPath: returnPath,
@@ -495,7 +518,8 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                     propertySlug: property.slug,
                     fullUrl: window.location.href,
                     pathname: location.pathname,
-                    search: location.search
+                    search: location.search,
+                    sessionStorage: sessionStorage.getItem('lastDashboardPath')
                   });
                   navigate(`/property/${property.slug || property.id}`, {
                     state: { returnPath: returnPath }
