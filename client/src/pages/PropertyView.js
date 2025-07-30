@@ -463,7 +463,14 @@ const PropertyView = () => {
           {/* Bold separator line */}
           <div style={{ borderTop: '2px solid #333', margin: '20px 0', width: '100%' }}></div>
 
+          {/* NEW: Property Type, Bedrooms, Bathrooms, and Furnished Status */}
           <div className="view-property-features" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            {property.property_type && (
+              <div className="view-feature">
+                <i className="fas fa-home"></i>
+                <span>{property.property_type.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}</span>
+              </div>
+            )}
             {property.bedrooms && (
               <div className="view-feature">
                 <i className="fas fa-bed"></i>
@@ -476,19 +483,16 @@ const PropertyView = () => {
                 <span>{Math.floor(property.bathrooms)} Bathroom{Math.floor(property.bathrooms) !== 1 ? 's' : ''}</span>
               </div>
             )}
-            {property.square_feet && (
+            {property.furnished !== undefined && property.furnished !== null && (
               <div className="view-feature">
-                <i className="fas fa-ruler-combined"></i>
-                <span>{Number(property.square_feet).toLocaleString()} sqft</span>
-              </div>
-            )}
-            {property.parking_spaces && (
-              <div className="view-feature">
-                <i className="fas fa-car"></i>
-                <span>{property.parking_spaces} Parking Space{property.parking_spaces !== 1 ? 's' : ''}</span>
+                <i className="fas fa-couch"></i>
+                <span>{property.furnished ? 'Furnished' : 'Unfurnished'}</span>
               </div>
             )}
           </div>
+
+          {/* Border line after features */}
+          <div style={{ borderTop: '1px solid #e0e0e0', margin: '20px 0', width: '100%' }}></div>
 
           <div className="view-property-description" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
             <h3>Description</h3>

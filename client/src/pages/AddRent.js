@@ -99,22 +99,46 @@ const epcRatingOptions = [
   { value: "D", label: "D" },
   { value: "E", label: "E" },
   { value: "F", label: "F" },
-  { value: "G", label: "G" }
+  { value: "G", label: "G" },
+  { value: "H", label: "H" },
+  { value: "Exempt", label: "Exempt" },
+  { value: "Pending", label: "Pending" }
 ];
 
-// Council tax status options (Rightmove requirement)
+// Council tax status options
 const councilTaxStatusOptions = [
-  { value: "tenant", label: "Tenant Responsible" },
-  { value: "included", label: "Included in Rent" },
-  { value: "exempt", label: "Exempt (e.g., Student Property)" }
+  { value: "included", label: "Included in rent" },
+  { value: "exempt", label: "Exempt" },
+  { value: "tenant_pays", label: "Tenant pays" },
+  { value: "landlord_pays", label: "Landlord pays" }
 ];
 
-// Essential utilities options only
-const billsOptions = [
-  { value: "none", label: "Bills Not Included" },
-  { value: "some", label: "Some Bills Included" },
-  { value: "all", label: "All Bills Included" }
-];
+// Key Features Options (Checkboxes)
+const keyFeaturesOptions = {
+  propertyFeatures: [
+    { value: "kitchen_white_goods", label: "Kitchen with white goods" },
+    { value: "allocated_parking", label: "Allocated parking" },
+    { value: "communal_garden", label: "Communal garden" },
+    { value: "balcony_terrace", label: "Balcony/terrace" },
+    { value: "storage_space", label: "Storage space" },
+    { value: "lift_access", label: "Lift access" },
+    { value: "intercom_entry", label: "Intercom entry system" }
+  ],
+  utilitiesBills: [
+    { value: "bills_included", label: "Bills included" },
+    { value: "council_tax_included", label: "Council tax included" },
+    { value: "water_included", label: "Water included" },
+    { value: "electricity_included", label: "Electricity included" },
+    { value: "gas_included", label: "Gas included" },
+    { value: "internet_included", label: "Internet included" }
+  ],
+  financial: [
+    { value: "zero_deposit", label: "Zero deposit option" },
+    { value: "guarantor_accepted", label: "Guarantor accepted" },
+    { value: "dss_lha_accepted", label: "DSS/LHA accepted" },
+    { value: "short_term_lets", label: "Short-term lets available" }
+  ]
+};
 
 const AddRent = () => {
   const navigate = useNavigate();
@@ -208,10 +232,38 @@ const AddRent = () => {
         garden: propertyData.has_garden || false,
         parking: propertyData.parking_spaces > 0 || propertyData.has_garage || false,
         balconyTerrace: false, // This data might not be in existing properties
-        billsIncluded: "none", // Default value
         petsAllowed: propertyData.pets_allowed || false,
         studentHousing: propertyData.student_housing || false,
         epcRating: "", // This data might not be in existing properties
+        
+        // NEW FIELDS: EPC Rating
+        epcRating: propertyData.epc_rating || "",
+        
+        // NEW FIELDS: Key Features (Checkboxes)
+        keyFeatures: propertyData.key_features ? (() => {
+          try {
+            // Handle different data types
+            if (typeof propertyData.key_features === 'string') {
+              return JSON.parse(propertyData.key_features);
+            } else if (Array.isArray(propertyData.key_features)) {
+              return propertyData.key_features;
+            } else if (propertyData.key_features && typeof propertyData.key_features === 'object') {
+              return propertyData.key_features;
+            } else {
+              return [];
+            }
+          } catch (error) {
+            console.warn('Failed to parse key_features:', error);
+            return [];
+          }
+        })() : [],
+        
+        // NEW FIELDS: Layout of Property
+        layoutFile: null,
+        layoutFileName: propertyData.layout_file_name || "",
+        layoutFileUrl: propertyData.layout_file_url || "",
+        apartmentSize: propertyData.apartment_size || "",
+        floorNumber: propertyData.floor_number || "",
         
         // Description & Media
         description: propertyData.description || "",
@@ -244,10 +296,23 @@ const AddRent = () => {
       garden: false,
       parking: false,
       balconyTerrace: false,
-      billsIncluded: "",
       petsAllowed: false,
       studentHousing: false,
       epcRating: "",
+      
+      // NEW FIELDS: EPC Rating
+      epcRating: "",
+      
+      // NEW FIELDS: Key Features (Checkboxes)
+      keyFeatures: [],
+      
+      // NEW FIELDS: Layout of Property
+      layoutFile: null,
+      layoutFileName: "",
+      layoutFileUrl: "",
+      apartmentSize: "",
+      floorNumber: "",
+      
       description: "",
       photos: [],
       contactPhone: user?.phone || "" // Auto-populate with user's profile phone
@@ -352,6 +417,43 @@ const AddRent = () => {
       setFormData((prev) => ({
         ...prev,
         [name]: type === "checkbox" ? checked : value,
+      }));
+    }
+  };
+
+  // Handle key features checkbox changes
+  const handleKeyFeatureChange = (featureValue, checked) => {
+    setFormData(prev => {
+      const currentFeatures = [...prev.keyFeatures];
+      
+      if (checked) {
+        // Add feature if not already present
+        if (!currentFeatures.includes(featureValue)) {
+          currentFeatures.push(featureValue);
+        }
+      } else {
+        // Remove feature if present
+        const index = currentFeatures.indexOf(featureValue);
+        if (index > -1) {
+          currentFeatures.splice(index, 1);
+        }
+      }
+      
+      return {
+        ...prev,
+        keyFeatures: currentFeatures
+      };
+    });
+  };
+
+  // Handle layout file upload
+  const handleLayoutFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({
+        ...prev,
+        layoutFile: file,
+        layoutFileName: file.name
       }));
     }
   };
@@ -523,6 +625,7 @@ const AddRent = () => {
       if (!editMode) {
         if (!formData.councilTaxBand) missingFields.push("Council Tax Band");
         if (!formData.councilTaxStatus) missingFields.push("Council Tax Status");
+        if (!formData.epcRating) missingFields.push("EPC Rating");
       }
       
       if (missingFields.length > 0) {
@@ -547,8 +650,7 @@ const AddRent = () => {
       
       // These fields are required for new properties but optional for edits
       if (!editMode) {
-        if (!formData.billsIncluded) missingFields.push("Bills Included");
-        if (!formData.epcRating) missingFields.push("EPC Rating");
+        // No required fields in section 3 anymore
       }
       
       if (missingFields.length > 0) {
@@ -638,7 +740,6 @@ const AddRent = () => {
     if (!editMode) {
       if (!formData.councilTaxBand) missingFields.push("Council Tax Band");
       if (!formData.councilTaxStatus) missingFields.push("Council Tax Status");
-      if (!formData.billsIncluded) missingFields.push("Bills Included");
       if (!formData.epcRating) missingFields.push("EPC Rating");
     }
     
@@ -746,9 +847,21 @@ const AddRent = () => {
         // Additional rental fields
         councilTaxBand: formData.councilTaxBand,
         balconyTerrace: formData.balconyTerrace,
-        billsIncluded: formData.billsIncluded,
         studentHousing: formData.studentHousing,
-        epcRating: formData.epcRating
+        epcRating: formData.epcRating,
+
+        // NEW FIELDS: EPC Rating
+        epcRating: formData.epcRating,
+
+        // NEW FIELDS: Key Features (Checkboxes)
+        keyFeatures: JSON.stringify(formData.keyFeatures),
+
+        // NEW FIELDS: Layout of Property
+        layoutFile: formData.layoutFile,
+        layoutFileName: formData.layoutFileName,
+        layoutFileUrl: formData.layoutFileUrl,
+        apartmentSize: formData.apartmentSize,
+        floorNumber: formData.floorNumber
       };
       
       // Add all mapped fields to FormData
@@ -1079,6 +1192,18 @@ const AddRent = () => {
                 required
               />
             </div>
+            
+            {/* EPC Rating Row */}
+            <div className="form-row">
+              <SelectInput 
+                label="EPC Rating"
+                name="epcRating"
+                value={formData.epcRating}
+                onChange={handleChange}
+                options={epcRatingOptions}
+                required
+              />
+            </div>
           </div>
         );
       
@@ -1244,23 +1369,68 @@ const AddRent = () => {
               </div>
             </div>
             
-            <SelectInput
-              label="Bills Included"
-              name="billsIncluded"
-              value={formData.billsIncluded}
-              onChange={handleChange}
-              options={billsOptions}
-              required
-            />
+        
             
-            <SelectInput 
-              label="EPC Rating"
-              name="epcRating"
-              value={formData.epcRating}
-              onChange={handleChange}
-              options={epcRatingOptions}
-              required
-            />
+            <div className="key-features-section">
+              {/* Property Features */}
+              <div className="key-features-category">
+                <h5>Key Features</h5>
+                <p className="section-description">Select all features that apply to your property</p>
+                <div className="key-features-grid">
+                  {keyFeaturesOptions.propertyFeatures.map(feature => (
+                    <div key={feature.value} className="key-feature-item">
+                      <input
+                        type="checkbox"
+                        id={feature.value}
+                        checked={formData.keyFeatures.includes(feature.value)}
+                        onChange={(e) => handleKeyFeatureChange(feature.value, e.target.checked)}
+                        className="checkbox-base"
+                      />
+                      <label htmlFor={feature.value}>{feature.label}</label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Utilities & Bills */}
+              <div className="key-features-category">
+                <h5>Utilities & Bills</h5>
+                <div className="key-features-grid">
+                  {keyFeaturesOptions.utilitiesBills.map(feature => (
+                    <div key={feature.value} className="key-feature-item">
+                      <input
+                        type="checkbox"
+                        id={feature.value}
+                        checked={formData.keyFeatures.includes(feature.value)}
+                        onChange={(e) => handleKeyFeatureChange(feature.value, e.target.checked)}
+                        className="checkbox-base"
+                      />
+                      <label htmlFor={feature.value}>{feature.label}</label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Financial */}
+              <div className="key-features-category">
+                <h5>Financial</h5>
+                <div className="key-features-grid">
+                  {keyFeaturesOptions.financial.map(feature => (
+                    <div key={feature.value} className="key-feature-item">
+                      <input
+                        type="checkbox"
+                        id={feature.value}
+                        checked={formData.keyFeatures.includes(feature.value)}
+                        onChange={(e) => handleKeyFeatureChange(feature.value, e.target.checked)}
+                        className="checkbox-base"
+                      />
+                      <label htmlFor={feature.value}>{feature.label}</label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+            </div>
           </div>
         );
       
@@ -1381,6 +1551,87 @@ const AddRent = () => {
                   </div>
                 </>
               )}
+            </div>
+            
+            {/* NEW: Layout of Property Section */}
+            <h4 className="subsection-title">Layout of Property</h4>
+            <p className="section-description">Upload floor plan and provide property details</p>
+            
+            <div className="layout-section">
+              {/* File Upload */}
+              <div className="form-group">
+                <label htmlFor="layoutFile">Floor Plan (PDF, JPG, PNG)*</label>
+                <div className="file-upload-area">
+                  <label htmlFor="layoutFileUpload" className="file-upload-label">
+                    <div className="file-upload-content">
+                      <div className="file-upload-icon">📄</div>
+                      <div className="file-upload-text">
+                        <span>Click to upload floor plan</span>
+                        <small>PDF, JPG, PNG • Max 10MB</small>
+                      </div>
+                    </div>
+                  </label>
+                  <input
+                    type="file"
+                    id="layoutFileUpload"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleLayoutFileChange}
+                    style={{ display: 'none' }}
+                  />
+                </div>
+                
+                {/* Display uploaded file */}
+                {formData.layoutFile && (
+                  <div className="uploaded-file">
+                    <span className="file-name">{formData.layoutFileName}</span>
+                    <button 
+                      type="button" 
+                      className="remove-file-btn"
+                      onClick={() => setFormData(prev => ({ ...prev, layoutFile: null, layoutFileName: "" }))}
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+                
+                {/* Display existing file */}
+                {formData.layoutFileUrl && !formData.layoutFile && (
+                  <div className="existing-file">
+                    <span className="file-name">{formData.layoutFileName || "Floor Plan"}</span>
+                    <a 
+                      href={formData.layoutFileUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="download-link"
+                    >
+                      Download
+                    </a>
+                  </div>
+                )}
+              </div>
+              
+              {/* Property Details */}
+              <div className="form-row">
+                <TextInput
+                  label="Apartment Size (sq ft)"
+                  name="apartmentSize"
+                  value={formData.apartmentSize}
+                  onChange={handleChange}
+                  placeholder="e.g. 850"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                />
+                
+                <TextInput
+                  label="Floor Number"
+                  name="floorNumber"
+                  value={formData.floorNumber}
+                  onChange={handleChange}
+                  placeholder="e.g. 2nd floor, Ground floor"
+                />
+              </div>
+              
             </div>
             
             <h3 className="section-title">Contact Information</h3>
