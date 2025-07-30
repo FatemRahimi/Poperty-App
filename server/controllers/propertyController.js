@@ -66,6 +66,12 @@ const sendEmailNotification = async (notificationData) => {
   try {
     const { to, subject, html, property, user, notificationType } = notificationData;
     
+    // Check if email configuration is available
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.warn('⚠️ Email configuration missing - skipping email notification');
+      return;
+    }
+    
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to,
@@ -82,14 +88,18 @@ const sendEmailNotification = async (notificationData) => {
 
     console.log(`📧 Email sent to ${to}: ${subject}`);
   } catch (error) {
-    console.error('Email sending failed:', error);
+    console.error('❌ Email sending failed:', error);
     
     // Log failed notification
-    await pool.query(
-      `INSERT INTO email_notifications (user_id, property_id, notification_type, email_subject, email_body, sent_to, status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'failed')`,
-      [user?.id, property?.id, notificationType, subject, html || '', to]
-    );
+    try {
+      await pool.query(
+        `INSERT INTO email_notifications (user_id, property_id, notification_type, email_subject, email_body, sent_to, status)
+         VALUES ($1, $2, $3, $4, $5, $6, 'failed')`,
+        [user?.id, property?.id, notificationType, subject, html || '', to]
+      );
+    } catch (dbError) {
+      console.error('❌ Failed to log email notification to database:', dbError);
+    }
   }
 };
 
@@ -157,6 +167,12 @@ const submitProperty = async (req, res) => {
       epc_rating,
       epcRating, // Alternative field name from frontend
       
+      // NEW FIELDS: Council Tax
+      council_tax_band,
+      councilTaxBand, // Alternative field name from frontend
+      council_tax_status,
+      councilTaxStatus, // Alternative field name from frontend
+      
       // NEW FIELDS: Key Features
       key_features,
       keyFeatures, // Alternative field name from frontend
@@ -206,6 +222,10 @@ const submitProperty = async (req, res) => {
 
     // NEW FIELDS: EPC Rating
     const epc_rating_mapped = epc_rating || epcRating || '';
+    
+    // NEW FIELDS: Council Tax
+    const council_tax_band_mapped = council_tax_band || councilTaxBand || '';
+    const council_tax_status_mapped = council_tax_status || councilTaxStatus || '';
     
     // NEW FIELDS: Key Features
     const key_features_mapped = (() => {
@@ -351,7 +371,8 @@ const submitProperty = async (req, res) => {
       latitude, longitude,
       // NEW FIELDS
       epc_rating_mapped, JSON.stringify(key_features_mapped),
-      layout_file_name_mapped, layout_file_url_mapped, apartment_size_mapped, floor_number_mapped
+      layout_file_name_mapped, layout_file_url_mapped, apartment_size_mapped, floor_number_mapped,
+      council_tax_band_mapped, council_tax_status_mapped
     ];
     
     console.log('Values array position 21 (lease_term):', valuesArray[20]);
@@ -367,11 +388,12 @@ const submitProperty = async (req, res) => {
         student_housing, availability_date, contact_name, contact_phone, contact_email, slug,
         latitude, longitude,
         epc_rating, key_features,
-        layout_file_name, layout_file_url, apartment_size, floor_number
+        layout_file_name, layout_file_url, apartment_size, floor_number,
+        council_tax_band, council_tax_status
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35,
-        $36, $37, $38, $39, $40, $41, $42
+        $36, $37, $38, $39, $40, $41, $42, $43, $44
       ) RETURNING *`,
       valuesArray
     );
@@ -379,37 +401,66 @@ const submitProperty = async (req, res) => {
     const property = propertyResult.rows[0];
 
     // Handle uploaded files from multer
-    if (req.files && req.files.length > 0) {
+    if (req.files) {
       // Ensure uploads directory exists
       const uploadsDir = path.join(__dirname, '..', 'uploads');
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
 
-      for (let i = 0; i < req.files.length; i++) {
-        const file = req.files[i];
-        
-        // Create unique filename
-        const filename = `${property.id}_${i}_${file.originalname}`;
-        const filepath = path.join(uploadsDir, filename);
-        
-        // Save file to disk
-        try {
-          fs.writeFileSync(filepath, file.buffer);
-          console.log(`📁 File saved: ${filename}`);
-        } catch (fileError) {
-          console.error(`❌ Error saving file ${filename}:`, fileError);
-          continue; // Skip this file if save fails
+      // Handle photos
+      if (req.files.photos && req.files.photos.length > 0) {
+        for (let i = 0; i < req.files.photos.length; i++) {
+          const file = req.files.photos[i];
+          
+          // Create unique filename
+          const filename = `${property.id}_photo_${i}_${file.originalname}`;
+          const filepath = path.join(uploadsDir, filename);
+          
+          // Save file to disk
+          try {
+            fs.writeFileSync(filepath, file.buffer);
+            console.log(`📁 Photo saved: ${filename}`);
+          } catch (fileError) {
+            console.error(`❌ Error saving photo ${filename}:`, fileError);
+            continue; // Skip this file if save fails
+          }
+          
+          // Store URL in database
+          const imageUrl = `/uploads/${filename}`;
+          
+          await client.query(
+            `INSERT INTO property_images (property_id, image_url, image_type, image_order, alt_text)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [property.id, imageUrl, file.mimetype.startsWith('video/') ? 'video' : 'image', i, title]
+          );
         }
+      }
+
+      // Handle layout file
+      if (req.files.layoutFile && req.files.layoutFile.length > 0) {
+        const layoutFile = req.files.layoutFile[0];
         
-        // Store URL in database
-        const imageUrl = `/uploads/${filename}`;
+        // Create unique filename for layout file
+        const layoutFilename = `${property.id}_layout_${layoutFile.originalname}`;
+        const layoutFilepath = path.join(uploadsDir, layoutFilename);
         
-        await client.query(
-          `INSERT INTO property_images (property_id, image_url, image_type, image_order, alt_text)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [property.id, imageUrl, file.mimetype.startsWith('video/') ? 'video' : 'image', i, title]
-        );
+        // Save layout file to disk
+        try {
+          fs.writeFileSync(layoutFilepath, layoutFile.buffer);
+          console.log(`📄 Layout file saved: ${layoutFilename}`);
+          
+          // Update property with layout file information
+          const layoutUrl = `/uploads/${layoutFilename}`;
+          await client.query(
+            `UPDATE properties SET layout_file_name = $1, layout_file_url = $2 WHERE id = $3`,
+            [layoutFile.originalname, layoutUrl, property.id]
+          );
+          
+          console.log(`✅ Layout file updated in database: ${layoutFile.originalname}`);
+        } catch (fileError) {
+          console.error(`❌ Error saving layout file ${layoutFilename}:`, fileError);
+        }
       }
     }
 
@@ -1085,6 +1136,12 @@ const updateProperty = async (req, res) => {
       epc_rating,
       epcRating, // Alternative field name from frontend
       
+      // NEW FIELDS: Council Tax
+      council_tax_band,
+      councilTaxBand, // Alternative field name from frontend
+      council_tax_status,
+      councilTaxStatus, // Alternative field name from frontend
+      
       // NEW FIELDS: Key Features
       key_features,
       keyFeatures, // Alternative field name from frontend
@@ -1127,6 +1184,10 @@ const updateProperty = async (req, res) => {
 
     // NEW FIELDS: EPC Rating
     const epc_rating_mapped = epc_rating || epcRating || '';
+    
+    // NEW FIELDS: Council Tax
+    const council_tax_band_mapped = council_tax_band || councilTaxBand || '';
+    const council_tax_status_mapped = council_tax_status || councilTaxStatus || '';
     
     // NEW FIELDS: Key Features
     const key_features_mapped = (() => {
@@ -1199,6 +1260,33 @@ const updateProperty = async (req, res) => {
     console.log('Title:', title);
     console.log('Category:', category_mapped);
     console.log('Property Type:', property_type_mapped);
+    console.log('Council Tax Band:', council_tax_band_mapped);
+    console.log('Council Tax Status:', council_tax_status_mapped);
+    console.log('Bedrooms:', bedrooms_converted, typeof bedrooms_converted);
+    console.log('Bathrooms:', bathrooms_converted, typeof bathrooms_converted);
+
+    // Create parameter array for debugging
+    const params = [
+      title, description || existingProperty.description, category_mapped, property_type_mapped, property_category || existingProperty.property_category,
+      address_line1_mapped, address_line2 || existingProperty.address_line2, city || existingProperty.city, state_mapped, zip_code_mapped, country || existingProperty.country,
+      bedrooms_converted, bathrooms_converted, square_feet || existingProperty.square_feet, lot_size || existingProperty.lot_size, year_built || existingProperty.year_built,
+      price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
+      parking_spaces || existingProperty.parking_spaces, has_garage || existingProperty.has_garage, has_pool || existingProperty.has_pool, 
+      has_garden || existingProperty.has_garden, furnished_mapped, pets_allowed || existingProperty.pets_allowed,
+      student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped,
+      epc_rating_mapped, JSON.stringify(key_features_mapped),
+      layout_file_name_mapped, layout_file_url_mapped, apartment_size_mapped, floor_number_mapped,
+      latitude, longitude,
+      council_tax_band_mapped, council_tax_status_mapped,
+      parseInt(id), parseInt(user_id)
+    ];
+
+    console.log('🔄 PARAMETER DEBUG:');
+    params.forEach((param, index) => {
+      if (typeof param === 'string' && param.length < 50) {
+        console.log(`Param ${index + 1}: ${param} (${typeof param})`);
+      }
+    });
 
     // Update property
     const propertyResult = await client.query(
@@ -1212,8 +1300,9 @@ const updateProperty = async (req, res) => {
         epc_rating = $33, key_features = $34,
         layout_file_name = $35, layout_file_url = $36, apartment_size = $37, floor_number = $38,
         updated_at = CURRENT_TIMESTAMP, status = 'pending',
-        latitude = $39, longitude = $40
-       WHERE id = $41 AND user_id = $42
+        latitude = $39, longitude = $40,
+        council_tax_band = $41, council_tax_status = $42
+       WHERE id = $43 AND user_id = $44
        RETURNING *`,
       [
         title, description || existingProperty.description, category_mapped, property_type_mapped, property_category || existingProperty.property_category,
@@ -1225,8 +1314,9 @@ const updateProperty = async (req, res) => {
         student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped,
         epc_rating_mapped, JSON.stringify(key_features_mapped),
         layout_file_name_mapped, layout_file_url_mapped, apartment_size_mapped, floor_number_mapped,
-        id, user_id,
-        latitude, longitude
+        latitude, longitude,
+        council_tax_band_mapped, council_tax_status_mapped,
+        parseInt(id), parseInt(user_id)
       ]
     );
 
@@ -1324,9 +1414,9 @@ const updateProperty = async (req, res) => {
       }
     }
 
-    // Step 3: Handle uploaded files from multer (add new photos)
-    if (req.files && req.files.length > 0) {
-      console.log('📁 Processing new photo uploads...');
+    // Step 3: Handle uploaded files from multer (add new photos and layout file)
+    if (req.files) {
+      console.log('📁 Processing new file uploads...');
       
       // Ensure uploads directory exists
       const uploadsDir = path.join(__dirname, '..', 'uploads');
@@ -1334,40 +1424,73 @@ const updateProperty = async (req, res) => {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
 
-      // Get current max image_order to append new photos
-      const maxOrderResult = await client.query(
-        'SELECT COALESCE(MAX(image_order), -1) as max_order FROM property_images WHERE property_id = $1',
-        [property.id]
-      );
-      let currentMaxOrder = maxOrderResult.rows[0].max_order;
-
-      for (let i = 0; i < req.files.length; i++) {
-        const file = req.files[i];
+      // Handle new photos
+      if (req.files.photos && req.files.photos.length > 0) {
+        console.log('📁 Processing new photo uploads...');
         
-        // Create unique filename
-        const filename = `${property.id}_${Date.now()}_${i}_${file.originalname}`;
-        const filepath = path.join(uploadsDir, filename);
-        
-        // Save file to disk
-        try {
-          fs.writeFileSync(filepath, file.buffer);
-          console.log(`📁 New file saved: ${filename}`);
-        } catch (fileError) {
-          console.error(`❌ Error saving file ${filename}:`, fileError);
-          continue;
-        }
-        
-        // Store URL in database with proper ordering
-        const imageUrl = `/uploads/${filename}`;
-        const newOrder = currentMaxOrder + 1 + i;
-        
-        await client.query(
-          `INSERT INTO property_images (property_id, image_url, image_type, image_order, alt_text)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [property.id, imageUrl, file.mimetype.startsWith('video/') ? 'video' : 'image', newOrder, title]
+        // Get current max image_order to append new photos
+        const maxOrderResult = await client.query(
+          'SELECT COALESCE(MAX(image_order), -1) as max_order FROM property_images WHERE property_id = $1',
+          [property.id]
         );
+        let currentMaxOrder = maxOrderResult.rows[0].max_order;
+
+        for (let i = 0; i < req.files.photos.length; i++) {
+          const file = req.files.photos[i];
+          
+          // Create unique filename
+          const filename = `${property.id}_${Date.now()}_photo_${i}_${file.originalname}`;
+          const filepath = path.join(uploadsDir, filename);
+          
+          // Save file to disk
+          try {
+            fs.writeFileSync(filepath, file.buffer);
+            console.log(`📁 New photo saved: ${filename}`);
+          } catch (fileError) {
+            console.error(`❌ Error saving photo ${filename}:`, fileError);
+            continue;
+          }
+          
+          // Store URL in database with proper ordering
+          const imageUrl = `/uploads/${filename}`;
+          const newOrder = currentMaxOrder + 1 + i;
+          
+          await client.query(
+            `INSERT INTO property_images (property_id, image_url, image_type, image_order, alt_text)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [property.id, imageUrl, file.mimetype.startsWith('video/') ? 'video' : 'image', newOrder, title]
+          );
+          
+          console.log(`✅ Added new photo to DB: ${imageUrl} (order: ${newOrder})`);
+        }
+      }
+
+      // Handle layout file
+      if (req.files.layoutFile && req.files.layoutFile.length > 0) {
+        console.log('📄 Processing layout file upload...');
         
-        console.log(`✅ Added new photo to DB: ${imageUrl} (order: ${newOrder})`);
+        const layoutFile = req.files.layoutFile[0];
+        
+        // Create unique filename for layout file
+        const layoutFilename = `${property.id}_layout_${Date.now()}_${layoutFile.originalname}`;
+        const layoutFilepath = path.join(uploadsDir, layoutFilename);
+        
+        // Save layout file to disk
+        try {
+          fs.writeFileSync(layoutFilepath, layoutFile.buffer);
+          console.log(`📄 Layout file saved: ${layoutFilename}`);
+          
+          // Update property with layout file information
+          const layoutUrl = `/uploads/${layoutFilename}`;
+          await client.query(
+            `UPDATE properties SET layout_file_name = $1, layout_file_url = $2 WHERE id = $3`,
+            [layoutFile.originalname, layoutUrl, property.id]
+          );
+          
+          console.log(`✅ Layout file updated in database: ${layoutFile.originalname}`);
+        } catch (fileError) {
+          console.error(`❌ Error saving layout file ${layoutFilename}:`, fileError);
+        }
       }
     }
 
@@ -1409,7 +1532,8 @@ const updateProperty = async (req, res) => {
     console.log(`📷 Total photos after update: ${finalPhotoCount.rows[0].total_photos}`);
     console.log(`📷 Photos deleted: ${deletedPhotos ? deletedPhotos.length : 0}`);
     console.log(`📷 Photos kept: ${keptPhotos ? keptPhotos.length : 0}`);
-    console.log(`📷 New photos added: ${req.files ? req.files.length : 0}`);
+    console.log(`📷 New photos added: ${req.files && req.files.photos ? req.files.photos.length : 0}`);
+    console.log(`📷 Layout file uploaded: ${req.files && req.files.layoutFile ? req.files.layoutFile.length : 0}`);
 
     // Insert submission tracking
     await client.query(
@@ -1417,6 +1541,74 @@ const updateProperty = async (req, res) => {
        VALUES ($1, $2, 'edit')`,
       [property.id, user_id]
     );
+
+    // Get user details for email notifications
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [user_id]);
+    const user = userResult.rows[0];
+
+    // Send notification email to user
+    const userEmailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #667eea;">📝 Property Update Submitted</h2>
+        <p>Dear ${user.first_name} ${user.last_name},</p>
+        <p>Your property has been updated and is now pending review.</p>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #667eea; margin-top: 0;">${property.title}</h3>
+          <p><strong>Status:</strong> Pending Review</p>
+          <p><strong>Updated:</strong> ${new Date().toLocaleDateString()}</p>
+          <p><strong>Note:</strong> Since this was an approved property, it will need admin review before being visible again.</p>
+        </div>
+        
+        <p>We'll notify you once the review is complete.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.CLIENT_URL}/dashboard" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">View Dashboard</a>
+        </div>
+        
+        <p>Best regards,<br>Property Management Team</p>
+      </div>
+    `;
+
+    await sendEmailNotification({
+      to: user.email,
+      subject: `Property Update Submitted - ${property.title}`,
+      html: userEmailHtml,
+      property,
+      user,
+      notificationType: 'update_confirm'
+    });
+
+    // Send alert email to admin for edited approved properties
+    if (property.status === 'pending') {
+      const adminEmailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #e74c3c;">🔄 Approved Property Updated</h2>
+          <p>An approved property has been edited and requires review:</p>
+          
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #667eea; margin-top: 0;">${property.title}</h3>
+            <p><strong>Updated by:</strong> ${user.first_name} ${user.last_name} (${user.email})</p>
+            <p><strong>Previous Status:</strong> Approved</p>
+            <p><strong>Current Status:</strong> Pending Review</p>
+            <p><strong>Updated:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.CLIENT_URL}/admin-x9k7m2p5q8" style="background: #e74c3c; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Review Property</a>
+          </div>
+        </div>
+      `;
+
+      await sendEmailNotification({
+        to: process.env.ADMIN_EMAIL || 'admin@property.com',
+        subject: `🔄 Approved Property Updated: ${property.title}`,
+        html: adminEmailHtml,
+        property,
+        user,
+        notificationType: 'admin_update_alert'
+      });
+    }
 
     await client.query('COMMIT');
 

@@ -846,6 +846,7 @@ const AddRent = () => {
         
         // Additional rental fields
         councilTaxBand: formData.councilTaxBand,
+        councilTaxStatus: formData.councilTaxStatus,
         balconyTerrace: formData.balconyTerrace,
         studentHousing: formData.studentHousing,
         epcRating: formData.epcRating,
@@ -1567,7 +1568,7 @@ const AddRent = () => {
                       <div className="file-upload-icon">📄</div>
                       <div className="file-upload-text">
                         <span>Click to upload floor plan</span>
-                        <small>PDF, JPG, PNG • Max 10MB</small>
+                        <small>PDF, JPG, PNG • Max 512MB</small>
                       </div>
                     </div>
                   </label>
@@ -1783,4 +1784,4 @@ const AddRent = () => {
   );
 };
 
-export default AddRent; 
+export default AddRent;

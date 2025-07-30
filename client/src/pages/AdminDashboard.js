@@ -143,9 +143,21 @@ const AdminDashboard = () => {
       if (response.ok) {
         alert(`Property ${reviewData.status} successfully!`);
         setReviewModal({ show: false, property: null });
-        loadDashboardData(); // Refresh data
+        
+        // Update the property status in the local state immediately
+        setProperties(prevProperties => 
+          prevProperties.map(prop => 
+            prop.id === reviewModal.property.id 
+              ? { ...prop, status: reviewData.status }
+              : prop
+          )
+        );
+        
+        // Also refresh the stats
+        loadDashboardData();
       } else {
-        throw new Error(`Failed to update property status`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update property status');
       }
     } catch (error) {
       console.error('Error updating property:', error);

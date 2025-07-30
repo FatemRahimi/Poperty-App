@@ -492,12 +492,110 @@ const PropertyView = () => {
           </div>
 
           {/* Border line after features */}
-          <div style={{ borderTop: '1px solid #e0e0e0', margin: '20px 0', width: '100%' }}></div>
+          <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
 
           <div className="view-property-description" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
             <h3>Description</h3>
             <p>{property.description || 'No description available.'}</p>
           </div>
+
+          {/* Border line after description */}
+          <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
+
+          {/* NEW: Property Information Section */}
+          <div className="property-view-info-section" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            <h3 className="property-view-info-title">Property Information</h3>
+            
+            <div className="property-view-info-grid">
+              {/* Row 1 */}
+              <div className="property-view-info-row">
+                {property.availability_date && (
+                  <div className="property-view-info-item">
+                    <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                    </svg>
+                    <div className="property-view-info-content">
+                      <span className="property-view-info-label">Available From</span>
+                      <span className="property-view-info-value">
+                        {new Date(property.availability_date).toLocaleDateString('en-GB', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                {property.lease_term && (
+                  <div className="property-view-info-item">
+                    <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <div className="property-view-info-content">
+                      <span className="property-view-info-label">Tenancy Length</span>
+                      <span className="property-view-info-value">
+                        {property.lease_term === 'flexible' ? 'Flexible' : `${property.lease_term} months minimum`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Row 2 */}
+              <div className="property-view-info-row">
+                <div className="property-view-info-item">
+                  <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                  <div className="property-view-info-content">
+                    <span className="property-view-info-label">Council Tax Band</span>
+                    <span className="property-view-info-value">
+                      {property.council_tax_band || property.councilTaxBand ? `Band ${property.council_tax_band || property.councilTaxBand}` : 'Not specified'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="property-view-info-item">
+                  <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                  <div className="property-view-info-content">
+                    <span className="property-view-info-label">Council Tax Status</span>
+                    <span className="property-view-info-value">
+                      {(() => {
+                        const status = property.council_tax_status || property.councilTaxStatus;
+                        if (!status) return 'Not specified';
+                        return status === 'included' ? 'Included in rent' :
+                               status === 'exempt' ? 'Exempt' :
+                               status === 'tenant_pays' ? 'Tenant pays' :
+                               status === 'landlord_pays' ? 'Landlord pays' :
+                               status;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 3 */}
+              <div className="property-view-info-row">
+                <div className="property-view-info-item">
+                  <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                  <div className="property-view-info-content">
+                    <span className="property-view-info-label">EPC Rating</span>
+                    <span className="property-view-info-value">
+                      {property.epc_rating || property.epcRating || 'Not specified'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Border line after property information */}
+          <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
 
           <div className="view-property-contact" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
             <h3>Contact Information</h3>

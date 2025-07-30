@@ -99,8 +99,23 @@ const UserDashboard = () => {
       setTimeout(() => {
         setUpdateSuccessMessage('');
       }, 5000);
+      
+      // Refresh dashboard data to show updated status
+      loadDashboardData();
     }
   }, []);
+
+  // Add periodic refresh for admin approval status changes
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      // Only refresh if user is on the dashboard and not actively searching
+      if (!isSearching && activeTab === 'properties') {
+        loadDashboardData();
+      }
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [isSearching, activeTab]);
 
   // Check for tab parameter in URL and set active tab
   useEffect(() => {
