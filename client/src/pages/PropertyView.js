@@ -473,7 +473,7 @@ const PropertyView = () => {
             {property.bathrooms && (
               <div className="view-feature">
                 <i className="fas fa-bath"></i>
-                <span>{property.bathrooms} Bathroom{property.bathrooms !== 1 ? 's' : ''}</span>
+                <span>{Math.floor(property.bathrooms)} Bathroom{Math.floor(property.bathrooms) !== 1 ? 's' : ''}</span>
               </div>
             )}
             {property.square_feet && (
