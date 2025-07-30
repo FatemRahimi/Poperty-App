@@ -113,20 +113,30 @@ const PropertyView = () => {
     console.log('🔍 PropertyView handleBack Debug:', {
       locationState: location.state,
       returnPath: location.state?.returnPath,
+      sessionStoragePath: sessionStorage.getItem('lastDashboardPath'),
       currentUrl: window.location.href,
       pathname: location.pathname,
       search: location.search
     });
 
-    // Use the same pattern as AddRent.js - navigate to returnPath if it exists
+    // Priority 1: Use returnPath from location state (most accurate)
     if (location.state?.returnPath) {
       console.log('✅ Using returnPath from location state:', location.state.returnPath);
       navigate(location.state.returnPath);
-    } else {
-      // Fallback to My Properties tab
-      console.log('⚠️ No returnPath found, navigating to My Properties tab');
-      navigate('/dashboard?tab=properties');
+      return;
     }
+
+    // Priority 2: Use sessionStorage backup
+    const sessionStoragePath = sessionStorage.getItem('lastDashboardPath');
+    if (sessionStoragePath) {
+      console.log('✅ Using sessionStorage backup:', sessionStoragePath);
+      navigate(sessionStoragePath);
+      return;
+    }
+
+    // Priority 3: Always default to My Properties tab (most reliable)
+    console.log('⚠️ No returnPath found, navigating to My Properties tab');
+    navigate('/dashboard?tab=properties');
   };
 
   return (
