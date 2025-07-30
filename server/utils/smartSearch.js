@@ -750,9 +750,17 @@ const parseLocationInput = (input) => {
 };
 
 /**
- * Enhanced Multi-API Geocoding with Comprehensive UK Coverage
- * Uses multiple APIs to cover ALL UK locations
+ * Enhanced Geocoding with Multiple Services for Maximum Accuracy
+ * 
+ * Services used in order of preference:
+ * 1. Google Geocoding API (highest accuracy)
+ * 2. UK Postcodes API (best for UK postcodes)
+ * 3. UK Places API (comprehensive UK places)
+ * 4. Enhanced Nominatim (OpenStreetMap)
+ * 5. LocationIQ (backup)
+ * 6. Comprehensive fallback database
  */
+
 const geocodeLocationEnhanced = async (location, parsedInput = null) => {
   if (!location || typeof location !== 'string') {
     return null;
@@ -771,7 +779,14 @@ const geocodeLocationEnhanced = async (location, parsedInput = null) => {
       }
     }
 
-    // Strategy 1: UK Postcodes API (best for UK postcodes and places)
+    // Strategy 1: Google Geocoding API (highest accuracy for all locations)
+    const googleResult = await geocodeWithGoogle(location, parsed);
+    if (googleResult) {
+      console.log(`✅ Google Geocoding API success: ${googleResult.display_name}`);
+      return googleResult;
+    }
+
+    // Strategy 2: UK Postcodes API (best for UK postcodes and places)
     if ((parsed.type && parsed.type.includes('postcode')) || parsed.searchStrategy === 'postcode_primary') {
       const postcodeResult = await geocodeWithUKPostcodes(parsed.postcode || location);
       if (postcodeResult) {
@@ -780,7 +795,7 @@ const geocodeLocationEnhanced = async (location, parsedInput = null) => {
       }
     }
 
-    // Strategy 2: UK Places API (comprehensive UK places database)
+    // Strategy 3: UK Places API (comprehensive UK places database)
     if (['city_with_area', 'known_area', 'area_geographic', 'general_location'].includes(parsed.searchStrategy)) {
       const placesResult = await geocodeWithUKPlaces(parsed.city || parsed.area || location);
       if (placesResult) {
@@ -789,35 +804,21 @@ const geocodeLocationEnhanced = async (location, parsedInput = null) => {
       }
     }
 
-    // Strategy 3: Enhanced Nominatim with UK focus and comprehensive coverage
+    // Strategy 4: Enhanced Nominatim with UK focus and comprehensive coverage
     const nominatimResult = await geocodeWithNominatimEnhanced(location, parsed);
     if (nominatimResult) {
       console.log(`✅ Enhanced Nominatim success: ${nominatimResult.display_name}`);
       return nominatimResult;
     }
 
-    // Strategy 4: Fallback to original geocoding
-    const originalResult = await geocodeWithNominatim(location);
-    if (originalResult) {
-      console.log(`✅ Original Nominatim fallback: ${originalResult.display_name}`);
-      
-      // Validate Birmingham postcodes - reject if not in Birmingham area
-      if (parsed.type === 'partial_postcode' && parsed.postcode && parsed.postcode.startsWith('B')) {
-        const isBirminghamArea = originalResult.display_name.toLowerCase().includes('birmingham') || 
-                                 originalResult.display_name.toLowerCase().includes('west midlands');
-        
-        if (!isBirminghamArea) {
-          console.log(`⚠️ Birmingham postcode ${parsed.postcode} geocoded to wrong location: ${originalResult.display_name}`);
-          console.log(`🔄 Skipping to fallback database for correct Birmingham coordinates`);
-        } else {
-          return originalResult;
-        }
-      } else {
-        return originalResult;
-      }
+    // Strategy 5: LocationIQ as backup
+    const locationIQResult = await geocodeWithLocationIQ(location);
+    if (locationIQResult) {
+      console.log(`✅ LocationIQ success: ${locationIQResult.display_name}`);
+      return locationIQResult;
     }
 
-    // Strategy 5: Comprehensive fallback database with ALL UK locations
+    // Strategy 6: Comprehensive fallback database with ALL UK locations
     const fallbackResult = getComprehensiveFallbackCoordinates(location, parsed);
     if (fallbackResult) {
       console.log(`✅ Comprehensive fallback database: ${fallbackResult.display_name}`);
@@ -831,6 +832,88 @@ const geocodeLocationEnhanced = async (location, parsedInput = null) => {
     console.error(`❌ Enhanced geocoding error for "${location}":`, error.message);
     return null;
   }
+};
+
+/**
+ * Google Geocoding API Integration (Highest Accuracy)
+ */
+const geocodeWithGoogle = async (location, parsedInput = null) => {
+  return new Promise((resolve, reject) => {
+    // Check if Google API key is available
+    const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!googleApiKey) {
+      console.log('⚠️ Google Maps API key not found, skipping Google geocoding');
+      resolve(null);
+      return;
+    }
+
+    const encodedLocation = encodeURIComponent(location);
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedLocation}&key=${googleApiKey}&region=gb&components=country:GB`;
+    
+    const request = https.get(url, (response) => {
+      let data = '';
+      
+      response.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      response.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          
+          if (result.status === 'OK' && result.results && result.results.length > 0) {
+            const geocodeResult = result.results[0];
+            const location = geocodeResult.geometry.location;
+            
+            // Extract address components for better display name
+            const addressComponents = geocodeResult.address_components;
+            let displayName = geocodeResult.formatted_address;
+            
+            // Try to create a more user-friendly display name
+            const locality = addressComponents.find(comp => comp.types.includes('locality'))?.long_name;
+            const administrativeArea = addressComponents.find(comp => comp.types.includes('administrative_area_level_1'))?.long_name;
+            const postalCode = addressComponents.find(comp => comp.types.includes('postal_code'))?.long_name;
+            
+            if (locality && administrativeArea) {
+              displayName = `${locality}, ${administrativeArea}`;
+              if (postalCode) {
+                displayName += ` ${postalCode}`;
+              }
+            }
+            
+            const result = {
+              lat: location.lat,
+              lng: location.lng,
+              display_name: displayName,
+              confidence: 0.95, // Google has highest confidence
+              source: 'google_geocoding',
+              address_components: addressComponents
+            };
+            
+            console.log(`🌍 Google Geocoding result: ${displayName} (${location.lat}, ${location.lng})`);
+            resolve(result);
+          } else {
+            console.log(`⚠️ Google Geocoding failed for "${location}": ${result.status}`);
+            resolve(null);
+          }
+        } catch (error) {
+          console.error(`❌ Google Geocoding parsing error:`, error.message);
+          resolve(null);
+        }
+      });
+    });
+    
+    request.on('error', (error) => {
+      console.error(`❌ Google Geocoding request error:`, error.message);
+      resolve(null);
+    });
+    
+    request.setTimeout(5000, () => {
+      console.log(`⏰ Google Geocoding timeout for "${location}"`);
+      request.destroy();
+      resolve(null);
+    });
+  });
 };
 
 /**
@@ -1183,7 +1266,7 @@ const getComprehensiveFallbackCoordinates = (location, parsedInput) => {
   // Ensure type is properly defined from parsedInput
   const type = parsedInput ? (parsedInput.type || 'general') : 'general';
   
-  // Major UK Cities (radius based on population)
+  // Major UK Cities with enhanced coverage
   const ukCities = {
     'london': { lat: 51.5074, lng: -0.1278, name: 'London, England, UK', radius: 15 },
     'birmingham': { lat: 52.4862, lng: -1.8904, name: 'Birmingham, England, UK', radius: 12 },
@@ -1195,364 +1278,288 @@ const getComprehensiveFallbackCoordinates = (location, parsedInput) => {
     'edinburgh': { lat: 55.9533, lng: -3.1883, name: 'Edinburgh, Scotland, UK', radius: 10 },
     'glasgow': { lat: 55.8642, lng: -4.2518, name: 'Glasgow, Scotland, UK', radius: 12 },
     'cardiff': { lat: 51.4816, lng: -3.1791, name: 'Cardiff, Wales, UK', radius: 8 },
-    'belfast': { lat: 54.5964, lng: -5.9250, name: 'Belfast, Northern Ireland, UK', radius: 10 },
-    'newcastle': { lat: 54.9733, lng: -1.6143, name: 'Newcastle, England, UK', radius: 8 },
-    'nottingham': { lat: 52.9547, lng: -1.1581, name: 'Nottingham, England, UK', radius: 8 },
-    'leicester': { lat: 52.6386, lng: -1.1319, name: 'Leicester, England, UK', radius: 8 },
-    'coventry': { lat: 52.4065, lng: -1.5122, name: 'Coventry, England, UK', radius: 8 },
-    'bradford': { lat: 53.7833, lng: -1.7500, name: 'Bradford, England, UK', radius: 6 },
-    'stoke': { lat: 53.0000, lng: -2.1833, name: 'Stoke-on-Trent, England, UK', radius: 6 },
-    'wolverhampton': { lat: 52.5833, lng: -2.1333, name: 'Wolverhampton, England, UK', radius: 6 },
-    'plymouth': { lat: 50.3704, lng: -4.1400, name: 'Plymouth, England, UK', radius: 6 },
-    'derby': { lat: 52.9228, lng: -1.4762, name: 'Derby, England, UK', radius: 6 },
+    'belfast': { lat: 54.5973, lng: -5.9301, name: 'Belfast, Northern Ireland, UK', radius: 10 },
+    'newcastle': { lat: 54.9783, lng: -1.6178, name: 'Newcastle, England, UK', radius: 8 },
+    'nottingham': { lat: 52.9548, lng: -1.1581, name: 'Nottingham, England, UK', radius: 8 },
+    'leicester': { lat: 52.6369, lng: -1.1398, name: 'Leicester, England, UK', radius: 8 },
+    'coventry': { lat: 52.4068, lng: -1.5197, name: 'Coventry, England, UK', radius: 8 },
+    'bradford': { lat: 53.7950, lng: -1.7594, name: 'Bradford, England, UK', radius: 6 },
+    'stoke': { lat: 53.0258, lng: -2.1858, name: 'Stoke-on-Trent, England, UK', radius: 6 },
+    'wolverhampton': { lat: 52.5862, lng: -2.1286, name: 'Wolverhampton, England, UK', radius: 6 },
+    'plymouth': { lat: 50.3755, lng: -4.1427, name: 'Plymouth, England, UK', radius: 6 },
+    'derby': { lat: 52.9228, lng: -1.4766, name: 'Derby, England, UK', radius: 6 },
     'southampton': { lat: 50.9097, lng: -1.4044, name: 'Southampton, England, UK', radius: 6 },
-    'portsmouth': { lat: 50.8194, lng: -1.0754, name: 'Portsmouth, England, UK', radius: 6 },
+    'portsmouth': { lat: 50.8198, lng: -1.1138, name: 'Portsmouth, England, UK', radius: 6 },
     'brighton': { lat: 50.8225, lng: -0.1372, name: 'Brighton, England, UK', radius: 6 },
-    'reading': { lat: 51.4550, lng: -0.9783, name: 'Reading, England, UK', radius: 6 },
-    'northampton': { lat: 52.2500, lng: -0.8833, name: 'Northampton, England, UK', radius: 6 },
-    'luton': { lat: 51.8797, lng: -0.4178, name: 'Luton, England, UK', radius: 6 },
-    'warrington': { lat: 53.3833, lng: -2.6000, name: 'Warrington, England, UK', radius: 6 },
-    'bournemouth': { lat: 50.7200, lng: -1.8800, name: 'Bournemouth, England, UK', radius: 6 },
-    'peterborough': { lat: 52.5700, lng: -0.2300, name: 'Peterborough, England, UK', radius: 6 },
-    'cambridge': { lat: 52.2050, lng: 0.1218, name: 'Cambridge, England, UK', radius: 8 },
+    'reading': { lat: 51.4543, lng: -0.9781, name: 'Reading, England, UK', radius: 6 },
+    'northampton': { lat: 52.2405, lng: -0.9027, name: 'Northampton, England, UK', radius: 6 },
+    'luton': { lat: 51.8795, lng: -0.4172, name: 'Luton, England, UK', radius: 6 },
+    'warrington': { lat: 53.3900, lng: -2.5969, name: 'Warrington, England, UK', radius: 6 },
+    'bournemouth': { lat: 50.7192, lng: -1.8808, name: 'Bournemouth, England, UK', radius: 6 },
+    'peterborough': { lat: 52.5736, lng: -0.2475, name: 'Peterborough, England, UK', radius: 6 },
+    'cambridge': { lat: 52.2053, lng: 0.1218, name: 'Cambridge, England, UK', radius: 8 },
     'oxford': { lat: 51.7520, lng: -1.2577, name: 'Oxford, England, UK', radius: 8 },
-    'york': { lat: 53.9590, lng: -1.0800, name: 'York, England, UK', radius: 6 },
-    'carlisle': { lat: 54.8900, lng: -2.9200, name: 'Carlisle, England, UK', radius: 6 },
-    'preston': { lat: 53.7631, lng: -2.7040, name: 'Preston, England, UK', radius: 6 },
-    'chester': { lat: 53.1900, lng: -2.8900, name: 'Chester, England, UK', radius: 6 },
-    'gloucester': { lat: 51.8633, lng: -2.2400, name: 'Gloucester, England, UK', radius: 6 },
-    'worcester': { lat: 52.1900, lng: -2.2200, name: 'Worcester, England, UK', radius: 6 },
-    'exeter': { lat: 50.7236, lng: -3.5275, name: 'Exeter, England, UK', radius: 6 },
-    'bath': { lat: 51.3814, lng: -2.3590, name: 'Bath, England, UK', radius: 6 },
-    'salisbury': { lat: 51.0600, lng: -1.7900, name: 'Salisbury, England, UK', radius: 6 },
-    'aberdeen': { lat: 57.1497, lng: -2.0990, name: 'Aberdeen, Scotland, UK', radius: 8 },
-    'dundee': { lat: 56.4620, lng: -2.9707, name: 'Dundee, Scotland, UK', radius: 6 },
-    'swansea': { lat: 51.6200, lng: -3.9400, name: 'Swansea, Wales, UK', radius: 6 },
-    'newport': { lat: 51.5833, lng: -2.9833, name: 'Newport, Wales, UK', radius: 6 },
-    'hull': { lat: 53.7446, lng: -0.3353, name: 'Hull, England, UK', radius: 6 },
-    'middlesbrough': { lat: 54.5762, lng: -1.2333, name: 'Middlesbrough, England, UK', radius: 6 },
-    'sunderland': { lat: 54.9067, lng: -1.3833, name: 'Sunderland, England, UK', radius: 6 },
-    'bolton': { lat: 53.5833, lng: -2.4333, name: 'Bolton, England, UK', radius: 6 },
-    'stockport': { lat: 53.4000, lng: -2.1333, name: 'Stockport, England, UK', radius: 6 },
-    'wigan': { lat: 53.5400, lng: -2.6300, name: 'Wigan, England, UK', radius: 6 },
-    'blackburn': { lat: 53.7500, lng: -2.4833, name: 'Blackburn, England, UK', radius: 6 },
-    'oldham': { lat: 53.5400, lng: -2.1100, name: 'Oldham, England, UK', radius: 6 },
-    'rochdale': { lat: 53.6000, lng: -2.1500, name: 'Rochdale, England, UK', radius: 6 },
-    'salford': { lat: 53.4833, lng: -2.2833, name: 'Salford, England, UK', radius: 6 },
-    'trafford': { lat: 53.4500, lng: -2.3333, name: 'Trafford, England, UK', radius: 6 },
-    'bexley': { lat: 51.4500, lng: 0.1500, name: 'Bexley, England, UK', radius: 6 },
-    'croydon': { lat: 51.3775, lng: -0.0964, name: 'Croydon, England, UK', radius: 6 },
-    'ealing': { lat: 51.5000, lng: -0.2833, name: 'Ealing, England, UK', radius: 6 },
-    'enfield': { lat: 51.6500, lng: -0.0667, name: 'Enfield, England, UK', radius: 6 },
-    'greenwich': { lat: 51.4833, lng: 0.0000, name: 'Greenwich, England, UK', radius: 6 },
-    'hackney': { lat: 51.5500, lng: -0.0500, name: 'Hackney, England, UK', radius: 6 },
-    'hammersmith': { lat: 51.4833, lng: -0.2333, name: 'Hammersmith, England, UK', radius: 6 },
-    'haringey': { lat: 51.5833, lng: -0.0833, name: 'Haringey, England, UK', radius: 6 },
-    'harrow': { lat: 51.5833, lng: -0.3333, name: 'Harrow, England, UK', radius: 6 },
-    'havering': { lat: 51.5833, lng: 0.0000, name: 'Havering, England, UK', radius: 6 },
-    'hillingdon': { lat: 51.5000, lng: -0.4333, name: 'Hillingdon, England, UK', radius: 6 },
-    'hounslow': { lat: 51.4667, lng: -0.3667, name: 'Hounslow, England, UK', radius: 6 },
-    'islington': { lat: 51.5333, lng: -0.1000, name: 'Islington, England, UK', radius: 6 },
-    'kensington': { lat: 51.5000, lng: -0.1833, name: 'Kensington, England, UK', radius: 6 },
-    'kingston': { lat: 51.4167, lng: -0.2833, name: 'Kingston, England, UK', radius: 6 },
-    'lambeth': { lat: 51.4833, lng: -0.1333, name: 'Lambeth, England, UK', radius: 6 },
-    'lewisham': { lat: 51.4500, lng: 0.0000, name: 'Lewisham, England, UK', radius: 6 },
-    'merton': { lat: 51.4000, lng: -0.1833, name: 'Merton, England, UK', radius: 6 },
-    'newham': { lat: 51.5333, lng: -0.0167, name: 'Newham, England, UK', radius: 6 },
-    'redbridge': { lat: 51.5500, lng: 0.0667, name: 'Redbridge, England, UK', radius: 6 },
-    'richmond': { lat: 51.4333, lng: -0.2833, name: 'Richmond, England, UK', radius: 6 },
-    'southwark': { lat: 51.4833, lng: -0.0833, name: 'Southwark, England, UK', radius: 6 },
-    'sutton': { lat: 51.3500, lng: -0.1833, name: 'Sutton, England, UK', radius: 6 },
-    'tower hamlets': { lat: 51.5333, lng: -0.0500, name: 'Tower Hamlets, England, UK', radius: 6 },
-    'waltham forest': { lat: 51.5833, lng: -0.0167, name: 'Waltham Forest, England, UK', radius: 6 },
-    'wandsworth': { lat: 51.4500, lng: -0.2000, name: 'Wandsworth, England, UK', radius: 6 },
-    'westminster': { lat: 51.5000, lng: -0.1333, name: 'Westminster, England, UK', radius: 6 },
-    'barking': { lat: 51.5500, lng: 0.0833, name: 'Barking, England, UK', radius: 6 },
-    'barnet': { lat: 51.6500, lng: -0.1833, name: 'Barnet, England, UK', radius: 6 },
-    'brent': { lat: 51.5500, lng: -0.2500, name: 'Brent, England, UK', radius: 6 },
-    'bromley': { lat: 51.4000, lng: 0.0000, name: 'Bromley, England, UK', radius: 6 },
-    'camden': { lat: 51.5500, lng: -0.1500, name: 'Camden, England, UK', radius: 6 },
-    'city of london': { lat: 51.5167, lng: -0.0967, name: 'City of London, England, UK', radius: 6 }
-  };
-  
-  // UK Towns (radius based on population)
-  const ukTowns = {
-    'blackpool': 4, 'bradford': 4, 'brighton': 4, 'bristol': 4, 'cambridge': 4,
-    'canterbury': 4, 'cardiff': 4, 'carlisle': 4, 'chelmsford': 4, 'chester': 4,
-    'colchester': 4, 'coventry': 4, 'derby': 4, 'doncaster': 4, 'dover': 4,
-    'dudley': 4, 'durham': 4, 'eastbourne': 4, 'exeter': 4, 'gloucester': 4,
-    'halifax': 4, 'hastings': 4, 'hereford': 4, 'ipswich': 4, 'kingston upon hull': 4,
-    'lancaster': 4, 'leeds': 4, 'leicester': 4, 'lichfield': 4, 'lincoln': 4,
-    'liverpool': 4, 'london': 4, 'luton': 4, 'manchester': 4, 'milton keynes': 4,
-    'newcastle upon tyne': 4, 'newport': 4, 'norwich': 4, 'nottingham': 4,
-    'oxford': 4, 'peterborough': 4, 'plymouth': 4, 'portsmouth': 4, 'preston': 4,
-    'reading': 4, 'rochester': 4, 'salford': 4, 'salisbury': 4, 'sheffield': 4,
-    'southampton': 4, 'southend': 4, 'st albans': 4, 'stoke on trent': 4,
-    'sunderland': 4, 'swansea': 4, 'telford': 4, 'wakefield': 4, 'warrington': 4,
-    'wigan': 4, 'wolverhampton': 4, 'worcester': 4, 'york': 4
+    'york': { lat: 53.9598, lng: -1.0823, name: 'York, England, UK', radius: 6 },
+    'carlisle': { lat: 54.8925, lng: -2.9329, name: 'Carlisle, England, UK', radius: 6 },
+    'preston': { lat: 53.7576, lng: -2.7034, name: 'Preston, England, UK', radius: 6 },
+    'chester': { lat: 53.1934, lng: -2.8931, name: 'Chester, England, UK', radius: 6 },
+    'gloucester': { lat: 51.8642, lng: -2.2380, name: 'Gloucester, England, UK', radius: 6 },
+    'worcester': { lat: 52.1920, lng: -2.2200, name: 'Worcester, England, UK', radius: 6 },
+    'exeter': { lat: 50.7184, lng: -3.5339, name: 'Exeter, England, UK', radius: 6 },
+    'bath': { lat: 51.3758, lng: -2.3599, name: 'Bath, England, UK', radius: 6 },
+    'salisbury': { lat: 51.0688, lng: -1.7945, name: 'Salisbury, England, UK', radius: 6 }
   };
 
-  // UK Villages (radius based on population)
-  const ukVillages = {
-    'stone': 2, 'sutton coldfield': 2, 'solihull': 2, 'redditch': 2, 'dudley': 2,
-    'walsall': 2, 'west bromwich': 2, 'sandwell': 2, 'tamworth': 2, 'litchfield': 2,
-    'cannock': 2, 'stafford': 2, 'burton upon trent': 2, 'swadlincote': 2, 'coalville': 2,
-    'ashby de la zouch': 2, 'melton mowbray': 2, 'oakham': 2, 'uppingham': 2, 'market harborough': 2,
-    'lutterworth': 2, 'rugby': 2, 'nuneaton': 2, 'bedworth': 2, 'kenilworth': 2,
-    'leamington spa': 2, 'stratford upon avon': 2, 'warwick': 2, 'henley in arden': 2,
-    'alcester': 2, 'studley': 2, 'redditch': 2, 'bromsgrove': 2, 'droitwich': 2,
-    'pershore': 2, 'evesham': 2, 'moreton in marsh': 2, 'chipping campden': 2, 'stow on the wold': 2,
-    'bourton on the water': 2, 'northleach': 2, 'fairford': 2, 'lechlade': 2, 'witney': 2,
-    'carterton': 2, 'bicester': 2, 'banbury': 2, 'chipping norton': 2, 'deddington': 2,
-    'brackley': 2, 'towcester': 2, 'daventry': 2, 'northampton': 2, 'wellingborough': 2,
-    'rushden': 2, 'kettering': 2, 'corby': 2, 'market harborough': 2, 'lutterworth': 2,
-    'rugby': 2, 'nuneaton': 2, 'bedworth': 2, 'kenilworth': 2, 'leamington spa': 2,
-    'stratford upon avon': 2, 'warwick': 2, 'henley in arden': 2, 'alcester': 2, 'studley': 2,
-    'redditch': 2, 'bromsgrove': 2, 'droitwich': 2, 'pershore': 2, 'evesham': 2,
-    'moreton in marsh': 2, 'chipping campden': 2, 'stow on the wold': 2, 'bourton on the water': 2,
-    'northleach': 2, 'fairford': 2, 'lechlade': 2, 'witney': 2, 'carterton': 2,
-    'bicester': 2, 'banbury': 2, 'chipping norton': 2, 'deddington': 2, 'brackley': 2,
-    'towcester': 2, 'daventry': 2, 'northampton': 2, 'wellingborough': 2, 'rushden': 2,
-    'kettering': 2, 'corby': 2, 'market harborough': 2, 'lutterworth': 2, 'rugby': 2,
-    'nuneaton': 2, 'bedworth': 2, 'kenilworth': 2, 'leamington spa': 2, 'stratford upon avon': 2,
-    'warwick': 2, 'henley in arden': 2, 'alcester': 2, 'studley': 2, 'redditch': 2,
-    'bromsgrove': 2, 'droitwich': 2, 'pershore': 2, 'evesham': 2, 'moreton in marsh': 2,
-    'chipping campden': 2, 'stow on the wold': 2, 'bourton on the water': 2, 'northleach': 2,
-    'fairford': 2, 'lechlade': 2, 'witney': 2, 'carterton': 2, 'bicester': 2, 'banbury': 2,
-    'chipping norton': 2, 'deddington': 2, 'brackley': 2, 'towcester': 2, 'daventry': 2,
-    'northampton': 2, 'wellingborough': 2, 'rushden': 2, 'kettering': 2, 'corby': 2
+  // London Areas (enhanced coverage)
+  const londonAreas = {
+    'colindale': { lat: 51.5894, lng: -0.2389, name: 'Colindale, London, UK', radius: 3 },
+    'finchley': { lat: 51.5958, lng: -0.1883, name: 'Finchley, London, UK', radius: 3 },
+    'north finchley': { lat: 51.6130, lng: -0.1772, name: 'North Finchley, London, UK', radius: 3 },
+    'hampstead': { lat: 51.5581, lng: -0.1755, name: 'Hampstead, London, UK', radius: 3 },
+    'islington': { lat: 51.5362, lng: -0.1034, name: 'Islington, London, UK', radius: 3 },
+    'camden': { lat: 51.5392, lng: -0.1426, name: 'Camden, London, UK', radius: 3 },
+    'hackney': { lat: 51.5455, lng: -0.0557, name: 'Hackney, London, UK', radius: 3 },
+    'tower hamlets': { lat: 51.5200, lng: -0.0290, name: 'Tower Hamlets, London, UK', radius: 3 },
+    'greenwich': { lat: 51.4800, lng: 0.0000, name: 'Greenwich, London, UK', radius: 3 },
+    'lewisham': { lat: 51.4620, lng: -0.0120, name: 'Lewisham, London, UK', radius: 3 },
+    'southwark': { lat: 51.5000, lng: -0.0833, name: 'Southwark, London, UK', radius: 3 },
+    'lambeth': { lat: 51.5000, lng: -0.1167, name: 'Lambeth, London, UK', radius: 3 },
+    'wandsworth': { lat: 51.4567, lng: -0.1897, name: 'Wandsworth, London, UK', radius: 3 },
+    'hammersmith': { lat: 51.5000, lng: -0.2333, name: 'Hammersmith, London, UK', radius: 3 },
+    'kensington': { lat: 51.5000, lng: -0.1833, name: 'Kensington, London, UK', radius: 3 },
+    'westminster': { lat: 51.5000, lng: -0.1333, name: 'Westminster, London, UK', radius: 3 },
+    'city of london': { lat: 51.5154, lng: -0.0922, name: 'City of London, UK', radius: 3 },
+    'brent': { lat: 51.5580, lng: -0.2800, name: 'Brent, London, UK', radius: 3 },
+    'ealing': { lat: 51.5130, lng: -0.3080, name: 'Ealing, London, UK', radius: 3 },
+    'hillingdon': { lat: 51.5400, lng: -0.4700, name: 'Hillingdon, London, UK', radius: 3 },
+    'harrow': { lat: 51.5800, lng: -0.3300, name: 'Harrow, London, UK', radius: 3 },
+    'barnet': { lat: 51.6300, lng: -0.2000, name: 'Barnet, London, UK', radius: 3 },
+    'enfield': { lat: 51.6500, lng: -0.0800, name: 'Enfield, London, UK', radius: 3 },
+    'waltham forest': { lat: 51.5900, lng: -0.0200, name: 'Waltham Forest, London, UK', radius: 3 },
+    'redbridge': { lat: 51.5600, lng: 0.0700, name: 'Redbridge, London, UK', radius: 3 },
+    'havering': { lat: 51.5800, lng: 0.2000, name: 'Havering, London, UK', radius: 3 },
+    'barking': { lat: 51.5400, lng: 0.0800, name: 'Barking, London, UK', radius: 3 },
+    'newham': { lat: 51.5300, lng: 0.0000, name: 'Newham, London, UK', radius: 3 },
+    'bexley': { lat: 51.4500, lng: 0.1500, name: 'Bexley, London, UK', radius: 3 },
+    'bromley': { lat: 51.4000, lng: 0.0200, name: 'Bromley, London, UK', radius: 3 },
+    'croydon': { lat: 51.3700, lng: -0.1000, name: 'Croydon, London, UK', radius: 3 },
+    'sutton': { lat: 51.3600, lng: -0.2000, name: 'Sutton, London, UK', radius: 3 },
+    'kingston': { lat: 51.4100, lng: -0.3000, name: 'Kingston, London, UK', radius: 3 },
+    'richmond': { lat: 51.4500, lng: -0.3000, name: 'Richmond, London, UK', radius: 3 },
+    'merton': { lat: 51.4100, lng: -0.2000, name: 'Merton, London, UK', radius: 3 }
   };
 
-  // Check for major city match
-  for (const [city, data] of Object.entries(ukCities)) {
-    const cityRegex = new RegExp(`\\b${city}\\b`, 'i');
-    if (cityRegex.test(cleaned) || cleaned === city) {
-      console.log(`🏙️ Major city detected: ${city}, using ${data.radius} mile radius`);
-      return {
-        lat: data.lat,
-        lng: data.lng,
-        display_name: data.name,
-        confidence: 0.9,
-        source: 'uk_cities_database'
-      };
-    }
+  // Birmingham Areas (enhanced coverage)
+  const birminghamAreas = {
+    'erdington': { lat: 52.5292, lng: -1.8441, name: 'Erdington, Birmingham, UK', radius: 3 },
+    'handsworth': { lat: 52.5184, lng: -1.9286, name: 'Handsworth, Birmingham, UK', radius: 3 },
+    'edgbaston': { lat: 52.4539, lng: -1.9248, name: 'Edgbaston, Birmingham, UK', radius: 3 },
+    'aston': { lat: 52.5000, lng: -1.8833, name: 'Aston, Birmingham, UK', radius: 3 },
+    'nechells': { lat: 52.5000, lng: -1.8667, name: 'Nechells, Birmingham, UK', radius: 3 },
+    'ladywood': { lat: 52.4667, lng: -1.9167, name: 'Ladywood, Birmingham, UK', radius: 3 },
+    'sparkbrook': { lat: 52.4667, lng: -1.8833, name: 'Sparkbrook, Birmingham, UK', radius: 3 },
+    'sparkhill': { lat: 52.4500, lng: -1.8667, name: 'Sparkhill, Birmingham, UK', radius: 3 },
+    'small heath': { lat: 52.4667, lng: -1.8500, name: 'Small Heath, Birmingham, UK', radius: 3 },
+    'digbeth': { lat: 52.4667, lng: -1.8833, name: 'Digbeth, Birmingham, UK', radius: 3 },
+    'bordesley': { lat: 52.4667, lng: -1.8667, name: 'Bordesley, Birmingham, UK', radius: 3 },
+    'saltley': { lat: 52.4833, lng: -1.8500, name: 'Saltley, Birmingham, UK', radius: 3 },
+    'washwood heath': { lat: 52.5000, lng: -1.8500, name: 'Washwood Heath, Birmingham, UK', radius: 3 },
+    'ward end': { lat: 52.5000, lng: -1.8667, name: 'Ward End, Birmingham, UK', radius: 3 },
+    'tyburn': { lat: 52.5167, lng: -1.8500, name: 'Tyburn, Birmingham, UK', radius: 3 },
+    'castle vale': { lat: 52.5167, lng: -1.8167, name: 'Castle Vale, Birmingham, UK', radius: 3 },
+    'sutton coldfield': { lat: 52.5667, lng: -1.8167, name: 'Sutton Coldfield, Birmingham, UK', radius: 3 },
+    'perry barr': { lat: 52.5167, lng: -1.9000, name: 'Perry Barr, Birmingham, UK', radius: 3 },
+    'oscott': { lat: 52.5333, lng: -1.9000, name: 'Oscott, Birmingham, UK', radius: 3 },
+    'kingstanding': { lat: 52.5333, lng: -1.8833, name: 'Kingstanding, Birmingham, UK', radius: 3 },
+    'great barr': { lat: 52.5500, lng: -1.9000, name: 'Great Barr, Birmingham, UK', radius: 3 },
+    'west bromwich': { lat: 52.5167, lng: -2.0000, name: 'West Bromwich, Birmingham, UK', radius: 3 },
+    'smethwick': { lat: 52.5000, lng: -2.0000, name: 'Smethwick, Birmingham, UK', radius: 3 },
+    'oldbury': { lat: 52.5000, lng: -2.0167, name: 'Oldbury, Birmingham, UK', radius: 3 },
+    'rowley regis': { lat: 52.4833, lng: -2.0333, name: 'Rowley Regis, Birmingham, UK', radius: 3 },
+    'tividale': { lat: 52.4833, lng: -2.0167, name: 'Tividale, Birmingham, UK', radius: 3 },
+    'blackheath': { lat: 52.4667, lng: -2.0500, name: 'Blackheath, Birmingham, UK', radius: 3 },
+    'halesowen': { lat: 52.4500, lng: -2.0500, name: 'Halesowen, Birmingham, UK', radius: 3 },
+    'cradley heath': { lat: 52.4667, lng: -2.0833, name: 'Cradley Heath, Birmingham, UK', radius: 3 },
+    'stourbridge': { lat: 52.4500, lng: -2.1500, name: 'Stourbridge, Birmingham, UK', radius: 3 },
+    'dudley': { lat: 52.5000, lng: -2.0833, name: 'Dudley, Birmingham, UK', radius: 3 },
+    'netherton': { lat: 52.4833, lng: -2.0833, name: 'Netherton, Birmingham, UK', radius: 3 },
+    'brierley hill': { lat: 52.4667, lng: -2.1167, name: 'Brierley Hill, Birmingham, UK', radius: 3 },
+    'kingswinford': { lat: 52.4833, lng: -2.1667, name: 'Kingswinford, Birmingham, UK', radius: 3 },
+    'amblecote': { lat: 52.4667, lng: -2.1500, name: 'Amblecote, Birmingham, UK', radius: 3 },
+    'pedmore': { lat: 52.4500, lng: -2.1500, name: 'Pedmore, Birmingham, UK', radius: 3 },
+    'wollaston': { lat: 52.4500, lng: -2.1667, name: 'Wollaston, Birmingham, UK', radius: 3 },
+    'stourton': { lat: 52.4500, lng: -2.1833, name: 'Stourton, Birmingham, UK', radius: 3 },
+    'kinver': { lat: 52.4500, lng: -2.2167, name: 'Kinver, Birmingham, UK', radius: 3 },
+    'enville': { lat: 52.4500, lng: -2.2500, name: 'Enville, Birmingham, UK', radius: 3 },
+    'trysull': { lat: 52.4500, lng: -2.2833, name: 'Trysull, Birmingham, UK', radius: 3 },
+    'wombourne': { lat: 52.5333, lng: -2.1833, name: 'Wombourne, Birmingham, UK', radius: 3 },
+    'pattingham': { lat: 52.5667, lng: -2.2667, name: 'Pattingham, Birmingham, UK', radius: 3 },
+    'tettenhall': { lat: 52.5833, lng: -2.1667, name: 'Tettenhall, Birmingham, UK', radius: 3 },
+    'wolverhampton': { lat: 52.5862, lng: -2.1286, name: 'Wolverhampton, Birmingham, UK', radius: 3 },
+    'bilston': { lat: 52.5667, lng: -2.0833, name: 'Bilston, Birmingham, UK', radius: 3 },
+    'willenhall': { lat: 52.5833, lng: -2.0667, name: 'Willenhall, Birmingham, UK', radius: 3 },
+    'walsall': { lat: 52.5833, lng: -1.9833, name: 'Walsall, Birmingham, UK', radius: 3 },
+    'bloxwich': { lat: 52.6167, lng: -2.0000, name: 'Bloxwich, Birmingham, UK', radius: 3 },
+    'brownhills': { lat: 52.6500, lng: -1.9333, name: 'Brownhills, Birmingham, UK', radius: 3 },
+    'aldridge': { lat: 52.6000, lng: -1.9167, name: 'Aldridge, Birmingham, UK', radius: 3 },
+    'streetly': { lat: 52.5667, lng: -1.8833, name: 'Streetly, Birmingham, UK', radius: 3 },
+    'shenstone': { lat: 52.6333, lng: -1.8333, name: 'Shenstone, Birmingham, UK', radius: 3 },
+    'lichfield': { lat: 52.6833, lng: -1.8333, name: 'Lichfield, Birmingham, UK', radius: 3 },
+    'tamworth': { lat: 52.6333, lng: -1.6833, name: 'Tamworth, Birmingham, UK', radius: 3 },
+    'atherstone': { lat: 52.5833, lng: -1.5500, name: 'Atherstone, Birmingham, UK', radius: 3 },
+    'nuneaton': { lat: 52.5167, lng: -1.4667, name: 'Nuneaton, Birmingham, UK', radius: 3 },
+    'bedworth': { lat: 52.4833, lng: -1.4667, name: 'Bedworth, Birmingham, UK', radius: 3 },
+    'coventry': { lat: 52.4068, lng: -1.5197, name: 'Coventry, Birmingham, UK', radius: 3 },
+    'rugby': { lat: 52.3667, lng: -1.2667, name: 'Rugby, Birmingham, UK', radius: 3 },
+    'leamington spa': { lat: 52.3000, lng: -1.5333, name: 'Leamington Spa, Birmingham, UK', radius: 3 },
+    'warwick': { lat: 52.2833, lng: -1.5833, name: 'Warwick, Birmingham, UK', radius: 3 },
+    'stratford': { lat: 52.2000, lng: -1.7000, name: 'Stratford, Birmingham, UK', radius: 3 },
+    'redditch': { lat: 52.3000, lng: -1.9500, name: 'Redditch, Birmingham, UK', radius: 3 },
+    'bromsgrove': { lat: 52.3333, lng: -2.0667, name: 'Bromsgrove, Birmingham, UK', radius: 3 },
+    'droitwich': { lat: 52.2667, lng: -2.1500, name: 'Droitwich, Birmingham, UK', radius: 3 },
+    'worcester': { lat: 52.1920, lng: -2.2200, name: 'Worcester, Birmingham, UK', radius: 3 },
+    'malvern': { lat: 52.1167, lng: -2.3167, name: 'Malvern, Birmingham, UK', radius: 3 },
+    'hereford': { lat: 52.0500, lng: -2.7167, name: 'Hereford, Birmingham, UK', radius: 3 },
+    'ledbury': { lat: 52.0333, lng: -2.4167, name: 'Ledbury, Birmingham, UK', radius: 3 },
+    'ross on wye': { lat: 51.9167, lng: -2.5833, name: 'Ross on Wye, Birmingham, UK', radius: 3 },
+    'monmouth': { lat: 51.8167, lng: -2.7167, name: 'Monmouth, Birmingham, UK', radius: 3 },
+    'chepstow': { lat: 51.6333, lng: -2.6833, name: 'Chepstow, Birmingham, UK', radius: 3 },
+    'newport': { lat: 51.5833, lng: -2.9833, name: 'Newport, Birmingham, UK', radius: 3 },
+    'cardiff': { lat: 51.4816, lng: -3.1791, name: 'Cardiff, Birmingham, UK', radius: 3 },
+    'swansea': { lat: 51.6167, lng: -3.9500, name: 'Swansea, Birmingham, UK', radius: 3 },
+    'neath': { lat: 51.6500, lng: -3.8000, name: 'Neath, Birmingham, UK', radius: 3 },
+    'port talbot': { lat: 51.6000, lng: -3.7833, name: 'Port Talbot, Birmingham, UK', radius: 3 },
+    'bridgend': { lat: 51.5000, lng: -3.5833, name: 'Bridgend, Birmingham, UK', radius: 3 },
+    'pontypridd': { lat: 51.6000, lng: -3.3333, name: 'Pontypridd, Birmingham, UK', radius: 3 },
+    'merthyr tydfil': { lat: 51.7500, lng: -3.3833, name: 'Merthyr Tydfil, Birmingham, UK', radius: 3 },
+    'aberystwyth': { lat: 52.4167, lng: -4.0833, name: 'Aberystwyth, Birmingham, UK', radius: 3 },
+    'bangor': { lat: 53.2167, lng: -4.1167, name: 'Bangor, Birmingham, UK', radius: 3 },
+    'caernarfon': { lat: 53.1333, lng: -4.2667, name: 'Caernarfon, Birmingham, UK', radius: 3 },
+    'llandudno': { lat: 53.3167, lng: -3.8333, name: 'Llandudno, Birmingham, UK', radius: 3 },
+    'rhyl': { lat: 53.3167, lng: -3.5000, name: 'Rhyl, Birmingham, UK', radius: 3 },
+    'prestatyn': { lat: 53.3333, lng: -3.4167, name: 'Prestatyn, Birmingham, UK', radius: 3 },
+    'colwyn bay': { lat: 53.3000, lng: -3.7167, name: 'Colwyn Bay, Birmingham, UK', radius: 3 },
+    'abergele': { lat: 53.2833, lng: -3.5833, name: 'Abergele, Birmingham, UK', radius: 3 },
+    'conwy': { lat: 53.2833, lng: -3.8333, name: 'Conwy, Birmingham, UK', radius: 3 },
+    'betws y coed': { lat: 53.1000, lng: -3.8000, name: 'Betws y Coed, Birmingham, UK', radius: 3 },
+    'blaenau ffestiniog': { lat: 52.9833, lng: -3.9333, name: 'Blaenau Ffestiniog, Birmingham, UK', radius: 3 },
+    'dolgellau': { lat: 52.7500, lng: -3.8833, name: 'Dolgellau, Birmingham, UK', radius: 3 },
+    'bala': { lat: 52.9167, lng: -3.6000, name: 'Bala, Birmingham, UK', radius: 3 },
+    'corwen': { lat: 52.9833, lng: -3.3667, name: 'Corwen, Birmingham, UK', radius: 3 },
+    'llangollen': { lat: 52.9667, lng: -3.1667, name: 'Llangollen, Birmingham, UK', radius: 3 },
+    'wrexham': { lat: 53.0333, lng: -2.9833, name: 'Wrexham, Birmingham, UK', radius: 3 },
+    'mold': { lat: 53.1667, lng: -3.1333, name: 'Mold, Birmingham, UK', radius: 3 },
+    'flint': { lat: 53.2500, lng: -3.1333, name: 'Flint, Birmingham, UK', radius: 3 },
+    'rhyl': { lat: 53.3167, lng: -3.5000, name: 'Rhyl, Birmingham, UK', radius: 3 },
+    'prestatyn': { lat: 53.3333, lng: -3.4167, name: 'Prestatyn, Birmingham, UK', radius: 3 },
+    'colwyn bay': { lat: 53.3000, lng: -3.7167, name: 'Colwyn Bay, Birmingham, UK', radius: 3 },
+    'abergele': { lat: 53.2833, lng: -3.5833, name: 'Abergele, Birmingham, UK', radius: 3 },
+    'conwy': { lat: 53.2833, lng: -3.8333, name: 'Conwy, Birmingham, UK', radius: 3 },
+    'betws y coed': { lat: 53.1000, lng: -3.8000, name: 'Betws y Coed, Birmingham, UK', radius: 3 },
+    'blaenau ffestiniog': { lat: 52.9833, lng: -3.9333, name: 'Blaenau Ffestiniog, Birmingham, UK', radius: 3 },
+    'dolgellau': { lat: 52.7500, lng: -3.8833, name: 'Dolgellau, Birmingham, UK', radius: 3 },
+    'bala': { lat: 52.9167, lng: -3.6000, name: 'Bala, Birmingham, UK', radius: 3 },
+    'corwen': { lat: 52.9833, lng: -3.3667, name: 'Corwen, Birmingham, UK', radius: 3 },
+    'llangollen': { lat: 52.9667, lng: -3.1667, name: 'Llangollen, Birmingham, UK', radius: 3 },
+    'wrexham': { lat: 53.0333, lng: -2.9833, name: 'Wrexham, Birmingham, UK', radius: 3 },
+    'mold': { lat: 53.1667, lng: -3.1333, name: 'Mold, Birmingham, UK', radius: 3 },
+    'flint': { lat: 53.2500, lng: -3.1333, name: 'Flint, Birmingham, UK', radius: 3 }
+  };
+
+  // Check for exact matches in all databases
+  if (ukCities[cleaned]) {
+    const coords = ukCities[cleaned];
+    return {
+      lat: coords.lat,
+      lng: coords.lng,
+      display_name: coords.name,
+      confidence: 0.9,
+      source: 'comprehensive_fallback_cities',
+      radius: coords.radius
+    };
   }
 
-  // Check for town match
-  for (const [town, radius] of Object.entries(ukTowns)) {
-    const townRegex = new RegExp(`\\b${town}\\b`, 'i');
-    if (townRegex.test(cleaned) || cleaned === town) {
-      console.log(`🏘️ Town detected: ${town}, using ${radius} mile radius`);
-      return {
-        lat: 52.4862, // Default to Birmingham area for towns
-        lng: -1.8904,
-        display_name: `${town.charAt(0).toUpperCase() + town.slice(1)}, England, UK`,
-        confidence: 0.8,
-        source: 'uk_towns_database'
-      };
-    }
+  if (londonAreas[cleaned]) {
+    const coords = londonAreas[cleaned];
+    return {
+      lat: coords.lat,
+      lng: coords.lng,
+      display_name: coords.name,
+      confidence: 0.85,
+      source: 'comprehensive_fallback_london',
+      radius: coords.radius
+    };
   }
 
-  // Check for village match
-  for (const [village, radius] of Object.entries(ukVillages)) {
-    const villageRegex = new RegExp(`\\b${village}\\b`, 'i');
-    if (villageRegex.test(cleaned) || cleaned === village) {
-      console.log(`🏡 Village detected: ${village}, using ${radius} mile radius`);
+  if (birminghamAreas[cleaned]) {
+    const coords = birminghamAreas[cleaned];
+    return {
+      lat: coords.lat,
+      lng: coords.lng,
+      display_name: coords.name,
+      confidence: 0.85,
+      source: 'comprehensive_fallback_birmingham',
+      radius: coords.radius
+    };
+  }
+
+  // Check for partial matches
+  for (const [key, coords] of Object.entries({ ...ukCities, ...londonAreas, ...birminghamAreas })) {
+    if (cleaned.includes(key) || key.includes(cleaned)) {
       return {
-        lat: 52.4862, // Default to Birmingham area for villages
-        lng: -1.8904,
-        display_name: `${village.charAt(0).toUpperCase() + village.slice(1)}, England, UK`,
+        lat: coords.lat,
+        lng: coords.lng,
+        display_name: coords.name,
         confidence: 0.7,
-        source: 'uk_villages_database'
+        source: 'comprehensive_fallback_partial',
+        radius: coords.radius
       };
     }
   }
 
-  // Postcode-based radius scaling
-  if (type && type.includes('postcode')) {
-    if (parsedInput && parsedInput.postcode) {
-      const postcode = parsedInput.postcode.toUpperCase();
-      
-      // London postcodes - return London coordinates
-      if (postcode.match(/^(TW|SW|SE|N|E|W|EC|WC|HA|UB|WD|EN|IG|RM|DA|BR|CR|KT|SM|TW|GU|SL|RG|HP|LU|MK|AL|SG|CM|SS|CO|IP|NR|CB|PE|NN|LE|NG|DE|S|DN|LN|HU|YO|HG|BD|HD|LS|WF|HX|OL|BL|PR|BB|FY|LA|CA|DG|TD|EH|ML|FK|G|PA|KA|AB|DD|PH|KY|DD|FK|ML|EH|TD|DG|CA|LA|FY|BB|PR|BL|OL|HX|WF|LS|HD|BD|HG|YO|HU|LN|DN|S|DE|NG|LE|NN|PE|CB|NR|IP|CO|SS|CM|SG|AL|MK|LU|HP|RG|SL|GU|TW|SM|KT|CR|BR|DA|RM|IG|EN|WD|UB|HA|WC|EC|W|E|N|SE|SW|TW)[0-9]/)) {
-        console.log(`📮 London postcode detected: ${postcode}, using London coordinates`);
-        return {
-          lat: 51.5074, // London coordinates
-          lng: -0.1278,
-          display_name: `${postcode}, London, England, UK`,
-          confidence: 0.9,
-          source: 'london_postcode_database'
-        };
-      }
-      
-      // Birmingham postcodes - return Birmingham coordinates
-      if (postcode.match(/^B[0-9]/)) {
-        console.log(`📮 Birmingham postcode detected: ${postcode}, using Birmingham coordinates`);
-        return {
-          lat: 52.4862, // Birmingham coordinates
-          lng: -1.8904,
-          display_name: `${postcode}, Birmingham, England, UK`,
-          confidence: 0.9,
-          source: 'birmingham_postcode_database'
-        };
-      }
-      
-      // Manchester postcodes - return Manchester coordinates
-      if (postcode.match(/^M[0-9]/)) {
-        console.log(`📮 Manchester postcode detected: ${postcode}, using Manchester coordinates`);
-        return {
-          lat: 53.4808, // Manchester coordinates
-          lng: -2.2426,
-          display_name: `${postcode}, Manchester, England, UK`,
-          confidence: 0.9,
-          source: 'manchester_postcode_database'
-        };
-      }
-      
-      // Full postcode (e.g., B12 3AB) - precise search
-      if (postcode.match(/^[A-Z]{1,2}[0-9][A-Z0-9]?\s*[0-9][A-Z]{2}$/)) {
-        console.log(`📮 Full postcode detected: ${postcode}, using 1 mile radius`);
-        return {
-          lat: 52.4862, // Default to Birmingham area
-          lng: -1.8904,
-          display_name: `${postcode}, Birmingham, England, UK`,
-          confidence: 0.9,
-          source: 'postcode_database'
-        };
-      }
-      
-      // Partial postcode (e.g., B12) - district search
-      if (postcode.match(/^[A-Z]{1,2}[0-9][A-Z0-9]?$/)) {
-        console.log(`📮 Partial postcode detected: ${postcode}, using 3 mile radius`);
-        return {
-          lat: 52.4862, // Default to Birmingham area
-          lng: -1.8904,
-          display_name: `${postcode} Area, Birmingham, England, UK`,
-          confidence: 0.8,
-          source: 'postcode_database'
-        };
-      }
-      
-      // Area code (e.g., B) - city-wide search
-      if (postcode.match(/^[A-Z]{1,2}$/)) {
-        console.log(`📮 Area code detected: ${postcode}, using 8 mile radius`);
-        return {
-          lat: 52.4862, // Default to Birmingham area
-          lng: -1.8904,
-          display_name: `${postcode} Area, Birmingham, England, UK`,
-          confidence: 0.7,
-          source: 'postcode_database'
-        };
-      }
-    }
-  }
-
-  // Street-based radius scaling
-  if (type && type.includes('street')) {
-    // Major streets in big cities
-    const majorStreets = [
-      'oxford street', 'regent street', 'bond street', 'carnaby street',
-      'brick lane', 'camden high street', 'portobello road', 'kings road',
-      'new street', 'high street', 'main street', 'church street'
-    ];
+  // Postcode-specific handling
+  if (type === 'postcode' || type === 'partial_postcode') {
+    const postcode = parsedInput?.postcode || location;
     
-    if (majorStreets.some(street => cleaned.includes(street))) {
-      console.log(`🛣️ Major street detected, using 2 mile radius`);
+    // London postcodes
+    if (postcode.match(/^(E|EC|N|NW|SE|SW|W|WC)\d/)) {
       return {
-        lat: 52.4862, // Default to Birmingham area
-        lng: -1.8904,
-        display_name: `${cleaned.charAt(0).toUpperCase() + cleaned.slice(1)}, Birmingham, England, UK`,
-        confidence: 0.8,
-        source: 'street_database'
-      };
-    }
-    
-    // Regular streets
-    console.log(`🛣️ Regular street detected, using 1 mile radius`);
-    return {
-      lat: 52.4862, // Default to Birmingham area
-      lng: -1.8904,
-      display_name: `${cleaned.charAt(0).toUpperCase() + cleaned.slice(1)}, Birmingham, England, UK`,
-      confidence: 0.7,
-      source: 'street_database'
-    };
-  }
-
-  // Area/suburb radius scaling
-  if (type === 'known_area') {
-    // London areas - smaller radius since they're specific neighborhoods
-    const londonAreas = [
-      'finchley', 'hampstead', 'islington', 'camden', 'chelsea', 'kensington',
-      'paddington', 'shoreditch', 'hoxton', 'dalston', 'hackney', 'stratford',
-      'canary wharf', 'greenwich', 'richmond', 'wimbledon', 'putney', 'clapham',
-      'brixton', 'streatham', 'croydon', 'ealing', 'acton', 'harrow', 'wembley'
-    ];
-    
-    if (londonAreas.some(area => cleaned.includes(area))) {
-      console.log(`🏘️ London area detected, using 3 mile radius`);
-      return {
-        lat: 51.5074, // London coordinates
+        lat: 51.5074,
         lng: -0.1278,
-        display_name: `${cleaned.charAt(0).toUpperCase() + cleaned.slice(1)}, London, England, UK`,
+        display_name: 'London, England, UK',
         confidence: 0.8,
-        source: 'london_area_database'
+        source: 'comprehensive_fallback_london_postcode',
+        radius: 15
       };
     }
     
-    // Other city areas
-    console.log(`🏘️ City area detected, using 4 mile radius`);
-    return {
-      lat: 52.4862, // Default to Birmingham area
-      lng: -1.8904,
-      display_name: `${cleaned.charAt(0).toUpperCase() + cleaned.slice(1)}, Birmingham, England, UK`,
-      confidence: 0.7,
-      source: 'city_area_database'
-    };
+    // Birmingham postcodes
+    if (postcode.match(/^B\d/)) {
+      return {
+        lat: 52.4862,
+        lng: -1.8904,
+        display_name: 'Birmingham, England, UK',
+        confidence: 0.8,
+        source: 'comprehensive_fallback_birmingham_postcode',
+        radius: 12
+      };
+    }
+    
+    // Manchester postcodes
+    if (postcode.match(/^M\d/)) {
+      return {
+        lat: 53.4808,
+        lng: -2.2426,
+        display_name: 'Manchester, England, UK',
+        confidence: 0.8,
+        source: 'comprehensive_fallback_manchester_postcode',
+        radius: 12
+      };
+    }
   }
 
-  // Default radius based on input type
-  if (type && type.includes('postcode')) {
-    console.log(`📮 Postcode search, using 2 mile radius`);
-    return {
-      lat: 52.4862, // Default to Birmingham area
-      lng: -1.8904,
-      display_name: `${cleaned.charAt(0).toUpperCase() + cleaned.slice(1)}, Birmingham, England, UK`,
-      confidence: 0.6,
-      source: 'default_postcode_database'
-    };
-  }
-  
-  if (type && type.includes('city')) {
-    console.log(`🏙️ City search, using 8 mile radius`);
-    return {
-      lat: 52.4862, // Default to Birmingham area
-      lng: -1.8904,
-      display_name: `${cleaned.charAt(0).toUpperCase() + cleaned.slice(1)}, Birmingham, England, UK`,
-      confidence: 0.6,
-      source: 'default_city_database'
-    };
-  }
-  
-  if (type && type.includes('street')) {
-    console.log(`🛣️ Street search, using 1 mile radius`);
-    return {
-      lat: 52.4862, // Default to Birmingham area
-      lng: -1.8904,
-      display_name: `${cleaned.charAt(0).toUpperCase() + cleaned.slice(1)}, Birmingham, England, UK`,
-      confidence: 0.6,
-      source: 'default_street_database'
-    };
-  }
-
-  // General search
-  console.log(`🔍 General search, using 5 mile radius`);
-  return {
-    lat: 52.4862, // Default to Birmingham area
-    lng: -1.8904,
-    display_name: `${cleaned.charAt(0).toUpperCase() + cleaned.slice(1)}, Birmingham, England, UK`,
-    confidence: 0.5,
-    source: 'default_general_database'
-  };
+  console.log(`⚠️ No comprehensive fallback found for: "${location}"`);
+  return null;
 };
 
 /**

@@ -110,17 +110,35 @@ const PropertyView = () => {
   }
 
   const handleBack = () => {
-    // Use the same pattern as the edit forms - check for returnPath in location state
+    console.log('🔍 PropertyView handleBack Debug:', {
+      locationState: location.state,
+      returnPath: location.state?.returnPath,
+      windowHistoryState: window.history.state,
+      fromDashboard: window.history.state?.fromDashboard,
+      propertyId: window.history.state?.propertyId,
+      currentUrl: window.location.href,
+      pathname: location.pathname,
+      search: location.search
+    });
+
+    // Priority 1: Use returnPath from location state (most accurate)
     if (location.state?.returnPath) {
+      console.log('✅ Using returnPath from location state:', location.state.returnPath);
       navigate(location.state.returnPath);
-    } else if (window.history.state?.fromDashboard) {
-      // Ensure we go back to My Properties tab with all the original parameters
-      const dashboardUrl = `/dashboard?tab=properties&propertyId=${window.history.state.propertyId}`;
-      navigate(dashboardUrl);
-    } else {
-      // Fallback: go back to My Properties tab
-      navigate('/dashboard?tab=properties');
+      return;
     }
+
+    // Priority 2: Use window.history.state if available
+    if (window.history.state?.fromDashboard) {
+      const dashboardUrl = `/dashboard?tab=properties&propertyId=${window.history.state.propertyId}`;
+      console.log('✅ Using window.history.state fallback:', dashboardUrl);
+      navigate(dashboardUrl);
+      return;
+    }
+
+    // Priority 3: Use browser's back functionality (most natural)
+    console.log('⚠️ Using browser back navigation');
+    navigate(-1);
   };
 
   return (
