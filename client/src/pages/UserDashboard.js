@@ -109,8 +109,8 @@ const UserDashboard = () => {
     
     if (tabParam === 'properties') {
       setActiveTab('properties');
-      // Clear the URL parameter to keep URL clean
-      window.history.replaceState({}, '', '/dashboard');
+      // Don't clear the URL parameter - keep it for returnPath functionality
+      // window.history.replaceState({}, '', '/dashboard');
     }
   }, []);
 
