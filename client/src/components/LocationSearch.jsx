@@ -518,13 +518,7 @@ const LocationSearch = ({
         )}
         
         {/* Loading indicator */}
-        {isLoadingSuggestions && searchQuery.length >= 3 && (
-          <div className="location-suggestions">
-            <div className="suggestion-item loading">
-              <span className="suggestion-text">Loading suggestions...</span>
-            </div>
-          </div>
-        )}
+        {/* Removed loading suggestions message as requested */}
       </div>
 
       {/* Radius Dropdown - Only shown for non-city searches */}
