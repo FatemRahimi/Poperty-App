@@ -24,15 +24,17 @@ const storage = multer.memoryStorage(); // Store files in memory for processing
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 1024 * 1024 * 1024, // 1GB limit per file (increased from 100MB)
+    fileSize: 512 * 1024 * 1024, // 512MB limit per file (increased from 1GB)
     files: 15 // Maximum 15 files (increased from 10)
   },
   fileFilter: (req, file, cb) => {
-    // Accept images and videos
-    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+    // Accept images, videos, and PDF files
+    if (file.mimetype.startsWith('image/') || 
+        file.mimetype.startsWith('video/') || 
+        file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error('Only image and video files are allowed'), false);
+      cb(new Error('Only image, video, and PDF files are allowed'), false);
     }
   }
 });
@@ -43,7 +45,7 @@ const handleMulterError = (err, req, res, next) => {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         success: false,
-        message: 'File too large. Maximum file size is 1GB per file.'
+        message: 'File too large. Maximum file size is 512MB per file.'
       });
     }
     if (err.code === 'LIMIT_FILE_COUNT') {
@@ -98,8 +100,14 @@ const requireAdmin = (req, res, next) => {
 
 // Property submission routes (protected - user must be authenticated)
 // Use multer to handle FormData with file uploads
-router.post('/submit', authenticateJWT, upload.array('photos', 15), handleMulterError, submitProperty);
-router.put('/update/:id', authenticateJWT, upload.array('photos', 15), handleMulterError, updateProperty);
+router.post('/submit', authenticateJWT, upload.fields([
+  { name: 'photos', maxCount: 15 },
+  { name: 'layoutFile', maxCount: 1 }
+]), handleMulterError, submitProperty);
+router.put('/update/:id', authenticateJWT, upload.fields([
+  { name: 'photos', maxCount: 15 },
+  { name: 'layoutFile', maxCount: 1 }
+]), handleMulterError, updateProperty);
 router.get('/my-properties', authenticateJWT, getUserProperties);
 router.delete('/:id', authenticateJWT, deleteProperty);
 
