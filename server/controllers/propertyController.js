@@ -151,7 +151,25 @@ const submitProperty = async (req, res) => {
       contact_email, 
       contactEmail, // Alternative field name from frontend
       amenities = [], 
-      images = []
+      images = [],
+      
+      // NEW FIELDS: EPC Rating
+      epc_rating,
+      epcRating, // Alternative field name from frontend
+      
+      // NEW FIELDS: Key Features
+      key_features,
+      keyFeatures, // Alternative field name from frontend
+      
+      // NEW FIELDS: Layout of Property
+      layout_file_name,
+      layoutFileName, // Alternative field name from frontend
+      layout_file_url,
+      layoutFileUrl, // Alternative field name from frontend
+      apartment_size,
+      apartmentSize, // Alternative field name from frontend
+      floor_number,
+      floorNumber // Alternative field name from frontend
     } = req.body;
 
     // Map frontend field names to backend field names
@@ -185,6 +203,34 @@ const submitProperty = async (req, res) => {
     const contact_name_mapped = contact_name || contactName;
     const contact_phone_mapped = contact_phone || contactPhone;
     const contact_email_mapped = contact_email || contactEmail || req.user?.email;
+
+    // NEW FIELDS: EPC Rating
+    const epc_rating_mapped = epc_rating || epcRating || '';
+    
+    // NEW FIELDS: Key Features
+    const key_features_mapped = (() => {
+      try {
+        if (key_features || keyFeatures) {
+          if (typeof (key_features || keyFeatures) === 'string') {
+            return JSON.parse(key_features || keyFeatures);
+          } else if (Array.isArray(key_features || keyFeatures)) {
+            return key_features || keyFeatures;
+          } else if (typeof (key_features || keyFeatures) === 'object') {
+            return key_features || keyFeatures;
+          }
+        }
+        return [];
+      } catch (error) {
+        console.warn('Failed to parse key_features:', error);
+        return [];
+      }
+    })();
+    
+    // NEW FIELDS: Layout of Property
+    const layout_file_name_mapped = layout_file_name || layoutFileName || '';
+    const layout_file_url_mapped = layout_file_url || layoutFileUrl || '';
+    const apartment_size_mapped = apartment_size || apartmentSize || '';
+    const floor_number_mapped = floor_number || floorNumber || '';
 
     // Data conversion for numeric fields
     const convertBathrooms = (bathrooms) => {
@@ -302,7 +348,10 @@ const submitProperty = async (req, res) => {
       parking_spaces || 0, has_garage || false, has_pool || false, 
       has_garden || false, furnished_mapped || false, pets_allowed || false,
       student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, slug,
-      latitude, longitude
+      latitude, longitude,
+      // NEW FIELDS
+      epc_rating_mapped, JSON.stringify(key_features_mapped),
+      layout_file_name_mapped, layout_file_url_mapped, apartment_size_mapped, floor_number_mapped
     ];
     
     console.log('Values array position 21 (lease_term):', valuesArray[20]);
@@ -316,10 +365,13 @@ const submitProperty = async (req, res) => {
         price, weekly_rent, monthly_rent, lease_term, deposit_amount,
         parking_spaces, has_garage, has_pool, has_garden, furnished, pets_allowed,
         student_housing, availability_date, contact_name, contact_phone, contact_email, slug,
-        latitude, longitude
+        latitude, longitude,
+        epc_rating, key_features,
+        layout_file_name, layout_file_url, apartment_size, floor_number
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-        $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35
+        $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35,
+        $36, $37, $38, $39, $40, $41, $42
       ) RETURNING *`,
       valuesArray
     );
@@ -1027,7 +1079,25 @@ const updateProperty = async (req, res) => {
       contact_email, 
       contactEmail, // Alternative field name from frontend
       amenities = [], 
-      images = []
+      images = [],
+      
+      // NEW FIELDS: EPC Rating
+      epc_rating,
+      epcRating, // Alternative field name from frontend
+      
+      // NEW FIELDS: Key Features
+      key_features,
+      keyFeatures, // Alternative field name from frontend
+      
+      // NEW FIELDS: Layout of Property
+      layout_file_name,
+      layoutFileName, // Alternative field name from frontend
+      layout_file_url,
+      layoutFileUrl, // Alternative field name from frontend
+      apartment_size,
+      apartmentSize, // Alternative field name from frontend
+      floor_number,
+      floorNumber // Alternative field name from frontend
     } = req.body;
 
     // Map frontend field names to backend field names
@@ -1054,6 +1124,34 @@ const updateProperty = async (req, res) => {
     const contact_name_mapped = contact_name || contactName || existingProperty.contact_name;
     const contact_phone_mapped = contact_phone || contactPhone || existingProperty.contact_phone;
     const contact_email_mapped = contact_email || contactEmail || existingProperty.contact_email;
+
+    // NEW FIELDS: EPC Rating
+    const epc_rating_mapped = epc_rating || epcRating || '';
+    
+    // NEW FIELDS: Key Features
+    const key_features_mapped = (() => {
+      try {
+        if (key_features || keyFeatures) {
+          if (typeof (key_features || keyFeatures) === 'string') {
+            return JSON.parse(key_features || keyFeatures);
+          } else if (Array.isArray(key_features || keyFeatures)) {
+            return key_features || keyFeatures;
+          } else if (typeof (key_features || keyFeatures) === 'object') {
+            return key_features || keyFeatures;
+          }
+        }
+        return [];
+      } catch (error) {
+        console.warn('Failed to parse key_features:', error);
+        return [];
+      }
+    })();
+    
+    // NEW FIELDS: Layout of Property
+    const layout_file_name_mapped = layout_file_name || layoutFileName || '';
+    const layout_file_url_mapped = layout_file_url || layoutFileUrl || '';
+    const apartment_size_mapped = apartment_size || apartmentSize || '';
+    const floor_number_mapped = floor_number || floorNumber || '';
 
     // Geocode location for all properties
     let latitude = null;
@@ -1111,9 +1209,11 @@ const updateProperty = async (req, res) => {
         price = $17, weekly_rent = $18, monthly_rent = $19, lease_term = $20, deposit_amount = $21,
         parking_spaces = $22, has_garage = $23, has_pool = $24, has_garden = $25, furnished = $26, pets_allowed = $27,
         student_housing = $28, availability_date = $29, contact_name = $30, contact_phone = $31, contact_email = $32,
+        epc_rating = $33, key_features = $34,
+        layout_file_name = $35, layout_file_url = $36, apartment_size = $37, floor_number = $38,
         updated_at = CURRENT_TIMESTAMP, status = 'pending',
-        latitude = $35, longitude = $36
-       WHERE id = $33 AND user_id = $34
+        latitude = $39, longitude = $40
+       WHERE id = $41 AND user_id = $42
        RETURNING *`,
       [
         title, description || existingProperty.description, category_mapped, property_type_mapped, property_category || existingProperty.property_category,
@@ -1123,6 +1223,8 @@ const updateProperty = async (req, res) => {
         parking_spaces || existingProperty.parking_spaces, has_garage || existingProperty.has_garage, has_pool || existingProperty.has_pool, 
         has_garden || existingProperty.has_garden, furnished_mapped, pets_allowed || existingProperty.pets_allowed,
         student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped,
+        epc_rating_mapped, JSON.stringify(key_features_mapped),
+        layout_file_name_mapped, layout_file_url_mapped, apartment_size_mapped, floor_number_mapped,
         id, user_id,
         latitude, longitude
       ]

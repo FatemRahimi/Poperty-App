@@ -99,15 +99,26 @@ CREATE TABLE IF NOT EXISTS properties (
   contact_phone VARCHAR(20),
   contact_email VARCHAR(255),
   
-  -- SEO and metadata
+  -- NEW FIELDS: EPC Rating
+  epc_rating VARCHAR(10),
+  
+  -- NEW FIELDS: Key Features
+  key_features JSONB,
+  
+  -- NEW FIELDS: Layout of Property
+  layout_file_name VARCHAR(255),
+  layout_file_url TEXT,
+  apartment_size VARCHAR(50),
+  floor_number VARCHAR(50),
+  
+  -- Metadata
   slug VARCHAR(255) UNIQUE,
   meta_keywords TEXT,
-  
-  -- Timestamps
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   approved_at TIMESTAMP,
-  approved_by INTEGER REFERENCES users(id)
+  approved_by INTEGER REFERENCES users(id),
+  student_housing BOOLEAN DEFAULT false
 );
 
 -- Property images table
