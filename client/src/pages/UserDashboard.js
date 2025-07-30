@@ -556,7 +556,7 @@ const UserDashboard = () => {
         return;
       }
 
-      // Show brief loading for UX (instant search is so fast we barely see it)
+      // Show loading for search UX
       setIsRadiusFiltering(true);
       
       // Use fast dashboard search (no external API calls!)
@@ -564,14 +564,14 @@ const UserDashboard = () => {
       const locationFiltered = filterDashboardProperties(categoryFilteredProperties, searchQuery, radius);
       setRadiusFilteredProperties(locationFiltered);
       
-      // Hide loading immediately (search is instant)
+      // Hide loading after search completes
       setTimeout(() => setIsRadiusFiltering(false), 100);
     };
 
     // For category/status changes: Apply immediately (no debounce)
-    // For search text changes: Apply with minimal debounce
+    // For search text changes: Apply with proper debounce to wait for user to finish typing
     const isTextSearch = searchQuery && searchQuery.trim();
-    const debounceTime = isTextSearch ? 50 : 0; // Minimal debounce for typing, instant for category changes
+    const debounceTime = isTextSearch ? 500 : 0; // Wait 800ms for user to finish typing
 
     const timeoutId = setTimeout(() => {
       applyLocationFilter();
