@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { socket } from '../socket';
 import SearchFilterHeader from '../components/dashboard/SearchFilterHeader';
 import DashboardTabs from '../components/dashboard/DashboardTabs';
 import OverviewStats from '../components/dashboard/OverviewStats';
@@ -8,6 +9,8 @@ import PropertiesSection from '../components/dashboard/PropertiesSection';
 import { filterDashboardProperties } from '../Utils/DashboardSearch';
 import './UserDashboard.css';
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
+import LocationSearch from '../components/LocationSearch';
+import PropertyCard from '../components/PropertyCard';
 
 // 🏆 Professional search API endpoint
 const PROFESSIONAL_SEARCH_API = process.env.NODE_ENV === 'production' 
@@ -83,6 +86,17 @@ const UserDashboard = () => {
   const [lastStableCount, setLastStableCount] = useState(0);
   const prevIsSearching = useRef(false);
 
+  // 🔍 CRITICAL FIX: Immediate admin redirect check
+  useEffect(() => {
+    if (user && user.role && ['admin', 'super_admin'].includes(user.role)) {
+      console.log('🚨 ADMIN DETECTED ON USER DASHBOARD - IMMEDIATE REDIRECT');
+      console.log('🚨 Admin role:', user.role);
+      console.log('🚨 Redirecting to /admin/dashboard');
+      navigate('/admin/dashboard', { replace: true });
+      return;
+    }
+  }, [user, navigate]);
+
   // Check for property update success message
   useEffect(() => {
     const updateSuccess = sessionStorage.getItem('propertyUpdateSuccess');
@@ -117,6 +131,34 @@ const UserDashboard = () => {
     return () => clearInterval(refreshInterval);
   }, [isSearching, activeTab]);
 
+  // ✅ NEW: Socket.IO real-time updates for user
+  useEffect(() => {
+    if (user && user.id) {
+      // Register user with socket
+      socket.emit('register', 'user', user.id);
+
+      // Listen for property approval notifications
+      socket.on('propertyApproved', (property) => {
+        console.log("✅ Property approved notification received:", property);
+        
+        // Show notification to user
+        alert(`✅ Your property "${property.title}" is now approved!`);
+        
+        // Update the property in the local state
+        setProperties(prev => 
+          prev.map(p => p.id === property.id ? { ...p, status: 'approved' } : p)
+        );
+        
+        // Refresh dashboard data to get latest status
+        loadDashboardData();
+      });
+
+      return () => {
+        socket.off('propertyApproved');
+      };
+    }
+  }, [user]);
+
   // Check for tab parameter in URL and set active tab
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -134,12 +176,25 @@ const UserDashboard = () => {
     console.log('🏠 UserDashboard: Component loaded');
     console.log('🏠 UserDashboard: User data:', user);
     console.log('🏠 UserDashboard: User authenticated:', !!user);
+    console.log('🏠 UserDashboard: User role:', user?.role);
+    console.log('🏠 UserDashboard: Current URL:', window.location.pathname);
     
     if (!user) {
       console.log('🏠 UserDashboard: No user found, redirecting to login');
       navigate('/login');
       return;
     }
+    
+    // 🔍 CRITICAL FIX: Check if user is trying to access admin dashboard
+    if (user.role && ['admin', 'super_admin'].includes(user.role)) {
+      console.log('🏠 UserDashboard: User is admin, redirecting to admin dashboard');
+      console.log('🏠 UserDashboard: Admin role detected:', user.role);
+      console.log('🏠 UserDashboard: Redirecting to /admin/dashboard');
+      navigate('/admin/dashboard', { replace: true });
+      return;
+    }
+    
+    console.log('🏠 UserDashboard: User is regular user, loading dashboard data');
     loadDashboardData();
     setProfileData({
       first_name: user?.first_name || '',
@@ -309,11 +364,29 @@ const UserDashboard = () => {
     try {
       setLoading(true);
       
+      // 🔍 CRITICAL DEBUG: Log authentication details
+      const token = localStorage.getItem('token');
+      console.log('🔍 FRONTEND AUTH DEBUG:');
+      console.log('📋 Token exists:', !!token);
+      console.log('📋 Token value:', token ? token.substring(0, 50) + '...' : 'NO TOKEN');
+      console.log('📋 User object:', user);
+      console.log('📋 User ID:', user?.id);
+      console.log('📋 User role:', user?.role);
+      console.log('📋 LocalStorage token age:', token ? Math.round((Date.now() - parseInt(localStorage.getItem('loginTime') || '0')) / 60000) + ' minutes' : 'N/A');
+      console.log('📋 Login time:', localStorage.getItem('loginTime'));
+      console.log('📋 All localStorage keys:', Object.keys(localStorage));
+      
       const propertiesResponse = await fetch('/api/properties/my-properties', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
+      
+      // 🔍 CRITICAL DEBUG: Log response details
+      console.log('🔍 API RESPONSE DEBUG:');
+      console.log('📋 Response status:', propertiesResponse.status);
+      console.log('📋 Response ok:', propertiesResponse.ok);
+      console.log('📋 Response headers:', Object.fromEntries(propertiesResponse.headers.entries()));
       
       if (propertiesResponse.ok) {
         const propertiesData = await propertiesResponse.json();
@@ -343,11 +416,15 @@ const UserDashboard = () => {
             description: propertiesData.properties[0].description,
             hasDescription: !!propertiesData.properties[0].description
           });
-        } else {
-          console.log('❌ No properties found in API response');
+          
+          // ✅ CRITICAL FIX: Only update properties if we have valid data
+          setProperties(propertiesData.properties);
+        } else if (properties.length === 0) {
+          // Only set empty array if we don't have any properties loaded yet
+          setProperties([]);
         }
-        
-        setProperties(propertiesData.properties || []);
+        // ✅ CRITICAL FIX: If we have existing properties and get 0 from API, don't update (prevents flickering)
+        // This prevents the freezing issue where properties disappear after admin approval
         
         const userStats = calculateStats(propertiesData.properties || []);
         setStats(userStats);
@@ -361,13 +438,25 @@ const UserDashboard = () => {
       } else {
         console.error('Failed to load dashboard data:', propertiesResponse.status);
         if (propertiesResponse.status === 401) {
+          console.log('🔍 401 Unauthorized - user needs to re-login');
+          console.log('🔍 Clearing localStorage and redirecting to login');
           localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('loginTime');
           navigate('/login');
         }
       }
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      // ✅ CRITICAL FIX: Don't clear properties on error to prevent flickering
+      // Set a timeout to retry loading after 5 seconds
+      setTimeout(() => {
+        if (activeTab === 'properties') {
+          console.log('🔄 Retrying dashboard data load after error');
+          loadDashboardData();
+        }
+      }, 5000);
     } finally {
       setLoading(false);
     }
