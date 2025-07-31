@@ -39,6 +39,24 @@ const AdminDashboard = () => {
     loadDashboardData();
   }, [user, navigate]);
 
+  // Load dashboard data when component mounts
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  // ✅ NEW: Add periodic refresh to catch property edits that need re-approval
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      // Only refresh if admin is on the dashboard and not actively reviewing
+      if (!reviewModal.show) {
+        console.log('🔄 Admin dashboard periodic refresh to catch property edits');
+        loadDashboardData();
+      }
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [reviewModal.show]);
+
   // Filter properties when filters change
   useEffect(() => {
     let filtered = [...properties];
@@ -109,7 +127,18 @@ const AdminDashboard = () => {
 
       if (response.ok) {
         alert(`Property ${action} successfully!`);
-        loadDashboardData(); // Refresh data
+        
+        // ✅ CRITICAL FIX: Update the property status in the local state immediately
+        setProperties(prevProperties => 
+          prevProperties.map(prop => 
+            prop.id === propertyId 
+              ? { ...prop, status: action }
+              : prop
+          )
+        );
+        
+        // Also refresh the stats
+        loadDashboardData();
       } else {
         throw new Error(`Failed to ${action} property`);
       }

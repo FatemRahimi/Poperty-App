@@ -2539,32 +2539,7 @@
 }
 
 /* No Properties State */
-.no-properties-modern {
-  background: white;
-  border-radius: 1rem;
-  padding: 4rem 2rem;
-  text-align: center;
-  border: 2px dashed #e2e8f0;
-}
-
-.no-properties-modern i {
-  font-size: 4rem;
-  color: #cbd5e1;
-  margin-bottom: 1.5rem;
-}
-
-.no-properties-modern h3 {
-  color: #374151;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-.no-properties-modern p {
-  color: #64748b;
-  margin-bottom: 2rem;
-  font-size: 1.1rem;
-  line-height: 1.6;
-}
+/* Removed no-properties-modern styles as requested */
 
 .btn-add-first {
   background: #667eea;

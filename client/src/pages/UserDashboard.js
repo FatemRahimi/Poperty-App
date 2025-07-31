@@ -351,6 +351,13 @@ const UserDashboard = () => {
         
         const userStats = calculateStats(propertiesData.properties || []);
         setStats(userStats);
+        
+        // 🔍 DEBUG: Track property loading
+        console.log('🔍 PROPERTY LOADING DEBUG:', {
+          totalProperties: propertiesData.properties?.length || 0,
+          propertiesWithStatus: propertiesData.properties?.map(p => ({ id: p.id, title: p.title, status: p.status })) || [],
+          firstPropertyStatus: propertiesData.properties?.[0]?.status || 'N/A'
+        });
       } else {
         console.error('Failed to load dashboard data:', propertiesResponse.status);
         if (propertiesResponse.status === 401) {
@@ -586,7 +593,7 @@ const UserDashboard = () => {
     // For category/status changes: Apply immediately (no debounce)
     // For search text changes: Apply with proper debounce to wait for user to finish typing
     const isTextSearch = searchQuery && searchQuery.trim();
-    const debounceTime = isTextSearch ? 500 : 0; // Wait 800ms for user to finish typing
+    const debounceTime = isTextSearch ? 500 : 0; // Wait 500ms for user to finish typing
 
     const timeoutId = setTimeout(() => {
       applyLocationFilter();
@@ -696,6 +703,32 @@ const UserDashboard = () => {
     hasPerformedSearch: hasPerformedSearch,
     statusFilterActive: searchFilters.status !== 'all'
   });
+
+  // 🔍 ADDITIONAL DEBUG: Track individual property filtering
+  if (propertiesForFiltering.length > 0 && filteredProperties.length === 0) {
+    console.log('🔍 PROPERTY FILTERING DEBUG - Properties being filtered out:');
+    propertiesForFiltering.slice(0, 3).forEach((property, index) => {
+      const statusMatch = searchFilters.status === 'all' || property.status === searchFilters.status;
+      const categoryMatch = searchFilters.propertyType === 'all' || property.category === searchFilters.propertyType;
+      const propertyTypeMatch = searchFilters.propertyBuildingType === 'all' || property.property_type === searchFilters.propertyBuildingType;
+      
+      console.log(`Property ${index + 1}:`, {
+        id: property.id,
+        title: property.title,
+        status: property.status,
+        category: property.category,
+        property_type: property.property_type,
+        statusMatch,
+        categoryMatch,
+        propertyTypeMatch,
+        searchFilters: {
+          status: searchFilters.status,
+          propertyType: searchFilters.propertyType,
+          propertyBuildingType: searchFilters.propertyBuildingType
+        }
+      });
+    });
+  }
 
   // Dropdown options for search filters
   const radiusOptions = [

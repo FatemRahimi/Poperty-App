@@ -43,25 +43,10 @@ const PropertiesSection = ({
         </div>
 
         {filteredProperties.length === 0 ? (
-          <div className="no-properties-modern">
-            <i className="fas fa-home"></i>
-            <h3>No Properties Found</h3>
-            <p>
-              {isRadiusFiltering ? (
-                "Searching for properties in your area..."
-              ) : (
-                "You haven't submitted any properties yet, or no properties match your current filters."
-              )}
-            </p>
-            {!isRadiusFiltering && (
-              <button 
-                className="btn-add-first"
-                onClick={() => navigate('/addlist')}
-              >
-                <i className="fas fa-plus"></i>
-                Add Your First Property
-              </button>
-            )}
+          <div className="properties-grid-modern">
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+              <p>No properties found matching your current filters.</p>
+            </div>
           </div>
         ) : (
           <div className="properties-grid-modern">
