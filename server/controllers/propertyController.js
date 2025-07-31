@@ -599,6 +599,13 @@ const getUserProperties = async (req, res) => {
     const { page = 1, limit = 100, status, type } = req.query;
     const offset = (page - 1) * limit;
 
+    // 🔍 CRITICAL DEBUG: Log user authentication details
+    console.log('🔍 AUTHENTICATION DEBUG:');
+    console.log('📋 User ID from req.user:', user_id);
+    console.log('📋 User object:', req.user);
+    console.log('📋 Request headers:', req.headers.authorization ? 'Authorization header present' : 'No authorization header');
+    console.log('📋 Request user agent:', req.headers['user-agent']);
+
     let whereClause = 'WHERE p.user_id = $1';
     let queryParams = [user_id];
     let paramCount = 1;
@@ -640,6 +647,13 @@ const getUserProperties = async (req, res) => {
       queryParams.push(limit, offset);
     }
 
+    // 🔍 DEBUG: Log the query and parameters
+    console.log('🔍 getUserProperties DEBUG:');
+    console.log('📋 User ID:', user_id);
+    console.log('📋 Query params:', queryParams);
+    console.log('📋 Where clause:', whereClause);
+    console.log('📋 Full query:', query);
+
     const result = await pool.query(query, queryParams);
 
     // Debug logging - check what data is returned from database
@@ -650,9 +664,10 @@ const getUserProperties = async (req, res) => {
       console.log('🏠 First property debug:', {
         id: firstProperty.id,
         title: firstProperty.title,
+        status: firstProperty.status,
         hasDescription: !!firstProperty.description,
-        descriptionValue: firstProperty.description ? firstProperty.description.substring(0, 100) + '...' : 'NULL/EMPTY',
         descriptionLength: firstProperty.description?.length || 0,
+        descriptionValue: firstProperty.description ? firstProperty.description.substring(0, 100) + '...' : 'NULL/EMPTY',
         allFields: Object.keys(firstProperty)
       });
       
@@ -667,6 +682,28 @@ const getUserProperties = async (req, res) => {
         contactPhone: firstProperty.contact_phone,
         contactEmail: firstProperty.contact_email
       });
+    } else {
+      console.log('❌ No properties found - checking database directly...');
+      
+      // Check if user has any properties at all
+      const userPropertiesCheck = await pool.query(
+        'SELECT COUNT(*) as total FROM properties WHERE user_id = $1',
+        [user_id]
+      );
+      console.log('🔍 User properties count:', userPropertiesCheck.rows[0].total);
+      
+      // Check if there are any properties with different statuses
+      const statusCheck = await pool.query(
+        'SELECT status, COUNT(*) as count FROM properties WHERE user_id = $1 GROUP BY status',
+        [user_id]
+      );
+      console.log('🔍 Properties by status:', statusCheck.rows);
+      
+      // 🔍 CRITICAL DEBUG: Check if there are properties for other users
+      const allPropertiesCheck = await pool.query(
+        'SELECT user_id, COUNT(*) as count FROM properties GROUP BY user_id ORDER BY count DESC LIMIT 5'
+      );
+      console.log('🔍 All properties by user:', allPropertiesCheck.rows);
     }
 
     // Get total count
