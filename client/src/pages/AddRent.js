@@ -4,6 +4,7 @@ import SelectInput from "../components/inputs/SelectInput";
 import TextInput from "../components/inputs/TextInput";
 import DateInput from "../components/inputs/DateInput";
 import Logo from "../components/Logo";
+import { socket } from "../socket";
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 import "../styles/AddList.css"; // reusing the AddList CSS
 import "./AddRent.css"; // AddRent specific styles
@@ -1005,24 +1006,32 @@ const AddRent = () => {
         setIsSubmitSuccess(true);
         setError("");
         
-                  // Show success animation for 1.5 seconds then redirect
+        // ✅ NEW: Emit socket event for real-time updates
+        socket.emit('propertyEdited', {
+          id: propertyId,
+          title: formData.propertyTitle,
+          user_id: user.id,
+          status: 'pending'
+        });
+        
+        // Show success animation for 1.5 seconds then redirect
+        setTimeout(() => {
+          setIsLoading(false); // Stop loading state
+          setSuccess("🎉 Property updated successfully! Redirecting...");
+          
+          // Wait another 1 second for user to see success message, then redirect
           setTimeout(() => {
-            setIsLoading(false); // Stop loading state
-            setSuccess("🎉 Property updated successfully! Redirecting...");
-            
-            // Wait another 1 second for user to see success message, then redirect
-            setTimeout(() => {
-              sessionStorage.removeItem(storageKey);
-              // Add a flag to show the success message on dashboard (only if returning to dashboard)
-              if (returnPath === '/dashboard') {
-                sessionStorage.setItem('propertyUpdateSuccess', 'true');
-                sessionStorage.setItem('updatedPropertyId', propertyId);
-                navigate('/dashboard?tab=properties');
-              } else {
-                navigate(returnPath);
-              }
-            }, 1000);
-          }, 1500);
+            sessionStorage.removeItem(storageKey);
+            // Add a flag to show the success message on dashboard (only if returning to dashboard)
+            if (returnPath === '/dashboard') {
+              sessionStorage.setItem('propertyUpdateSuccess', 'true');
+              sessionStorage.setItem('updatedPropertyId', propertyId);
+              navigate('/dashboard?tab=properties');
+            } else {
+              navigate(returnPath);
+            }
+          }, 1000);
+        }, 1500);
       } else {
         // For new submissions, show longer message
         setSuccess("🎉 Property submitted successfully! You will receive a confirmation email shortly. Redirecting to dashboard...");

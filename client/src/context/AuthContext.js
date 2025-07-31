@@ -18,6 +18,10 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.get('/api/auth/verify-token', {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      // 🔍 DEBUG: Log the validated user data
+      console.log('🔍 Token validation response:', response.data);
+      
       return response.data.user;
     } catch (error) {
       console.error('Token validation error:', error);
@@ -52,7 +56,15 @@ export const AuthProvider = ({ children }) => {
             
             if (validatedUser) {
               const parsedUser = JSON.parse(userData);
-              setUser(parsedUser);
+              
+              // 🔍 CRITICAL FIX: Ensure role is included from validated user
+              const userWithRole = {
+                ...parsedUser,
+                role: validatedUser.role || parsedUser.role || 'user'
+              };
+              
+              console.log('🔍 Setting user with role:', userWithRole);
+              setUser(userWithRole);
               setIsAuthenticated(true);
             } else {
               // Token is invalid, clear storage

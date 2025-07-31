@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const config = require('../config/config');
 const {
   submitProperty,
   updateProperty,
@@ -79,10 +80,31 @@ const authenticateJWT = (req, res, next) => {
   const token = authHeader.substring(7);
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, config.auth.jwt.secret);
+    
+    // 🔍 CRITICAL DEBUG: Log the decoded token information
+    console.log('🔍 JWT AUTHENTICATION DEBUG:');
+    console.log('📋 Decoded token:', decoded);
+    console.log('📋 User ID from token:', decoded.id);
+    console.log('📋 User role from token:', decoded.role);
+    console.log('📋 Admin table flag:', decoded.adminTable);
+    console.log('📋 Request URL:', req.url);
+    console.log('📋 Request method:', req.method);
+    console.log('📋 JWT Secret used:', config.auth.jwt.secret ? 'Present' : 'Missing');
+    console.log('📋 Token expiration:', new Date(decoded.exp * 1000).toISOString());
+    console.log('📋 Current time:', new Date().toISOString());
+    console.log('📋 Token issued at:', new Date(decoded.iat * 1000).toISOString());
+    console.log('📋 Token age (minutes):', Math.round((Date.now() - decoded.iat * 1000) / 60000));
+    console.log('📋 Request headers:', Object.keys(req.headers));
+    console.log('📋 Authorization header present:', !!req.headers.authorization);
+    
     req.user = decoded;
     next();
   } catch (error) {
+    console.error('❌ JWT verification failed:', error.message);
+    console.error('❌ JWT Secret available:', !!config.auth.jwt.secret);
+    console.error('❌ Token length:', token.length);
+    console.error('❌ Token preview:', token.substring(0, 50) + '...');
     return res.status(401).json({ success: false, message: 'Invalid or expired token' });
   }
 };

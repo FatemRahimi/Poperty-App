@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { socket } from '../socket';
 import './AdminDashboard.css';
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
@@ -32,10 +33,26 @@ const AdminDashboard = () => {
 
   // Redirect if not admin
   useEffect(() => {
-    if (!user || !['admin', 'super_admin'].includes(user.role)) {
-      navigate('/admin-sh');
+    console.log('🔐 AdminDashboard: Component loaded');
+    console.log('🔐 AdminDashboard: User data:', user);
+    console.log('🔐 AdminDashboard: User role:', user?.role);
+    console.log('🔐 AdminDashboard: Current URL:', window.location.pathname);
+    
+    if (!user) {
+      console.log('🔐 AdminDashboard: No user found, redirecting to login');
+      navigate('/login');
       return;
     }
+    
+    if (!user.role || !['admin', 'super_admin'].includes(user.role)) {
+      console.log('🔐 AdminDashboard: User is not admin, redirecting to user dashboard');
+      console.log('🔐 AdminDashboard: User role:', user.role);
+      navigate('/dashboard');
+      return;
+    }
+    
+    console.log('🔐 AdminDashboard: User is admin, loading dashboard data');
+    console.log('🔐 AdminDashboard: Admin role confirmed:', user.role);
     loadDashboardData();
   }, [user, navigate]);
 
@@ -43,6 +60,37 @@ const AdminDashboard = () => {
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  // ✅ NEW: Socket.IO real-time updates for admin
+  useEffect(() => {
+    if (user && user.id) {
+      // Register admin with socket
+      socket.emit('register', 'admin', user.id);
+
+      // Listen for new property updates
+      socket.on('newPropertyUpdate', (property) => {
+        console.log("📢 New property edit waiting for approval:", property);
+        // Add the new property to the list
+        setProperties(prev => {
+          const existing = prev.find(p => p.id === property.id);
+          if (!existing) {
+            return [property, ...prev];
+          }
+          return prev.map(p => p.id === property.id ? property : p);
+        });
+        
+        // Update stats
+        setStats(prev => ({
+          ...prev,
+          pendingApproval: prev.pendingApproval + 1
+        }));
+      });
+
+      return () => {
+        socket.off('newPropertyUpdate');
+      };
+    }
+  }, [user]);
 
   // ✅ NEW: Add periodic refresh to catch property edits that need re-approval
   useEffect(() => {
@@ -129,6 +177,7 @@ const AdminDashboard = () => {
         alert(`Property ${action} successfully!`);
         
         // ✅ CRITICAL FIX: Update the property status in the local state immediately
+        const updatedProperty = properties.find(p => p.id === propertyId);
         setProperties(prevProperties => 
           prevProperties.map(prop => 
             prop.id === propertyId 
@@ -136,6 +185,15 @@ const AdminDashboard = () => {
               : prop
           )
         );
+        
+        // ✅ NEW: Emit socket event for real-time updates
+        if (updatedProperty) {
+          socket.emit('approveProperty', {
+            ...updatedProperty,
+            status: action,
+            ownerId: updatedProperty.user_id
+          });
+        }
         
         // Also refresh the stats
         loadDashboardData();
@@ -181,6 +239,13 @@ const AdminDashboard = () => {
               : prop
           )
         );
+        
+        // ✅ NEW: Emit socket event for real-time updates
+        socket.emit('approveProperty', {
+          ...reviewModal.property,
+          status: reviewData.status,
+          ownerId: reviewModal.property.user_id
+        });
         
         // Also refresh the stats
         loadDashboardData();

@@ -41,7 +41,8 @@ router.get('/google/callback',
           id: req.user.id, 
           email: req.user.email,
           first_name: req.user.first_name,
-          last_name: req.user.last_name
+          last_name: req.user.last_name,
+          role: req.user.role || 'user'
         },
         config.auth.jwt.secret,
         { expiresIn: '24h' }
@@ -53,7 +54,8 @@ router.get('/google/callback',
         email: req.user.email,
         first_name: req.user.first_name || '',
         last_name: req.user.last_name || '',
-        googleId: req.user.google_id
+        googleId: req.user.google_id,
+        role: req.user.role || 'user'
       };
       
       // Ensure the redirect path starts with a slash
@@ -137,7 +139,8 @@ router.get('/verify-token', async (req, res) => {
         id: user.id,
         email: user.email,
         first_name: user.first_name,
-        last_name: user.last_name
+        last_name: user.last_name,
+        role: user.role || 'user'
       }
     });
   } catch (error) {

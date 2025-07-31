@@ -596,19 +596,34 @@ const submitProperty = async (req, res) => {
 const getUserProperties = async (req, res) => {
   try {
     const user_id = req.user.id;
+    const user_role = req.user.role;
     const { page = 1, limit = 100, status, type } = req.query;
     const offset = (page - 1) * limit;
 
     // 🔍 CRITICAL DEBUG: Log user authentication details
     console.log('🔍 AUTHENTICATION DEBUG:');
     console.log('📋 User ID from req.user:', user_id);
+    console.log('📋 User role:', user_role);
     console.log('📋 User object:', req.user);
     console.log('📋 Request headers:', req.headers.authorization ? 'Authorization header present' : 'No authorization header');
     console.log('📋 Request user agent:', req.headers['user-agent']);
 
-    let whereClause = 'WHERE p.user_id = $1';
-    let queryParams = [user_id];
-    let paramCount = 1;
+    // 🎯 ADMIN LOGIC: If user is admin, show ALL properties, otherwise show only user's properties
+    let whereClause;
+    let queryParams = [];
+    let paramCount = 0;
+
+    if (user_role === 'admin' || user_role === 'super_admin') {
+      // Admin sees all properties
+      whereClause = 'WHERE 1=1';
+      console.log('👑 Admin mode: Showing ALL properties');
+    } else {
+      // Regular user sees only their properties
+      paramCount++;
+      whereClause = 'WHERE p.user_id = $1';
+      queryParams.push(user_id);
+      console.log('👤 User mode: Showing only user properties');
+    }
 
     if (status) {
       paramCount++;
@@ -650,6 +665,7 @@ const getUserProperties = async (req, res) => {
     // 🔍 DEBUG: Log the query and parameters
     console.log('🔍 getUserProperties DEBUG:');
     console.log('📋 User ID:', user_id);
+    console.log('📋 User Role:', user_role);
     console.log('📋 Query params:', queryParams);
     console.log('📋 Where clause:', whereClause);
     console.log('📋 Full query:', query);
