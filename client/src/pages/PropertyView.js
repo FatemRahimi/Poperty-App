@@ -635,10 +635,19 @@ const PropertyView = () => {
           {(property.layout_file_url || property.layout_file_name) && (
             <div className="property-layout-section">
               <h3 className="property-layout-title">Property Layout</h3>
+              
               <div className="property-layout-content">
                 {property.layout_file_url ? (
                   <div className="layout-display-container">
-                    {/* Layout Image Display */}
+                    {/* Approximate Area Display */}
+                    {property.apartment_size && (
+                      <div className="layout-area-info">
+                        <span className="layout-area-label">Approximate Area</span>
+                        <span className="layout-area-value">{property.apartment_size} sq m</span>
+                      </div>
+                    )}
+                    
+                    {/* Layout Image Display with Zoom */}
                     <div className="layout-image-container">
                       <img 
                         src={property.layout_file_url} 
@@ -648,6 +657,15 @@ const PropertyView = () => {
                           console.error('Layout image load error:', property.layout_file_url, e);
                           e.target.style.display = 'none';
                           e.target.nextSibling.style.display = 'flex';
+                        }}
+                        onClick={(e) => {
+                          // Toggle zoom functionality
+                          const img = e.target;
+                          if (img.classList.contains('layout-image--zoomed')) {
+                            img.classList.remove('layout-image--zoomed');
+                          } else {
+                            img.classList.add('layout-image--zoomed');
+                          }
                         }}
                       />
                       {/* Fallback for non-image files */}
@@ -663,24 +681,36 @@ const PropertyView = () => {
                       </div>
                     </div>
                     
-                    {/* Layout File Info */}
-                    <div className="layout-file-info">
-                      <div className="layout-file-details">
-                        <span className="layout-file-name">{property.layout_file_name || 'Property Layout'}</span>
-                        <span className="layout-file-type">
-                          {property.layout_file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? 'Image File' : 'PDF Document'}
+                    {/* Floor Number Display */}
+                    {property.floor_number && (
+                      <div className="layout-floor-info">
+                        <span className="layout-floor-value">
+                          {(() => {
+                            const floorNum = parseInt(property.floor_number);
+                            if (isNaN(floorNum)) {
+                              return property.floor_number; // Return as-is if not a number
+                            }
+                            
+                            // Convert number to word
+                            const numberWords = [
+                              'zero', 'one', 'two', 'three', 'four', 'five', 
+                              'six', 'seven', 'eight', 'nine', 'ten',
+                              'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
+                              'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'
+                            ];
+                            
+                            if (floorNum === 0) {
+                              return 'ground floor';
+                            } else if (floorNum >= 1 && floorNum <= 20) {
+                              return numberWords[floorNum] + ' floor';
+                            } else {
+                              // For numbers beyond 20, use the original number
+                              return floorNum + 'th floor';
+                            }
+                          })()}
                         </span>
                       </div>
-                      <a 
-                        href={property.layout_file_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="layout-file-download"
-                      >
-                        <i className="fas fa-external-link-alt"></i>
-                        Open Full Size
-                      </a>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <div className="layout-file-placeholder">
