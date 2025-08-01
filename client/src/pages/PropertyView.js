@@ -10,6 +10,7 @@ const PropertyView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     fetchProperty();
@@ -27,6 +28,17 @@ const PropertyView = () => {
         setTimeout(() => card.classList.remove('highlight'), 2000);
       }
     }
+  }, []);
+
+  // Add scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      setIsScrolled(scrollTop > 100); // Change state when scrolled more than 100px
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const fetchProperty = async () => {
@@ -139,10 +151,35 @@ const PropertyView = () => {
     navigate('/dashboard?tab=properties');
   };
 
+  const handleFixedBackClick = () => {
+    // If scrolled down, first scroll to top smoothly
+    if (isScrolled) {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      
+      // Wait for scroll to complete, then navigate
+      setTimeout(() => {
+        handleBack();
+      }, 500);
+    } else {
+      // If already at top, navigate immediately
+      handleBack();
+    }
+  };
+
   return (
     <div className="property-view-container">
-      <div className="property-view-header">
-        <button onClick={handleBack} className="back-btn">
+      {/* Fixed/Sticky Back Button that appears when scrolled */}
+      <div className={`back-btn-fixed ${isScrolled ? 'back-btn-fixed--visible' : ''}`}>
+        <button onClick={handleFixedBackClick} className="back-btn back-btn--fixed">
+          <i className="fas fa-arrow-left"></i> Back
+        </button>
+      </div>
+
+      <div className={`property-view-header ${isScrolled ? 'property-view-header--scrolled' : ''}`}>
+        <button onClick={handleBack} className={`back-btn ${isScrolled ? 'back-btn--hidden' : ''}`}>
           <i className="fas fa-arrow-left"></i> Back to Properties
         </button>
         <div className="property-status">
@@ -503,8 +540,8 @@ const PropertyView = () => {
           <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
 
           {/* NEW: Property Information Section */}
+          <h3 className="property-view-info-title">Property Details</h3>
           <div className="property-view-info-section" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-            <h3 className="property-view-info-title">Property Information</h3>
             
             <div className="property-view-info-grid">
               {/* Row 1 */}
@@ -593,6 +630,73 @@ const PropertyView = () => {
               </div>
             </div>
           </div>
+
+          {/* NEW: Layout Upload Section */}
+          {(property.layout_file_url || property.layout_file_name) && (
+            <div className="property-layout-section">
+              <h3 className="property-layout-title">Property Layout</h3>
+              <div className="property-layout-content">
+                {property.layout_file_url ? (
+                  <div className="layout-display-container">
+                    {/* Layout Image Display */}
+                    <div className="layout-image-container">
+                      <img 
+                        src={property.layout_file_url} 
+                        alt="Property Layout" 
+                        className="layout-image"
+                        onError={(e) => {
+                          console.error('Layout image load error:', property.layout_file_url, e);
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      {/* Fallback for non-image files */}
+                      <div className="layout-file-fallback" style={{ display: 'none' }}>
+                        <svg className="layout-file-icon" width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                          <polyline points="14,2 14,8 20,8"/>
+                          <line x1="16" y1="13" x2="8" y2="13"/>
+                          <line x1="16" y1="17" x2="8" y2="17"/>
+                          <polyline points="10,9 9,9 8,9"/>
+                        </svg>
+                        <span>PDF Document</span>
+                      </div>
+                    </div>
+                    
+                    {/* Layout File Info */}
+                    <div className="layout-file-info">
+                      <div className="layout-file-details">
+                        <span className="layout-file-name">{property.layout_file_name || 'Property Layout'}</span>
+                        <span className="layout-file-type">
+                          {property.layout_file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? 'Image File' : 'PDF Document'}
+                        </span>
+                      </div>
+                      <a 
+                        href={property.layout_file_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="layout-file-download"
+                      >
+                        <i className="fas fa-external-link-alt"></i>
+                        Open Full Size
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="layout-file-placeholder">
+                    <svg className="layout-file-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                      <polyline points="14,2 14,8 20,8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                      <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    <span>No layout file uploaded</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Border line after property information */}
           <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
