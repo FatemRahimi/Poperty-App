@@ -673,6 +673,30 @@
   border-bottom: 2px solid #667eea;
 }
 
+/* Approximate Area Display */
+.layout-area-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.layout-area-label {
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 1.125rem;
+}
+
+.layout-area-value {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 1.125rem;
+}
+
 .property-layout-content {
   display: flex;
   flex-direction: column;
@@ -690,13 +714,12 @@
   position: relative;
   width: 100%;
   height: 300px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  background: #f8f9fa;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: zoom-in;
 }
 
 .layout-image {
@@ -704,10 +727,57 @@
   height: 100%;
   object-fit: contain;
   transition: all 0.3s ease;
+  cursor: zoom-in;
 }
 
 .layout-image:hover {
   transform: scale(1.02);
+}
+
+/* Zoom functionality */
+.layout-image--zoomed {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(2);
+  width: auto;
+  height: auto;
+  max-width: 90vw;
+  max-height: 90vh;
+  z-index: 10000;
+  cursor: zoom-out;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  background: white;
+  padding: 10px;
+}
+
+.layout-image--zoomed:hover {
+  transform: translate(-50%, -50%) scale(2);
+}
+
+/* Floor Number Display */
+.layout-floor-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+  margin-top: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.layout-floor-label {
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 1.125rem;
+}
+
+.layout-floor-value {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 1.125rem;
 }
 
 .layout-file-fallback {
@@ -812,6 +882,16 @@
 
   .layout-image-container {
     height: 200px;
+  }
+
+  .layout-image--zoomed {
+    max-width: 95vw;
+    max-height: 95vh;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+
+  .layout-image--zoomed:hover {
+    transform: translate(-50%, -50%) scale(1.5);
   }
 
   .layout-file-info {
