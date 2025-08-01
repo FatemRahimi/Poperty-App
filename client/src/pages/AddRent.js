@@ -1590,32 +1590,56 @@ const AddRent = () => {
                   />
                 </div>
                 
-                {/* Display uploaded file */}
+                {/* Display uploaded file with preview for images */}
                 {formData.layoutFile && (
                   <div className="uploaded-file">
-                    <span className="file-name">{formData.layoutFileName}</span>
-                    <button 
-                      type="button" 
-                      className="remove-file-btn"
-                      onClick={() => setFormData(prev => ({ ...prev, layoutFile: null, layoutFileName: "" }))}
-                    >
-                      ×
-                    </button>
+                    {/* Image preview for image files */}
+                    {formData.layoutFile.type.startsWith('image/') && (
+                      <div className="layout-preview-container">
+                        <img 
+                          src={URL.createObjectURL(formData.layoutFile)} 
+                          alt="Layout Preview" 
+                          className="layout-preview-image"
+                        />
+                      </div>
+                    )}
+                    <div className="file-info">
+                      <span className="file-name">{formData.layoutFileName}</span>
+                      <button 
+                        type="button" 
+                        className="remove-file-btn"
+                        onClick={() => setFormData(prev => ({ ...prev, layoutFile: null, layoutFileName: "" }))}
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
                 )}
                 
-                {/* Display existing file */}
+                {/* Display existing file with preview for images */}
                 {formData.layoutFileUrl && !formData.layoutFile && (
                   <div className="existing-file">
-                    <span className="file-name">{formData.layoutFileName || "Floor Plan"}</span>
-                    <a 
-                      href={formData.layoutFileUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="download-link"
-                    >
-                      Download
-                    </a>
+                    {/* Image preview for existing image files */}
+                    {formData.layoutFileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) && (
+                      <div className="layout-preview-container">
+                        <img 
+                          src={formData.layoutFileUrl} 
+                          alt="Layout Preview" 
+                          className="layout-preview-image"
+                        />
+                      </div>
+                    )}
+                    <div className="file-info">
+                      <span className="file-name">{formData.layoutFileName || "Floor Plan"}</span>
+                      <a 
+                        href={formData.layoutFileUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="download-link"
+                      >
+                        Download
+                      </a>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1623,14 +1647,13 @@ const AddRent = () => {
               {/* Property Details */}
               <div className="form-row">
                 <TextInput
-                  label="Apartment Size (sq ft)"
+                  label="Approximate Area"
                   name="apartmentSize"
                   value={formData.apartmentSize}
                   onChange={handleChange}
-                  placeholder="e.g. 850"
+                  placeholder="e.g. 106.4 sq m"
                   type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
+                  inputMode="text"
                 />
                 
                 <TextInput
@@ -1638,7 +1661,7 @@ const AddRent = () => {
                   name="floorNumber"
                   value={formData.floorNumber}
                   onChange={handleChange}
-                  placeholder="e.g. 2nd floor, Ground floor"
+                  placeholder="e.g. 10"
                 />
               </div>
               
