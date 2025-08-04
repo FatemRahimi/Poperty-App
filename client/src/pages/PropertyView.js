@@ -12,6 +12,23 @@ const PropertyView = () => {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Helper function to check if a feature is available
+  const hasFeature = (features, key) => {
+    if (!features) return false;
+
+    // Case 1: Array (e.g. ['bills_included', 'has_garden'])
+    if (Array.isArray(features)) {
+      return features.includes(key);
+    }
+
+    // Case 2: Object (e.g. { bills_included: true, has_garden: false })
+    if (typeof features === 'object' && features !== null) {
+      return features[key] === true || features[key] === 'true';
+    }
+
+    return false;
+  };
+
   useEffect(() => {
     fetchProperty();
   }, [slug]);
@@ -48,6 +65,20 @@ const PropertyView = () => {
       
       if (data.success) {
         setProperty(data.property);
+        
+        // Debug: Log property features received
+        console.log('🔍 Frontend Property Features Debug:');
+        console.log('📋 Property ID:', data.property.id);
+        console.log('📋 has_garden:', data.property.has_garden);
+        console.log('📋 parking_spaces:', data.property.parking_spaces);
+        console.log('📋 pets_allowed:', data.property.pets_allowed);
+        console.log('📋 student_housing:', data.property.student_housing);
+        console.log('📋 furnished:', data.property.furnished);
+        console.log('📋 has_garage:', data.property.has_garage);
+        console.log('📋 has_pool:', data.property.has_pool);
+        console.log('📋 key_features RAW:', data.property.key_features);
+        console.log('📋 key_features TYPE:', Object.prototype.toString.call(data.property.key_features));
+        console.log('📋 key_features JSON:', JSON.stringify(data.property.key_features, null, 2));
       } else {
         setError(data.message || 'Property not found');
       }
@@ -697,21 +728,21 @@ const PropertyView = () => {
                               'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth',
                               'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth',
                               'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth',
-                              'Twenty-first', 'Twenty-second', 'Twenty-third', 'Twenty-fourth', 'Twenty-fifth',
-                              'Twenty-sixth', 'Twenty-seventh', 'Twenty-eighth', 'Twenty-ninth', 'Thirtieth',
-                              'Thirty-first', 'Thirty-second', 'Thirty-third', 'Thirty-fourth', 'Thirty-fifth',
-                              'Thirty-sixth', 'Thirty-seventh', 'Thirty-eighth', 'Thirty-ninth', 'Fortieth',
-                              'Forty-first', 'Forty-second', 'Forty-third', 'Forty-fourth', 'Forty-fifth',
-                              'Forty-sixth', 'Forty-seventh', 'Forty-eighth', 'Forty-ninth', 'Fiftieth'
+                              'Twenty-First', 'Twenty-Second', 'Twenty-Third', 'Twenty-Fourth', 'Twenty-Fifth',
+                              'Twenty-Sixth', 'Twenty-Seventh', 'Twenty-Eighth', 'Twenty-Ninth', 'Thirtieth',
+                              'Thirty-First', 'Thirty-Second', 'Thirty-Third', 'Thirty-Fourth', 'Thirty-Fifth',
+                              'Thirty-Sixth', 'Thirty-Seventh', 'Thirty-Eighth', 'Thirty-Ninth', 'Fortieth',
+                              'Forty-First', 'Forty-Second', 'Forty-Third', 'Forty-Fourth', 'Forty-Fifth',
+                              'Forty-Sixth', 'Forty-Seventh', 'Forty-Eighth', 'Forty-Ninth', 'Fiftieth'
                             ];
                             
                             if (floorNum === 0) {
-                              return 'ground floor';
+                              return 'Ground Floor';
                             } else if (floorNum >= 1 && floorNum <= 50) {
                               return ordinalWords[floorNum] + ' Floor';
                             } else {
                               // For numbers beyond 50, use the original number
-                              return floorNum + 'th floor';
+                              return floorNum + 'th Floor';
                             }
                           })()}
                         </span>
@@ -735,6 +766,303 @@ const PropertyView = () => {
           )}
 
           {/* Border line after property information */}
+          <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
+
+          {/* NEW: Property Features Section */}
+          <div className="property-view-features-section" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            <h3 className="property-view-features-title">Property Features</h3>
+            
+            {/* Basic Property Features */}
+            <div className="property-view-features-category">
+              <h4 className="features-category-title">Basic Features</h4>
+              
+              <div className="property-view-features-grid">
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="has_garden" 
+                    checked={property.has_garden || false}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="has_garden">Garden</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="parking_spaces" 
+                    checked={(property.parking_spaces && property.parking_spaces > 0) || false}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="parking_spaces">Parking</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="balcony_terrace" 
+                    checked={hasFeature(property.key_features, 'balcony_terrace')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="balcony_terrace">Balcony/Terrace</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="pets_allowed" 
+                    checked={property.pets_allowed || false}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="pets_allowed">Pets Allowed</label>
+                </div>
+
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="student_housing" 
+                    checked={property.student_housing || false}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="student_housing">Suitable for Students</label>
+                </div>
+
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="furnished" 
+                    checked={property.furnished || false}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="furnished">Furnished</label>
+                </div>
+
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="has_garage" 
+                    checked={property.has_garage || false}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="has_garage">Garage</label>
+                </div>
+
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="has_pool" 
+                    checked={property.has_pool || false}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="has_pool">Pool</label>
+                </div>
+              </div>
+            </div>
+
+            {/* Key Property Features */}
+            <div className="property-view-features-category">
+              <h4 className="features-category-title">Key Features</h4>
+              <div className="property-view-features-grid">
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="kitchen_white_goods" 
+                    checked={hasFeature(property.key_features, 'kitchen_white_goods')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="kitchen_white_goods">Kitchen with white goods</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="allocated_parking" 
+                    checked={hasFeature(property.key_features, 'allocated_parking')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="allocated_parking">Allocated parking</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="communal_garden" 
+                    checked={hasFeature(property.key_features, 'communal_garden')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="communal_garden">Communal garden</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="storage_space" 
+                    checked={hasFeature(property.key_features, 'storage_space')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="storage_space">Storage space</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="lift_access" 
+                    checked={hasFeature(property.key_features, 'lift_access')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="lift_access">Lift access</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="intercom_entry" 
+                    checked={hasFeature(property.key_features, 'intercom_entry')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="intercom_entry">Intercom entry system</label>
+                </div>
+              </div>
+            </div>
+
+            {/* Utilities & Bills */}
+            <div className="property-view-features-category">
+              <h4 className="features-category-title">Utilities & Bills</h4>
+              <div className="property-view-features-grid">
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="bills_included" 
+                    checked={hasFeature(property.key_features, 'bills_included')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="bills_included">Bills included</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="council_tax_included" 
+                    checked={hasFeature(property.key_features, 'council_tax_included')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="council_tax_included">Council tax included</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="water_included" 
+                    checked={hasFeature(property.key_features, 'water_included')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="water_included">Water included</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="electricity_included" 
+                    checked={hasFeature(property.key_features, 'electricity_included')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="electricity_included">Electricity included</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="gas_included" 
+                    checked={hasFeature(property.key_features, 'gas_included')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="gas_included">Gas included</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="internet_included" 
+                    checked={hasFeature(property.key_features, 'internet_included')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="internet_included">Internet included</label>
+                </div>
+              </div>
+            </div>
+
+            {/* Financial Options */}
+            <div className="property-view-features-category">
+              <h4 className="features-category-title">Financial Options</h4>
+              <div className="property-view-features-grid">
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="zero_deposit" 
+                    checked={hasFeature(property.key_features, 'zero_deposit')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="zero_deposit">Zero deposit option</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="guarantor_accepted" 
+                    checked={hasFeature(property.key_features, 'guarantor_accepted')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="guarantor_accepted">Guarantor accepted</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="dss_lha_accepted" 
+                    checked={hasFeature(property.key_features, 'dss_lha_accepted')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="dss_lha_accepted">DSS/LHA accepted</label>
+                </div>
+                
+                <div className="property-view-feature-item">
+                  <input 
+                    type="checkbox" 
+                    id="short_term_lets" 
+                    checked={hasFeature(property.key_features, 'short_term_lets')}
+                    disabled
+                    className="feature-checkbox"
+                  />
+                  <label htmlFor="short_term_lets">Short-term lets available</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Border line after property features */}
           <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
 
           <div className="view-property-contact" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>

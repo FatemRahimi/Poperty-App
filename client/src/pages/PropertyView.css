@@ -580,7 +580,7 @@
   color: #2c3e50;
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid #171719;
 }
 
 .property-view-info-grid {
@@ -670,7 +670,7 @@
   color: #2d3748;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #667eea;
+  border-bottom:2px solid #171719;
 }
 
 /* Approximate Area Display */
@@ -741,21 +741,22 @@
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(2);
+  transform: translate(-50%, -50%) scale(1.2);
   width: auto;
   height: auto;
-  max-width: 90vw;
-  max-height: 90vh;
+  max-width: 80vw;
+  max-height: 80vh;
   z-index: 10000;
   cursor: zoom-out;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   border-radius: 8px;
   background: white;
   padding: 10px;
+  transition: all 0.3s ease;
 }
 
 .layout-image--zoomed:hover {
-  transform: translate(-50%, -50%) scale(2);
+  transform: translate(-50%, -50%) scale(1.2);
 }
 
 /* Floor Number Display */
@@ -889,13 +890,13 @@
   }
 
   .layout-image--zoomed {
-    max-width: 95vw;
-    max-height: 95vh;
-    transform: translate(-50%, -50%) scale(1.5);
+    max-width: 70vw;
+    max-height: 70vh;
+    transform: translate(-50%, -50%) scale(1.1);
   }
 
   .layout-image--zoomed:hover {
-    transform: translate(-50%, -50%) scale(1.5);
+    transform: translate(-50%, -50%) scale(1.1);
   }
 
   .layout-file-info {
@@ -907,5 +908,128 @@
   .layout-file-download {
     width: 100%;
     justify-content: center;
+  }
+} 
+
+/* Property View Features Section */
+.property-view-features-section {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+}
+
+.property-view-features-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #667eea;
+}
+
+.property-view-features-category {
+  margin-bottom: 2rem;
+}
+
+.features-category-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 1rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #cbd5e0;
+}
+
+.property-view-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.property-view-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.property-view-feature-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.feature-checkbox {
+  width: 18px !important;
+  height: 18px !important;
+  accent-color: #667eea !important;
+  cursor: default !important;
+  /* Basic styling to ensure visibility */
+  appearance: auto !important;
+  -webkit-appearance: auto !important;
+  -moz-appearance: auto !important;
+  border: 1px solid #cbd5e0 !important;
+  background-color: white !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: static !important;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  box-sizing: border-box !important;
+}
+
+/* Remove all custom checkmark styling - let browser handle it */
+.feature-checkbox:checked::after {
+  display: none !important;
+}
+
+.feature-checkbox:checked::before {
+  display: none !important;
+}
+
+
+
+.property-view-feature-item label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #2d3748;
+  cursor: default;
+  flex: 1;
+  margin-left: 0.5rem;
+}
+
+/* Responsive design for Property View Features */
+@media (max-width: 768px) {
+  .property-view-features-section {
+    padding: 1rem;
+  }
+
+  .property-view-features-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .property-view-feature-item {
+    padding: 0.5rem;
+  }
+
+  .feature-checkbox {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+  }
+
+  .property-view-feature-item label {
+    font-size: 0.9rem;
   }
 } 
