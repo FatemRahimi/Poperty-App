@@ -12,6 +12,58 @@ const PropertyView = () => {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Initialize map when property loads
+  useEffect(() => {
+    if (property && (property.zip_code || property.postcode)) {
+      initializeMap();
+    }
+  }, [property]);
+
+  const initializeMap = () => {
+    const postcode = property.zip_code || property.postcode;
+    if (!postcode) return;
+
+    // Load Leaflet CSS
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+
+    // Load Leaflet JS
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = () => {
+      // Geocode postcode to get coordinates
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(postcode)}&countrycodes=gb`)
+        .then(response => response.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lon = parseFloat(data[0].lon);
+
+            const map = window.L.map('map').setView([lat, lon], 15);
+            
+            window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add marker
+            const marker = window.L.marker([lat, lon]).addTo(map);
+            marker.bindPopup(`<b>${postcode}</b>`).openPopup();
+          }
+        })
+        .catch(error => {
+          console.error('Error geocoding postcode:', error);
+          // Fallback to London coordinates
+          const map = window.L.map('map').setView([51.505, -0.09], 10);
+          window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+          }).addTo(map);
+        });
+    };
+    document.head.appendChild(script);
+  };
+
   // Helper function to check if a feature is available
   const hasFeature = (features, key) => {
     if (!features) return false;
@@ -225,7 +277,7 @@ const PropertyView = () => {
         <div className="property-media-gallery property-media-gallery--short">
           {property.images && property.images.length > 0 ? (
             <div className="media-viewer">
-              {property.images.length >= 3 ? (
+              {property.images.length >= 2 ? (
                 // Modern layout with 3 main pictures + scrollable row below
                 <>
                   <div className="modern-gallery-layout">
@@ -452,19 +504,35 @@ const PropertyView = () => {
 
         {/* New Property Info Section below gallery */}
         <div className="property-info-section">
-          <div className="property-info-item">
-            <i className="fas fa-home property-info-icon"></i>
-            <span className="property-info-label">{property.title}</span>
+          {/* Postcode Location Display */}
+          <div className="property-map-container">
+            
+            <div className="property-map-wrapper">
+              {(() => {
+                const postcode = property.zip_code || property.postcode;
+                if (postcode) {
+                  return (
+                    <div className="property-map-static">
+                      <div className="property-map-info">
+                        <i className="fas fa-map-marker-alt"></i>
+                        <span className="property-postcode">{postcode}</span>
+                      </div>
+                      <div className="property-map-content">
+                        <div id="map" className="property-map-frame"></div>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="property-map-placeholder">
+                      <i className="fas fa-map-marker-alt"></i>
+                      <p>Postcode not available</p>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
           </div>
-          <div className="property-info-item">
-            <i className="fas fa-tag property-info-icon"></i>
-            <span className="property-info-label">Property for {property.category ? property.category.charAt(0).toUpperCase() + property.category.slice(1) : ''}</span>
-          </div>
-          <div className="property-info-item">
-            <i className="fas fa-map-marker-alt property-info-icon"></i>
-            <span className="property-info-label">{formatAddress(property)}</span>
-          </div>
-          {/* More categorized info will be added here in the next step */}
         </div>
 
         {/* Property Details Sidebar (Contact Info, Description, etc.) */}
@@ -477,7 +545,7 @@ const PropertyView = () => {
               </span>
               <span className="property-details-dash" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}> - </span>
               <span className="property-details-type" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-                {property.property_type || property.propertyType || 'Property'}
+                {(property.property_type || property.propertyType || 'Property').replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
               </span>
             </div>
             <div className="property-details-location-prices" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 8 }}>
@@ -520,8 +588,13 @@ const PropertyView = () => {
                   </span>
                 ) : null}
                 {property.weekly_rent || property.weeklyRent ? (
-                  <span className="property-details-price" style={{ fontSize: '1rem', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                  <span className="property-details-price" style={{ fontSize: '1rem', marginBottom: 4, fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
                     £{Number(property.weekly_rent || property.weeklyRent).toLocaleString()}/week
+                  </span>
+                ) : null}
+                {property.deposit_amount || property.depositAmount ? (
+                  <span className="property-details-price" style={{ fontSize: '0.9rem', color: '#059669', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                    £{Number(property.deposit_amount || property.depositAmount).toLocaleString()} deposit
                   </span>
                 ) : null}
               </div>
@@ -663,12 +736,12 @@ const PropertyView = () => {
           </div>
 
           {/* NEW: Layout Upload Section */}
-          {(property.layout_file_url || property.layout_file_name) && (
+          {(property.layout_file_url || property.layout_file_name || property.layoutFileUrl || property.layoutFileName) && (
             <div className="property-layout-section">
               <h3 className="property-layout-title">Property Layout</h3>
               
               <div className="property-layout-content">
-                {property.layout_file_url ? (
+                {(property.layout_file_url || property.layoutFileUrl) ? (
                   <div className="layout-display-container">
                     {/* Approximate Area Display */}
                     {property.apartment_size && (
@@ -681,11 +754,11 @@ const PropertyView = () => {
                     {/* Layout Image Display with Zoom */}
                     <div className="layout-image-container">
                       <img 
-                        src={property.layout_file_url} 
+                        src={property.layout_file_url || property.layoutFileUrl} 
                         alt="Property Layout" 
                         className="layout-image"
                         onError={(e) => {
-                          console.error('Layout image load error:', property.layout_file_url, e);
+                          console.error('Layout image load error:', property.layout_file_url || property.layoutFileUrl, e);
                           e.target.style.display = 'none';
                           e.target.nextSibling.style.display = 'flex';
                         }}
