@@ -691,20 +691,26 @@ const PropertyView = () => {
                               return property.floor_number; // Return as-is if not a number
                             }
                             
-                            // Convert number to word
-                            const numberWords = [
-                              'zero', 'one', 'two', 'three', 'four', 'five', 
-                              'six', 'seven', 'eight', 'nine', 'ten',
-                              'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
-                              'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'
+                            // Convert number to ordinal word
+                            const ordinalWords = [
+                              'Ground', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 
+                              'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth',
+                              'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth',
+                              'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth',
+                              'Twenty-first', 'Twenty-second', 'Twenty-third', 'Twenty-fourth', 'Twenty-fifth',
+                              'Twenty-sixth', 'Twenty-seventh', 'Twenty-eighth', 'Twenty-ninth', 'Thirtieth',
+                              'Thirty-first', 'Thirty-second', 'Thirty-third', 'Thirty-fourth', 'Thirty-fifth',
+                              'Thirty-sixth', 'Thirty-seventh', 'Thirty-eighth', 'Thirty-ninth', 'Fortieth',
+                              'Forty-first', 'Forty-second', 'Forty-third', 'Forty-fourth', 'Forty-fifth',
+                              'Forty-sixth', 'Forty-seventh', 'Forty-eighth', 'Forty-ninth', 'Fiftieth'
                             ];
                             
                             if (floorNum === 0) {
                               return 'ground floor';
-                            } else if (floorNum >= 1 && floorNum <= 20) {
-                              return numberWords[floorNum] + ' floor';
+                            } else if (floorNum >= 1 && floorNum <= 50) {
+                              return ordinalWords[floorNum] + ' Floor';
                             } else {
-                              // For numbers beyond 20, use the original number
+                              // For numbers beyond 50, use the original number
                               return floorNum + 'th floor';
                             }
                           })()}

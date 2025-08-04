@@ -677,12 +677,14 @@
 .layout-area-info {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.2rem;
   margin-bottom: 1rem;
   padding: 0;
   font-size: 1.125rem;
   font-weight: 600;
   color: #2d3748;
+  text-align: center;
 }
 
 .layout-area-label {
@@ -760,12 +762,14 @@
 .layout-floor-info {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   padding: 0;
   margin-top: 0.5rem;
   font-size: 1.125rem;
   font-weight: 600;
   color: #2d3748;
+  text-align: center;
 }
 
 .layout-floor-label {
