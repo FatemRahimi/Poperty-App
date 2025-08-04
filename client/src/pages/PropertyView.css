@@ -926,7 +926,7 @@
   color: #2d3748;
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #667eea;
+  border-bottom:2px solid #171719;
 }
 
 .property-view-features-category {
@@ -934,12 +934,17 @@
 }
 
 .features-category-title {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: .9rem;
+
   color: #4a5568;
   margin-bottom: 1rem;
   padding-bottom: 0.25rem;
   border-bottom: 1px solid #cbd5e0;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #2d3748;
 }
 
 .property-view-features-grid {
@@ -952,51 +957,135 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  transition: all 0.2s ease;
+  padding: 0.5rem 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  transition: none;
 }
 
 .property-view-feature-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
+  box-shadow: none;
+  transform: none;
+  background: transparent;
 }
 
-.feature-checkbox {
+/* Override AddLease.css checkbox styles with higher specificity */
+.property-view-features-section input[type="checkbox"].property-view-feature-checkbox {
+  accent-color: #f97316 !important;
   width: 18px !important;
   height: 18px !important;
-  accent-color: #667eea !important;
+  flex-shrink: 0 !important;
   cursor: default !important;
-  /* Basic styling to ensure visibility */
-  appearance: auto !important;
-  -webkit-appearance: auto !important;
-  -moz-appearance: auto !important;
+  /* Essential visibility styles */
+  display: inline-block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
   border: 1px solid #cbd5e0 !important;
   background-color: white !important;
   margin: 0 !important;
   padding: 0 !important;
-  position: static !important;
+  /* Custom checkmark styles */
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  position: relative !important;
+}
+
+/* Custom checkmark for checked state */
+.property-view-features-section input[type="checkbox"].property-view-feature-checkbox:checked {
+  background-color: #f97316 !important;
+  border-color: #f97316 !important;
+}
+
+.property-view-features-section input[type="checkbox"].property-view-feature-checkbox:checked::after {
+  content: '✓' !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: white !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
+}
+
+/* Unique PropertyView checkbox styles */
+.property-view-only-checkbox {
+  width: 18px !important;
+  height: 18px !important;
+  accent-color: #f97316 !important;
+  cursor: default !important;
   flex-shrink: 0 !important;
+  /* Essential visibility styles */
   display: inline-block !important;
   opacity: 1 !important;
   visibility: visible !important;
-  min-width: 18px !important;
-  min-height: 18px !important;
-  box-sizing: border-box !important;
+  border: 1px solid #cbd5e0 !important;
+  background-color: white !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  /* Custom checkmark styles */
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  position: relative !important;
 }
 
-/* Remove all custom checkmark styling - let browser handle it */
-.feature-checkbox:checked::after {
-  display: none !important;
+.property-view-only-checkbox:checked {
+  background-color: #f97316 !important;
+  border-color: #f97316 !important;
 }
 
-.feature-checkbox:checked::before {
-  display: none !important;
+.property-view-only-checkbox:checked::after {
+  content: '✓' !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: white !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
 }
 
+.property-view-feature-checkbox {
+  width: 18px !important;
+  height: 18px !important;
+  accent-color: #f97316 !important;
+  cursor: default !important;
+  flex-shrink: 0 !important;
+  /* Essential visibility styles */
+  display: inline-block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  border: 1px solid #cbd5e0 !important;
+  background-color: white !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  /* Custom checkmark styles */
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  position: relative !important;
+}
 
+.property-view-feature-checkbox:checked {
+  background-color: #f97316 !important;
+  border-color: #f97316 !important;
+}
+
+.property-view-feature-checkbox:checked::after {
+  content: '✓' !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: white !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
+}
 
 .property-view-feature-item label {
   font-size: 0.95rem;
@@ -1022,14 +1111,25 @@
     padding: 0.5rem;
   }
 
-  .feature-checkbox {
-    width: 16px;
-    height: 16px;
-    min-width: 16px;
-    min-height: 16px;
+  .property-view-feature-checkbox {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
   }
 
   .property-view-feature-item label {
     font-size: 0.9rem;
   }
+} 
+
+.view-property-description h3,
+.property-view-info-title,
+.property-layout-title,
+.property-view-features-title {
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  color: #1a202c;
 } 

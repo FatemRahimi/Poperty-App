@@ -188,7 +188,7 @@ input[type="checkbox"] + label {
     font-weight: 500;
 }
 
-input[type="checkbox"] {
+.addleasing-form input[type="checkbox"] {
     width: 20px;
     height: 20px;
     cursor: pointer;
