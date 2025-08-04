@@ -1163,9 +1163,24 @@ router.get('/property/:slug', async (req, res) => {
       });
     }
 
+    const property = result.rows[0];
+    
+    // Debug: Log property features
+    console.log('🔍 Property Features Debug:');
+    console.log('📋 Property ID:', property.id);
+    console.log('📋 has_garden:', property.has_garden);
+    console.log('📋 parking_spaces:', property.parking_spaces);
+    console.log('📋 pets_allowed:', property.pets_allowed);
+    console.log('📋 student_housing:', property.student_housing);
+    console.log('📋 furnished:', property.furnished);
+    console.log('📋 has_garage:', property.has_garage);
+    console.log('📋 has_pool:', property.has_pool);
+    console.log('📋 key_features:', property.key_features);
+    console.log('📋 key_features type:', typeof property.key_features);
+
     res.json({
       success: true,
-      property: result.rows[0]
+      property: property
     });
 
   } catch (error) {
