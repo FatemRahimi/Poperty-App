@@ -225,7 +225,7 @@ const PropertyView = () => {
         <div className="property-media-gallery property-media-gallery--short">
           {property.images && property.images.length > 0 ? (
             <div className="media-viewer">
-              {property.images.length >= 4 ? (
+              {property.images.length >= 3 ? (
                 // Modern layout with 3 main pictures + scrollable row below
                 <>
                   <div className="modern-gallery-layout">
