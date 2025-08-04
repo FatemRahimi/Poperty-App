@@ -783,7 +783,7 @@ const PropertyView = () => {
                     id="has_garden" 
                     checked={property.has_garden || false}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="has_garden">Garden</label>
                 </div>
@@ -794,7 +794,7 @@ const PropertyView = () => {
                     id="parking_spaces" 
                     checked={(property.parking_spaces && property.parking_spaces > 0) || false}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="parking_spaces">Parking</label>
                 </div>
@@ -805,7 +805,7 @@ const PropertyView = () => {
                     id="balcony_terrace" 
                     checked={hasFeature(property.key_features, 'balcony_terrace')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="balcony_terrace">Balcony/Terrace</label>
                 </div>
@@ -816,7 +816,7 @@ const PropertyView = () => {
                     id="pets_allowed" 
                     checked={property.pets_allowed || false}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="pets_allowed">Pets Allowed</label>
                 </div>
@@ -827,7 +827,7 @@ const PropertyView = () => {
                     id="student_housing" 
                     checked={property.student_housing || false}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="student_housing">Suitable for Students</label>
                 </div>
@@ -838,7 +838,7 @@ const PropertyView = () => {
                     id="furnished" 
                     checked={property.furnished || false}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="furnished">Furnished</label>
                 </div>
@@ -849,7 +849,7 @@ const PropertyView = () => {
                     id="has_garage" 
                     checked={property.has_garage || false}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="has_garage">Garage</label>
                 </div>
@@ -860,7 +860,7 @@ const PropertyView = () => {
                     id="has_pool" 
                     checked={property.has_pool || false}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="has_pool">Pool</label>
                 </div>
@@ -877,7 +877,7 @@ const PropertyView = () => {
                     id="kitchen_white_goods" 
                     checked={hasFeature(property.key_features, 'kitchen_white_goods')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="kitchen_white_goods">Kitchen with white goods</label>
                 </div>
@@ -888,7 +888,7 @@ const PropertyView = () => {
                     id="allocated_parking" 
                     checked={hasFeature(property.key_features, 'allocated_parking')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="allocated_parking">Allocated parking</label>
                 </div>
@@ -899,7 +899,7 @@ const PropertyView = () => {
                     id="communal_garden" 
                     checked={hasFeature(property.key_features, 'communal_garden')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="communal_garden">Communal garden</label>
                 </div>
@@ -910,7 +910,7 @@ const PropertyView = () => {
                     id="storage_space" 
                     checked={hasFeature(property.key_features, 'storage_space')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="storage_space">Storage space</label>
                 </div>
@@ -921,7 +921,7 @@ const PropertyView = () => {
                     id="lift_access" 
                     checked={hasFeature(property.key_features, 'lift_access')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="lift_access">Lift access</label>
                 </div>
@@ -932,7 +932,7 @@ const PropertyView = () => {
                     id="intercom_entry" 
                     checked={hasFeature(property.key_features, 'intercom_entry')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="intercom_entry">Intercom entry system</label>
                 </div>
@@ -949,7 +949,7 @@ const PropertyView = () => {
                     id="bills_included" 
                     checked={hasFeature(property.key_features, 'bills_included')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="bills_included">Bills included</label>
                 </div>
@@ -960,7 +960,7 @@ const PropertyView = () => {
                     id="council_tax_included" 
                     checked={hasFeature(property.key_features, 'council_tax_included')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="council_tax_included">Council tax included</label>
                 </div>
@@ -971,7 +971,7 @@ const PropertyView = () => {
                     id="water_included" 
                     checked={hasFeature(property.key_features, 'water_included')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="water_included">Water included</label>
                 </div>
@@ -982,7 +982,7 @@ const PropertyView = () => {
                     id="electricity_included" 
                     checked={hasFeature(property.key_features, 'electricity_included')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="electricity_included">Electricity included</label>
                 </div>
@@ -993,7 +993,7 @@ const PropertyView = () => {
                     id="gas_included" 
                     checked={hasFeature(property.key_features, 'gas_included')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="gas_included">Gas included</label>
                 </div>
@@ -1004,7 +1004,7 @@ const PropertyView = () => {
                     id="internet_included" 
                     checked={hasFeature(property.key_features, 'internet_included')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="internet_included">Internet included</label>
                 </div>
@@ -1021,7 +1021,7 @@ const PropertyView = () => {
                     id="zero_deposit" 
                     checked={hasFeature(property.key_features, 'zero_deposit')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="zero_deposit">Zero deposit option</label>
                 </div>
@@ -1032,7 +1032,7 @@ const PropertyView = () => {
                     id="guarantor_accepted" 
                     checked={hasFeature(property.key_features, 'guarantor_accepted')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="guarantor_accepted">Guarantor accepted</label>
                 </div>
@@ -1043,7 +1043,7 @@ const PropertyView = () => {
                     id="dss_lha_accepted" 
                     checked={hasFeature(property.key_features, 'dss_lha_accepted')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="dss_lha_accepted">DSS/LHA accepted</label>
                 </div>
@@ -1054,7 +1054,7 @@ const PropertyView = () => {
                     id="short_term_lets" 
                     checked={hasFeature(property.key_features, 'short_term_lets')}
                     disabled
-                    className="feature-checkbox"
+                    className="property-view-feature-checkbox"
                   />
                   <label htmlFor="short_term_lets">Short-term lets available</label>
                 </div>
