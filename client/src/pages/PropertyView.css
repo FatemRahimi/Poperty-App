@@ -122,7 +122,8 @@
   margin: 0 auto;
   display: grid;
   grid-template-columns: 2.5fr 1fr;
-  gap: 1rem;
+  gap: 0.5rem;
+  align-items: start;
 }
 
 /* Media Gallery */
@@ -263,6 +264,7 @@
   padding: 2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   height: fit-content;
+  margin-top: 0.5rem;
 }
 
 .view-property-header {
@@ -400,7 +402,7 @@
   }
   
   .property-view-content {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 1rem;
   }
   
@@ -1365,5 +1367,217 @@
   
   .property-map-info i {
     font-size: 1.1rem;
+  }
+} 
+
+/* Property Advisor Card */
+.property-advisor-card {
+  margin: 2rem 0;
+  padding: 2rem;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.advisor-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.company-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.company-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.logo-placeholder {
+  font-size: 2rem;
+  color: #6c757d;
+}
+
+.company-info {
+  flex: 1;
+}
+
+.company-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+}
+
+.company-tagline {
+  font-size: 1rem;
+  color: #718096;
+  font-style: italic;
+}
+
+.advisor-team {
+  margin-bottom: 2rem;
+}
+
+.advisor-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 1.5rem;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+}
+
+.advisor-profile {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.advisor-photo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 3px solid #667eea;
+}
+
+.advisor-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-placeholder {
+  font-size: 3rem;
+  color: #6c757d;
+}
+
+.advisor-details {
+  flex: 1;
+}
+
+.advisor-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+}
+
+.advisor-role {
+  font-size: 1rem;
+  color: #667eea;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.advisor-description {
+  font-size: 0.95rem;
+  color: #4a5568;
+  line-height: 1.6;
+}
+
+.contact-information {
+  border-top: 2px solid #f8f9fa;
+  padding-top: 1.5rem;
+}
+
+.contact-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 1.5rem;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+}
+
+.contact-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.contact-item:hover {
+  background: #e9ecef;
+  transform: translateY(-2px);
+}
+
+.contact-item i {
+  color: #667eea;
+  font-size: 1.2rem;
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.contact-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.contact-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #2d3748;
+}
+
+/* Responsive design for Property Advisor Card */
+@media (max-width: 768px) {
+  .property-advisor-card {
+    padding: 1.5rem;
+  }
+  
+  .advisor-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .advisor-profile {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .contact-details {
+    grid-template-columns: 1fr;
   }
 } 
