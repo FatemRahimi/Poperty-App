@@ -102,6 +102,26 @@ const PropertyView = () => {
     return false;
   };
 
+  // Helper function to capitalize first character of each word
+  const toTitleCase = (str) => {
+    if (!str) return '';
+    return str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  // Helper function to capitalize only first word
+  const toSentenceCase = (str) => {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  // Helper function to limit words to 50
+  const limitWords = (str, maxWords = 50) => {
+    if (!str) return '';
+    const words = str.split(' ');
+    if (words.length <= maxWords) return str;
+    return words.slice(0, maxWords).join(' ') + '...';
+  };
+
   useEffect(() => {
     fetchProperty();
   }, [slug]);
@@ -1178,10 +1198,10 @@ const PropertyView = () => {
               </div>
               <div className="company-info">
                 <h3 className="company-name">
-                  {advisorInfo?.company_name || 'Property Solutions Ltd'}
+                  {toTitleCase(advisorInfo?.company_name) || 'Property Solutions Ltd'}
                 </h3>
                 <p className="company-tagline">
-                  {advisorInfo?.company_tagline || 'Your Trusted Property Partner'}
+                  {toTitleCase(advisorInfo?.company_tagline) || 'Your Trusted Property Partner'}
                 </p>
               </div>
             </div>
@@ -1202,13 +1222,13 @@ const PropertyView = () => {
                 </div>
                 <div className="advisor-details">
                   <h5 className="advisor-name">
-                    {advisorInfo?.full_name || `${property?.contact_name || 'Property Advisor'}`}
+                    {toTitleCase(advisorInfo?.full_name) || `${property?.contact_name || 'Property Advisor'}`}
                   </h5>
                   <p className="advisor-role">
-                    {advisorInfo?.job_title || 'Senior Property Advisor'}
+                    {toTitleCase(advisorInfo?.job_title) || 'Senior Property Advisor'}
                   </p>
                   <p className="advisor-description">
-                    {advisorInfo?.professional_bio || 'With over 8 years of experience in the property market, our advisor specializes in helping clients find their perfect home. We have successfully assisted hundreds of families in finding their ideal properties across the UK.'}
+                    {limitWords(toSentenceCase(advisorInfo?.professional_bio), 50) || 'With over 8 years of experience in the property market, our advisor specializes in helping clients find their perfect home. We have successfully assisted hundreds of families in finding their ideal properties across the UK.'}
                   </p>
                 </div>
               </div>
@@ -1240,7 +1260,7 @@ const PropertyView = () => {
                     <i className="fas fa-clock"></i>
                     <div className="contact-info">
                       <span className="contact-label">Office Hours</span>
-                      <span className="contact-value">{advisorInfo.office_hours}</span>
+                      <span className="contact-value">{toTitleCase(advisorInfo.office_hours)}</span>
                     </div>
                   </div>
                 )}
@@ -1249,7 +1269,7 @@ const PropertyView = () => {
                     <i className="fas fa-map-marker-alt"></i>
                     <div className="contact-info">
                       <span className="contact-label">Office Address</span>
-                      <span className="contact-value">{advisorInfo.office_address}</span>
+                      <span className="contact-value">{toTitleCase(advisorInfo.office_address)}</span>
                     </div>
                   </div>
                 )}

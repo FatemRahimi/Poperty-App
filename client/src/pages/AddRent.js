@@ -277,6 +277,7 @@ const AddRent = () => {
         companyLogo: null,
         companyLogoUrl: "",
         companyTagline: "",
+        companyDescription: "",
         fullName: "",
         profilePhoto: null,
         profilePhotoUrl: "",
@@ -338,6 +339,7 @@ const AddRent = () => {
       companyLogo: null,
       companyLogoUrl: "",
       companyTagline: "",
+      companyDescription: "",
       fullName: "",
       profilePhoto: null,
       profilePhotoUrl: "",
@@ -1792,17 +1794,17 @@ const AddRent = () => {
 
             {/* Advisor Card Section */}
             <div className="advisor-card-section">
-              <h3 className="section-title">Professional Advisor Card</h3>
+              <h3 className="section-title">Professional Dashboard(for User or Company) with Advisor Card</h3>
               <div className="advisor-card-info">
                 <p className="advisor-card-description">
-                  If you are happy to have an advisor card near your property, click here to set up your professional advisor profile.
+                  If you are happy to have an dashboard for your company and an advisor card near your property, click here to set up your professional advisor profile.
                 </p>
                 <div className="advisor-card-benefits">
                   <h4>Benefits of having an advisor card:</h4>
                   <ul>
-                    <li>✅ Professional branding on all your properties</li>
-                    <li>✅ Display your company logo and contact information</li>
-                    <li>✅ Show your expertise and experience</li>
+                    <li>✅ Professional branding on all your properties </li>
+                    <li>✅ Display your company activiteies, logo and contact information</li>
+                    <li>✅ Show your expertise, experts and experience</li>
                     <li>✅ Build trust with potential tenants</li>
                     <li>✅ Increase inquiries and viewings</li>
                   </ul>
@@ -1836,61 +1838,56 @@ const AddRent = () => {
             {/* Company Information */}
             <div className="advisor-form-section">
               <div className="form-row">
-                <TextInput
-                  label="Company Name*"
-                  name="companyName"
-                  value={formData.companyName}
-                  onChange={handleChange}
-                  placeholder="e.g. Property Solutions Ltd"
-                  required
-                />
+                <div className="form-group">
+                  <label htmlFor="companyName">Company Name*</label>
+                  <input
+                    type="text"
+                    id="companyName"
+                    name="companyName"
+                    value={formData.companyName}
+                    onChange={handleChange}
+                    placeholder="e.g. Property Solutions Ltd"
+                    required
+                    className="advisor-field-input"
+                  />
+                </div>
                 
-                <TextInput
-                  label="Company Tagline"
-                  name="companyTagline"
-                  value={formData.companyTagline}
-                  onChange={handleChange}
-                  placeholder="e.g. Your Trusted Property Partner"
-                />
+                <div className="form-group">
+                  <label htmlFor="companyTagline">Company Tagline</label>
+                  <input
+                    type="text"
+                    id="companyTagline"
+                    name="companyTagline"
+                    value={formData.companyTagline}
+                    onChange={handleChange}
+                    placeholder="e.g. Your Trusted Property Partner"
+                    className="advisor-field-input"
+                  />
+                </div>
               </div>
               
               <div className="form-group">
-                <label htmlFor="companyLogo">Company Logo</label>
-                <div className="logo-upload-area">
-                  <input
-                    type="file"
-                    id="companyLogo"
-                    accept="image/*"
-                    onChange={handleAdvisorLogoUpload}
-                    style={{ display: 'none' }}
-                  />
-                  <label htmlFor="companyLogo" className="logo-upload-label">
-                    <div className="logo-upload-content">
-                      {formData.companyLogoUrl ? (
-                        <div className="logo-preview-container">
-                          <img src={formData.companyLogoUrl} alt="Company Logo" className="logo-preview" />
-                          <button 
-                            type="button" 
-                            className="remove-logo-btn"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleCompanyLogoDelete();
-                            }}
-                            title="Remove company logo"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="logo-placeholder">
-                          <i className="fas fa-building"></i>
-                          <span>Upload Company Logo</span>
-                        </div>
-                      )}
-                    </div>
-                  </label>
-                </div>
+                <label htmlFor="companyDescription">Company Description</label>
+                <textarea
+                  id="companyDescription"
+                  name="companyDescription"
+                  value={formData.companyDescription}
+                  onChange={handleChange}
+                  rows="3"
+                  placeholder="Tell potential clients about your company, services, and what makes you unique. Describe your expertise, years of experience, and commitment to helping clients find their perfect property..."
+                  className="form-textarea company-description-textarea"
+                />
+                <small className="word-count-helper">
+                  {(() => {
+                    const wordCount = (formData.companyDescription || '').trim().split(/\s+/).filter(word => word.length > 0).length;
+                    const isValid = wordCount <= 100;
+                    return (
+                      <span style={{ color: isValid ? '#10b981' : '#ef4444' }}>
+                        {wordCount}/100 words maximum {isValid ? '✓' : ''}
+                      </span>
+                    );
+                  })()}
+                </small>
               </div>
             </div>
 
@@ -1899,23 +1896,33 @@ const AddRent = () => {
               <h4 className="advisor-subsection-title">Personal Information</h4>
               
               <div className="form-row">
-                <TextInput
-                  label="Full Name*"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  placeholder="e.g. John Smith"
-                  required
-                />
+                <div className="form-group">
+                  <label htmlFor="fullName">Full Name*</label>
+                  <input
+                    type="text"
+                    id="fullName"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    placeholder="e.g. John Smith"
+                    required
+                    className="advisor-field-input"
+                  />
+                </div>
                 
-                <TextInput
-                  label="Job Title*"
-                  name="jobTitle"
-                  value={formData.jobTitle}
-                  onChange={handleChange}
-                  placeholder="e.g. Senior Property Advisor"
-                  required
-                />
+                <div className="form-group">
+                  <label htmlFor="jobTitle">Job Title*</label>
+                  <input
+                    type="text"
+                    id="jobTitle"
+                    name="jobTitle"
+                    value={formData.jobTitle}
+                    onChange={handleChange}
+                    placeholder="e.g. Senior Property Advisor"
+                    required
+                    className="advisor-field-input"
+                  />
+                </div>
               </div>
               
               <div className="form-group">
@@ -1974,33 +1981,42 @@ const AddRent = () => {
             {/* Contact Information */}
             <div className="advisor-form-section">
               <div className="form-row">
-                <TextInput
-                  label="Office Hours"
-                  name="officeHours"
-                  value={formData.officeHours}
-                  onChange={handleChange}
-                  placeholder="e.g. Mon-Fri: 9:00 AM - 6:00 PM"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="officeAddress">Office Address</label>
-                <textarea
-                  id="officeAddress"
-                  name="officeAddress"
-                  value={formData.officeAddress}
-                  onChange={handleChange}
-                  rows="3"
-                  placeholder="Enter your office address..."
-                  className="form-textarea"
-                />
+                <div className="form-group">
+                  <label htmlFor="officeHours" className="office-field-label">
+                    Office Hours
+                  </label>
+                  <input
+                    type="text"
+                    id="officeHours"
+                    name="officeHours"
+                    value={formData.officeHours}
+                    onChange={handleChange}
+                    placeholder="e.g. Mon-Fri: 9:00 AM - 6:00 PM"
+                    className="office-field-input"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="officeAddress" className="office-field-label">
+                    Office Address
+                  </label>
+                  <textarea
+                    id="officeAddress"
+                    name="officeAddress"
+                    value={formData.officeAddress}
+                    onChange={handleChange}
+                    rows="1"
+                    placeholder="Enter your office address..."
+                    className="office-field-textarea"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Enable Advisor Profile */}
             <div className="advisor-form-section">
               <div className="form-group">
-                <label className="checkbox-label">
+                <label className="checkbox-label advisor-checkbox-label">
                   <input
                     type="checkbox"
                     name="isAdvisor"
@@ -2009,7 +2025,7 @@ const AddRent = () => {
                   />
                   <span>Enable Professional Advisor Profile</span>
                 </label>
-                <small>When enabled, your advisor information will appear on all your property listings</small>
+                <small className="advisor-help-text">When enabled, your advisor information will appear on all your property listings</small>
               </div>
             </div>
           </div>
