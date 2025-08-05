@@ -1859,6 +1859,111 @@ textarea.form-input-base:hover {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+/* Reduced gap for advisor checkbox */
+.advisor-form-section .checkbox-label {
+  gap: 0.2rem !important;
+}
+
+/* Alternative more specific selector */
+.advisor-form-section .form-group .checkbox-label {
+  gap: 0.2rem !important;
+}
+
+/* Very specific selector for advisor checkbox */
+.advisor-checkbox-label {
+  gap: 0.2rem !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Office Hours and Address Side by Side Styling */
+.office-field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.office-field-input,
+.office-field-textarea {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  height: 52px;
+  box-sizing: border-box;
+}
+
+.office-field-input:focus,
+.office-field-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: white;
+  transform: translateY(-1px);
+}
+
+.office-field-input:hover,
+.office-field-textarea:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.office-field-textarea {
+  resize: none;
+  line-height: 1.4;
+  overflow-y: auto;
+}
+
+/* Ensure proper side-by-side layout */
+.advisor-form-section .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* Consistent styling for all advisor form inputs */
+.advisor-field-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.advisor-field-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: white;
+  transform: translateY(-1px);
+}
+
+.advisor-field-input:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Help text styling for advisor section */
+.advisor-help-text {
+  margin-top: 0.25rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
 /* Reduced gaps for advisor form fields */
 .advisor-form-section .form-group {
   margin-bottom: 0.75rem;
@@ -1901,6 +2006,12 @@ textarea.form-input-base:hover {
     max-width: 100px;
     max-height: 100px;
   }
+  
+  /* Stack office fields on mobile */
+  .advisor-form-section .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1926,5 +2037,10 @@ textarea.form-input-base:hover {
   .photo-preview {
     max-width: 80px;
     max-height: 80px;
+  }
+  
+  /* Further reduce gap on small mobile */
+  .advisor-form-section .form-row {
+    gap: 0.75rem;
   }
 } 
