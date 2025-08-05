@@ -757,7 +757,7 @@ textarea.form-input-base:hover {
 
 .form-textarea::placeholder {
   color: var(--text-secondary);
-  font-style: italic;
+  font-style: normal;
 }
 
 /* Muted placeholder styling for specific inputs */
@@ -1236,8 +1236,7 @@ textarea.form-input-base:hover {
 }
 
 .key-feature-item input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+ 
   margin: 0;
   cursor: pointer;
   appearance: none;
@@ -1297,10 +1296,48 @@ textarea.form-input-base:hover {
 
 /* Section Description */
 .section-description {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
+  color: #3b82f6;
+  font-size: 0.9rem;
+  font-weight: 300;
   margin-bottom: 1rem;
-  line-height: 1.5;
+  text-align: left;
+  
+}
+
+/* Consistent Caption Styling for AddRent */
+.section-description,
+.form-group small,
+.advisor-card-description small,
+.advisor-help-text {
+  color: #10b981;
+  font-size: 0.85rem;
+  font-family: 'arial';
+  font-weight: 300;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+
+/* Caption styling for advisor sections */
+.advisor-form-section .section-description {
+  color: rgb(16, 185, 129);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+  text-align: left;
+  font-family: 'Helvetica', sans-serif;
+  opacity: 0.9;
+}
+
+/* Caption styling for form groups - closer to labels */
+.form-group .section-description {
+  color: rgb(16, 185, 129);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  margin-top: -.5rem;
+  text-align: left;
+  font-family: 'Helvetica', sans-serif;
+  opacity: 0.9;
 }
 
 /* Layout Section */
@@ -1503,11 +1540,29 @@ textarea.form-input-base:hover {
 }
 
 .advisor-card-description {
-  font-size: 1.1rem;
-  color: #374151;
+  font-size: 1rem;
+  color: #40c01d;
   margin-bottom: 1.5rem;
   line-height: 1.6;
-  font-weight: 500;
+  font-weight: 600;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI';
+  animation: zoomInOut 3s ease-in-out infinite;
+  text-align: center;
+  padding: 1rem;
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+  border-radius: 8px;
+  border: .5px solid rgba(59, 130, 246, 0.1);
+}
+
+@keyframes zoomInOut {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
 }
 
 .advisor-card-benefits {
@@ -1564,7 +1619,7 @@ textarea.form-input-base:hover {
   align-items: center;
   gap: 0.5rem;
   padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #49995e 0%, #32aa68 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -1572,11 +1627,11 @@ textarea.form-input-base:hover {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  box-shadow: 2 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .advisor-card-btn:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #4ad141 0%, #46d836 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
 }
@@ -1958,10 +2013,10 @@ textarea.form-input-base:hover {
 
 /* Help text styling for advisor section */
 .advisor-help-text {
-  margin-top: 0.25rem;
+  margin-top: -.5rem;
   color: #6b7280;
-  font-size: 0.875rem;
-  font-style: italic;
+  font-size: 0.8rem;
+  
 }
 
 /* Reduced gaps for advisor form fields */
@@ -2043,4 +2098,190 @@ textarea.form-input-base:hover {
   .advisor-form-section .form-row {
     gap: 0.75rem;
   }
+} 
+
+/* Advisor Type Selection */
+.advisor-type-selection {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.advisor-type-buttons {
+  display: flex;
+  gap: 6rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+  align-items: stretch;
+}
+
+.advisor-type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 280px;
+  height: 200px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.advisor-type-btn:hover {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  border-color: #3b82f6;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.2);
+}
+
+.advisor-type-btn.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #3b82f6;
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+}
+
+.advisor-type-btn i {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.advisor-type-btn:hover i {
+  transform: scale(1.1);
+}
+
+.advisor-type-btn span {
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.advisor-type-btn small {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+/* Expert Team Styles */
+.expert-member {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.expert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.expert-header h5 {
+  margin: 0;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.remove-expert-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.remove-expert-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.add-expert-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.add-expert-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.add-expert-btn i {
+  font-size: 1rem;
+}
+
+/* Responsive Design for Advisor Type */
+@media (max-width: 768px) {
+  .advisor-type-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .advisor-type-btn {
+    min-width: 250px;
+  }
+  
+  .expert-member {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .advisor-type-btn {
+    min-width: 200px;
+    padding: 1rem;
+  }
+  
+  .advisor-type-btn i {
+    font-size: 1.5rem;
+  }
+  
+  .advisor-type-btn span {
+    font-size: 1rem;
+  }
+} 
+
+/* Expert Team Section - Close heading and caption */
+.advisor-form-section h4.advisor-subsection-title {
+  margin-bottom: 0.25rem;
+}
+
+.advisor-form-section .section-description {
+  color: rgb(16, 185, 129);
+  font-size: 0.85rem;
+  font-weight: 300;
+  margin-bottom: 1rem;
+  margin-top: -5px;
+  text-align: left;
+  font-family: 'arial';
+  opacity: 0.9;
 } 

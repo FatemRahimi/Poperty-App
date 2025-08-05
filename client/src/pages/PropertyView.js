@@ -1203,6 +1203,11 @@ const PropertyView = () => {
                 <p className="company-tagline">
                   {toTitleCase(advisorInfo?.company_tagline) || 'Your Trusted Property Partner'}
                 </p>
+                {advisorInfo?.company_description && (
+                  <p className="company-description">
+                    {limitWords(toSentenceCase(advisorInfo.company_description), 100)}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -1237,39 +1242,39 @@ const PropertyView = () => {
             <div className="contact-information">
               <h4 className="contact-title">Contact Information</h4>
               <div className="contact-details">
-                <div className="contact-item">
+                <div className="property-view-contact-item">
                   <i className="fas fa-phone"></i>
-                  <div className="contact-info">
-                    <span className="contact-label">Phone</span>
-                    <span className="contact-value">
+                  <div className="property-view-contact-info">
+                    <span className="property-view-contact-label">Phone</span>
+                    <span className="property-view-contact-value">
                       {advisorInfo?.phone || property?.contact_phone || '+44 (0) 20 7123 4567'}
                     </span>
                   </div>
                 </div>
-                <div className="contact-item">
+                <div className="property-view-contact-item">
                   <i className="fas fa-envelope"></i>
-                  <div className="contact-info">
-                    <span className="contact-label">Email</span>
-                    <span className="contact-value">
+                  <div className="property-view-contact-info">
+                    <span className="property-view-contact-label">Email</span>
+                    <span className="property-view-contact-value">
                       {advisorInfo?.email || property?.contact_email || 'contact@propertysolutions.co.uk'}
                     </span>
                   </div>
                 </div>
                 {advisorInfo?.office_hours && (
-                  <div className="contact-item">
+                  <div className="property-view-contact-item">
                     <i className="fas fa-clock"></i>
-                    <div className="contact-info">
-                      <span className="contact-label">Office Hours</span>
-                      <span className="contact-value">{toTitleCase(advisorInfo.office_hours)}</span>
+                    <div className="property-view-contact-info">
+                      <span className="property-view-contact-label">Office Hours</span>
+                      <span className="property-view-contact-value">{toTitleCase(advisorInfo.office_hours)}</span>
                     </div>
                   </div>
                 )}
                 {advisorInfo?.office_address && (
-                  <div className="contact-item">
+                  <div className="property-view-contact-item">
                     <i className="fas fa-map-marker-alt"></i>
-                    <div className="contact-info">
-                      <span className="contact-label">Office Address</span>
-                      <span className="contact-value">{toTitleCase(advisorInfo.office_address)}</span>
+                    <div className="property-view-contact-info">
+                      <span className="property-view-contact-label">Office Address</span>
+                      <span className="property-view-contact-value">{toTitleCase(advisorInfo.office_address)}</span>
                     </div>
                   </div>
                 )}
