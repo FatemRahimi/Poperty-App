@@ -19,6 +19,27 @@ const PropertyView = () => {
     }
   }, [property]);
 
+  // Fetch advisor information for the property owner
+  const [advisorInfo, setAdvisorInfo] = useState(null);
+
+  useEffect(() => {
+    if (property && property.user_id) {
+      fetchAdvisorInfo(property.user_id);
+    }
+  }, [property]);
+
+  const fetchAdvisorInfo = async (userId) => {
+    try {
+      const response = await fetch(`/api/users/${userId}/advisor-profile`);
+      if (response.ok) {
+        const data = await response.json();
+        setAdvisorInfo(data);
+      }
+    } catch (err) {
+      console.error('Error fetching advisor info:', err);
+    }
+  };
+
   const initializeMap = () => {
     const postcode = property.zip_code || property.postcode;
     if (!postcode) return;
@@ -1141,21 +1162,27 @@ const PropertyView = () => {
             </div>
           </div>
 
-          {/* Property Advisor Card - Now below the map */}
+          {/* Property Advisor Card */}
           <div className="property-advisor-card">
             <div className="advisor-header">
               <div className="company-logo">
-                <img src="/images/company-logo.png" alt="Company Logo" onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'block';
-                }} />
-                <div className="logo-placeholder" style={{ display: 'none' }}>
+                {advisorInfo?.company_logo ? (
+                  <img src={advisorInfo.company_logo} alt="Company Logo" onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }} />
+                ) : null}
+                <div className="logo-placeholder" style={{ display: advisorInfo?.company_logo ? 'none' : 'block' }}>
                   <i className="fas fa-building"></i>
                 </div>
               </div>
               <div className="company-info">
-                <h3 className="company-name">Property Solutions Ltd</h3>
-                <p className="company-tagline">Your Trusted Property Partner</p>
+                <h3 className="company-name">
+                  {advisorInfo?.company_name || 'Property Solutions Ltd'}
+                </h3>
+                <p className="company-tagline">
+                  {advisorInfo?.company_tagline || 'Your Trusted Property Partner'}
+                </p>
               </div>
             </div>
 
@@ -1163,19 +1190,25 @@ const PropertyView = () => {
               <h4 className="advisor-title">Meet Our Property Team</h4>
               <div className="advisor-profile">
                 <div className="advisor-photo">
-                  <img src="/images/advisor-photo.jpg" alt="Property Advisor" onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'block';
-                  }} />
-                  <div className="photo-placeholder" style={{ display: 'none' }}>
+                  {advisorInfo?.profile_photo ? (
+                    <img src={advisorInfo.profile_photo} alt="Property Advisor" onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }} />
+                  ) : null}
+                  <div className="photo-placeholder" style={{ display: advisorInfo?.profile_photo ? 'none' : 'block' }}>
                     <i className="fas fa-user-tie"></i>
                   </div>
                 </div>
                 <div className="advisor-details">
-                  <h5 className="advisor-name">Sarah Johnson</h5>
-                  <p className="advisor-role">Senior Property Advisor</p>
+                  <h5 className="advisor-name">
+                    {advisorInfo?.full_name || `${property?.contact_name || 'Property Advisor'}`}
+                  </h5>
+                  <p className="advisor-role">
+                    {advisorInfo?.job_title || 'Senior Property Advisor'}
+                  </p>
                   <p className="advisor-description">
-                    With over 8 years of experience in the property market, Sarah specializes in helping clients find their perfect home. She has successfully assisted hundreds of families in finding their ideal properties across the UK.
+                    {advisorInfo?.professional_bio || 'With over 8 years of experience in the property market, our advisor specializes in helping clients find their perfect home. We have successfully assisted hundreds of families in finding their ideal properties across the UK.'}
                   </p>
                 </div>
               </div>
@@ -1188,30 +1221,38 @@ const PropertyView = () => {
                   <i className="fas fa-phone"></i>
                   <div className="contact-info">
                     <span className="contact-label">Phone</span>
-                    <span className="contact-value">+44 (0) 20 7123 4567</span>
+                    <span className="contact-value">
+                      {advisorInfo?.phone || property?.contact_phone || '+44 (0) 20 7123 4567'}
+                    </span>
                   </div>
                 </div>
                 <div className="contact-item">
                   <i className="fas fa-envelope"></i>
                   <div className="contact-info">
                     <span className="contact-label">Email</span>
-                    <span className="contact-value">sarah.johnson@propertysolutions.co.uk</span>
+                    <span className="contact-value">
+                      {advisorInfo?.email || property?.contact_email || 'contact@propertysolutions.co.uk'}
+                    </span>
                   </div>
                 </div>
-                <div className="contact-item">
-                  <i className="fas fa-clock"></i>
-                  <div className="contact-info">
-                    <span className="contact-label">Office Hours</span>
-                    <span className="contact-value">Mon-Fri: 9:00 AM - 6:00 PM</span>
+                {advisorInfo?.office_hours && (
+                  <div className="contact-item">
+                    <i className="fas fa-clock"></i>
+                    <div className="contact-info">
+                      <span className="contact-label">Office Hours</span>
+                      <span className="contact-value">{advisorInfo.office_hours}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="contact-item">
-                  <i className="fas fa-map-marker-alt"></i>
-                  <div className="contact-info">
-                    <span className="contact-label">Office Address</span>
-                    <span className="contact-value">123 Property Street, London, SW1A 1AA</span>
+                )}
+                {advisorInfo?.office_address && (
+                  <div className="contact-item">
+                    <i className="fas fa-map-marker-alt"></i>
+                    <div className="contact-info">
+                      <span className="contact-label">Office Address</span>
+                      <span className="contact-value">{advisorInfo.office_address}</span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

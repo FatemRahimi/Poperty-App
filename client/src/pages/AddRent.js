@@ -154,6 +154,7 @@ const AddRent = () => {
   const [isRemoving, setIsRemoving] = useState(false); // Prevent multiple simultaneous removals
   const [addressValidationError, setAddressValidationError] = useState(""); // Address validation error
   const [approvedPropertyNotification, setApprovedPropertyNotification] = useState(""); // Notification for approved property edits
+  const [showAdvisorSection, setShowAdvisorSection] = useState(false); // Track if advisor section should be shown
   
   // Check if we're in edit mode
   const editMode = location.state?.editMode || false;
@@ -269,7 +270,21 @@ const AddRent = () => {
         // Description & Media
         description: propertyData.description || "",
         photos: [],
-        contactPhone: propertyData.contact_phone || ""
+        contactPhone: propertyData.contact_phone || "",
+        
+        // Advisor Profile Fields
+        companyName: "",
+        companyLogo: null,
+        companyLogoUrl: "",
+        companyTagline: "",
+        fullName: "",
+        profilePhoto: null,
+        profilePhotoUrl: "",
+        jobTitle: "",
+        professionalBio: "",
+        officeHours: "",
+        officeAddress: "",
+        isAdvisor: false
       };
     }
     
@@ -316,7 +331,21 @@ const AddRent = () => {
       
       description: "",
       photos: [],
-      contactPhone: user?.phone || "" // Auto-populate with user's profile phone
+      contactPhone: user?.phone || "", // Auto-populate with user's profile phone
+      
+      // Advisor Profile Fields
+      companyName: "",
+      companyLogo: null,
+      companyLogoUrl: "",
+      companyTagline: "",
+      fullName: "",
+      profilePhoto: null,
+      profilePhotoUrl: "",
+      jobTitle: "",
+      professionalBio: "",
+      officeHours: "",
+      officeAddress: "",
+      isAdvisor: false
     };
   };
 
@@ -457,6 +486,48 @@ const AddRent = () => {
         layoutFileName: file.name
       }));
     }
+  };
+
+  // Handle advisor logo upload
+  const handleAdvisorLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({
+        ...prev,
+        companyLogo: file,
+        companyLogoUrl: URL.createObjectURL(file)
+      }));
+    }
+  };
+
+  // Handle advisor profile photo upload
+  const handleAdvisorPhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({
+        ...prev,
+        profilePhoto: file,
+        profilePhotoUrl: URL.createObjectURL(file)
+      }));
+    }
+  };
+
+  // Handle company logo deletion
+  const handleCompanyLogoDelete = () => {
+    setFormData(prev => ({
+      ...prev,
+      companyLogo: null,
+      companyLogoUrl: ""
+    }));
+  };
+
+  // Handle profile photo deletion
+  const handleProfilePhotoDelete = () => {
+    setFormData(prev => ({
+      ...prev,
+      profilePhoto: null,
+      profilePhotoUrl: ""
+    }));
   };
 
   const removePhoto = (index) => {
@@ -658,10 +729,35 @@ const AddRent = () => {
         alert(`Please fill in the following required fields: ${missingFields.join(", ")}`);
         return;
       }
+    } else if (currentSection === 4) {
+      const missingFields = [];
+      
+      if (!formData.description?.trim()) {
+        missingFields.push("Property Description");
+      } else {
+        // Check minimum word count (80 words)
+        const wordCount = formData.description.trim().split(/\s+/).length;
+        if (wordCount < 80) {
+          missingFields.push(`Property Description (minimum 80 words required, currently ${wordCount} words)`);
+        }
+      }
+      
+      // Check if photos/videos are uploaded (mandatory for new properties, optional for edits)
+      const hasExistingPhotos = editMode && photoPreviewUrls.some(photoItem => photoItem.isExisting);
+      const hasNewPhotos = photoFiles.length > 0;
+      
+      if (!hasExistingPhotos && !hasNewPhotos) {
+        missingFields.push("Photos or Videos");
+      }
+      
+      if (missingFields.length > 0) {
+        alert(`Please fill in the following required fields: ${missingFields.join(", ")}`);
+        return;
+      }
     }
     
-    // For section 4, don't auto-advance - user needs to submit
-    if (currentSection < 4) {
+    // For section 5, don't auto-advance - user needs to submit
+    if (currentSection < 5) {
       setCurrentSection(prev => prev + 1);
     }
   };
@@ -1693,6 +1789,229 @@ const AddRent = () => {
                 )}
               </small>
             </div>
+
+            {/* Advisor Card Section */}
+            <div className="advisor-card-section">
+              <h3 className="section-title">Professional Advisor Card</h3>
+              <div className="advisor-card-info">
+                <p className="advisor-card-description">
+                  If you are happy to have an advisor card near your property, click here to set up your professional advisor profile.
+                </p>
+                <div className="advisor-card-benefits">
+                  <h4>Benefits of having an advisor card:</h4>
+                  <ul>
+                    <li>✅ Professional branding on all your properties</li>
+                    <li>✅ Display your company logo and contact information</li>
+                    <li>✅ Show your expertise and experience</li>
+                    <li>✅ Build trust with potential tenants</li>
+                    <li>✅ Increase inquiries and viewings</li>
+                  </ul>
+                </div>
+                <div className="advisor-card-action">
+                  <button
+                    type="button"
+                    className="advisor-card-btn"
+                    onClick={() => {
+                      setShowAdvisorSection(true);
+                      setCurrentSection(5);
+                    }}
+                  >
+                    <i className="fas fa-user-tie"></i>
+                    Set Up Advisor Profile
+                  </button>
+                  <small>
+                    You can set up your advisor profile anytime from your dashboard
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 5:
+        return (
+          <div className="form-section">
+            <h3 className="section-title">Professional Advisor Profile</h3>
+            
+            {/* Company Information */}
+            <div className="advisor-form-section">
+              <div className="form-row">
+                <TextInput
+                  label="Company Name*"
+                  name="companyName"
+                  value={formData.companyName}
+                  onChange={handleChange}
+                  placeholder="e.g. Property Solutions Ltd"
+                  required
+                />
+                
+                <TextInput
+                  label="Company Tagline"
+                  name="companyTagline"
+                  value={formData.companyTagline}
+                  onChange={handleChange}
+                  placeholder="e.g. Your Trusted Property Partner"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="companyLogo">Company Logo</label>
+                <div className="logo-upload-area">
+                  <input
+                    type="file"
+                    id="companyLogo"
+                    accept="image/*"
+                    onChange={handleAdvisorLogoUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor="companyLogo" className="logo-upload-label">
+                    <div className="logo-upload-content">
+                      {formData.companyLogoUrl ? (
+                        <div className="logo-preview-container">
+                          <img src={formData.companyLogoUrl} alt="Company Logo" className="logo-preview" />
+                          <button 
+                            type="button" 
+                            className="remove-logo-btn"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleCompanyLogoDelete();
+                            }}
+                            title="Remove company logo"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="logo-placeholder">
+                          <i className="fas fa-building"></i>
+                          <span>Upload Company Logo</span>
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Personal Information */}
+            <div className="advisor-form-section">
+              <h4 className="advisor-subsection-title">Personal Information</h4>
+              
+              <div className="form-row">
+                <TextInput
+                  label="Full Name*"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder="e.g. John Smith"
+                  required
+                />
+                
+                <TextInput
+                  label="Job Title*"
+                  name="jobTitle"
+                  value={formData.jobTitle}
+                  onChange={handleChange}
+                  placeholder="e.g. Senior Property Advisor"
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="profilePhoto">Profile Photo</label>
+                <div className="photo-upload-area">
+                  <input
+                    type="file"
+                    id="profilePhoto"
+                    accept="image/*"
+                    onChange={handleAdvisorPhotoUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor="profilePhoto" className="photo-upload-label">
+                    <div className="photo-upload-content">
+                      {formData.profilePhotoUrl ? (
+                        <div className="photo-preview-container">
+                          <img src={formData.profilePhotoUrl} alt="Profile Photo" className="photo-preview" />
+                          <button 
+                            type="button" 
+                            className="remove-photo-btn"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleProfilePhotoDelete();
+                            }}
+                            title="Remove profile photo"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="photo-placeholder">
+                          <i className="fas fa-user-tie"></i>
+                          <span>Upload Profile Photo</span>
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="professionalBio">Professional Bio</label>
+                <textarea
+                  id="professionalBio"
+                  name="professionalBio"
+                  value={formData.professionalBio}
+                  onChange={handleChange}
+                  rows="4"
+                  placeholder="Tell potential clients about your experience and expertise..."
+                  className="form-textarea"
+                />
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="advisor-form-section">
+              <div className="form-row">
+                <TextInput
+                  label="Office Hours"
+                  name="officeHours"
+                  value={formData.officeHours}
+                  onChange={handleChange}
+                  placeholder="e.g. Mon-Fri: 9:00 AM - 6:00 PM"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="officeAddress">Office Address</label>
+                <textarea
+                  id="officeAddress"
+                  name="officeAddress"
+                  value={formData.officeAddress}
+                  onChange={handleChange}
+                  rows="3"
+                  placeholder="Enter your office address..."
+                  className="form-textarea"
+                />
+              </div>
+            </div>
+
+            {/* Enable Advisor Profile */}
+            <div className="advisor-form-section">
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="isAdvisor"
+                    checked={formData.isAdvisor}
+                    onChange={handleChange}
+                  />
+                  <span>Enable Professional Advisor Profile</span>
+                </label>
+                <small>When enabled, your advisor information will appear on all your property listings</small>
+              </div>
+            </div>
           </div>
         );
       
@@ -1727,6 +2046,8 @@ const AddRent = () => {
         <div className={`progress-step ${currentSection >= 3 ? 'active' : ''}`}>3</div>
         <div className={`progress-line ${currentSection >= 4 ? 'active' : ''}`}></div>
         <div className={`progress-step ${currentSection >= 4 ? 'active' : ''}`}>4</div>
+        <div className={`progress-line ${currentSection >= 5 ? 'active' : ''}`}></div>
+        <div className={`progress-step ${currentSection >= 5 ? 'active' : ''}`}>5</div>
       </div>
 
       {/* Form Section */}
@@ -1775,7 +2096,7 @@ const AddRent = () => {
                 </button>
               )}
               
-              {currentSection === 4 && (
+              {(currentSection === 4 || currentSection === 5) && (
                 <button 
                   type="button" 
                   className="link-btn"
@@ -1787,7 +2108,7 @@ const AddRent = () => {
               )}
             </div>
             
-            {currentSection < 4 ? (
+            {currentSection < 5 ? (
               <button 
                 type="button" 
                 className="next-btn"

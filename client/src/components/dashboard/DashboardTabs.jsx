@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const DashboardTabs = ({ 
   activeTab, 
@@ -6,6 +7,7 @@ const DashboardTabs = ({
   setShowPropertiesDropdown, 
   refreshUserProfile 
 }) => {
+  const navigate = useNavigate();
 
   const handleTabChange = async (tabName) => {
     setActiveTab(tabName);
@@ -14,6 +16,10 @@ const DashboardTabs = ({
     if (tabName === 'profile') {
       await refreshUserProfile();
     }
+  };
+
+  const handleAdvisorProfile = () => {
+    navigate('/advisor-profile');
   };
 
   return (
@@ -41,6 +47,13 @@ const DashboardTabs = ({
         >
           <i className="fas fa-user"></i>
           Profile
+        </button>
+        <button 
+          className="nav-tab-modern advisor-tab"
+          onClick={handleAdvisorProfile}
+        >
+          <i className="fas fa-user-tie"></i>
+          Advisor Profile
         </button>
       </div>
     </div>

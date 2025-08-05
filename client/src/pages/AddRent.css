@@ -1486,3 +1486,445 @@ textarea.form-input-base:hover {
     font-size: 0.75rem;
   }
 } 
+
+/* ========================================
+   ADVISOR CARD SECTION STYLES
+   ======================================== */
+.advisor-card-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.advisor-card-info {
+  text-align: center;
+}
+
+.advisor-card-description {
+  font-size: 1.1rem;
+  color: #374151;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.advisor-card-benefits {
+  margin: 1.5rem 0;
+  text-align: left;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.advisor-card-benefits h4 {
+  color: #1f2937;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.advisor-card-benefits ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.advisor-card-benefits li {
+  padding: 0.5rem 0;
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.advisor-card-benefits li:last-child {
+  border-bottom: none;
+}
+
+.advisor-card-benefits li:before {
+  content: "✅";
+  margin-right: 0.5rem;
+  font-weight: bold;
+}
+
+.advisor-card-action {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.advisor-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.advisor-card-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+.advisor-card-btn:active {
+  transform: translateY(0);
+}
+
+.advisor-card-btn i {
+  font-size: 1.1rem;
+}
+
+.advisor-card-action small {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Responsive Design for Advisor Card */
+@media (max-width: 768px) {
+  .advisor-card-section {
+    padding: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .advisor-card-description {
+    font-size: 1rem;
+  }
+  
+  .advisor-card-benefits {
+    padding: 1rem;
+  }
+  
+  .advisor-card-benefits h4 {
+    font-size: 1rem;
+  }
+  
+  .advisor-card-benefits li {
+    font-size: 0.9rem;
+  }
+  
+  .advisor-card-btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .advisor-card-section {
+    padding: 0.75rem;
+  }
+  
+  .advisor-card-description {
+    font-size: 0.95rem;
+  }
+  
+  .advisor-card-benefits {
+    padding: 0.75rem;
+  }
+  
+  .advisor-card-benefits h4 {
+    font-size: 0.95rem;
+  }
+  
+  .advisor-card-benefits li {
+    font-size: 0.85rem;
+  }
+  
+  .advisor-card-btn {
+    padding: 0.625rem 1rem;
+    font-size: 0.9rem;
+  }
+} 
+
+/* ========================================
+   ADVISOR FORM SECTION STYLES
+   ======================================== */
+.advisor-form-section {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.advisor-form-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.advisor-subsection-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Logo Upload Styles for Advisor Section */
+.logo-upload-area {
+  margin-top: 0.5rem;
+}
+
+.logo-upload-label {
+  display: block;
+  cursor: pointer;
+}
+
+.logo-upload-content {
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.logo-upload-content:hover {
+  border-color: #3b82f6;
+  background: #f8fafc;
+}
+
+.logo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+}
+
+.logo-placeholder i {
+  font-size: 2rem;
+  color: #9ca3af;
+}
+
+.logo-preview {
+  max-width: 120px;
+  max-height: 80px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+/* Logo Preview Container with Delete Button */
+.logo-preview-container {
+  position: relative;
+  display: inline-block;
+}
+
+.remove-logo-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.remove-logo-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+/* Profile Photo Upload Styles for Advisor Section */
+.photo-upload-area {
+  margin-top: 0.5rem;
+}
+
+.photo-upload-label {
+  display: block;
+  cursor: pointer;
+}
+
+.photo-upload-content {
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.photo-upload-content:hover {
+  border-color: #3b82f6;
+  background: #f8fafc;
+}
+
+.photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+}
+
+.photo-placeholder i {
+  font-size: 2rem;
+  color: #9ca3af;
+}
+
+.photo-preview {
+  max-width: 120px;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid #e5e7eb;
+}
+
+/* Photo Preview Container with Delete Button */
+.photo-preview-container {
+  position: relative;
+  display: inline-block;
+}
+
+.remove-photo-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.remove-photo-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+/* Checkbox Styles for Advisor Section */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: #374151;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #3b82f6;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  appearance: auto;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.checkbox-label input[type="checkbox"]:hover {
+  border-color: #3b82f6;
+}
+
+.checkbox-label input[type="checkbox"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Reduced gaps for advisor form fields */
+.advisor-form-section .form-group {
+  margin-bottom: 0.75rem;
+}
+
+.advisor-form-section .form-row {
+  margin-bottom: 0.75rem;
+}
+
+.advisor-form-section .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.advisor-form-section .form-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive Design for Advisor Form */
+@media (max-width: 768px) {
+  .advisor-form-section {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  
+  .advisor-subsection-title {
+    font-size: 1rem;
+  }
+  
+  .logo-upload-content,
+  .photo-upload-content {
+    padding: 1.5rem;
+  }
+  
+  .logo-preview {
+    max-width: 100px;
+    max-height: 60px;
+  }
+  
+  .photo-preview {
+    max-width: 100px;
+    max-height: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .advisor-form-section {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  .advisor-subsection-title {
+    font-size: 0.95rem;
+  }
+  
+  .logo-upload-content,
+  .photo-upload-content {
+    padding: 1rem;
+  }
+  
+  .logo-preview {
+    max-width: 80px;
+    max-height: 50px;
+  }
+  
+  .photo-preview {
+    max-width: 80px;
+    max-height: 80px;
+  }
+} 
