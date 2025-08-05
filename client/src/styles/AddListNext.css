@@ -169,8 +169,8 @@
     }
     
     .checkbox-row input[type="checkbox"] {
-      width:18px;           /* Bigger checkbox */
-      height: 18px;
+      width: 14px;           /* Smaller checkbox to match AddRent */
+      height: 14px;
       cursor: pointer;
       margin-top: 20px;
     }

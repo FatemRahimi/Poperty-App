@@ -155,6 +155,8 @@ const AddRent = () => {
   const [addressValidationError, setAddressValidationError] = useState(""); // Address validation error
   const [approvedPropertyNotification, setApprovedPropertyNotification] = useState(""); // Notification for approved property edits
   const [showAdvisorSection, setShowAdvisorSection] = useState(false); // Track if advisor section should be shown
+  const [advisorType, setAdvisorType] = useState(''); // 'company' or 'person'
+  const [expertTeam, setExpertTeam] = useState([]); // Array to store expert team members
   
   // Check if we're in edit mode
   const editMode = location.state?.editMode || false;
@@ -274,6 +276,7 @@ const AddRent = () => {
         
         // Advisor Profile Fields
         companyName: "",
+        directorName: "",
         companyLogo: null,
         companyLogoUrl: "",
         companyTagline: "",
@@ -336,6 +339,7 @@ const AddRent = () => {
       
       // Advisor Profile Fields
       companyName: "",
+      directorName: "",
       companyLogo: null,
       companyLogoUrl: "",
       companyTagline: "",
@@ -530,6 +534,48 @@ const AddRent = () => {
       profilePhoto: null,
       profilePhotoUrl: ""
     }));
+  };
+
+  // Handle advisor type selection
+  const handleAdvisorTypeChange = (type) => {
+    setAdvisorType(type);
+  };
+
+  // Handle adding expert team member
+  const handleAddExpert = () => {
+    const newExpert = {
+      id: Date.now(),
+      fullName: '',
+      jobTitle: '',
+      profilePhoto: null,
+      profilePhotoUrl: '',
+      phone: '',
+      email: ''
+    };
+    setExpertTeam(prev => [...prev, newExpert]);
+  };
+
+  // Handle removing expert team member
+  const handleRemoveExpert = (expertId) => {
+    setExpertTeam(prev => prev.filter(expert => expert.id !== expertId));
+  };
+
+  // Handle expert team member changes
+  const handleExpertChange = (expertId, field, value) => {
+    setExpertTeam(prev => prev.map(expert => 
+      expert.id === expertId ? { ...expert, [field]: value } : expert
+    ));
+  };
+
+  // Handle expert photo upload
+  const handleExpertPhotoUpload = (expertId, file) => {
+    setExpertTeam(prev => prev.map(expert => 
+      expert.id === expertId ? { 
+        ...expert, 
+        profilePhoto: file, 
+        profilePhotoUrl: URL.createObjectURL(file) 
+      } : expert
+    ));
   };
 
   const removePhoto = (index) => {
@@ -759,12 +805,23 @@ const AddRent = () => {
     }
     
     // For section 5, don't auto-advance - user needs to submit
-    if (currentSection < 5) {
+    if (currentSection < 4) {
       setCurrentSection(prev => prev + 1);
+    } else if (currentSection === 4 && showAdvisorSection) {
+      setCurrentSection(prev => prev + 1);
+    } else if (currentSection === 4 && !showAdvisorSection) {
+      // If advisor section is not enabled, submit the form at section 4
+      handleIntentionalSubmit();
     }
   };
 
   const prevSection = () => {
+    // If going back from section 5 to section 4, reset the advisor section
+    if (currentSection === 5) {
+      setShowAdvisorSection(false);
+      setAdvisorType(''); // Reset advisor type choice
+      setExpertTeam([]); // Reset expert team
+    }
     setCurrentSection(prev => prev - 1);
   };
 
@@ -1423,7 +1480,7 @@ const AddRent = () => {
                   name="garden" 
                   checked={formData.garden}
                   onChange={handleChange}
-                  className="checkbox-base"
+                  className="addrent-checkbox"
                 />
                 <label htmlFor="garden">Garden</label>
               </div>
@@ -1435,7 +1492,7 @@ const AddRent = () => {
                   name="parking" 
                   checked={formData.parking}
                   onChange={handleChange}
-                  className="checkbox-base"
+                  className="addrent-checkbox"
                 />
                 <label htmlFor="parking">Parking</label>
               </div>
@@ -1447,7 +1504,7 @@ const AddRent = () => {
                   name="balconyTerrace" 
                   checked={formData.balconyTerrace}
                   onChange={handleChange}
-                  className="checkbox-base"
+                  className="addrent-checkbox"
                 />
                 <label htmlFor="balconyTerrace">Balcony/Terrace</label>
               </div>
@@ -1459,7 +1516,7 @@ const AddRent = () => {
                   name="petsAllowed" 
                   checked={formData.petsAllowed}
                   onChange={handleChange}
-                  className="checkbox-base"
+                  className="addrent-checkbox"
                 />
                 <label htmlFor="petsAllowed">Pets Allowed</label>
               </div>
@@ -1471,7 +1528,7 @@ const AddRent = () => {
                   name="studentHousing" 
                   checked={formData.studentHousing}
                   onChange={handleChange}
-                  className="checkbox-base"
+                  className="addrent-checkbox"
                 />
                 <label htmlFor="studentHousing">Suitable for Students</label>
               </div>
@@ -1492,7 +1549,7 @@ const AddRent = () => {
                         id={feature.value}
                         checked={formData.keyFeatures.includes(feature.value)}
                         onChange={(e) => handleKeyFeatureChange(feature.value, e.target.checked)}
-                        className="checkbox-base"
+                        className="addrent-checkbox"
                       />
                       <label htmlFor={feature.value}>{feature.label}</label>
                     </div>
@@ -1511,7 +1568,7 @@ const AddRent = () => {
                         id={feature.value}
                         checked={formData.keyFeatures.includes(feature.value)}
                         onChange={(e) => handleKeyFeatureChange(feature.value, e.target.checked)}
-                        className="checkbox-base"
+                        className="addrent-checkbox"
                       />
                       <label htmlFor={feature.value}>{feature.label}</label>
                     </div>
@@ -1530,7 +1587,7 @@ const AddRent = () => {
                         id={feature.value}
                         checked={formData.keyFeatures.includes(feature.value)}
                         onChange={(e) => handleKeyFeatureChange(feature.value, e.target.checked)}
-                        className="checkbox-base"
+                        className="addrent-checkbox"
                       />
                       <label htmlFor={feature.value}>{feature.label}</label>
                     </div>
@@ -1663,12 +1720,13 @@ const AddRent = () => {
             
             {/* NEW: Layout of Property Section */}
             <h4 className="subsection-title">Layout of Property</h4>
-            <p className="section-description">Upload floor plan and provide property details</p>
+           
             
             <div className="layout-section">
               {/* File Upload */}
               <div className="form-group">
                 <label htmlFor="layoutFile">Floor Plan (PDF, JPG, PNG)*</label>
+                <p className="section-description">Upload floor plan and provide property details</p>
                 <div className="file-upload-area">
                   <label htmlFor="layoutFileUpload" className="file-upload-label">
                     <div className="file-upload-content">
@@ -1784,7 +1842,7 @@ const AddRent = () => {
                 placeholder="+44 7xxx xxx xxx"
                 required
               />
-              <small>
+              <small style={{color: '#10b981'}}>
                 Potential tenants will use this number to contact you about viewings. 
                 {user?.phone && formData.contactPhone === user.phone && (
                   <span style={{color: '#666', fontStyle: 'italic'}}> (Using your profile phone - you can change this for this property if needed)</span>
@@ -1794,10 +1852,13 @@ const AddRent = () => {
 
             {/* Advisor Card Section */}
             <div className="advisor-card-section">
-              <h3 className="section-title">Professional Dashboard(for User or Company) with Advisor Card</h3>
+              <h3 className="section-title"> Create a Professional Dashboard with Advisor Card for Property</h3>
               <div className="advisor-card-info">
-                <p className="advisor-card-description">
-                  If you are happy to have an dashboard for your company and an advisor card near your property, click here to set up your professional advisor profile.
+                <p className="advisor-card-description animated-highlight">
+                  <span className="highlight-text">
+                    If you are happy to have an dashboard for your company and an advisor card near your property, click green button, takes two munites 
+                  </span>
+                
                 </p>
                 <div className="advisor-card-benefits">
                   <h4>Benefits of having an advisor card:</h4>
@@ -1831,209 +1892,441 @@ const AddRent = () => {
         );
       
       case 5:
+        if (!showAdvisorSection) {
+          return null; // Don't render section 5 if advisor section is not enabled
+        }
         return (
           <div className="form-section">
-            <h3 className="section-title">Professional Advisor Profile</h3>
+            <h3 className="section-title">Professional Dashboard and Advisor Profile</h3>
             
-            {/* Company Information */}
-            <div className="advisor-form-section">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="companyName">Company Name*</label>
-                  <input
-                    type="text"
-                    id="companyName"
-                    name="companyName"
-                    value={formData.companyName}
-                    onChange={handleChange}
-                    placeholder="e.g. Property Solutions Ltd"
-                    required
-                    className="advisor-field-input"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="companyTagline">Company Tagline</label>
-                  <input
-                    type="text"
-                    id="companyTagline"
-                    name="companyTagline"
-                    value={formData.companyTagline}
-                    onChange={handleChange}
-                    placeholder="e.g. Your Trusted Property Partner"
-                    className="advisor-field-input"
-                  />
+            {/* Advisor Type Selection */}
+            {!advisorType && (
+              <div className="advisor-type-selection">
+                <h4 className="advisor-subsection-title">Choose Your Profile Type</h4>
+                <div className="advisor-type-buttons">
+                  <button
+                    type="button"
+                    className={`advisor-type-btn ${advisorType === 'company' ? 'active' : ''}`}
+                    onClick={() => handleAdvisorTypeChange('company')}
+                  >
+                    <i className="fas fa-building"></i>
+                    <span>Set as a Company</span>
+                    <small>For companies with multiple experts</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={`advisor-type-btn ${advisorType === 'person' ? 'active' : ''}`}
+                    onClick={() => handleAdvisorTypeChange('person')}
+                  >
+                    <i className="fas fa-user-tie"></i>
+                    <span>Set as a Person</span>
+                    <small>For individual advisors</small>
+                  </button>
                 </div>
               </div>
-              
-              <div className="form-group">
-                <label htmlFor="companyDescription">Company Description</label>
-                <textarea
-                  id="companyDescription"
-                  name="companyDescription"
-                  value={formData.companyDescription}
-                  onChange={handleChange}
-                  rows="3"
-                  placeholder="Tell potential clients about your company, services, and what makes you unique. Describe your expertise, years of experience, and commitment to helping clients find their perfect property..."
-                  className="form-textarea company-description-textarea"
-                />
-                <small className="word-count-helper">
-                  {(() => {
-                    const wordCount = (formData.companyDescription || '').trim().split(/\s+/).filter(word => word.length > 0).length;
-                    const isValid = wordCount <= 100;
-                    return (
-                      <span style={{ color: isValid ? '#10b981' : '#ef4444' }}>
-                        {wordCount}/100 words maximum {isValid ? '✓' : ''}
-                      </span>
-                    );
-                  })()}
-                </small>
-              </div>
-            </div>
+            )}
 
-            {/* Personal Information */}
-            <div className="advisor-form-section">
-              <h4 className="advisor-subsection-title">Personal Information</h4>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="fullName">Full Name*</label>
-                  <input
-                    type="text"
-                    id="fullName"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    placeholder="e.g. John Smith"
-                    required
-                    className="advisor-field-input"
-                  />
-                </div>
+            {/* Company Section */}
+            {advisorType === 'company' && (
+              <>
+                {/* Company Information */}
+                <div className="advisor-form-section">
                 
-                <div className="form-group">
-                  <label htmlFor="jobTitle">Job Title*</label>
-                  <input
-                    type="text"
-                    id="jobTitle"
-                    name="jobTitle"
-                    value={formData.jobTitle}
-                    onChange={handleChange}
-                    placeholder="e.g. Senior Property Advisor"
-                    required
-                    className="advisor-field-input"
-                  />
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="profilePhoto">Profile Photo</label>
-                <div className="photo-upload-area">
-                  <input
-                    type="file"
-                    id="profilePhoto"
-                    accept="image/*"
-                    onChange={handleAdvisorPhotoUpload}
-                    style={{ display: 'none' }}
-                  />
-                  <label htmlFor="profilePhoto" className="photo-upload-label">
-                    <div className="photo-upload-content">
-                      {formData.profilePhotoUrl ? (
-                        <div className="photo-preview-container">
-                          <img src={formData.profilePhotoUrl} alt="Profile Photo" className="photo-preview" />
-                          <button 
-                            type="button" 
-                            className="remove-photo-btn"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleProfilePhotoDelete();
-                            }}
-                            title="Remove profile photo"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="photo-placeholder">
-                          <i className="fas fa-user-tie"></i>
-                          <span>Upload Profile Photo</span>
-                        </div>
-                      )}
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="companyName">Company Name*</label>
+                      <input
+                        type="text"
+                        id="companyName"
+                        name="companyName"
+                        value={formData.companyName}
+                        onChange={handleChange}
+                        placeholder="e.g. Property Solutions Ltd"
+                        required
+                        className="advisor-field-input"
+                      />
                     </div>
-                  </label>
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="professionalBio">Professional Bio</label>
-                <textarea
-                  id="professionalBio"
-                  name="professionalBio"
-                  value={formData.professionalBio}
-                  onChange={handleChange}
-                  rows="4"
-                  placeholder="Tell potential clients about your experience and expertise..."
-                  className="form-textarea"
-                />
-              </div>
-            </div>
+                    <div className="form-group">
+                      <label htmlFor="directorName">Director Name*</label>
+                      <input
+                        type="text"
+                        id="directorName"
+                        name="directorName"
+                        value={formData.directorName}
+                        onChange={handleChange}
+                        placeholder="e.g. John Smith"
+                        required
+                        className="advisor-field-input"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="companyDescription">Company Description</label>
+                    <textarea
+                      id="companyDescription"
+                      name="companyDescription"
+                      value={formData.companyDescription}
+                      onChange={handleChange}
+                      rows="3"
+                      placeholder="Tell potential clients about your company, services, and what makes you unique..."
+                      className="form-textarea"
+                    />
+                    <small className="word-count-helper">
+                      {(() => {
+                        const wordCount = (formData.companyDescription || '').trim().split(/\s+/).filter(word => word.length > 0).length;
+                        const isValid = wordCount <= 100;
+                        return (
+                          <span style={{ color: isValid ? '#10b981' : '#ef4444' }}>
+                            {wordCount}/100 words maximum {isValid ? '✓' : ''}
+                          </span>
+                        );
+                      })()}
+                    </small>
+                  </div>
 
-            {/* Contact Information */}
-            <div className="advisor-form-section">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="officeHours" className="office-field-label">
-                    Office Hours
-                  </label>
-                  <input
-                    type="text"
-                    id="officeHours"
-                    name="officeHours"
-                    value={formData.officeHours}
-                    onChange={handleChange}
-                    placeholder="e.g. Mon-Fri: 9:00 AM - 6:00 PM"
-                    className="office-field-input"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="officeAddress" className="office-field-label">
-                    Office Address
-                  </label>
-                  <textarea
-                    id="officeAddress"
-                    name="officeAddress"
-                    value={formData.officeAddress}
-                    onChange={handleChange}
-                    rows="1"
-                    placeholder="Enter your office address..."
-                    className="office-field-textarea"
-                  />
-                </div>
-              </div>
-            </div>
+                  <div className="form-group">
+                    <label htmlFor="companyLogo">Company Logo</label>
+                    <div className="logo-upload-area">
+                      <input
+                        type="file"
+                        id="companyLogo"
+                        accept="image/*"
+                        onChange={handleAdvisorLogoUpload}
+                        style={{ display: 'none' }}
+                      />
+                      <label htmlFor="companyLogo" className="logo-upload-label">
+                        <div className="logo-upload-content">
+                          {formData.companyLogoUrl ? (
+                            <div className="logo-preview-container">
+                              <img src={formData.companyLogoUrl} alt="Company Logo" className="logo-preview" />
+                              <button 
+                                type="button" 
+                                className="remove-logo-btn"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleCompanyLogoDelete();
+                                }}
+                                title="Remove company logo"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="logo-placeholder">
+                              <i className="fas fa-building"></i>
+                              <span>Upload Company Logo</span>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  </div>
 
-            {/* Enable Advisor Profile */}
-            <div className="advisor-form-section">
-              <div className="form-group">
-                <label className="checkbox-label advisor-checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="isAdvisor"
-                    checked={formData.isAdvisor}
-                    onChange={handleChange}
-                  />
-                  <span>Enable Professional Advisor Profile</span>
-                </label>
-                <small className="advisor-help-text">When enabled, your advisor information will appear on all your property listings</small>
-              </div>
-            </div>
+                  {/* Company Contact Information */}
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="officeHours">Office Hours</label>
+                      <input
+                        type="text"
+                        id="officeHours"
+                        name="officeHours"
+                        value={formData.officeHours}
+                        onChange={handleChange}
+                        placeholder="e.g. Mon-Fri: 9:00 AM - 6:00 PM"
+                        className="advisor-field-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="officeAddress">Office Address</label>
+                      <textarea
+                        id="officeAddress"
+                        name="officeAddress"
+                        value={formData.officeAddress}
+                        onChange={handleChange}
+                        rows="1"
+                        placeholder="Enter your office address..."
+                        className="office-field-textarea"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expert Team Section */}
+                <div className="advisor-form-section">
+                  <h4 className="advisor-subsection-title">Expert Team</h4>
+                  <p className="section-description">Add your team members who will be featured on property listings</p>
+                  
+                  {expertTeam.map((expert, index) => (
+                    <div key={expert.id} className="expert-member">
+                      <div className="expert-header">
+                        <h5>Expert {index + 1}</h5>
+                        <button
+                          type="button"
+                          className="remove-expert-btn"
+                          onClick={() => handleRemoveExpert(expert.id)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Full Name*</label>
+                          <input
+                            type="text"
+                            value={expert.fullName}
+                            onChange={(e) => handleExpertChange(expert.id, 'fullName', e.target.value)}
+                            placeholder="e.g. John Smith"
+                            required
+                            className="advisor-field-input"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Job Title*</label>
+                          <input
+                            type="text"
+                            value={expert.jobTitle}
+                            onChange={(e) => handleExpertChange(expert.id, 'jobTitle', e.target.value)}
+                            placeholder="e.g. Senior Property Advisor"
+                            required
+                            className="advisor-field-input"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Profile Photo</label>
+                        <div className="photo-upload-area">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleExpertPhotoUpload(expert.id, e.target.files[0])}
+                            style={{ display: 'none' }}
+                            id={`expert-photo-${expert.id}`}
+                          />
+                          <label htmlFor={`expert-photo-${expert.id}`} className="photo-upload-label">
+                            <div className="photo-upload-content">
+                              {expert.profilePhotoUrl ? (
+                                <div className="photo-preview-container">
+                                  <img src={expert.profilePhotoUrl} alt="Expert Photo" className="photo-preview" />
+                                </div>
+                              ) : (
+                                <div className="photo-placeholder">
+                                  <i className="fas fa-user-tie"></i>
+                                  <span>Upload Profile Photo</span>
+                                </div>
+                              )}
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Phone Number</label>
+                          <input
+                            type="tel"
+                            value={expert.phone}
+                            onChange={(e) => handleExpertChange(expert.id, 'phone', e.target.value)}
+                            placeholder="+44 7xxx xxx xxx"
+                            className="advisor-field-input"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Email Address</label>
+                          <input
+                            type="email"
+                            value={expert.email}
+                            onChange={(e) => handleExpertChange(expert.id, 'email', e.target.value)}
+                            placeholder="expert@company.com"
+                            className="advisor-field-input"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="add-expert-btn"
+                    onClick={handleAddExpert}
+                  >
+                    <i className="fas fa-plus"></i>
+                    Add Expert Team Member
+                  </button>
+                </div>
+
+                {/* Enable Advisor Profile */}
+                <div className="advisor-form-section">
+                  <div className="form-group">
+                    <label className="checkbox-label advisor-checkbox-label">
+                      <input
+                        type="checkbox"
+                        name="isAdvisor"
+                        checked={formData.isAdvisor}
+                        onChange={handleChange}
+                      />
+                      <span>Enable Professional Advisor Profile</span>
+                    </label>
+                    <small className="advisor-help-text">When enabled, your advisor information will appear on all your property listings</small>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Person Section */}
+            {advisorType === 'person' && (
+              <>
+                {/* Personal Information */}
+                <div className="advisor-form-section">
+         
+                  
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="fullName">Full Name*</label>
+                      <input
+                        type="text"
+                        id="fullName"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleChange}
+                        placeholder="e.g. John Smith"
+                        required
+                        className="advisor-field-input"
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label htmlFor="jobTitle">Job Title*</label>
+                      <input
+                        type="text"
+                        id="jobTitle"
+                        name="jobTitle"
+                        value={formData.jobTitle}
+                        onChange={handleChange}
+                        placeholder="e.g. Senior Property Advisor"
+                        required
+                        className="advisor-field-input"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="profilePhoto">Profile Photo</label>
+                    <div className="photo-upload-area">
+                      <input
+                        type="file"
+                        id="profilePhoto"
+                        accept="image/*"
+                        onChange={handleAdvisorPhotoUpload}
+                        style={{ display: 'none' }}
+                      />
+                      <label htmlFor="profilePhoto" className="photo-upload-label">
+                        <div className="photo-upload-content">
+                          {formData.profilePhotoUrl ? (
+                            <div className="photo-preview-container">
+                              <img src={formData.profilePhotoUrl} alt="Profile Photo" className="photo-preview" />
+                              <button 
+                                type="button" 
+                                className="remove-photo-btn"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleProfilePhotoDelete();
+                                }}
+                                title="Remove profile photo"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="photo-placeholder">
+                              <i className="fas fa-user-tie"></i>
+                              <span>Upload Profile Photo</span>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="professionalBio">Professional Bio</label>
+                    <textarea
+                      id="professionalBio"
+                      name="professionalBio"
+                      value={formData.professionalBio}
+                      onChange={handleChange}
+                      rows="4"
+                      placeholder="Tell potential clients about your experience and expertise..."
+                      className="form-textarea"
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="contactPhone">Contact Number</label>
+                      <input
+                        type="tel"
+                        id="contactPhone"
+                        name="contactPhone"
+                        value={formData.contactPhone}
+                        onChange={handleChange}
+                        placeholder="+44 7xxx xxx xxx"
+                        className="advisor-field-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="contactEmail">Email Address</label>
+                      <input
+                        type="email"
+                        id="contactEmail"
+                        name="contactEmail"
+                        value={formData.contactEmail || user?.email || ''}
+                        onChange={handleChange}
+                        placeholder="advisor@email.com"
+                        className="advisor-field-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enable Advisor Profile */}
+                <div className="advisor-form-section">
+                  <div className="form-group">
+                    <label className="checkbox-label advisor-checkbox-label">
+                      <input
+                        type="checkbox"
+                        name="isAdvisor"
+                        checked={formData.isAdvisor}
+                        onChange={handleChange}
+                      />
+                      <span>Enable Professional Advisor Profile</span>
+                    </label>
+                    <small className="advisor-help-text">When enabled, your advisor information will appear on all your property listings</small>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         );
       
       default:
         return null;
     }
+  };
+
+  // Handle cancel with advisor section reset
+  const handleCancel = () => {
+    // Reset advisor section if canceling from section 5
+    if (currentSection === 5) {
+      setShowAdvisorSection(false);
+      setAdvisorType(''); // Reset advisor type choice
+      setExpertTeam([]); // Reset expert team
+    }
+    navigate(returnPath);
   };
 
   return (
@@ -2062,8 +2355,12 @@ const AddRent = () => {
         <div className={`progress-step ${currentSection >= 3 ? 'active' : ''}`}>3</div>
         <div className={`progress-line ${currentSection >= 4 ? 'active' : ''}`}></div>
         <div className={`progress-step ${currentSection >= 4 ? 'active' : ''}`}>4</div>
-        <div className={`progress-line ${currentSection >= 5 ? 'active' : ''}`}></div>
-        <div className={`progress-step ${currentSection >= 5 ? 'active' : ''}`}>5</div>
+        {showAdvisorSection && (
+          <>
+            <div className={`progress-line ${currentSection >= 5 ? 'active' : ''}`}></div>
+            <div className={`progress-step ${currentSection >= 5 ? 'active' : ''}`}>5</div>
+          </>
+        )}
       </div>
 
       {/* Form Section */}
@@ -2105,26 +2402,26 @@ const AddRent = () => {
                 <button 
                   type="button" 
                   className="link-btn"
-                  onClick={() => navigate(returnPath)}
+                  onClick={handleCancel}
                   disabled={isLoading}
                 >
                   Cancel
                 </button>
               )}
               
-              {(currentSection === 4 || currentSection === 5) && (
+              {(currentSection === 4 && !showAdvisorSection) || (currentSection === 4 && showAdvisorSection) || (currentSection === 5 && showAdvisorSection) ? (
                 <button 
                   type="button" 
                   className="link-btn"
-                  onClick={() => navigate(returnPath)}
+                  onClick={handleCancel}
                   disabled={isLoading}
                 >
                   Cancel
                 </button>
-              )}
+              ) : null}
             </div>
             
-            {currentSection < 5 ? (
+            {currentSection < 4 || (currentSection === 4 && showAdvisorSection) ? (
               <button 
                 type="button" 
                 className="next-btn"

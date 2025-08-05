@@ -1518,7 +1518,7 @@
   gap: 1rem;
 }
 
-.contact-item {
+.property-view-contact-item {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
@@ -1528,25 +1528,25 @@
   transition: all 0.3s ease;
 }
 
-.contact-item:hover {
+.property-view-contact-item:hover {
   background: #e9ecef;
   transform: translateY(-2px);
 }
 
-.contact-item i {
+.property-view-contact-item i {
   color: #667eea;
   font-size: 1.2rem;
   margin-top: 0.25rem;
   flex-shrink: 0;
 }
 
-.contact-info {
+.property-view-contact-info {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.contact-label {
+.property-view-contact-label {
   font-size: 0.875rem;
   font-weight: 600;
   color: #6c757d;
@@ -1554,7 +1554,7 @@
   letter-spacing: 0.5px;
 }
 
-.contact-value {
+.property-view-contact-value {
   font-size: 1rem;
   font-weight: 500;
   color: #2d3748;
