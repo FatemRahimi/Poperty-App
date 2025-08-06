@@ -100,10 +100,78 @@ const epcRatingOptions = [
   { value: "D", label: "D" },
   { value: "E", label: "E" },
   { value: "F", label: "F" },
-  { value: "G", label: "G" },
-  { value: "H", label: "H" },
-  { value: "Exempt", label: "Exempt" },
-  { value: "Pending", label: "Pending" }
+  { value: "G", label: "G" }
+];
+
+// Job title options for Company advisors
+const companyJobTitleOptions = [
+  { value: "Property Consultant", label: "Property Consultant" },
+  { value: "Estate Agent", label: "Estate Agent" },
+  { value: "Sales Negotiator", label: "Sales Negotiator" },
+  { value: "Lettings Negotiator", label: "Lettings Negotiator" },
+  { value: "Valuer", label: "Valuer" },
+  { value: "Branch Manager", label: "Branch Manager" },
+  { value: "Area Manager", label: "Area Manager" },
+  { value: "Viewing Assistant", label: "Viewing Assistant" },
+  { value: "Property Manager", label: "Property Manager" },
+  { value: "Assistant Property Manager", label: "Assistant Property Manager" },
+  { value: "Block Manager", label: "Block Manager" },
+  { value: "Tenancy Manager", label: "Tenancy Manager" },
+  { value: "Maintenance Coordinator", label: "Maintenance Coordinator" },
+  { value: "Real Estate Analyst", label: "Real Estate Analyst" },
+  { value: "Property Development Manager", label: "Property Development Manager" },
+  { value: "Land Acquisition Manager", label: "Land Acquisition Manager" },
+  { value: "Asset Manager", label: "Asset Manager" },
+  { value: "Project Manager", label: "Project Manager" },
+  { value: "Property Administrator", label: "Property Administrator" },
+  { value: "Sales Progressor", label: "Sales Progressor" },
+  { value: "Receptionist", label: "Receptionist" },
+  { value: "Compliance Officer", label: "Compliance Officer" },
+  { value: "Marketing Executive", label: "Marketing Executive" },
+  { value: "Property Photographer", label: "Property Photographer" },
+  { value: "CRM Manager", label: "CRM Manager" },
+  { value: "IT Support", label: "IT Support" },
+  { value: "Conveyancing Assistant", label: "Conveyancing Assistant" },
+  { value: "Licensed Conveyancer", label: "Licensed Conveyancer" },
+  { value: "Paralegal", label: "Paralegal" },
+  { value: "Surveyor", label: "Surveyor" },
+  { value: "Valuation Surveyor", label: "Valuation Surveyor" },
+  { value: "Mortgage Advisor", label: "Mortgage Advisor" },
+  { value: "Accounts Assistant", label: "Accounts Assistant" }
+];
+
+// Job title options for Person advisors
+const personJobTitleOptions = [
+  { value: "Property Consultant", label: "Property Consultant" },
+  { value: "Estate Agent", label: "Estate Agent" },
+  { value: "Sales Negotiator", label: "Sales Negotiator" },
+  { value: "Lettings Negotiator", label: "Lettings Negotiator" },
+  { value: "Valuer", label: "Valuer" },
+  { value: "Property Manager", label: "Property Manager" },
+  { value: "Assistant Property Manager", label: "Assistant Property Manager" },
+  { value: "Block Manager", label: "Block Manager" },
+  { value: "Tenancy Manager", label: "Tenancy Manager" },
+  { value: "Maintenance Coordinator", label: "Maintenance Coordinator" },
+  { value: "Real Estate Analyst", label: "Real Estate Analyst" },
+  { value: "Property Development Manager", label: "Property Development Manager" },
+  { value: "Land Acquisition Manager", label: "Land Acquisition Manager" },
+  { value: "Asset Manager", label: "Asset Manager" },
+  { value: "Project Manager", label: "Project Manager" },
+  { value: "Property Administrator", label: "Property Administrator" },
+  { value: "Sales Progressor", label: "Sales Progressor" },
+  { value: "Receptionist", label: "Receptionist" },
+  { value: "Compliance Officer", label: "Compliance Officer" },
+  { value: "Marketing Executive", label: "Marketing Executive" },
+  { value: "Property Photographer", label: "Property Photographer" },
+  { value: "CRM Manager", label: "CRM Manager" },
+  { value: "IT Support", label: "IT Support" },
+  { value: "Conveyancing Assistant", label: "Conveyancing Assistant" },
+  { value: "Licensed Conveyancer", label: "Licensed Conveyancer" },
+  { value: "Paralegal", label: "Paralegal" },
+  { value: "Surveyor", label: "Surveyor" },
+  { value: "Valuation Surveyor", label: "Valuation Surveyor" },
+  { value: "Mortgage Advisor", label: "Mortgage Advisor" },
+  { value: "Accounts Assistant", label: "Accounts Assistant" }
 ];
 
 // Council tax status options
@@ -1527,7 +1595,7 @@ const AddRent = () => {
             <h3 className="section-title">Property Features</h3>
             
             <div className="property-features">
-              <div className="feature-item">
+              <div className="addrent-feature-item">
                 <input 
                   type="checkbox" 
                   id="garden" 
@@ -1539,7 +1607,7 @@ const AddRent = () => {
                 <label htmlFor="garden">Garden</label>
               </div>
               
-              <div className="feature-item">
+              <div className="addrent-feature-item">
                 <input 
                   type="checkbox" 
                   id="parking" 
@@ -1551,7 +1619,7 @@ const AddRent = () => {
                 <label htmlFor="parking">Parking</label>
               </div>
               
-              <div className="feature-item">
+              <div className="addrent-feature-item">
                 <input 
                   type="checkbox" 
                   id="balconyTerrace" 
@@ -1563,7 +1631,7 @@ const AddRent = () => {
                 <label htmlFor="balconyTerrace">Balcony/Terrace</label>
               </div>
               
-              <div className="feature-item">
+              <div className="addrent-feature-item">
                 <input 
                   type="checkbox" 
                   id="petsAllowed" 
@@ -1575,7 +1643,7 @@ const AddRent = () => {
                 <label htmlFor="petsAllowed">Pets Allowed</label>
               </div>
 
-              <div className="feature-item">
+              <div className="addrent-feature-item">
                 <input 
                   type="checkbox" 
                   id="studentHousing" 
@@ -1594,7 +1662,7 @@ const AddRent = () => {
               {/* Property Features */}
               <div className="key-features-category">
                 <h5>Key Features</h5>
-                <p className="section-description">Select all features that apply to your property</p>
+                
                 <div className="key-features-grid">
                   {keyFeaturesOptions.propertyFeatures.map(feature => (
                     <div key={feature.value} className="key-feature-item">
@@ -1910,7 +1978,7 @@ const AddRent = () => {
               <div className="advisor-card-info">
                 <p className="advisor-card-description animated-highlight">
                   <span className="highlight-text">
-                    If you are happy to have an dashboard for your company and an advisor card near your property, click green button, takes two munites 
+                    If you are happy to have an dashboard and an advisor card near your property, click green button, takes two munites 
                   </span>
                 
                 </p>
@@ -2166,14 +2234,19 @@ const AddRent = () => {
                         </div>
                         <div className="form-group">
                           <label>Job Title*</label>
-                          <input
-                            type="text"
+                          <select
                             value={expert.jobTitle}
                             onChange={(e) => handleExpertChange(expert.id, 'jobTitle', e.target.value)}
-                            placeholder="e.g. Senior Property Advisor"
                             required
                             className="advisor-field-input"
-                          />
+                          >
+                            <option value="">Select Job Title</option>
+                            {companyJobTitleOptions.map(option => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </div>
 
@@ -2281,16 +2354,21 @@ const AddRent = () => {
                     
                     <div className="form-group">
                       <label htmlFor="jobTitle">Job Title*</label>
-                      <input
-                        type="text"
+                      <select
                         id="jobTitle"
                         name="jobTitle"
                         value={formData.jobTitle}
                         onChange={handleChange}
-                        placeholder="e.g. Senior Property Advisor"
                         required
                         className="advisor-field-input"
-                      />
+                      >
+                        <option value="">Select Job Title</option>
+                        {personJobTitleOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   
