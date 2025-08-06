@@ -224,3 +224,564 @@
     width: 100%;
   }
 } 
+
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.left-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.back-btn {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.back-btn:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+.cancel-btn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #4b5563;
+} 
+
+/* Advisor Card Section Styles for AddRent Page */
+.addrent-advisor-card-section {
+  margin-top: 2rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 1rem;
+  color: white;
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.addrent-section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: white;
+}
+
+.addrent-advisor-card-info {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.addrent-advisor-card-description {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.addrent-animated-highlight {
+  animation: addrent-pulse 2s infinite;
+}
+
+@keyframes addrent-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+.addrent-highlight-text {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: inline-block;
+  font-weight: 600;
+}
+
+.addrent-advisor-card-benefits {
+  margin-bottom: 2rem;
+}
+
+.addrent-advisor-card-benefits h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: white;
+}
+
+.addrent-advisor-card-benefits ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.addrent-advisor-card-benefits li {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  transition: all 0.3s ease;
+}
+
+.addrent-advisor-card-benefits li:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.addrent-advisor-card-action {
+  text-align: center;
+}
+
+.addrent-advisor-card-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.addrent-advisor-card-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.addrent-advisor-card-btn:active {
+  transform: translateY(0);
+}
+
+.addrent-advisor-card-btn i {
+  font-size: 1.2rem;
+}
+
+.addrent-advisor-card-action small {
+  display: block;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+/* Responsive Design for Advisor Card */
+@media (max-width: 768px) {
+  .addrent-advisor-card-section {
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  
+  .addrent-section-title {
+    font-size: 1.25rem;
+  }
+  
+  .addrent-advisor-card-description {
+    font-size: 1rem;
+  }
+  
+  .addrent-advisor-card-benefits ul {
+    grid-template-columns: 1fr;
+  }
+  
+  .addrent-advisor-card-btn {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .addrent-advisor-card-section {
+    padding: 1rem;
+  }
+  
+  .addrent-section-title {
+    font-size: 1.125rem;
+  }
+  
+  .addrent-highlight-text {
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+  }
+  
+  .addrent-advisor-card-benefits li {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+} 
+
+/* Advisor Card Section Styles */
+.advisor-card-section {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid #e2e8f0;
+}
+
+.advisor-card-info {
+  text-align: center;
+}
+
+.advisor-card-description {
+  font-size: 1.1rem;
+  color: #374151;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.animated-highlight {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.highlight-text {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 600;
+}
+
+.advisor-card-benefits {
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.advisor-card-benefits h4 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #0c55c9;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.advisor-card-benefits ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.advisor-card-benefits li {
+  padding: 0.75rem 0;
+  color: #374151;
+  font-size: 1rem;
+  line-height: 1.5;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.advisor-card-benefits li:last-child {
+  border-bottom: none;
+}
+
+.advisor-card-benefits li:hover {
+  color: #1e293b;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding-left: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.advisor-card-action {
+  text-align: center;
+}
+
+.advisor-card-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.advisor-card-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.advisor-card-btn:active {
+  transform: translateY(0);
+}
+
+.advisor-card-btn i {
+  font-size: 1.2rem;
+}
+
+.advisor-card-action small {
+  display: block;
+  margin-top: 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Advisor Type Selection Styles */
+.advisor-type-selection {
+  margin-bottom: 2rem;
+  text-align: center;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 2rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.advisor-type-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.advisor-type-btn {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.advisor-type-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.advisor-type-btn:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+  transform: translateY(-4px);
+}
+
+.advisor-type-btn.active {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px);
+}
+
+.advisor-type-btn i {
+  font-size: 2.5rem;
+  color: #3b82f6;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.advisor-type-btn:hover i {
+  color: #1d4ed8;
+  transform: scale(1.1);
+}
+
+.advisor-type-btn.active i {
+  color: #1d4ed8;
+}
+
+.advisor-type-btn span {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1e293b;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.advisor-type-btn.active span {
+  color: #1d4ed8;
+}
+
+.advisor-type-btn small {
+  font-size: 0.9rem;
+  color: #6b7280;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.advisor-type-btn.active small {
+  color: #374151;
+}
+
+.advisor-subsection-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .advisor-card-section {
+    padding: 1.5rem;
+  }
+  
+  .advisor-card-description {
+    font-size: 1rem;
+  }
+  
+  .advisor-card-benefits {
+    margin-bottom: 1.5rem;
+  }
+  
+  .advisor-card-benefits h4 {
+    font-size: 1.1rem;
+  }
+  
+  .advisor-card-benefits li {
+    font-size: 0.9rem;
+  }
+  
+  .advisor-card-btn {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  .advisor-type-selection {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .advisor-type-buttons {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .advisor-type-btn {
+    padding: 2rem 1.5rem;
+  }
+  
+  .advisor-subsection-title {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .advisor-card-section {
+    padding: 1rem;
+  }
+  
+  .advisor-card-description {
+    font-size: 0.9rem;
+  }
+  
+  .highlight-text {
+    font-size: 0.9rem;
+  }
+  
+  .advisor-card-benefits li {
+    font-size: 0.85rem;
+  }
+  
+  .advisor-card-btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+  }
+  
+  .advisor-type-selection {
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+  
+  .advisor-type-btn {
+    padding: 1.75rem 1.25rem;
+  }
+  
+  .advisor-type-btn i {
+    font-size: 2rem;
+  }
+  
+  .advisor-type-btn span {
+    font-size: 1.1rem;
+  }
+  
+  .advisor-subsection-title {
+    font-size: 1.2rem;
+  }
+} 
