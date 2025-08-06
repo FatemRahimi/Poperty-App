@@ -288,7 +288,10 @@ const AddRent = () => {
         professionalBio: "",
         officeHours: "",
         officeAddress: "",
-        isAdvisor: false
+        officeCity: "",
+        officePostcode: "",
+        isAdvisor: false,
+        contactEmail: ""
       };
     }
     
@@ -351,7 +354,10 @@ const AddRent = () => {
       professionalBio: "",
       officeHours: "",
       officeAddress: "",
-      isAdvisor: false
+      officeCity: "",
+      officePostcode: "",
+      isAdvisor: false,
+      contactEmail: ""
     };
   };
 
@@ -1154,6 +1160,54 @@ const AddRent = () => {
       
       const result = await response.json();
       console.log(`✅ Rent Property ${editMode ? 'Updated' : 'Submitted'} Successfully:`, result);
+      
+      // Submit advisor profile if user has advisor data
+      if (formData.isAdvisor && (formData.companyName || formData.fullName)) {
+        try {
+          console.log('🏢 Submitting advisor profile data...');
+          
+          const advisorData = {
+            companyName: formData.companyName,
+            directorName: formData.directorName,
+            companyLogoUrl: formData.companyLogoUrl,
+            companyTagline: formData.companyTagline,
+            companyDescription: formData.companyDescription,
+            fullName: formData.fullName,
+            jobTitle: formData.jobTitle,
+            profilePhotoUrl: formData.profilePhotoUrl,
+            professionalBio: formData.professionalBio,
+            officeHours: formData.officeHours,
+            officeAddress: formData.officeAddress,
+            officeCity: formData.officeCity,
+            officePostcode: formData.officePostcode,
+            isAdvisor: formData.isAdvisor,
+            advisorType: advisorType,
+            expertTeam: expertTeam,
+            contactEmail: formData.contactEmail
+          };
+          
+          const advisorResponse = await fetch(
+            `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/users/${user.id}/advisor-profile`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify(advisorData)
+            }
+          );
+          
+          if (advisorResponse.ok) {
+            console.log('✅ Advisor profile submitted successfully');
+          } else {
+            console.error('❌ Advisor profile submission failed:', await advisorResponse.text());
+          }
+        } catch (advisorError) {
+          console.error('❌ Error submitting advisor profile:', advisorError);
+          // Don't fail the entire submission if advisor profile fails
+        }
+      }
       
       if (editMode) {
         // For updates, show brief success state then redirect
@@ -2046,8 +2100,35 @@ const AddRent = () => {
                         value={formData.officeAddress}
                         onChange={handleChange}
                         rows="1"
-                        placeholder="Enter your office address..."
+                        placeholder="Enter your office address line1..."
                         className="office-field-textarea"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="officeCity">Office City</label>
+                      <input
+                        type="text"
+                        id="officeCity"
+                        name="officeCity"
+                        value={formData.officeCity}
+                        onChange={handleChange}
+                        placeholder="e.g. London"
+                        className="advisor-field-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="officePostcode">Office Postcode</label>
+                      <input
+                        type="text"
+                        id="officePostcode"
+                        name="officePostcode"
+                        value={formData.officePostcode}
+                        onChange={handleChange}
+                        placeholder="e.g. SW1A 1AA"
+                        className="advisor-field-input"
                       />
                     </div>
                   </div>
@@ -2284,7 +2365,7 @@ const AddRent = () => {
                         type="email"
                         id="contactEmail"
                         name="contactEmail"
-                        value={formData.contactEmail || user?.email || ''}
+                        value={formData.contactEmail}
                         onChange={handleChange}
                         placeholder="advisor@email.com"
                         className="advisor-field-input"

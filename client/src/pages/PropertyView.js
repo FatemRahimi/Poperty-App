@@ -30,10 +30,14 @@ const PropertyView = () => {
 
   const fetchAdvisorInfo = async (userId) => {
     try {
-      const response = await fetch(`/api/users/${userId}/advisor-profile`);
+      const response = await fetch(`/api/properties/users/${userId}/advisor-profile`);
       if (response.ok) {
         const data = await response.json();
-        setAdvisorInfo(data);
+        if (data.success && data.advisorProfile) {
+          setAdvisorInfo(data.advisorProfile);
+        } else {
+          console.log('No advisor profile found for user:', userId);
+        }
       }
     } catch (err) {
       console.error('Error fetching advisor info:', err);
