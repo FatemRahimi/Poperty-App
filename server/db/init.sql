@@ -202,3 +202,62 @@ SELECT id, title, description, short_description
 FROM properties 
 ORDER BY created_at DESC 
 LIMIT 5;
+
+-- Create advisor_profiles table for Professional Dashboard and Advisor Profile information
+CREATE TABLE IF NOT EXISTS advisor_profiles (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  
+  -- Company Information
+  company_name VARCHAR(255),
+  director_name VARCHAR(255),
+  company_logo_url TEXT,
+  company_tagline VARCHAR(500),
+  company_description TEXT,
+  
+  -- Personal Information
+  full_name VARCHAR(255),
+  job_title VARCHAR(255),
+  profile_photo_url TEXT,
+  professional_bio TEXT,
+  contact_email VARCHAR(255),
+  
+  -- Office Information
+  office_hours VARCHAR(255),
+  office_address TEXT,
+  office_city VARCHAR(100),
+  office_postcode VARCHAR(20),
+  
+  -- Settings
+  is_advisor BOOLEAN DEFAULT false,
+  advisor_type VARCHAR(20) DEFAULT 'person', -- 'person' or 'company'
+  
+  -- Timestamps
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create advisor_experts table for company team members
+CREATE TABLE IF NOT EXISTS advisor_experts (
+  id SERIAL PRIMARY KEY,
+  advisor_profile_id INTEGER REFERENCES advisor_profiles(id) ON DELETE CASCADE,
+  
+  -- Expert Information
+  full_name VARCHAR(255) NOT NULL,
+  job_title VARCHAR(255) NOT NULL,
+  profile_photo_url TEXT,
+  phone VARCHAR(20),
+  email VARCHAR(255),
+  
+  -- Timestamps
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for advisor_profiles
+CREATE INDEX IF NOT EXISTS idx_advisor_profiles_user_id ON advisor_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_advisor_profiles_is_advisor ON advisor_profiles(is_advisor);
+CREATE INDEX IF NOT EXISTS idx_advisor_profiles_advisor_type ON advisor_profiles(advisor_type);
+
+-- Create indexes for advisor_experts
+CREATE INDEX IF NOT EXISTS idx_advisor_experts_profile_id ON advisor_experts(advisor_profile_id);

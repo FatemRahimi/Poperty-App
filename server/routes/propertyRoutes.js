@@ -1193,4 +1193,238 @@ router.get('/property/:slug', async (req, res) => {
   }
 });
 
+// Advisor Profile Routes
+router.get('/users/:userId/advisor-profile', authenticateJWT, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Check if user is requesting their own profile or is admin
+    if (req.user.id != userId && req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const query = `
+      SELECT ap.*, 
+             json_agg(
+               json_build_object(
+                 'id', ae.id,
+                 'full_name', ae.full_name,
+                 'job_title', ae.job_title,
+                 'profile_photo_url', ae.profile_photo_url,
+                 'phone', ae.phone,
+                 'email', ae.email
+               )
+             ) FILTER (WHERE ae.id IS NOT NULL) as experts
+      FROM advisor_profiles ap
+      LEFT JOIN advisor_experts ae ON ap.id = ae.advisor_profile_id
+      WHERE ap.user_id = $1
+      GROUP BY ap.id
+    `;
+    
+    const result = await pool.query(query, [userId]);
+    
+    if (result.rows.length === 0) {
+      return res.json({ success: true, advisorProfile: null });
+    }
+    
+    res.json({ success: true, advisorProfile: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching advisor profile:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.post('/users/:userId/advisor-profile', authenticateJWT, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const {
+      companyName,
+      directorName,
+      companyLogoUrl,
+      companyTagline,
+      companyDescription,
+      fullName,
+      jobTitle,
+      profilePhotoUrl,
+      professionalBio,
+      officeHours,
+      officeAddress,
+      officeCity,
+      officePostcode,
+      isAdvisor,
+      advisorType,
+      expertTeam,
+      contactEmail
+    } = req.body;
+    
+    // Check if user is updating their own profile or is admin
+    if (req.user.id != userId && req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    // Check if advisor profile already exists
+    const existingProfile = await pool.query(
+      'SELECT id FROM advisor_profiles WHERE user_id = $1',
+      [userId]
+    );
+
+    let advisorProfileId;
+    
+    if (existingProfile.rows.length > 0) {
+      // Update existing profile
+      const updateQuery = `
+        UPDATE advisor_profiles SET
+          company_name = $1,
+          director_name = $2,
+          company_logo_url = $3,
+          company_tagline = $4,
+          company_description = $5,
+          full_name = $6,
+          job_title = $7,
+          profile_photo_url = $8,
+          professional_bio = $9,
+          office_hours = $10,
+          office_address = $11,
+          office_city = $12,
+          office_postcode = $13,
+          is_advisor = $14,
+          advisor_type = $15,
+          contact_email = $16,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = $17
+        RETURNING id
+      `;
+      
+      const result = await pool.query(updateQuery, [
+        companyName,
+        directorName,
+        companyLogoUrl,
+        companyTagline,
+        companyDescription,
+        fullName,
+        jobTitle,
+        profilePhotoUrl,
+        professionalBio,
+        officeHours,
+        officeAddress,
+        officeCity,
+        officePostcode,
+        isAdvisor,
+        advisorType,
+        contactEmail,
+        userId
+      ]);
+      
+      advisorProfileId = result.rows[0].id;
+    } else {
+      // Create new profile
+      const insertQuery = `
+        INSERT INTO advisor_profiles (
+          user_id, company_name, director_name, company_logo_url, company_tagline,
+          company_description, full_name, job_title, profile_photo_url, professional_bio,
+          office_hours, office_address, office_city, office_postcode, is_advisor, advisor_type,
+          contact_email
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        RETURNING id
+      `;
+      
+      const result = await pool.query(insertQuery, [
+        userId,
+        companyName,
+        directorName,
+        companyLogoUrl,
+        companyTagline,
+        companyDescription,
+        fullName,
+        jobTitle,
+        profilePhotoUrl,
+        professionalBio,
+        officeHours,
+        officeAddress,
+        officeCity,
+        officePostcode,
+        isAdvisor,
+        advisorType,
+        contactEmail
+      ]);
+      
+      advisorProfileId = result.rows[0].id;
+    }
+
+    // Handle expert team if advisor type is company
+    if (advisorType === 'company' && expertTeam && expertTeam.length > 0) {
+      // Delete existing experts
+      await pool.query('DELETE FROM advisor_experts WHERE advisor_profile_id = $1', [advisorProfileId]);
+      
+      // Insert new experts
+      for (const expert of expertTeam) {
+        await pool.query(`
+          INSERT INTO advisor_experts (
+            advisor_profile_id, full_name, job_title, profile_photo_url, phone, email
+          ) VALUES ($1, $2, $3, $4, $5, $6)
+        `, [
+          advisorProfileId,
+          expert.fullName,
+          expert.jobTitle,
+          expert.profilePhotoUrl,
+          expert.phone,
+          expert.email
+        ]);
+      }
+    }
+
+    res.json({ success: true, message: 'Advisor profile updated successfully' });
+  } catch (error) {
+    console.error('Error updating advisor profile:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Get advisor profile for property display
+router.get('/properties/:propertyId/advisor-profile', async (req, res) => {
+  try {
+    const { propertyId } = req.params;
+    
+    // Get property to find user_id
+    const propertyQuery = 'SELECT user_id FROM properties WHERE id = $1';
+    const propertyResult = await pool.query(propertyQuery, [propertyId]);
+    
+    if (propertyResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Property not found' });
+    }
+    
+    const userId = propertyResult.rows[0].user_id;
+    
+    // Get advisor profile
+    const advisorQuery = `
+      SELECT ap.*, 
+             json_agg(
+               json_build_object(
+                 'id', ae.id,
+                 'full_name', ae.full_name,
+                 'job_title', ae.job_title,
+                 'profile_photo_url', ae.profile_photo_url,
+                 'phone', ae.phone,
+                 'email', ae.email
+               )
+             ) FILTER (WHERE ae.id IS NOT NULL) as experts
+      FROM advisor_profiles ap
+      LEFT JOIN advisor_experts ae ON ap.id = ae.advisor_profile_id
+      WHERE ap.user_id = $1 AND ap.is_advisor = true
+      GROUP BY ap.id
+    `;
+    
+    const advisorResult = await pool.query(advisorQuery, [userId]);
+    
+    if (advisorResult.rows.length === 0) {
+      return res.json({ success: true, advisorProfile: null });
+    }
+    
+    res.json({ success: true, advisorProfile: advisorResult.rows[0] });
+  } catch (error) {
+    console.error('Error fetching advisor profile for property:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
 module.exports = router; 
