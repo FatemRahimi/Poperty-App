@@ -1,79 +1,251 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 import './AdvisorProfile.css';
+
+// Job title options for Company advisors
+const companyJobTitleOptions = [
+  { value: "Property Consultant", label: "Property Consultant" },
+  { value: "Estate Agent", label: "Estate Agent" },
+  { value: "Sales Negotiator", label: "Sales Negotiator" },
+  { value: "Lettings Negotiator", label: "Lettings Negotiator" },
+  { value: "Valuer", label: "Valuer" },
+  { value: "Branch Manager", label: "Branch Manager" },
+  { value: "Area Manager", label: "Area Manager" },
+  { value: "Viewing Assistant", label: "Viewing Assistant" },
+  { value: "Property Manager", label: "Property Manager" },
+  { value: "Assistant Property Manager", label: "Assistant Property Manager" },
+  { value: "Block Manager", label: "Block Manager" },
+  { value: "Tenancy Manager", label: "Tenancy Manager" },
+  { value: "Maintenance Coordinator", label: "Maintenance Coordinator" },
+  { value: "Real Estate Analyst", label: "Real Estate Analyst" },
+  { value: "Property Development Manager", label: "Property Development Manager" },
+  { value: "Land Acquisition Manager", label: "Land Acquisition Manager" },
+  { value: "Asset Manager", label: "Asset Manager" },
+  { value: "Project Manager", label: "Project Manager" },
+  { value: "Property Administrator", label: "Property Administrator" },
+  { value: "Sales Progressor", label: "Sales Progressor" },
+  { value: "Receptionist", label: "Receptionist" },
+  { value: "Compliance Officer", label: "Compliance Officer" },
+  { value: "Marketing Executive", label: "Marketing Executive" },
+  { value: "Property Photographer", label: "Property Photographer" },
+  { value: "CRM Manager", label: "CRM Manager" },
+  { value: "IT Support", label: "IT Support" },
+  { value: "Conveyancing Assistant", label: "Conveyancing Assistant" },
+  { value: "Licensed Conveyancer", label: "Licensed Conveyancer" },
+  { value: "Paralegal", label: "Paralegal" },
+  { value: "Surveyor", label: "Surveyor" },
+  { value: "Valuation Surveyor", label: "Valuation Surveyor" },
+  { value: "Mortgage Advisor", label: "Mortgage Advisor" },
+  { value: "Accounts Assistant", label: "Accounts Assistant" }
+];
+
+// Job title options for Person advisors
+const personJobTitleOptions = [
+  { value: "Property Consultant", label: "Property Consultant" },
+  { value: "Estate Agent", label: "Estate Agent" },
+  { value: "Sales Negotiator", label: "Sales Negotiator" },
+  { value: "Lettings Negotiator", label: "Lettings Negotiator" },
+  { value: "Valuer", label: "Valuer" },
+  { value: "Branch Manager", label: "Branch Manager" },
+  { value: "Area Manager", label: "Area Manager" },
+  { value: "Viewing Assistant", label: "Viewing Assistant" },
+  { value: "Property Manager", label: "Property Manager" },
+  { value: "Assistant Property Manager", label: "Assistant Property Manager" },
+  { value: "Block Manager", label: "Block Manager" },
+  { value: "Tenancy Manager", label: "Tenancy Manager" },
+  { value: "Maintenance Coordinator", label: "Maintenance Coordinator" },
+  { value: "Real Estate Analyst", label: "Real Estate Analyst" },
+  { value: "Property Development Manager", label: "Property Development Manager" },
+  { value: "Land Acquisition Manager", label: "Land Acquisition Manager" },
+  { value: "Asset Manager", label: "Asset Manager" },
+  { value: "Project Manager", label: "Project Manager" },
+  { value: "Property Administrator", label: "Property Administrator" },
+  { value: "Sales Progressor", label: "Sales Progressor" },
+  { value: "Receptionist", label: "Receptionist" },
+  { value: "Compliance Officer", label: "Compliance Officer" },
+  { value: "Marketing Executive", label: "Marketing Executive" },
+  { value: "Property Photographer", label: "Property Photographer" },
+  { value: "CRM Manager", label: "CRM Manager" },
+  { value: "IT Support", label: "IT Support" },
+  { value: "Conveyancing Assistant", label: "Conveyancing Assistant" },
+  { value: "Licensed Conveyancer", label: "Licensed Conveyancer" },
+  { value: "Paralegal", label: "Paralegal" },
+  { value: "Surveyor", label: "Surveyor" },
+  { value: "Valuation Surveyor", label: "Valuation Surveyor" },
+  { value: "Mortgage Advisor", label: "Mortgage Advisor" },
+  { value: "Accounts Assistant", label: "Accounts Assistant" }
+];
 
 const AdvisorProfile = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   
-  const [advisorData, setAdvisorData] = useState({
-    companyName: '',
+  const [formData, setFormData] = useState({
+    // Company Information
+    companyName: "",
+    directorName: "",
     companyLogo: null,
-    companyLogoUrl: '',
-    companyTagline: '',
-    jobTitle: '',
-    professionalBio: '',
-    officeHours: '',
-    officeAddress: '',
-    isAdvisor: false
+    companyLogoUrl: "",
+    companyTagline: "",
+    companyDescription: "",
+    
+    // Personal Information
+    fullName: "",
+    profilePhoto: null,
+    profilePhotoUrl: "",
+    jobTitle: "",
+    professionalBio: "",
+    contactPhone: "",
+    contactEmail: "",
+    
+    // Office Information
+    officeHours: "",
+    officeAddress: "",
+    officeCity: "",
+    officePostcode: "",
+    
+    // Settings
+    isAdvisor: false,
+    advisorType: "person",
   });
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    fetchAdvisorProfile();
-  }, [isAuthenticated, navigate]);
+  const [expertTeam, setExpertTeam] = useState([]);
+  const [advisorType, setAdvisorType] = useState('');
+  const [showAdvisorSection, setShowAdvisorSection] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const fetchAdvisorProfile = async () => {
-    try {
-      const response = await fetch(`/api/users/advisor-profile`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setAdvisorData({
-          companyName: data.company_name || '',
-          companyLogoUrl: data.company_logo || '',
-          companyTagline: data.company_tagline || '',
-          jobTitle: data.job_title || '',
-          professionalBio: data.professional_bio || '',
-          officeHours: data.office_hours || '',
-          officeAddress: data.office_address || '',
-          isAdvisor: data.is_advisor || false
-        });
-      }
-    } catch (err) {
-      console.error('Error fetching advisor profile:', err);
-    }
-  };
-
+  // Handle form field changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setAdvisorData(prev => ({
+    setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
   };
 
-  const handleLogoUpload = (e) => {
+  // Handle advisor type change
+  const handleAdvisorTypeChange = (type) => {
+    setAdvisorType(type);
+    setFormData(prev => ({
+      ...prev,
+      advisorType: type
+    }));
+  };
+
+  // Handle expert team changes
+  const handleAddExpert = () => {
+    const newExpert = {
+      id: Date.now(),
+      fullName: "",
+      jobTitle: "",
+      profilePhotoUrl: "",
+      phone: "",
+      email: ""
+    };
+    setExpertTeam(prev => [...prev, newExpert]);
+  };
+
+  const handleRemoveExpert = (expertId) => {
+    setExpertTeam(prev => prev.filter(expert => expert.id !== expertId));
+  };
+
+  const handleExpertChange = (expertId, field, value) => {
+    setExpertTeam(prev => 
+      prev.map(expert => 
+        expert.id === expertId 
+          ? { ...expert, [field]: value }
+          : expert
+      )
+    );
+  };
+
+  // Handle file uploads
+  const handleAdvisorLogoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setAdvisorData(prev => ({
-        ...prev,
-        companyLogo: file
-      }));
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFormData(prev => ({
+          ...prev,
+          companyLogo: file,
+          companyLogoUrl: e.target.result
+        }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
+  const handleAdvisorPhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFormData(prev => ({
+          ...prev,
+          profilePhoto: file,
+          profilePhotoUrl: e.target.result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleExpertPhotoUpload = (expertId, file) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setExpertTeam(prev => 
+          prev.map(expert => 
+            expert.id === expertId 
+              ? { ...expert, profilePhotoUrl: e.target.result }
+              : expert
+          )
+        );
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle delete functions
+  const handleCompanyLogoDelete = () => {
+    setFormData(prev => ({
+      ...prev,
+      companyLogo: null,
+      companyLogoUrl: ""
+    }));
+  };
+
+  const handleProfilePhotoDelete = () => {
+    setFormData(prev => ({
+      ...prev,
+      profilePhoto: null,
+      profilePhotoUrl: ""
+    }));
+  };
+
+  // Handle cancel - go back to previous page
+  const handleCancel = () => {
+    navigate(-1); // Go back to previous page
+  };
+
+  // Handle back - reset advisor type selection
+  const handleBack = () => {
+    if (advisorType) {
+      setAdvisorType('');
+      setExpertTeam([]);
+      setFormData(prev => ({
+        ...prev,
+        advisorType: "person"
+      }));
+    } else if (showAdvisorSection) {
+      setShowAdvisorSection(false);
+    }
+  };
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -81,197 +253,622 @@ const AdvisorProfile = () => {
     setSuccess('');
 
     try {
-      const formData = new FormData();
+      // Create FormData for file uploads
+      const submitData = new FormData();
       
-      // Add all advisor data to form
-      Object.keys(advisorData).forEach(key => {
-        if (key !== 'companyLogo' && advisorData[key] !== null && advisorData[key] !== '') {
-          formData.append(key, advisorData[key]);
+      // Add form data
+      Object.keys(formData).forEach(key => {
+        if (key !== 'companyLogo' && key !== 'profilePhoto') {
+          submitData.append(key, formData[key]);
         }
       });
 
-      // Add logo file if selected
-      if (advisorData.companyLogo) {
-        formData.append('companyLogo', advisorData.companyLogo);
+      // Add files
+      if (formData.companyLogo) {
+        submitData.append('companyLogo', formData.companyLogo);
+      }
+      if (formData.profilePhoto) {
+        submitData.append('profilePhoto', formData.profilePhoto);
       }
 
-      const response = await fetch('/api/users/advisor-profile', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
+      // Add expert team data
+      submitData.append('expertTeam', JSON.stringify(expertTeam));
+      submitData.append('contactEmail', formData.contactEmail);
+
+      const response = await fetch(`/api/users/${user.id}/advisor-profile`, {
+        method: 'POST',
+        body: submitData
       });
+
+      const data = await response.json();
 
       if (response.ok) {
         setSuccess('Advisor profile updated successfully!');
-        fetchAdvisorProfile(); // Refresh data
+        setTimeout(() => {
+          navigate('/dashboard'); // Navigate to dashboard after success
+        }, 2000);
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to update advisor profile');
+        setError(data.message || 'Failed to update advisor profile');
       }
     } catch (err) {
-      setError('Failed to update advisor profile');
+      setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="advisor-profile-container">
-      <div className="advisor-profile-header">
-        <h1>Professional Advisor Profile</h1>
-        <p>Set up your professional information that will appear on all your property listings</p>
+    <div className="form-sale-container">
+      {/* Title Section */}
+      <div className="form-title">
+        <div className="form-title-brand">
+          <Logo />
+        </div>
+        <div className="form-title-add">
+          CREATE PROFESSIONAL DASHBOARD WITH ADVISOR CARD
+        </div>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {/* Form Section */}
+      <div className="form-wrapper">
+        <form onSubmit={handleSubmit} className="property-form">
+          {error && <div className="alert alert-danger">{error}</div>}
+          {success && <div className="alert alert-success">{success}</div>}
 
-      <form onSubmit={handleSubmit} className="advisor-profile-form">
-        <div className="form-section">
-          <h3>Company Information</h3>
-          
-          <div className="form-group">
-            <label htmlFor="companyName">Company Name*</label>
-            <input
-              type="text"
-              id="companyName"
-              name="companyName"
-              value={advisorData.companyName}
-              onChange={handleChange}
-              placeholder="e.g. Property Solutions Ltd"
-              required
-            />
-          </div>
+          <div className="form-section">
+            <h3 className="section-title">Before listing your property,get benefit of having a private dashboard and advisor profile</h3>
+            
+            {/* Initial Benefits Section */}
+            {!showAdvisorSection && (
+              <div className="advisor-card-section">
+                <div className="advisor-card-info">
 
-          <div className="form-group">
-            <label htmlFor="companyTagline">Company Tagline</label>
-            <input
-              type="text"
-              id="companyTagline"
-              name="companyTagline"
-              value={advisorData.companyTagline}
-              onChange={handleChange}
-              placeholder="e.g. Your Trusted Property Partner"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="companyLogo">Company Logo</label>
-            <div className="logo-upload-area">
-              <input
-                type="file"
-                id="companyLogo"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                style={{ display: 'none' }}
-              />
-              <label htmlFor="companyLogo" className="logo-upload-label">
-                <div className="logo-upload-content">
-                  {advisorData.companyLogoUrl ? (
-                    <img src={advisorData.companyLogoUrl} alt="Company Logo" className="logo-preview" />
-                  ) : (
-                    <div className="logo-placeholder">
-                      <i className="fas fa-building"></i>
-                      <span>Upload Company Logo</span>
-                    </div>
-                  )}
+                   
+                  <div className="advisor-card-benefits">
+                    <h4>Benefits of having an advisor profile:</h4>
+                    <ul>
+                      <li>✅ Professional branding on all your properties</li>
+                      <li>✅ Display your company activities, logo and contact information</li>
+                      <li>✅ Show your expertise, team members and experience</li>
+                      <li>✅ Build trust with potential clients</li>
+                      <li>✅ Increase inquiries and viewings</li>
+                      <li>✅ Stand out from competitors</li>
+                    </ul>
+                  </div>
+                  <div className="advisor-card-action">
+                    <button
+                      type="button"
+                      className="advisor-card-btn"
+                      onClick={() => setShowAdvisorSection(true)}
+                    >
+                      <i className="fas fa-user-tie"></i>
+                      Set Up Advisor Profile
+                    </button>
+                    <small>
+                      I would not like to have an advisor profile already please 
+                    </small>
+                  </div>
                 </div>
-              </label>
-            </div>
-          </div>
-        </div>
+              </div>
+            )}
 
-        <div className="form-section">
-          <h3>Personal Information</h3>
-          
-          <div className="form-group">
-            <label htmlFor="jobTitle">Job Title*</label>
-            <input
-              type="text"
-              id="jobTitle"
-              name="jobTitle"
-              value={advisorData.jobTitle}
-              onChange={handleChange}
-              placeholder="e.g. Senior Property Advisor"
-              required
-            />
-          </div>
+            {/* Advisor Type Selection */}
+            {showAdvisorSection && !advisorType && (
+              <div className="advisor-type-selection">
+                <h4 className="advisor-subsection-title">Choose Your Profile Type</h4>
+                <div className="advisor-type-buttons">
+                  <button
+                    type="button"
+                    className={`advisor-type-btn ${advisorType === 'company' ? 'active' : ''}`}
+                    onClick={() => handleAdvisorTypeChange('company')}
+                  >
+                    <i className="fas fa-building"></i>
+                    <span>Set as a Company</span>
+                    <small>For companies with multiple experts</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={`advisor-type-btn ${advisorType === 'person' ? 'active' : ''}`}
+                    onClick={() => handleAdvisorTypeChange('person')}
+                  >
+                    <i className="fas fa-user-tie"></i>
+                    <span>Set as a Person</span>
+                    <small>For individual advisors</small>
+                  </button>
+                </div>
+                <div className="form-buttons">
+                  <div className="left-buttons">
+                    <button 
+                      type="button" 
+                      className="back-btn"
+                      onClick={handleBack}
+                      disabled={isLoading}
+                    >
+                      ← Back to Benefits
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          <div className="form-group">
-            <label htmlFor="professionalBio">Professional Bio</label>
-            <textarea
-              id="professionalBio"
-              name="professionalBio"
-              value={advisorData.professionalBio}
-              onChange={handleChange}
-              rows="4"
-              placeholder="Tell potential clients about your experience and expertise..."
-            />
-          </div>
-        </div>
+            {/* Company Section */}
+            {advisorType === 'company' && (
+              <>
+                {/* Company Information */}
+                <div className="advisor-form-section">
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="companyName">Company Name*</label>
+                      <input
+                        type="text"
+                        id="companyName"
+                        name="companyName"
+                        value={formData.companyName}
+                        onChange={handleChange}
+                        placeholder="e.g. Property Solutions Ltd"
+                        required
+                        className="advisor-field-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="directorName">Director Name*</label>
+                      <input
+                        type="text"
+                        id="directorName"
+                        name="directorName"
+                        value={formData.directorName}
+                        onChange={handleChange}
+                        placeholder="e.g. John Smith"
+                        required
+                        className="advisor-field-input"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="companyTagline">Company Tagline</label>
+                    <input
+                      type="text"
+                      id="companyTagline"
+                      name="companyTagline"
+                      value={formData.companyTagline}
+                      onChange={handleChange}
+                      placeholder="e.g. Your Trusted Property Partner"
+                      className="advisor-field-input"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="companyDescription">Company Description</label>
+                    <textarea
+                      id="companyDescription"
+                      name="companyDescription"
+                      value={formData.companyDescription}
+                      onChange={handleChange}
+                      rows="3"
+                      placeholder="Tell potential clients about your company, services, and what makes you unique..."
+                      className="form-textarea"
+                    />
+                    <small className="word-count-helper">
+                      {(() => {
+                        const wordCount = (formData.companyDescription || '').trim().split(/\s+/).filter(word => word.length > 0).length;
+                        const isValid = wordCount <= 100;
+                        return (
+                          <span style={{ color: isValid ? '#10b981' : '#ef4444' }}>
+                            {wordCount}/100 words maximum {isValid ? '✓' : ''}
+                          </span>
+                        );
+                      })()}
+                    </small>
+                  </div>
 
-        <div className="form-section">
-          <h3>Contact Information</h3>
-          
-          <div className="form-group">
-            <label htmlFor="officeHours">Office Hours</label>
-            <input
-              type="text"
-              id="officeHours"
-              name="officeHours"
-              value={advisorData.officeHours}
-              onChange={handleChange}
-              placeholder="e.g. Mon-Fri: 9:00 AM - 6:00 PM"
-            />
-          </div>
+                  <div className="form-group">
+                    <label htmlFor="companyLogo">Company Logo</label>
+                    <div className="logo-upload-area">
+                      <input
+                        type="file"
+                        id="companyLogo"
+                        accept="image/*"
+                        onChange={handleAdvisorLogoUpload}
+                        style={{ display: 'none' }}
+                      />
+                      <label htmlFor="companyLogo" className="logo-upload-label">
+                        <div className="logo-upload-content">
+                          {formData.companyLogoUrl ? (
+                            <div className="logo-preview-container">
+                              <img src={formData.companyLogoUrl} alt="Company Logo" className="logo-preview" />
+                              <button 
+                                type="button" 
+                                className="remove-logo-btn"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleCompanyLogoDelete();
+                                }}
+                                title="Remove company logo"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="logo-placeholder">
+                              <i className="fas fa-building"></i>
+                              <span>Upload Company Logo</span>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  </div>
 
-          <div className="form-group">
-            <label htmlFor="officeAddress">Office Address</label>
-            <textarea
-              id="officeAddress"
-              name="officeAddress"
-              value={advisorData.officeAddress}
-              onChange={handleChange}
-              rows="3"
-              placeholder="Enter your office address..."
-            />
-          </div>
-        </div>
+                  {/* Company Contact Information */}
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="officeHours">Office Hours</label>
+                      <input
+                        type="text"
+                        id="officeHours"
+                        name="officeHours"
+                        value={formData.officeHours}
+                        onChange={handleChange}
+                        placeholder="e.g. Mon-Fri: 9:00 AM - 6:00 PM"
+                        className="advisor-field-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="officeAddress">Office Address</label>
+                      <textarea
+                        id="officeAddress"
+                        name="officeAddress"
+                        value={formData.officeAddress}
+                        onChange={handleChange}
+                        rows="1"
+                        placeholder="Enter your office address line1..."
+                        className="office-field-textarea"
+                      />
+                    </div>
+                  </div>
 
-        <div className="form-section">
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                name="isAdvisor"
-                checked={advisorData.isAdvisor}
-                onChange={handleChange}
-              />
-              <span>Enable Professional Advisor Profile</span>
-            </label>
-            <small>When enabled, your advisor information will appear on all your property listings</small>
-          </div>
-        </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="officeCity">Office City</label>
+                      <input
+                        type="text"
+                        id="officeCity"
+                        name="officeCity"
+                        value={formData.officeCity}
+                        onChange={handleChange}
+                        placeholder="e.g. London"
+                        className="advisor-field-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="officePostcode">Office Postcode</label>
+                      <input
+                        type="text"
+                        id="officePostcode"
+                        name="officePostcode"
+                        value={formData.officePostcode}
+                        onChange={handleChange}
+                        placeholder="e.g. SW1A 1AA"
+                        className="advisor-field-input"
+                      />
+                    </div>
+                  </div>
+                </div>
 
-        <div className="form-actions">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => navigate('/dashboard')}
-            disabled={isLoading}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Saving...' : 'Save Advisor Profile'}
-          </button>
-        </div>
-      </form>
+                {/* Expert Team Section */}
+                <div className="advisor-form-section">
+                  <h4 className="advisor-subsection-title">Expert Team</h4>
+                  <p className="section-description">Add your team members who will be featured on property listings</p>
+                  
+                  {expertTeam.map((expert, index) => (
+                    <div key={expert.id} className="expert-member">
+                      <div className="expert-header">
+                        <h5>Expert {index + 1}</h5>
+                        <button
+                          type="button"
+                          className="remove-expert-btn"
+                          onClick={() => handleRemoveExpert(expert.id)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Full Name*</label>
+                          <input
+                            type="text"
+                            value={expert.fullName}
+                            onChange={(e) => handleExpertChange(expert.id, 'fullName', e.target.value)}
+                            placeholder="e.g. John Smith"
+                            required
+                            className="advisor-field-input"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Job Title*</label>
+                          <select
+                            value={expert.jobTitle}
+                            onChange={(e) => handleExpertChange(expert.id, 'jobTitle', e.target.value)}
+                            required
+                            className="advisor-field-input"
+                          >
+                            <option value="">Select Job Title</option>
+                            {companyJobTitleOptions.map(option => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Profile Photo</label>
+                        <div className="photo-upload-area">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleExpertPhotoUpload(expert.id, e.target.files[0])}
+                            style={{ display: 'none' }}
+                            id={`expert-photo-${expert.id}`}
+                          />
+                          <label htmlFor={`expert-photo-${expert.id}`} className="photo-upload-label">
+                            <div className="photo-upload-content">
+                              {expert.profilePhotoUrl ? (
+                                <div className="photo-preview-container">
+                                  <img src={expert.profilePhotoUrl} alt="Expert Photo" className="photo-preview" />
+                                </div>
+                              ) : (
+                                <div className="photo-placeholder">
+                                  <i className="fas fa-user-tie"></i>
+                                  <span>Upload Profile Photo</span>
+                                </div>
+                              )}
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Phone Number</label>
+                          <input
+                            type="tel"
+                            value={expert.phone}
+                            onChange={(e) => handleExpertChange(expert.id, 'phone', e.target.value)}
+                            placeholder="+44 7xxx xxx xxx"
+                            className="advisor-field-input"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Email Address</label>
+                          <input
+                            type="email"
+                            value={expert.email}
+                            onChange={(e) => handleExpertChange(expert.id, 'email', e.target.value)}
+                            placeholder="expert@company.com"
+                            className="advisor-field-input"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="add-expert-btn"
+                    onClick={handleAddExpert}
+                  >
+                    <i className="fas fa-plus"></i>
+                    Add Expert Team Member
+                  </button>
+                </div>
+
+                {/* Enable Advisor Profile */}
+                <div className="advisor-form-section">
+                  <div className="form-group">
+                    <label className="checkbox-label advisor-checkbox-label">
+                      <input
+                        type="checkbox"
+                        name="isAdvisor"
+                        checked={formData.isAdvisor}
+                        onChange={handleChange}
+                      />
+                      <span>Enable Professional Advisor Profile</span>
+                    </label>
+                    <small className="advisor-help-text">When enabled, your advisor information will appear on all your property listings</small>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Person Section */}
+            {advisorType === 'person' && (
+              <>
+                {/* Personal Information */}
+                <div className="advisor-form-section">
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="fullName">Full Name*</label>
+                      <input
+                        type="text"
+                        id="fullName"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleChange}
+                        placeholder="e.g. John Smith"
+                        required
+                        className="advisor-field-input"
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label htmlFor="jobTitle">Job Title*</label>
+                      <select
+                        id="jobTitle"
+                        name="jobTitle"
+                        value={formData.jobTitle}
+                        onChange={handleChange}
+                        required
+                        className="advisor-field-input"
+                      >
+                        <option value="">Select Job Title</option>
+                        {personJobTitleOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="profilePhoto">Profile Photo</label>
+                    <div className="photo-upload-area">
+                      <input
+                        type="file"
+                        id="profilePhoto"
+                        accept="image/*"
+                        onChange={handleAdvisorPhotoUpload}
+                        style={{ display: 'none' }}
+                      />
+                      <label htmlFor="profilePhoto" className="photo-upload-label">
+                        <div className="photo-upload-content">
+                          {formData.profilePhotoUrl ? (
+                            <div className="photo-preview-container">
+                              <img src={formData.profilePhotoUrl} alt="Profile Photo" className="photo-preview" />
+                              <button 
+                                type="button" 
+                                className="remove-photo-btn"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleProfilePhotoDelete();
+                                }}
+                                title="Remove profile photo"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="photo-placeholder">
+                              <i className="fas fa-user-tie"></i>
+                              <span>Upload Profile Photo</span>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="professionalBio">Professional Bio</label>
+                    <textarea
+                      id="professionalBio"
+                      name="professionalBio"
+                      value={formData.professionalBio}
+                      onChange={handleChange}
+                      rows="4"
+                      placeholder="Tell potential clients about your experience and expertise..."
+                      className="form-textarea"
+                    />
+                    <small className="word-count-helper">
+                      {(() => {
+                        const wordCount = (formData.professionalBio || '').trim().split(/\s+/).filter(word => word.length > 0).length;
+                        const isValid = wordCount <= 50;
+                        return (
+                          <span style={{ color: isValid ? '#10b981' : '#ef4444' }}>
+                            {wordCount}/50 words maximum {isValid ? '✓' : ''}
+                          </span>
+                        );
+                      })()}
+                    </small>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="contactPhone">Contact Number</label>
+                      <input
+                        type="tel"
+                        id="contactPhone"
+                        name="contactPhone"
+                        value={formData.contactPhone}
+                        onChange={handleChange}
+                        placeholder="+44 7xxx xxx xxx"
+                        className="advisor-field-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="contactEmail">Email Address</label>
+                      <input
+                        type="email"
+                        id="contactEmail"
+                        name="contactEmail"
+                        value={formData.contactEmail}
+                        onChange={handleChange}
+                        placeholder="advisor@email.com"
+                        className="advisor-field-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enable Advisor Profile */}
+                <div className="advisor-form-section">
+                  <div className="form-group">
+                    <label className="checkbox-label advisor-checkbox-label">
+                      <input
+                        type="checkbox"
+                        name="isAdvisor"
+                        checked={formData.isAdvisor}
+                        onChange={handleChange}
+                      />
+                      <span>Enable Professional Advisor Profile</span>
+                    </label>
+                    <small className="advisor-help-text">When enabled, your advisor information will appear on all your property listings</small>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Navigation Buttons */}
+            {advisorType && (
+              <div className="advisor-form-section">
+                <div className="form-buttons">
+                  <div className="left-buttons">
+                    <button 
+                      type="button" 
+                      className="back-btn"
+                      onClick={handleBack}
+                      disabled={isLoading}
+                    >
+                      ← Back
+                    </button>
+                    <button 
+                      type="button" 
+                      className="cancel-btn"
+                      onClick={handleCancel}
+                      disabled={isLoading}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <button 
+                    type="submit" 
+                    className="submit-btn"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Saving..." : "Save Advisor Profile"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

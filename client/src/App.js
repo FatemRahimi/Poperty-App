@@ -23,12 +23,13 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserDashboard from "./pages/UserDashboard";
 import PropertyView from "./pages/PropertyView";
+import AdvisorProfile from "./pages/AdvisorProfile";
 
 function Layout() {
     const location = useLocation();
 
     // Hide Navbar on login, password, signup pages, admin login, and admin dashboard
-    const hideNavbar = ["/login", "/password", "/signup", "/addlist", "/addlistnext", "/addlease", "/additional-listing/sale", "/additional-listing/lease", "/addleasenext", "/addrent", "/admin-x9k7m2p5q8", "/admin/dashboard", "/dashboard", "/property"].includes(location.pathname) || location.pathname.startsWith("/property/");
+    const hideNavbar = ["/login", "/password", "/signup", "/addlist", "/addlistnext", "/addlease", "/additional-listing/sale", "/additional-listing/lease", "/addleasenext", "/addrent", "/advisor-profile", "/admin-x9k7m2p5q8", "/admin/dashboard", "/dashboard", "/property"].includes(location.pathname) || location.pathname.startsWith("/property/");
 
     return (
         <div>
@@ -99,6 +100,12 @@ function Layout() {
                 <Route path="/addrent" element={
                     <ProtectedRoute>
                         <AddRent />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/advisor-profile" element={
+                    <ProtectedRoute>
+                        <AdvisorProfile />
                     </ProtectedRoute>
                 } />
             </Routes>
