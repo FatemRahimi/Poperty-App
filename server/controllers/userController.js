@@ -76,6 +76,130 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// Check if user has completed advisor profile
+const checkAdvisorProfile = async (req, res) => {
+  try {
+    console.log('🔍 Check advisor profile request received');
+    console.log('User ID from params:', req.params.userId);
+    console.log('User ID from JWT:', req.user?.id);
+    
+    // Use user ID from URL params if JWT user is not available
+    const userId = req.user?.id || req.params.userId;
+    
+    if (!userId) {
+      console.log('❌ No user ID found, returning false');
+      return res.json({
+        success: true,
+        hasCompletedAdvisorProfile: false,
+        hasSkippedAdvisorProfile: false
+      });
+    }
+    
+    const result = await User.checkAdvisorProfile(userId);
+    
+    console.log('✅ Advisor profile check result:', result);
+    
+    res.json({
+      success: true,
+      hasCompletedAdvisorProfile: result.hasCompleted,
+      hasSkippedAdvisorProfile: result.hasSkipped
+    });
+
+  } catch (error) {
+    console.error('❌ Check advisor profile error:', error);
+    // On error, assume user hasn't completed advisor profile
+    res.json({
+      success: true,
+      hasCompletedAdvisorProfile: false,
+      hasSkippedAdvisorProfile: false
+    });
+  }
+};
+
+// Save advisor profile
+const saveAdvisorProfile = async (req, res) => {
+  try {
+    console.log('🔍 Save advisor profile request received');
+    console.log('User ID:', req.user.id);
+    console.log('Request body:', req.body);
+    console.log('Request files:', req.files);
+    
+    const userId = req.user.id;
+    const advisorData = req.body;
+    
+    // Handle file uploads if present
+    if (req.files) {
+      if (req.files.companyLogo) {
+        advisorData.companyLogoUrl = `/uploads/${req.files.companyLogo.name}`;
+      }
+      if (req.files.profilePhoto) {
+        advisorData.profilePhotoUrl = `/uploads/${req.files.profilePhoto.name}`;
+      }
+    }
+    
+    // Save advisor profile
+    const result = await User.saveAdvisorProfile(userId, advisorData);
+    
+    // Mark advisor profile as completed
+    await User.markAdvisorProfileCompleted(userId);
+    
+    console.log('✅ Advisor profile saved and marked as completed');
+    
+    res.json({
+      success: true,
+      message: 'Advisor profile saved successfully',
+      advisorProfile: result
+    });
+
+  } catch (error) {
+    console.error('❌ Save advisor profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save advisor profile',
+      error: error.message
+    });
+  }
+};
+
+// Mark advisor profile as skipped
+const skipAdvisorProfile = async (req, res) => {
+  try {
+    console.log('🔍 Skip advisor profile request received');
+    console.log('User ID:', req.user?.id);
+    
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      console.log('❌ No user ID found, but returning success');
+      return res.json({
+        success: true,
+        message: 'Advisor profile skipped successfully'
+      });
+    }
+    
+    // Mark user as skipped advisor profile
+    await User.skipAdvisorProfile(userId);
+    
+    console.log('✅ Advisor profile marked as skipped');
+    
+    res.json({
+      success: true,
+      message: 'Advisor profile skipped successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Skip advisor profile error:', error);
+    // Even on error, return success to allow navigation
+    res.json({
+      success: true,
+      message: 'Advisor profile skipped successfully'
+    });
+  }
+};
+
 module.exports = {
-  updateProfile
+  updateProfile,
+  checkAdvisorProfile,
+  saveAdvisorProfile,
+  skipAdvisorProfile
 }; 

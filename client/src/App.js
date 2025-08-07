@@ -17,6 +17,7 @@ import OAuthCallback from "./pages/OAuthCallback";
 import Logout from "./pages/Logout";
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdvisorProfileCheck from './components/AdvisorProfileCheck';
 import ResetPassword from "./pages/ResetPassword";
 import AddRent from "./pages/AddRent";
 import AdminLogin from "./pages/AdminLogin";
@@ -57,7 +58,9 @@ function Layout() {
          
                 <Route path="/seller" element={
                     <ProtectedRoute>
-                        <SellerForm />
+                        <AdvisorProfileCheck>
+                            <SellerForm />
+                        </AdvisorProfileCheck>
                     </ProtectedRoute>
                 } />
                 
