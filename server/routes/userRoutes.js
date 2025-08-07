@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { updateProfile } = require('../controllers/userController');
+const { updateProfile, checkAdvisorProfile, saveAdvisorProfile, skipAdvisorProfile } = require('../controllers/userController');
 
 // Middleware for JWT authentication
 const jwt = require('jsonwebtoken');
@@ -40,5 +40,10 @@ router.use((req, res, next) => {
 
 // User profile routes
 router.put('/profile', authenticateJWT, updateProfile);
+
+// Advisor profile routes
+router.get('/:userId/advisor-profile', checkAdvisorProfile); // No authentication required
+router.post('/:userId/advisor-profile', authenticateJWT, saveAdvisorProfile);
+router.post('/:userId/advisor-profile/skip', authenticateJWT, skipAdvisorProfile);
 
 module.exports = router; 

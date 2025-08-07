@@ -115,6 +115,211 @@ class User {
     }
   }
 
+  // Check if user has completed advisor profile
+  static async checkAdvisorProfile(userId) {
+    try {
+      // First, ensure the columns exist
+      await pool.query(`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS has_completed_advisor_profile BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS has_skipped_advisor_profile BOOLEAN DEFAULT FALSE
+      `);
+
+      // Check if user exists in the database
+      const userExists = await pool.query(
+        'SELECT id FROM users WHERE id = $1',
+        [userId]
+      );
+      
+      if (userExists.rows.length === 0) {
+        console.log('User does not exist in database, returning false');
+        return { hasCompleted: false, hasSkipped: false };
+      }
+
+      const result = await pool.query(
+        'SELECT has_completed_advisor_profile, has_skipped_advisor_profile FROM users WHERE id = $1',
+        [userId]
+      );
+      
+      if (result.rows.length === 0) {
+        return { hasCompleted: false, hasSkipped: false };
+      }
+      
+      const user = result.rows[0];
+      return {
+        hasCompleted: user.has_completed_advisor_profile === true,
+        hasSkipped: user.has_skipped_advisor_profile === true
+      };
+    } catch (error) {
+      console.error('Error checking advisor profile:', error);
+      // If there's an error, assume user hasn't completed advisor profile
+      return { hasCompleted: false, hasSkipped: false };
+    }
+  }
+
+  // Save advisor profile
+  static async saveAdvisorProfile(userId, advisorData) {
+    try {
+      // First, create or update advisor profile table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS advisor_profiles (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          advisor_type VARCHAR(20) NOT NULL,
+          company_name VARCHAR(255),
+          director_name VARCHAR(255),
+          company_logo_url TEXT,
+          company_website VARCHAR(255),
+          company_description TEXT,
+          full_name VARCHAR(255),
+          profile_photo_url TEXT,
+          job_title VARCHAR(255),
+          professional_bio TEXT,
+          contact_phone VARCHAR(50),
+          contact_email VARCHAR(255),
+          office_hours VARCHAR(255),
+          office_address TEXT,
+          office_city VARCHAR(100),
+          office_postcode VARCHAR(20),
+          expert_team JSONB,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      const {
+        advisorType,
+        companyName,
+        directorName,
+        companyLogoUrl,
+        companyWebsite,
+        companyDescription,
+        fullName,
+        profilePhotoUrl,
+        jobTitle,
+        professionalBio,
+        contactPhone,
+        contactEmail,
+        officeHours,
+        officeAddress,
+        officeCity,
+        officePostcode,
+        expertTeam
+      } = advisorData;
+
+      // Check if advisor profile already exists
+      const existingProfile = await pool.query(
+        'SELECT id FROM advisor_profiles WHERE user_id = $1',
+        [userId]
+      );
+
+      if (existingProfile.rows.length > 0) {
+        // Update existing profile
+        const result = await pool.query(`
+          UPDATE advisor_profiles SET
+            advisor_type = $1,
+            company_name = $2,
+            director_name = $3,
+            company_logo_url = $4,
+            company_website = $5,
+            company_description = $6,
+            full_name = $7,
+            profile_photo_url = $8,
+            job_title = $9,
+            professional_bio = $10,
+            contact_phone = $11,
+            contact_email = $12,
+            office_hours = $13,
+            office_address = $14,
+            office_city = $15,
+            office_postcode = $16,
+            expert_team = $17,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = $18
+          RETURNING *
+        `, [
+          advisorType,
+          companyName,
+          directorName,
+          companyLogoUrl,
+          companyWebsite,
+          companyDescription,
+          fullName,
+          profilePhotoUrl,
+          jobTitle,
+          professionalBio,
+          contactPhone,
+          contactEmail,
+          officeHours,
+          officeAddress,
+          officeCity,
+          officePostcode,
+          JSON.stringify(expertTeam),
+          userId
+        ]);
+        return result.rows[0];
+      } else {
+        // Create new profile
+        const result = await pool.query(`
+          INSERT INTO advisor_profiles (
+            user_id, advisor_type, company_name, director_name, company_logo_url,
+            company_website, company_description, full_name, profile_photo_url,
+            job_title, professional_bio, contact_phone, contact_email,
+            office_hours, office_address, office_city, office_postcode, expert_team
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+          RETURNING *
+        `, [
+          userId, advisorType, companyName, directorName, companyLogoUrl,
+          companyWebsite, companyDescription, fullName, profilePhotoUrl,
+          jobTitle, professionalBio, contactPhone, contactEmail,
+          officeHours, officeAddress, officeCity, officePostcode, JSON.stringify(expertTeam)
+        ]);
+        return result.rows[0];
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Mark advisor profile as skipped
+  static async skipAdvisorProfile(userId) {
+    try {
+      // Add has_skipped_advisor_profile column if it doesn't exist
+      await pool.query(`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS has_skipped_advisor_profile BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS has_completed_advisor_profile BOOLEAN DEFAULT FALSE
+      `);
+
+      const result = await pool.query(
+        'UPDATE users SET has_skipped_advisor_profile = TRUE WHERE id = $1 RETURNING *',
+        [userId]
+      );
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Mark advisor profile as completed
+  static async markAdvisorProfileCompleted(userId) {
+    try {
+      // Add has_completed_advisor_profile column if it doesn't exist
+      await pool.query(`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS has_completed_advisor_profile BOOLEAN DEFAULT FALSE
+      `);
+
+      const result = await pool.query(
+        'UPDATE users SET has_completed_advisor_profile = TRUE WHERE id = $1 RETURNING *',
+        [userId]
+      );
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static async createOrUpdateFromGoogle(profile) {
     try {
       const googleId = profile.id;

@@ -87,7 +87,7 @@ const AdvisorProfile = () => {
     directorName: "",
     companyLogo: null,
     companyLogoUrl: "",
-    companyTagline: "",
+    companyWebsite: "",
     companyDescription: "",
     
     // Personal Information
@@ -285,7 +285,7 @@ const AdvisorProfile = () => {
       if (response.ok) {
         setSuccess('Advisor profile updated successfully!');
         setTimeout(() => {
-          navigate('/dashboard'); // Navigate to dashboard after success
+          navigate('/seller'); // Navigate to seller page after success
         }, 2000);
       } else {
         setError(data.message || 'Failed to update advisor profile');
@@ -297,6 +297,47 @@ const AdvisorProfile = () => {
     }
   };
 
+  // Handle skip advisor profile
+  const handleSkipAdvisorProfile = async () => {
+    console.log('Skip button clicked - navigating to seller page');
+    
+    try {
+      // Store skip status in localStorage as backup
+      localStorage.setItem('advisorProfileSkipped', 'true');
+      
+      // Try to mark as skipped in database if user is authenticated
+      if (user && user.id && sessionStorage.getItem('token')) {
+        try {
+          const response = await fetch(`/api/users/${user.id}/advisor-profile/skip`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ skipped: true })
+          });
+          
+          if (response.ok) {
+            console.log('Successfully marked as skipped in database');
+          } else {
+            console.log('Skip API failed, but localStorage backup created');
+          }
+        } catch (error) {
+          console.log('Skip API error, but localStorage backup created:', error);
+        }
+      } else {
+        console.log('No authentication available, using localStorage backup');
+      }
+      
+      // Navigate to seller page
+      window.location.href = '/seller';
+    } catch (error) {
+      console.error('Error in skip function:', error);
+      // Always navigate to seller page regardless of any errors
+      window.location.href = '/seller';
+    }
+  };
+
   return (
     <div className="form-sale-container">
       {/* Title Section */}
@@ -305,7 +346,7 @@ const AdvisorProfile = () => {
           <Logo />
         </div>
         <div className="form-title-add">
-          CREATE PROFESSIONAL DASHBOARD WITH ADVISOR CARD
+        build a dashboard profile 
         </div>
       </div>
 
@@ -316,37 +357,47 @@ const AdvisorProfile = () => {
           {success && <div className="alert alert-success">{success}</div>}
 
           <div className="form-section">
-            <h3 className="section-title">Before listing your property,get benefit of having a private dashboard and advisor profile</h3>
+            <h3 className="section-title">Before listing your property, get benefit of having a private dashboard and advisor profile</h3>
             
             {/* Initial Benefits Section */}
             {!showAdvisorSection && (
               <div className="advisor-card-section">
                 <div className="advisor-card-info">
-
-                   
+                  
+               
+                  
                   <div className="advisor-card-benefits">
-                    <h4>Benefits of having an advisor profile:</h4>
+                    <h4>Benefits of Having an Advisor Profile</h4>
                     <ul>
                       <li>✅ Professional branding on all your properties</li>
-                      <li>✅ Display your company activities, logo and contact information</li>
+                      <li>✅ Display company activities, logo and contact information</li>
                       <li>✅ Show your expertise, team members and experience</li>
                       <li>✅ Build trust with potential clients</li>
                       <li>✅ Increase inquiries and viewings</li>
                       <li>✅ Stand out from competitors</li>
                     </ul>
                   </div>
-                  <div className="advisor-card-action">
-                    <button
-                      type="button"
+                  
+                  <div className="advisor-card-actions">
+                    <button 
+                      type="button" 
                       className="advisor-card-btn"
                       onClick={() => setShowAdvisorSection(true)}
                     >
-                      <i className="fas fa-user-tie"></i>
                       Set Up Advisor Profile
                     </button>
-                    <small>
-                      I would not like to have an advisor profile already please 
-                    </small>
+                    
+                    <div className="advisor-card-skip">
+                      <span>I would not like to have an advisor profile already please </span>
+                      <button 
+                        type="button" 
+                        className="advisor-skip-link"
+                        onClick={handleSkipAdvisorProfile}
+                      >
+                        skip
+                      </button>
+                    </div>
+                    
                   </div>
                 </div>
               </div>
@@ -384,7 +435,8 @@ const AdvisorProfile = () => {
                       onClick={handleBack}
                       disabled={isLoading}
                     >
-                      ← Back to Benefits
+                                           ← Back
+ 
                     </button>
                   </div>
                 </div>
@@ -426,19 +478,6 @@ const AdvisorProfile = () => {
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="companyTagline">Company Tagline</label>
-                    <input
-                      type="text"
-                      id="companyTagline"
-                      name="companyTagline"
-                      value={formData.companyTagline}
-                      onChange={handleChange}
-                      placeholder="e.g. Your Trusted Property Partner"
-                      className="advisor-field-input"
-                    />
-                  </div>
-                  
-                  <div className="form-group">
                     <label htmlFor="companyDescription">Company Description</label>
                     <textarea
                       id="companyDescription"
@@ -460,6 +499,19 @@ const AdvisorProfile = () => {
                         );
                       })()}
                     </small>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="companyWebsite">Company Website</label>
+                    <input
+                      type="url"
+                      id="companyWebsite"
+                      name="companyWebsite"
+                      value={formData.companyWebsite}
+                      onChange={handleChange}
+                      placeholder="https://www.yourcompany.com"
+                      className="advisor-field-input"
+                    />
                   </div>
 
                   <div className="form-group">
@@ -861,7 +913,7 @@ const AdvisorProfile = () => {
                     className="submit-btn"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Saving..." : "Save Advisor Profile"}
+                    {isLoading ? "Saving..." : "Submit Advisor Profile"}
                   </button>
                 </div>
               </div>
