@@ -436,15 +436,22 @@ const AdvisorProfile = () => {
                   </button>
                 </div>
                 <div className="form-buttons">
-                  <div className="left-buttons">
+                  <div className="advisor-left-button">
                     <button 
                       type="button" 
                       className="back-btn"
                       onClick={handleBack}
                       disabled={isLoading}
                     >
-                                           ← Back
- 
+                      ← Back
+                    </button>
+                    <button 
+                      type="button" 
+                      className="cancel-btn"
+                      onClick={handleCancel}
+                      disabled={isLoading}
+                    >
+                      Cancel
                     </button>
                   </div>
                 </div>
@@ -618,7 +625,7 @@ const AdvisorProfile = () => {
                 </div>
 
                 {/* Expert Team Section */}
-                <div className="advisor-form-section">
+                <div className="advisor-form-section expert-team-section">
                   <h4 className="advisor-subsection-title">Expert Team</h4>
                   <p className="section-description">Add your team members who will be featured on property listings</p>
                   
@@ -717,10 +724,6 @@ const AdvisorProfile = () => {
                     </div>
                   ))}
 
-                </div>
-
-                {/* Enable Advisor Profile */}
-                <div className="advisor-form-section">
                   <button
                     type="button"
                     className="add-expert-btn"
@@ -729,7 +732,10 @@ const AdvisorProfile = () => {
                     <i className="fas fa-plus"></i>
                     Add Expert Team Member
                   </button>
-                  
+                </div>
+
+                {/* Enable Advisor Profile */}
+                <div className="advisor-form-section">
                   <div className="advisor-form-group">
                     <label className="checkbox-label advisor-checkbox-label">
                       <input
@@ -899,7 +905,7 @@ const AdvisorProfile = () => {
             {advisorType && (
               <div className="advisor-form-section">
                 <div className="form-buttons">
-                  <div className="left-buttons">
+                  <div className="advisor-left-button">
                     <button 
                       type="button" 
                       className="back-btn"
