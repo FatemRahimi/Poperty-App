@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,26 +6,41 @@ const AdvisorProfileCheck = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isChecking, setIsChecking] = useState(true);
+  const hasCheckedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent multiple checks using useRef
+    if (hasCheckedRef.current) {
+      console.log('🔄 Already checked, skipping...');
+      return;
+    }
+
+    // Wait until user is loaded before checking
+    if (!isAuthenticated || !user) {
+      console.log('⏳ Waiting for user authentication...');
+      return;
+    }
+
     const checkAdvisorProfile = async () => {
-      // Check localStorage first for skip status (fallback)
-      const localSkipStatus = localStorage.getItem('advisorProfileSkipped');
-      if (localSkipStatus === 'true') {
-        console.log('User has skipped advisor profile (localStorage), allowing access to seller page');
+      console.log('🔍 AdvisorProfileCheck: Starting check for user:', user.id);
+      hasCheckedRef.current = true; // Mark as checked to prevent multiple runs
+      
+      // Check for one-time skip token first
+      const oneTimeSkip = sessionStorage.getItem('oneTimeAdvisorSkip');
+      console.log('🔍 AdvisorProfileCheck: Checking for one-time skip token:', oneTimeSkip);
+      
+      if (oneTimeSkip) {
+        console.log('✅ One-time skip token found, allowing access to seller page');
+        sessionStorage.removeItem('oneTimeAdvisorSkip'); // Consume the token
+        console.log('✅ One-time skip token consumed');
         setIsChecking(false);
         return;
       }
 
-      // If no user, allow access (let login handle it)
-      if (!user || !user.id) {
-        console.log('No user found, allowing access to seller page');
-        setIsChecking(false);
-        return;
-      }
+      console.log('❌ No one-time skip token found, checking backend...');
 
       try {
-        // Check if user has completed advisor profile
+        // Check if user has completed advisor profile (only completion matters)
         const token = sessionStorage.getItem('token');
         const headers = {
           'Content-Type': 'application/json'
@@ -36,6 +51,7 @@ const AdvisorProfileCheck = ({ children }) => {
           headers['Authorization'] = `Bearer ${token}`;
         }
 
+        console.log('📡 Making API call to check advisor profile...');
         const response = await fetch(`/api/users/${user.id}/advisor-profile`, {
           method: 'GET',
           headers: headers
@@ -43,35 +59,36 @@ const AdvisorProfileCheck = ({ children }) => {
 
         if (response.ok) {
           const data = await response.json();
+          console.log('📡 API response:', data);
           
-          // If user has completed OR skipped advisor profile, allow access to seller page
-          if (data.hasCompletedAdvisorProfile || data.hasSkippedAdvisorProfile) {
-            console.log('User has completed or skipped advisor profile, allowing access to seller page');
+          // Only allow access if user has COMPLETED advisor profile
+          if (data.hasCompletedAdvisorProfile) {
+            console.log('✅ User has completed advisor profile, allowing access to seller page');
             setIsChecking(false);
             return;
           } else {
-            // If user hasn't completed or skipped advisor profile, redirect to advisor profile page
-            console.log('User has not completed or skipped advisor profile, redirecting to advisor profile');
+            // If user hasn't completed advisor profile, redirect to advisor profile page
+            console.log('❌ User has not completed advisor profile, redirecting to advisor profile');
             navigate('/advisor-profile');
             return;
           }
         } else {
           // If API call fails, redirect to advisor profile page
-          console.log('API call failed, redirecting to advisor profile');
+          console.log('❌ API call failed, redirecting to advisor profile');
           navigate('/advisor-profile');
           return;
         }
       } catch (error) {
-        console.error('Error checking advisor profile:', error);
+        console.error('❌ Error checking advisor profile:', error);
         // On error, redirect to advisor profile page
-        console.log('Error occurred, redirecting to advisor profile');
+        console.log('❌ Error occurred, redirecting to advisor profile');
         navigate('/advisor-profile');
         return;
       }
     };
 
     checkAdvisorProfile();
-  }, [user, navigate]);
+  }, [user, isAuthenticated, navigate]);
 
   if (isChecking) {
     return (
