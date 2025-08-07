@@ -435,7 +435,7 @@ const AdvisorProfile = () => {
                     <small>For individual advisors</small>
                   </button>
                 </div>
-                <div className="form-buttons">
+                <div className="advisor-form-buttons">
                   <div className="advisor-left-button">
                     <button 
                       type="button" 
