@@ -228,7 +228,21 @@ const AdvisorProfile = () => {
 
   // Handle cancel - go back to previous page
   const handleCancel = () => {
-    navigate(-1); // Go back to previous page
+    if (advisorType) {
+      // If we're in the form, go back to advisor type selection
+      setAdvisorType('');
+      setExpertTeam([]);
+      setFormData(prev => ({
+        ...prev,
+        advisorType: "person"
+      }));
+    } else if (showAdvisorSection) {
+      // If we're in advisor type selection, go back to initial benefits
+      setShowAdvisorSection(false);
+    } else {
+      // If we're in initial benefits, go to seller page
+      navigate('/seller');
+    }
   };
 
   // Handle back - reset advisor type selection
@@ -248,11 +262,15 @@ const AdvisorProfile = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('🔴 Submit button clicked - starting submission');
     setIsLoading(true);
     setError('');
     setSuccess('');
 
     try {
+      console.log('📝 Form data:', formData);
+      console.log('👥 Expert team:', expertTeam);
+      
       // Create FormData for file uploads
       const submitData = new FormData();
       
@@ -260,37 +278,46 @@ const AdvisorProfile = () => {
       Object.keys(formData).forEach(key => {
         if (key !== 'companyLogo' && key !== 'profilePhoto') {
           submitData.append(key, formData[key]);
+          console.log(`📋 Added ${key}:`, formData[key]);
         }
       });
 
       // Add files
       if (formData.companyLogo) {
         submitData.append('companyLogo', formData.companyLogo);
+        console.log('📁 Added company logo');
       }
       if (formData.profilePhoto) {
         submitData.append('profilePhoto', formData.profilePhoto);
+        console.log('📁 Added profile photo');
       }
 
       // Add expert team data
       submitData.append('expertTeam', JSON.stringify(expertTeam));
       submitData.append('contactEmail', formData.contactEmail);
 
+      console.log('📡 Making API call to save advisor profile...');
       const response = await fetch(`/api/users/${user.id}/advisor-profile`, {
         method: 'POST',
         body: submitData
       });
 
+      console.log('📡 Response status:', response.status);
       const data = await response.json();
+      console.log('📡 Response data:', data);
 
       if (response.ok) {
+        console.log('✅ Advisor profile saved successfully');
         setSuccess('Advisor profile updated successfully!');
         setTimeout(() => {
           navigate('/seller'); // Navigate to seller page after success
         }, 2000);
       } else {
+        console.log('❌ API error:', data);
         setError(data.message || 'Failed to update advisor profile');
       }
     } catch (err) {
+      console.error('❌ Network error:', err);
       setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
@@ -327,8 +354,16 @@ const AdvisorProfile = () => {
       {/* Form Section */}
       <div className="form-wrapper">
         <form onSubmit={handleSubmit} className="property-form">
-          {error && <div className="alert alert-danger">{error}</div>}
-          {success && <div className="alert alert-success">{success}</div>}
+          {error && (
+            <div className="alert alert-danger">
+              <strong>Error:</strong> {error}
+            </div>
+          )}
+          {success && (
+            <div className="alert alert-success">
+              <strong>Success:</strong> {success}
+            </div>
+          )}
 
           <div className="form-section">
             <h3 className="section-title">Before listing your property, get benefit of having a private dashboard and advisor profile</h3>
@@ -422,7 +457,7 @@ const AdvisorProfile = () => {
                 {/* Company Information */}
                 <div className="advisor-form-section">
                   <div className="form-row">
-                    <div className="form-group">
+                    <div className="advisor-form-group">
                       <label htmlFor="companyName">Company Name*</label>
                       <input
                         type="text"
@@ -435,7 +470,7 @@ const AdvisorProfile = () => {
                         className="advisor-field-input"
                       />
                     </div>
-                    <div className="form-group">
+                    <div className="advisor-form-group">
                       <label htmlFor="directorName">Director Name*</label>
                       <input
                         type="text"
@@ -450,7 +485,7 @@ const AdvisorProfile = () => {
                     </div>
                   </div>
                   
-                  <div className="form-group">
+                  <div className="advisor-form-group">
                     <label htmlFor="companyDescription">Company Description</label>
                     <textarea
                       id="companyDescription"
@@ -474,7 +509,7 @@ const AdvisorProfile = () => {
                     </small>
                   </div>
 
-                  <div className="form-group">
+                  <div className="advisor-form-group">
                     <label htmlFor="companyWebsite">Company Website</label>
                     <input
                       type="url"
@@ -487,7 +522,7 @@ const AdvisorProfile = () => {
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="advisor-form-group">
                     <label htmlFor="companyLogo">Company Logo</label>
                     <div className="logo-upload-area">
                       <input
@@ -528,7 +563,7 @@ const AdvisorProfile = () => {
 
                   {/* Company Contact Information */}
                   <div className="form-row">
-                    <div className="form-group">
+                    <div className="advisor-form-group">
                       <label htmlFor="officeHours">Office Hours</label>
                       <input
                         type="text"
@@ -540,7 +575,7 @@ const AdvisorProfile = () => {
                         className="advisor-field-input"
                       />
                     </div>
-                    <div className="form-group">
+                    <div className="advisor-form-group">
                       <label htmlFor="officeAddress">Office Address</label>
                       <textarea
                         id="officeAddress"
@@ -555,7 +590,7 @@ const AdvisorProfile = () => {
                   </div>
 
                   <div className="form-row">
-                    <div className="form-group">
+                    <div className="advisor-form-group">
                       <label htmlFor="officeCity">Office City</label>
                       <input
                         type="text"
@@ -567,7 +602,7 @@ const AdvisorProfile = () => {
                         className="advisor-field-input"
                       />
                     </div>
-                    <div className="form-group">
+                    <div className="advisor-form-group">
                       <label htmlFor="officePostcode">Office Postcode</label>
                       <input
                         type="text"
@@ -601,7 +636,7 @@ const AdvisorProfile = () => {
                       </div>
                       
                       <div className="form-row">
-                        <div className="form-group">
+                        <div className="advisor-form-group">
                           <label>Full Name*</label>
                           <input
                             type="text"
@@ -612,7 +647,7 @@ const AdvisorProfile = () => {
                             className="advisor-field-input"
                           />
                         </div>
-                        <div className="form-group">
+                        <div className="advisor-form-group">
                           <label>Job Title*</label>
                           <select
                             value={expert.jobTitle}
@@ -630,7 +665,7 @@ const AdvisorProfile = () => {
                         </div>
                       </div>
 
-                      <div className="form-group">
+                      <div className="advisor-form-group">
                         <label>Profile Photo</label>
                         <div className="photo-upload-area">
                           <input
@@ -658,7 +693,7 @@ const AdvisorProfile = () => {
                       </div>
 
                       <div className="form-row">
-                        <div className="form-group">
+                        <div className="advisor-form-group">
                           <label>Phone Number</label>
                           <input
                             type="tel"
@@ -668,7 +703,7 @@ const AdvisorProfile = () => {
                             className="advisor-field-input"
                           />
                         </div>
-                        <div className="form-group">
+                        <div className="advisor-form-group">
                           <label>Email Address</label>
                           <input
                             type="email"
@@ -682,6 +717,10 @@ const AdvisorProfile = () => {
                     </div>
                   ))}
 
+                </div>
+
+                {/* Enable Advisor Profile */}
+                <div className="advisor-form-section">
                   <button
                     type="button"
                     className="add-expert-btn"
@@ -690,11 +729,8 @@ const AdvisorProfile = () => {
                     <i className="fas fa-plus"></i>
                     Add Expert Team Member
                   </button>
-                </div>
-
-                {/* Enable Advisor Profile */}
-                <div className="advisor-form-section">
-                  <div className="form-group">
+                  
+                  <div className="advisor-form-group">
                     <label className="checkbox-label advisor-checkbox-label">
                       <input
                         type="checkbox"
@@ -716,7 +752,7 @@ const AdvisorProfile = () => {
                 {/* Personal Information */}
                 <div className="advisor-form-section">
                   <div className="form-row">
-                    <div className="form-group">
+                    <div className="advisor-form-group">
                       <label htmlFor="fullName">Full Name*</label>
                       <input
                         type="text"
@@ -730,7 +766,7 @@ const AdvisorProfile = () => {
                       />
                     </div>
                     
-                    <div className="form-group">
+                    <div className="advisor-form-group">
                       <label htmlFor="jobTitle">Job Title*</label>
                       <select
                         id="jobTitle"
@@ -750,7 +786,7 @@ const AdvisorProfile = () => {
                     </div>
                   </div>
                   
-                  <div className="form-group">
+                  <div className="advisor-form-group">
                     <label htmlFor="profilePhoto">Profile Photo</label>
                     <div className="photo-upload-area">
                       <input
@@ -789,7 +825,7 @@ const AdvisorProfile = () => {
                     </div>
                   </div>
                   
-                  <div className="form-group">
+                  <div className="advisor-form-group">
                     <label htmlFor="professionalBio">Professional Bio</label>
                     <textarea
                       id="professionalBio"
@@ -814,7 +850,7 @@ const AdvisorProfile = () => {
                   </div>
 
                   <div className="form-row">
-                    <div className="form-group">
+                    <div className="advisor-form-group">
                       <label htmlFor="contactPhone">Contact Number</label>
                       <input
                         type="tel"
@@ -826,7 +862,7 @@ const AdvisorProfile = () => {
                         className="advisor-field-input"
                       />
                     </div>
-                    <div className="form-group">
+                    <div className="advisor-form-group">
                       <label htmlFor="contactEmail">Email Address</label>
                       <input
                         type="email"
@@ -843,7 +879,7 @@ const AdvisorProfile = () => {
 
                 {/* Enable Advisor Profile */}
                 <div className="advisor-form-section">
-                  <div className="form-group">
+                  <div className="advisor-form-group">
                     <label className="checkbox-label advisor-checkbox-label">
                       <input
                         type="checkbox"
@@ -883,10 +919,22 @@ const AdvisorProfile = () => {
                   </div>
                   <button 
                     type="submit" 
-                    className="submit-btn"
+                    className={`submit-btn ${success ? 'submit-success' : ''} ${error ? 'submit-error' : ''}`}
                     disabled={isLoading}
                   >
-                    {isLoading ? "Saving..." : "Submit Advisor Profile"}
+                    {isLoading ? (
+                      <>
+                        <span className="spinner"></span>
+                        Saving...
+                      </>
+                    ) : success ? (
+                      <>
+                        <span className="success-icon">✓</span>
+                        Successfully Saved!
+                      </>
+                    ) : (
+                      "Submit Advisor Profile"
+                    )}
                   </button>
                 </div>
               </div>
