@@ -69,20 +69,20 @@ const AdvisorProfileCheck = ({ children }) => {
           } else {
             // If user hasn't completed advisor profile, redirect to advisor profile page
             console.log('❌ User has not completed advisor profile, redirecting to advisor profile');
-            navigate('/advisor-profile');
+            navigate('/advisor-profile', { replace: true }); // Use replace to preserve browser history
             return;
           }
         } else {
           // If API call fails, redirect to advisor profile page
           console.log('❌ API call failed, redirecting to advisor profile');
-          navigate('/advisor-profile');
+          navigate('/advisor-profile', { replace: true }); // Use replace to preserve browser history
           return;
         }
       } catch (error) {
         console.error('❌ Error checking advisor profile:', error);
         // On error, redirect to advisor profile page
         console.log('❌ Error occurred, redirecting to advisor profile');
-        navigate('/advisor-profile');
+        navigate('/advisor-profile', { replace: true }); // Use replace to preserve browser history
         return;
       }
     };
