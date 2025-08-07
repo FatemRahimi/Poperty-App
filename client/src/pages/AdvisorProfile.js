@@ -245,9 +245,10 @@ const AdvisorProfile = () => {
     }
   };
 
-  // Handle back - reset advisor type selection
+  // Handle back - use browser history navigation
   const handleBack = () => {
     if (advisorType) {
+      // If we're in the form (company/person), go back to advisor type selection
       setAdvisorType('');
       setExpertTeam([]);
       setFormData(prev => ({
@@ -255,7 +256,11 @@ const AdvisorProfile = () => {
         advisorType: "person"
       }));
     } else if (showAdvisorSection) {
+      // If we're in advisor type selection, go back to initial benefits
       setShowAdvisorSection(false);
+    } else {
+      // If we're in initial benefits, use browser back navigation
+      navigate(-1, { replace: true }); // Use replace to preserve browser history
     }
   };
 
@@ -444,14 +449,6 @@ const AdvisorProfile = () => {
                       disabled={isLoading}
                     >
                       ← Back
-                    </button>
-                    <button 
-                      type="button" 
-                      className="cancel-btn"
-                      onClick={handleCancel}
-                      disabled={isLoading}
-                    >
-                      Cancel
                     </button>
                   </div>
                 </div>
@@ -917,7 +914,7 @@ const AdvisorProfile = () => {
                     <button 
                       type="button" 
                       className="cancel-btn"
-                      onClick={handleCancel}
+                      onClick={() => navigate('/find')}
                       disabled={isLoading}
                     >
                       Cancel
