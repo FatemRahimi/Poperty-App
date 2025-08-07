@@ -571,3 +571,22 @@
   opacity: 0.6;
   cursor: not-allowed;
 } 
+
+/* Advisor Skip Link Styling */
+.advisor-skip-link {
+  background: none;
+  border: none;
+  color: #1610b9; /* Green color for skip link */
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+  margin: 0;
+  transition: color 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.advisor-skip-link:hover {
+  color: #059669; /* Darker green on hover */
+  text-decoration: none;
+} 
