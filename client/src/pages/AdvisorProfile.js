@@ -298,44 +298,18 @@ const AdvisorProfile = () => {
   };
 
   // Handle skip advisor profile
-  const handleSkipAdvisorProfile = async () => {
-    console.log('Skip button clicked - navigating to seller page');
+  const handleSkipAdvisorProfile = () => {
+    console.log('🔴 Skip button clicked - setting up one-time skip');
     
-    try {
-      // Store skip status in localStorage as backup
-      localStorage.setItem('advisorProfileSkipped', 'true');
-      
-      // Try to mark as skipped in database if user is authenticated
-      if (user && user.id && sessionStorage.getItem('token')) {
-        try {
-          const response = await fetch(`/api/users/${user.id}/advisor-profile/skip`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ skipped: true })
-          });
-          
-          if (response.ok) {
-            console.log('Successfully marked as skipped in database');
-          } else {
-            console.log('Skip API failed, but localStorage backup created');
-          }
-        } catch (error) {
-          console.log('Skip API error, but localStorage backup created:', error);
-        }
-      } else {
-        console.log('No authentication available, using localStorage backup');
-      }
-      
-      // Navigate to seller page
-      window.location.href = '/seller';
-    } catch (error) {
-      console.error('Error in skip function:', error);
-      // Always navigate to seller page regardless of any errors
-      window.location.href = '/seller';
-    }
+    // Store one-time skip token
+    sessionStorage.setItem('oneTimeAdvisorSkip', 'true');
+    console.log('✅ One-time skip token set in sessionStorage');
+    
+    // Add a small delay to ensure token is set before navigation
+    setTimeout(() => {
+      console.log('🚀 Navigating to /seller...');
+      navigate('/seller');
+    }, 100);
   };
 
   return (
@@ -397,7 +371,6 @@ const AdvisorProfile = () => {
                         skip
                       </button>
                     </div>
-                    
                   </div>
                 </div>
               </div>
