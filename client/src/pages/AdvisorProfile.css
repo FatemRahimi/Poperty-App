@@ -1,966 +1,573 @@
-.advisor-profile-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  background: #f8fafc;
-  min-height: 100vh;
+/* ========================================
+   ADVISOR PROFILE COLOR STYLING SYSTEM
+   Inspired by AddRent but with unique class names
+   ======================================== */
+
+/* CSS Variables for Advisor Profile */
+:root {
+  /* Colors */
+  --advisor-primary: #3b82f6;
+  --advisor-primary-dark: #2563eb;
+  --advisor-primary-light: #dbeafe;
+  --advisor-success: #10b981;
+  --advisor-success-dark: #059669;
+  --advisor-error: #ef4444;
+  --advisor-error-dark: #dc2626;
+  --advisor-warning: #f59e0b;
+  --advisor-warning-dark: #d97706;
+  
+  /* Text Colors */
+  --advisor-text-primary: #1e293b;
+  --advisor-text-secondary: #64748b;
+  --advisor-text-muted: #94a3b8;
+  --advisor-text-inverse: #ffffff;
+  
+  /* Background Colors */
+  --advisor-bg-primary: #ffffff;
+  --advisor-bg-secondary: #f8fafc;
+  --advisor-bg-tertiary: #f1f5f9;
+  --advisor-bg-hover: #f8fafc;
+  --advisor-bg-focus: #f0f9ff;
+  
+  /* Border Colors */
+  --advisor-border-primary: #e2e8f0;
+  --advisor-border-secondary: #cbd5e1;
+  --advisor-border-focus: #3b82f6;
+  --advisor-border-error: #fca5a5;
+  --advisor-border-success: #86efac;
+  
+  /* Spacing */
+  --advisor-spacing-xs: 0.25rem;
+  --advisor-spacing-sm: 0.5rem;
+  --advisor-spacing-md: 0.75rem;
+  --advisor-spacing-lg: 1rem;
+  --advisor-spacing-xl: 1.5rem;
+  --advisor-spacing-2xl: 2rem;
+  --advisor-spacing-3xl: 3rem;
+  
+  /* Typography */
+  --advisor-font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --advisor-font-family-heading: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --advisor-font-size-xs: 0.75rem;
+  --advisor-font-size-sm: 0.875rem;
+  --advisor-font-size-base: 1rem;
+  --advisor-font-size-lg: 1.125rem;
+  --advisor-font-size-xl: 1.25rem;
+  --advisor-font-size-2xl: 1.5rem;
+  --advisor-font-size-3xl: 1.875rem;
+  
+  /* Border Radius */
+  --advisor-radius-sm: 0.25rem;
+  --advisor-radius-md: 0.375rem;
+  --advisor-radius-lg: 0.5rem;
+  --advisor-radius-xl: 0.75rem;
+  --advisor-radius-2xl: 1rem;
+  
+  /* Shadows */
+  --advisor-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --advisor-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --advisor-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --advisor-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Transitions */
+  --advisor-transition-fast: 150ms ease-in-out;
+  --advisor-transition-base: 200ms ease-in-out;
+  --advisor-transition-slow: 300ms ease-in-out;
 }
 
-.advisor-profile-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
+/* ========================================
+   ADVISOR PROFILE FORM STYLING
+   ======================================== */
 
-.advisor-profile-header h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 0.5rem;
-}
-
-.advisor-profile-header p {
-  color: #64748b;
-  font-size: 1.1rem;
-}
-
-.advisor-profile-form {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.form-section {
-  margin-bottom: 2rem;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.form-section:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-}
-
-.form-section h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 1.5rem;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group label {
-  display: block;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.form-group input,
-.form-group textarea {
+/* Modern Input Styling */
+.advisor-input-base {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: border-color 0.3s ease;
+  padding: var(--advisor-spacing-md) var(--advisor-spacing-lg);
+  font-size: var(--advisor-font-size-base);
+  font-family: var(--advisor-font-family-primary);
+  line-height: 1.5;
+  color: var(--advisor-text-primary);
+  background-color: var(--advisor-bg-primary);
+  border: 2px solid var(--advisor-border-primary);
+  border-radius: var(--advisor-radius-md);
+  transition: all var(--advisor-transition-base);
+  box-sizing: border-box;
+  min-height: 48px;
+  
+  /* Remove browser defaults */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  
+  /* Prevent zoom on iOS */
+  font-size: 16px;
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
+.advisor-input-base:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--advisor-border-focus);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: var(--advisor-bg-focus);
 }
 
-.form-group small {
-  display: block;
-  margin-top: 0.5rem;
-  color: #6b7280;
-  font-size: 0.875rem;
+.advisor-input-base:hover {
+  border-color: var(--advisor-border-secondary);
 }
 
-/* Logo Upload Styles */
-.logo-upload-area {
-  margin-top: 0.5rem;
+.advisor-input-base:disabled {
+  background-color: var(--advisor-bg-tertiary);
+  color: var(--advisor-text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
-.logo-upload-label {
-  display: block;
+/* Text Inputs */
+.advisor-text-input,
+.advisor-email-input,
+.advisor-tel-input,
+.advisor-url-input,
+.advisor-search-input {
+  composes: advisor-input-base;
+}
+
+/* Select Inputs */
+.advisor-select-input {
+  composes: advisor-input-base;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%236b7280' viewBox='0 0 20 20'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--advisor-spacing-md) center;
+  background-size: 16px 16px;
+  padding-right: 2.5rem;
+}
+
+/* Textarea Styling */
+.advisor-textarea-base {
+  composes: advisor-input-base;
+  min-height: 100px;
+  resize: vertical;
+  font-family: var(--advisor-font-family-primary);
+  line-height: 1.6;
+}
+
+/* Checkbox Styling */
+.advisor-checkbox-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--advisor-border-primary);
+  border-radius: var(--advisor-radius-sm);
+  background-color: var(--advisor-bg-primary);
   cursor: pointer;
-}
-
-.logo-upload-content {
-  border: 2px dashed #d1d5db;
-  border-radius: 8px;
-  padding: 2rem;
-  text-align: center;
-  transition: all 0.3s ease;
-}
-
-.logo-upload-content:hover {
-  border-color: #3b82f6;
-  background: #f8fafc;
-}
-
-.logo-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  color: #6b7280;
-}
-
-.logo-placeholder i {
-  font-size: 2rem;
-  color: #9ca3af;
-}
-
-.logo-preview {
-  max-width: 120px;
-  max-height: 80px;
-  object-fit: contain;
-  border-radius: 6px;
-}
-
-/* Checkbox Styles */
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  font-weight: 500;
-  color: #374151;
-}
-
-.checkbox-label input[type="checkbox"] {
-  width: auto;
+  position: relative;
+  transition: all var(--advisor-transition-base);
   margin: 0;
 }
 
-/* Form Actions */
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid #e2e8f0;
+.advisor-checkbox-input:checked {
+  background-color: var(--advisor-primary);
+  border-color: var(--advisor-primary);
 }
 
-.btn-primary,
-.btn-secondary {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
+.advisor-checkbox-input:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.advisor-checkbox-input:hover {
+  border-color: var(--advisor-border-focus);
+}
+
+.advisor-checkbox-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Radio Button Styling */
+.advisor-radio-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--advisor-border-primary);
+  border-radius: 50%;
+  background-color: var(--advisor-bg-primary);
   cursor: pointer;
-  transition: all 0.3s ease;
+  position: relative;
+  transition: all var(--advisor-transition-base);
+  margin: 0;
 }
 
-.btn-primary {
-  background: #3b82f6;
-  color: white;
+.advisor-radio-input:checked {
+  background-color: var(--advisor-primary);
+  border-color: var(--advisor-primary);
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: #2563eb;
-  transform: translateY(-1px);
+.advisor-radio-input:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  background-color: white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
 }
 
-.btn-primary:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
+.advisor-radio-input:hover {
+  border-color: var(--advisor-border-focus);
 }
 
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
+.advisor-radio-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
+/* ========================================
+   ADVISOR PROFILE FORM LAYOUT
+   ======================================== */
+
+/* Form Container */
+.advisor-form-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--advisor-spacing-2xl);
+  background: linear-gradient(135deg, var(--advisor-bg-secondary) 0%, var(--advisor-bg-tertiary) 100%);
+  min-height: 100vh;
+  font-family: var(--advisor-font-family-primary);
 }
 
-/* Alert Styles */
-.alert {
-  padding: 1rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
+.advisor-form-content {
+  background: var(--advisor-bg-primary);
+  border-radius: var(--advisor-radius-2xl);
+  box-shadow: var(--advisor-shadow-lg);
+  overflow: hidden;
+}
+
+/* Form Sections */
+.advisor-form-section {
+  padding: var(--advisor-spacing-2xl);
+  border-bottom: 1px solid var(--advisor-border-primary);
+}
+
+.advisor-form-section:last-child {
+  border-bottom: none;
+}
+
+/* Section Titles */
+.advisor-section-title {
+  font-size: var(--advisor-font-size-2xl);
+  font-weight: 600;
+  color: var(--advisor-text-primary);
+  margin-bottom: var(--advisor-spacing-xl);
+  font-family: var(--advisor-font-family-heading);
+}
+
+.advisor-subsection-title {
+  font-size: var(--advisor-font-size-xl);
+  font-weight: 600;
+  color: var(--advisor-text-primary);
+  margin-bottom: var(--advisor-spacing-lg);
+  font-family: var(--advisor-font-family-heading);
+}
+
+/* Form Rows */
+.advisor-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--advisor-spacing-lg);
+  margin-bottom: var(--advisor-spacing-xl);
+}
+
+.advisor-form-row.single-col {
+  grid-template-columns: 1fr;
+}
+
+.advisor-form-row.three-cols {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* Form Groups */
+.advisor-form-group {
+  margin-bottom: 1.5rem;
+  margin-top: 10px; /* Direct value instead of CSS variable */
+}
+
+.advisor-form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Labels */
+.advisor-form-label {
+  display: block;
   font-weight: 500;
+  color: var(--advisor-text-primary);
+  margin-bottom: var(--advisor-spacing-sm);
+  font-family: var(--advisor-font-family-primary);
+  font-size: var(--advisor-font-size-sm);
 }
 
-.alert-danger {
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+.advisor-form-label.required::after {
+  content: ' *';
+  color: var(--advisor-error);
 }
 
-.alert-success {
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+/* Helper Text */
+.advisor-helper-text {
+  display: block;
+  margin-top: var(--advisor-spacing-xs);
+  color: var(--advisor-text-secondary);
+  font-size: var(--advisor-font-size-xs);
+  font-family: var(--advisor-font-family-primary);
+  line-height: 1.4;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .advisor-profile-container {
-    padding: 1rem;
-  }
-  
-  .advisor-profile-form {
-    padding: 1.5rem;
-  }
-  
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .btn-primary,
-  .btn-secondary {
-    width: 100%;
-  }
-} 
+/* Error States */
+.advisor-input-error {
+  border-color: var(--advisor-border-error) !important;
+}
 
-.form-buttons {
+.advisor-input-error:focus {
+  border-color: var(--advisor-border-error) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.advisor-error-message {
+  color: var(--advisor-error);
+  font-size: var(--advisor-font-size-xs);
+  margin-top: var(--advisor-spacing-xs);
+  font-family: var(--advisor-font-family-primary);
+}
+
+/* Success States */
+.advisor-input-success {
+  border-color: var(--advisor-border-success) !important;
+}
+
+.advisor-input-success:focus {
+  border-color: var(--advisor-border-success) !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+}
+
+.advisor-success-message {
+  color: var(--advisor-success);
+  font-size: var(--advisor-font-size-xs);
+  margin-top: var(--advisor-spacing-xs);
+  font-family: var(--advisor-font-family-primary);
+}
+
+/* Expert Team Section Styling */
+.expert-team-section {
+  margin-bottom: -2rem;
+  margin-top: -1rem; /* Direct negative margin to bring it closer */
+  padding: 2rem; /* Direct compact padding */
+}
+
+.expert-member {
+  background: var(--advisor-bg-secondary);
+  border: 1px solid var(--advisor-border-primary);
+  border-radius: var(--advisor-radius-lg);
+  padding: var(--advisor-spacing-xl);
+  margin-bottom: var(--advisor-spacing-lg);
+  transition: all var(--advisor-transition-base);
+}
+
+.expert-member:hover {
+  border-color: var(--advisor-border-secondary);
+  box-shadow: var(--advisor-shadow-sm);
+}
+
+.expert-member:last-child {
+  margin-bottom: var(--advisor-spacing-xl);
+}
+
+.expert-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  margin-bottom: var(--advisor-spacing-lg);
+  padding-bottom: var(--advisor-spacing-md);
+  border-bottom: 1px solid var(--advisor-border-primary);
 }
 
-.left-buttons {
+.expert-header h5 {
+  font-size: var(--advisor-font-size-lg);
+  font-weight: 600;
+  color: var(--advisor-text-primary);
+  margin: 0;
+  font-family: var(--advisor-font-family-heading);
+}
+
+.remove-expert-btn {
+  background: var(--advisor-error);
+  color: var(--advisor-text-inverse);
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: var(--advisor-font-size-sm);
+  font-weight: bold;
+  transition: all var(--advisor-transition-base);
+}
+
+.remove-expert-btn:hover {
+  background: var(--advisor-error-dark);
+  transform: scale(1.1);
+}
+
+.add-expert-btn {
+  background: #10b981; /* Direct green color instead of CSS variable */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.add-expert-btn:hover {
+  background: #059669; /* Darker green on hover */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.add-expert-btn i {
+  font-size: var(--advisor-font-size-sm);
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+  .advisor-form-container {
+    padding: var(--advisor-spacing-lg);
+  }
+  
+  .advisor-form-section {
+    padding: var(--advisor-spacing-xl);
+  }
+  
+  .advisor-form-row {
+    grid-template-columns: 1fr;
+    gap: var(--advisor-spacing-md);
+  }
+  
+  .advisor-section-title {
+    font-size: var(--advisor-font-size-xl);
+  }
+  
+  .advisor-subsection-title {
+    font-size: var(--advisor-font-size-lg);
+    
+  }
+}
+
+@media (max-width: 480px) {
+  .advisor-form-container {
+    padding: var(--advisor-spacing-md);
+  }
+  
+  .advisor-form-section {
+    padding: var(--advisor-spacing-lg);
+  }
+  
+  .advisor-section-title {
+    font-size: var(--advisor-font-size-lg);
+  }
+  
+  .advisor-subsection-title {
+    font-size: var(--advisor-font-size-base);
+  }
+  
+  .advisor-input-base {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+} 
+
+/* Responsive Design for Expert Team */
+@media (max-width: 768px) {
+  .expert-member {
+    padding: var(--advisor-spacing-lg);
+  }
+  
+  .expert-header h5 {
+    font-size: var(--advisor-font-size-base);
+  }
+  
+  .add-expert-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .expert-member {
+    padding: var(--advisor-spacing-md);
+  }
+  
+  .expert-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--advisor-spacing-sm);
+  }
+  
+  .remove-expert-btn {
+    align-self: flex-end;
+  }
+} 
+
+/* Advisor Left Button Container */
+.advisor-left-button {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
 }
 
-.back-btn {
+.advisor-left-button .back-btn,
+.advisor-left-button .cancel-btn {
   background: #f3f4f6;
-  color:#2563eb;
+  color: #2563eb;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 0.375rem;
   font-weight: 500;
   cursor: pointer;
-
   font-size: 0.95rem;
-  cursor: pointer;
-transition: all 0.3s ease;
-border-radius: 6px;
-display: inline-flex;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  display: inline-flex;
 }
 
-
-
-
-.back-btn:hover {
+.advisor-left-button .back-btn:hover,
+.advisor-left-button .cancel-btn:hover {
   background: #e5e7eb;
   color: #1f2937;
 }
 
-.cancel-btn {
-  background:  #f3f4f6;
-  color: #2563eb;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancel-btn:hover {
-  background: #e5e7eb;
-  color: #1f2937;
-} 
-
-/* Advisor Card Section Styles for AddRent Page */
-.addrent-advisor-card-section {
-  margin-top: 2rem;
-  padding: 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 1rem;
-  color: white;
-  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-}
-
-.addrent-section-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  color: white;
-}
-
-.addrent-advisor-card-info {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.addrent-advisor-card-description {
-  text-align: center;
-  margin-bottom: 2rem;
-  font-size: 1.1rem;
-  line-height: 1.6;
-}
-
-.addrent-animated-highlight {
-  animation: addrent-pulse 2s infinite;
-}
-
-@keyframes addrent-pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.02);
-  }
-}
-
-.addrent-highlight-text {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 1rem 1.5rem;
-  border-radius: 0.5rem;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  display: inline-block;
-  font-weight: 600;
-}
-
-.addrent-advisor-card-benefits {
-  margin-bottom: 2rem;
-}
-
-.addrent-advisor-card-benefits h4 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  text-align: center;
-  color: white;
-}
-
-.addrent-advisor-card-benefits ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1rem;
-}
-
-.addrent-advisor-card-benefits li {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  font-size: 0.95rem;
-  line-height: 1.5;
-  transition: all 0.3s ease;
-}
-
-.addrent-advisor-card-benefits li:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-.addrent-advisor-card-action {
-  text-align: center;
-}
-
-.addrent-advisor-card-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: 0.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.addrent-advisor-card-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-}
-
-.addrent-advisor-card-btn:active {
-  transform: translateY(0);
-}
-
-.addrent-advisor-card-btn i {
-  font-size: 1.2rem;
-}
-
-.addrent-advisor-card-action small {
-  display: block;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-}
-
-/* Responsive Design for Advisor Card */
-@media (max-width: 768px) {
-  .addrent-advisor-card-section {
-    padding: 1.5rem;
-    margin-top: 1.5rem;
-  }
-  
-  .addrent-section-title {
-    font-size: 1.25rem;
-  }
-  
-  .addrent-advisor-card-description {
-    font-size: 1rem;
-  }
-  
-  .addrent-advisor-card-benefits ul {
-    grid-template-columns: 1fr;
-  }
-  
-  .addrent-advisor-card-btn {
-    padding: 0.875rem 1.5rem;
-    font-size: 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .addrent-advisor-card-section {
-    padding: 1rem;
-  }
-  
-  .addrent-section-title {
-    font-size: 1.125rem;
-  }
-  
-  .addrent-highlight-text {
-    padding: 0.75rem 1rem;
-    font-size: 0.95rem;
-  }
-  
-  .addrent-advisor-card-benefits li {
-    padding: 0.75rem;
-    font-size: 0.9rem;
-  }
-} 
-
-/* Advisor Card Section Styles */
-.advisor-card-section {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  border: 1px solid #e2e8f0;
-}
-
-.advisor-card-info {
-  text-align: center;
-}
-
-.advisor-card-description {
-  font-size: 1.1rem;
-  color: #374151;
-  margin-bottom: 2rem;
-  line-height: 1.6;
-}
-
-.animated-highlight {
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-.highlight-text {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 600;
-}
-
-.advisor-card-benefits {
-  margin-bottom: 2rem;
-  text-align: left;
-}
-
-.advisor-card-benefits h4 {
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: #2563eb;
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-.advisor-card-benefits ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.advisor-card-benefits li {
-  padding: 0.75rem 0;
-  color: #374151;
-  font-size: 1rem;
-  line-height: 1.5;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.advisor-card-benefits li:last-child {
-  border-bottom: none;
-}
-
-.advisor-card-benefits li:hover {
-  color: #1e293b;
-  background: #f8fafc;
-  border-radius: 6px;
-  padding-left: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.advisor-card-action {
-  text-align: center;
-}
-
-.advisor-card-btn {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.advisor-card-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-}
-
-.advisor-card-btn:active {
-  transform: translateY(0);
-}
-
-.advisor-card-btn i {
-  font-size: 1.2rem;
-}
-
-.advisor-card-action small {
-  display: block;
-  margin-top: 1rem;
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.advisor-card-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.advisor-card-skip {
-  text-align: center;
-  margin-top: 1rem;
-}
-
-.advisor-skip-link {
-  background: none;
-  border: none;
-  color: #3b82f6;
-  text-decoration: underline;
-  cursor: pointer;
-  font-size: 1rem;
-  padding: 0;
-  margin: 0;
-  transition: color 0.2s ease;
-}
-
-.advisor-skip-link:hover {
-  color: #1d4ed8;
-  text-decoration: none;
-}
-
-/* Advisor Type Selection Styles */
-.advisor-type-selection {
-  margin-bottom: 2rem;
-  text-align: center;
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 2rem;
-  background: #f8fafc;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-}
-
-.advisor-type-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-top: 2rem;
-  margin-bottom: 2rem;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.advisor-type-btn {
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 2.5rem 2rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  position: relative;
-  overflow: hidden;
-}
-
-.advisor-type-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 0;
-}
-
-.advisor-type-btn:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
-  transform: translateY(-4px);
-}
-
-.advisor-type-btn.active {
-  border-color: #3b82f6;
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
-  transform: translateY(-2px);
-}
-
-.advisor-type-btn i {
-  font-size: 2.5rem;
-  color: #3b82f6;
-  position: relative;
-  z-index: 1;
-  transition: all 0.3s ease;
-}
-
-.advisor-type-btn:hover i {
-  color: #1d4ed8;
-  transform: scale(1.1);
-}
-
-.advisor-type-btn.active i {
-  color: #1d4ed8;
-}
-
-.advisor-type-btn span {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #1e293b;
-  position: relative;
-  z-index: 1;
-  transition: all 0.3s ease;
-}
-
-.advisor-type-btn.active span {
-  color: #1d4ed8;
-}
-
-.advisor-type-btn small {
-  font-size: 0.9rem;
-  color: #6b7280;
-  line-height: 1.5;
-  position: relative;
-  z-index: 1;
-  transition: all 0.3s ease;
-}
-
-.advisor-type-btn.active small {
-  color: #374151;
-}
-
-.advisor-subsection-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 1.5rem;
-  text-align: left;
-}
-
-/* Responsive Design for Advisor Subsection Title */
-@media (max-width: 768px) {
-  .advisor-subsection-title {
-    font-size: 1.3rem;
-    text-align: center;
-    margin-bottom: 1.25rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .advisor-subsection-title {
-    font-size: 1.2rem;
-    text-align: center;
-    margin-bottom: 1rem;
-    padding: 0 1rem;
-  }
-}
-
-@media (max-width: 360px) {
-  .advisor-subsection-title {
-    font-size: 1.1rem;
-    text-align: center;
-    margin-bottom: 0.875rem;
-    padding: 0 0.75rem;
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .advisor-card-section {
-    padding: 1.5rem;
-  }
-  
-  .advisor-card-description {
-    font-size: 1rem;
-  }
-  
-  .advisor-card-benefits {
-    margin-bottom: 1.5rem;
-  }
-  
-  .advisor-card-benefits h4 {
-    font-size: 1.1rem;
-  }
-  
-  .advisor-card-benefits li {
-    font-size: 0.9rem;
-  }
-  
-  .advisor-card-btn {
-    padding: 0.875rem 1.5rem;
-    font-size: 1rem;
-  }
-  
-  .advisor-type-selection {
-    padding: 1.5rem;
-    margin: 1rem;
-  }
-  
-  .advisor-type-buttons {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    margin-top: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-  
-  .advisor-type-btn {
-    padding: 2rem 1.5rem;
-  }
-  
-  .advisor-subsection-title {
-    font-size: 1.3rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .advisor-card-section {
-    padding: 1rem;
-  }
-  
-  .advisor-card-description {
-    font-size: 0.9rem;
-  }
-  
-  .highlight-text {
-    font-size: 0.9rem;
-  }
-  
-  .advisor-card-benefits li {
-    font-size: 0.85rem;
-  }
-  
-  .advisor-card-btn {
-    padding: 0.75rem 1.25rem;
-    font-size: 0.9rem;
-  }
-  
-  .advisor-type-selection {
-    padding: 1rem;
-    margin: 0.5rem;
-  }
-  
-  .advisor-type-btn {
-    padding: 1.75rem 1.25rem;
-  }
-  
-  .advisor-type-btn i {
-    font-size: 2rem;
-  }
-  
-  .advisor-type-btn span {
-    font-size: 1.1rem;
-  }
-  
-  .advisor-subsection-title {
-    font-size: 1.2rem;
-  }
-} 
-
-.submit-btn {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.submit-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-  background: #2563eb;
-}
-
-.submit-btn:disabled {
-  opacity: 0.7;
+.advisor-left-button .back-btn:disabled,
+.advisor-left-button .cancel-btn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
-}
-
-.submit-btn.submit-success {
-  background: #10b981;
-  color: white;
-  animation: successPulse 0.5s ease;
-}
-
-.submit-btn.submit-error {
-  background: #ef4444;
-  color: white;
-  animation: errorShake 0.5s ease;
-}
-
-.submit-btn .spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.submit-btn .success-icon {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes successPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-@keyframes errorShake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
-} 
-
-.advisor-help-text {
-  color: #10b981;
-  font-size: 0.85rem;
-  font-weight: 500;
-  margin-top: 0.5rem;
-  margin-bottom: 0;
-  text-align: left;
-  font-family: 'Helvetica', sans-serif;
-  opacity: 0.9;
-  line-height: 1.4;
-} 
-
-.advisor-form-group {
-  margin-bottom: 1.5rem;
-}
-
-.advisor-form-group label {
-  display: block;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.advisor-form-group input,
-.advisor-form-group textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: border-color 0.3s ease;
-}
-
-.advisor-form-group input:focus,
-.advisor-form-group textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.advisor-form-group small {
-  display: block;
-  margin-top: 0.5rem;
-  color: #6b7280;
-  font-size: 0.875rem;
 } 
