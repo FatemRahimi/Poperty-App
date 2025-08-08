@@ -469,27 +469,33 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                 e.stopPropagation();
                 // Redirect to appropriate form based on property category
                 if (property.category === 'rent') {
+                  const currentPath = window.location.pathname;
+                  const defaultReturnPath = currentPath === '/advisor-profile' ? '/find' : currentPath;
                   navigate('/addrent', { 
                     state: { 
                       editMode: true, 
                       propertyData: property,
-                      returnPath: sourcePage || window.location.pathname
+                      returnPath: sourcePage || defaultReturnPath
                     } 
                   });
                 } else if (property.category === 'lease') {
+                  const currentPath = window.location.pathname;
+                  const defaultReturnPath = currentPath === '/advisor-profile' ? '/find' : currentPath;
                   navigate('/addlease', { 
                     state: { 
                       editMode: true, 
                       propertyData: property,
-                      returnPath: sourcePage || window.location.pathname
+                      returnPath: sourcePage || defaultReturnPath
                     } 
                   });
                 } else if (property.category === 'sale') {
+                  const currentPath = window.location.pathname;
+                  const defaultReturnPath = currentPath === '/advisor-profile' ? '/find' : currentPath;
                   navigate('/addlist', { 
                     state: { 
                       editMode: true, 
                       propertyData: property,
-                      returnPath: sourcePage || window.location.pathname
+                      returnPath: sourcePage || defaultReturnPath
                     } 
                   });
                 } else {
