@@ -240,8 +240,8 @@ const AdvisorProfile = () => {
       // If we're in advisor type selection, go back to initial benefits
       setShowAdvisorSection(false);
     } else {
-      // If we're in initial benefits, go to seller page
-      navigate('/seller');
+      // If we're in initial benefits, go to find page
+      navigate('/find');
     }
   };
 

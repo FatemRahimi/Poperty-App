@@ -230,7 +230,7 @@ const AddRent = () => {
   const editMode = location.state?.editMode || false;
   const propertyData = location.state?.propertyData || null;
   const propertyId = propertyData?.id || null;
-  const returnPath = location.state?.returnPath || '/seller';
+  const returnPath = location.state?.returnPath || '/find';
   
   // Set notification for approved property edits
   useEffect(() => {
