@@ -1,6 +1,54 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const { updateProfile, checkAdvisorProfile, saveAdvisorProfile, skipAdvisorProfile } = require('../controllers/userController');
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+    files: 5 // Maximum 5 files
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept images only
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
+// Multer error handling middleware
+const handleMulterError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'File too large. Maximum file size is 10MB per file.'
+      });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        success: false,
+        message: 'Too many files. Maximum 5 files allowed.'
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: 'File upload error: ' + err.message
+    });
+  }
+  if (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message || 'File upload error'
+    });
+  }
+  next();
+};
 
 // Middleware for JWT authentication
 const jwt = require('jsonwebtoken');
@@ -43,7 +91,10 @@ router.put('/profile', authenticateJWT, updateProfile);
 
 // Advisor profile routes
 router.get('/:userId/advisor-profile', checkAdvisorProfile); // No authentication required
-router.post('/:userId/advisor-profile', authenticateJWT, saveAdvisorProfile);
+router.post('/:userId/advisor-profile', authenticateJWT, upload.fields([
+  { name: 'companyLogo', maxCount: 1 },
+  { name: 'profilePhoto', maxCount: 1 }
+]), handleMulterError, saveAdvisorProfile);
 router.post('/:userId/advisor-profile/skip', authenticateJWT, skipAdvisorProfile);
 
 module.exports = router; 

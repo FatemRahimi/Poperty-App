@@ -79,8 +79,14 @@ const personJobTitleOptions = [
 
 const AdvisorProfile = () => {
   const navigate = useNavigate();
-  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || '{}');
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   
+  // Debug logging
+  console.log('🔍 AdvisorProfile: User data:', user);
+  console.log('🔍 AdvisorProfile: Token exists:', !!token);
+  console.log('🔍 AdvisorProfile: User ID:', user.id);
+
   const [formData, setFormData] = useState({
     // Company Information
     companyName: "",
@@ -268,6 +274,16 @@ const AdvisorProfile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('🔴 Submit button clicked - starting submission');
+    console.log('👤 User data:', user);
+    console.log('🔑 Token exists:', !!token);
+    
+    // Check if we have valid user data and token
+    if (!user.id || !token) {
+      console.log('❌ Missing user ID or token');
+      setError('Authentication error. Please login again.');
+      return;
+    }
+    
     setIsLoading(true);
     setError('');
     setSuccess('');
@@ -304,12 +320,25 @@ const AdvisorProfile = () => {
       console.log('📡 Making API call to save advisor profile...');
       const response = await fetch(`/api/users/${user.id}/advisor-profile`, {
         method: 'POST',
-        body: submitData
+        body: submitData,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       console.log('📡 Response status:', response.status);
-      const data = await response.json();
-      console.log('📡 Response data:', data);
+      
+      let data;
+      try {
+        data = await response.json();
+        console.log('📡 Response data:', data);
+      } catch (parseError) {
+        console.log('❌ Failed to parse response as JSON');
+        const textResponse = await response.text();
+        console.log('📡 Text response:', textResponse);
+        setError(`Server error: ${response.status} - ${textResponse}`);
+        return;
+      }
 
       if (response.ok) {
         console.log('✅ Advisor profile saved successfully');

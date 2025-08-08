@@ -129,11 +129,33 @@ const saveAdvisorProfile = async (req, res) => {
     
     // Handle file uploads if present
     if (req.files) {
-      if (req.files.companyLogo) {
-        advisorData.companyLogoUrl = `/uploads/${req.files.companyLogo.name}`;
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Ensure uploads directory exists
+      const uploadsDir = path.join(__dirname, '../uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
       }
-      if (req.files.profilePhoto) {
-        advisorData.profilePhotoUrl = `/uploads/${req.files.profilePhoto.name}`;
+      
+      if (req.files.companyLogo && req.files.companyLogo[0]) {
+        const file = req.files.companyLogo[0];
+        const fileName = `company_logo_${userId}_${Date.now()}${path.extname(file.originalname)}`;
+        const filePath = path.join(uploadsDir, fileName);
+        
+        fs.writeFileSync(filePath, file.buffer);
+        advisorData.companyLogoUrl = `/uploads/${fileName}`;
+        console.log('✅ Company logo saved:', fileName);
+      }
+      
+      if (req.files.profilePhoto && req.files.profilePhoto[0]) {
+        const file = req.files.profilePhoto[0];
+        const fileName = `profile_photo_${userId}_${Date.now()}${path.extname(file.originalname)}`;
+        const filePath = path.join(uploadsDir, fileName);
+        
+        fs.writeFileSync(filePath, file.buffer);
+        advisorData.profilePhotoUrl = `/uploads/${fileName}`;
+        console.log('✅ Profile photo saved:', fileName);
       }
     }
     
