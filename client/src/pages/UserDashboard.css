@@ -4204,3 +4204,148 @@
     padding: 0 1rem;
   }
 }
+
+/* No Advisor Profile Section */
+.no-advisor-profile {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 2.5rem;
+  margin: 1rem 0;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.no-profile-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.no-profile-icon {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  color: #6b7280;
+  opacity: 0.7;
+}
+
+.no-profile-icon i {
+  background: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+}
+
+.no-advisor-profile h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+.no-advisor-profile p {
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.benefits-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #f9fafb;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.benefit-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.benefit-item i {
+  color: #10b981;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.benefit-item span {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.btn-create-advisor {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.875rem 1.75rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  margin-top: 0.5rem;
+}
+
+.btn-create-advisor:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.btn-create-advisor:active {
+  transform: translateY(0);
+}
+
+.btn-create-advisor i {
+  font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .no-advisor-profile {
+    padding: 1.5rem;
+    margin: 0.5rem 0;
+  }
+  
+  .no-profile-icon {
+    font-size: 2.5rem;
+  }
+  
+  .no-advisor-profile h3 {
+    font-size: 1.25rem;
+  }
+  
+  .no-advisor-profile p {
+    font-size: 0.95rem;
+  }
+  
+  .benefits-list {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .benefit-item {
+    padding: 0.75rem;
+  }
+  
+  .btn-create-advisor {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+  }
+}

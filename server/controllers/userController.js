@@ -242,11 +242,11 @@ const addExpertTeamMember = async (req, res) => {
     const expertData = req.body;
     
     if (!advisorProfileId || !expertData.fullName || !expertData.jobTitle) {
-      return res.status(400).json({ success: false, message: 'Advisor profile ID, full name, and job title are required' });
+      return res.status(400).json({ success: false, message: 'Advisor profile ID, expert full name, and job title are required' });
     }
 
-    const expert = await User.addExpertTeamMember(advisorProfileId, expertData);
-    return res.json({ success: true, expert });
+    const newExpert = await User.addExpertTeamMember(advisorProfileId, expertData);
+    return res.status(201).json({ success: true, expert: newExpert });
   } catch (error) {
     console.error('❌ Add expert team member error:', error);
     res.status(500).json({ success: false, message: 'Failed to add expert team member' });
@@ -263,8 +263,8 @@ const updateExpertTeamMember = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Expert ID, full name, and job title are required' });
     }
 
-    const expert = await User.updateExpertTeamMember(expertId, expertData);
-    return res.json({ success: true, expert });
+    const updatedExpert = await User.updateExpertTeamMember(expertId, expertData);
+    return res.status(200).json({ success: true, expert: updatedExpert });
   } catch (error) {
     console.error('❌ Update expert team member error:', error);
     res.status(500).json({ success: false, message: 'Failed to update expert team member' });
@@ -280,8 +280,8 @@ const deleteExpertTeamMember = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Expert ID is required' });
     }
 
-    const expert = await User.deleteExpertTeamMember(expertId);
-    return res.json({ success: true, expert });
+    await User.deleteExpertTeamMember(expertId);
+    return res.status(200).json({ success: true, message: 'Expert team member deleted successfully' });
   } catch (error) {
     console.error('❌ Delete expert team member error:', error);
     res.status(500).json({ success: false, message: 'Failed to delete expert team member' });
