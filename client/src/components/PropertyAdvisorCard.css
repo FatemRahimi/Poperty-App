@@ -1,0 +1,268 @@
+.property-advisor-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 24px;
+  color: white;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+  margin: 20px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.property-advisor-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  pointer-events: none;
+}
+
+/* Company Layout Styles */
+.company-layout .advisor-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.company-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.company-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.company-logo i {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.company-info {
+  flex: 1;
+}
+
+.company-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: white;
+}
+
+.company-tagline {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.visit-website {
+  color: #ffd700;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.visit-website:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+/* Person Layout Styles */
+.person-layout .advisor-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.person-layout .advisor-name {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: white;
+}
+
+.advisor-role {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+/* Content Styles */
+.advisor-content {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.advisor-photo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.advisor-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.advisor-photo i {
+  font-size: 32px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.advisor-info {
+  flex: 1;
+}
+
+.advisor-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: white;
+}
+
+.advisor-bio {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.advisor-contact {
+  margin-bottom: 16px;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.contact-item i {
+  width: 16px;
+  color: #ffd700;
+}
+
+.contact-item span {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Office Details (Company Only) */
+.office-details {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.office-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+}
+
+.office-item:last-child {
+  margin-bottom: 0;
+}
+
+.office-item i {
+  width: 14px;
+  color: #ffd700;
+}
+
+.office-item span {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .property-advisor-card {
+    padding: 20px;
+    margin: 16px 0;
+  }
+
+  .company-layout .advisor-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .company-logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .company-name {
+    font-size: 1.3rem;
+  }
+
+  .advisor-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .advisor-photo {
+    width: 70px;
+    height: 70px;
+  }
+
+  .advisor-photo i {
+    font-size: 28px;
+  }
+
+  .contact-item,
+  .office-item {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .property-advisor-card {
+    padding: 16px;
+  }
+
+  .company-name {
+    font-size: 1.1rem;
+  }
+
+  .advisor-name {
+    font-size: 1rem;
+  }
+
+  .advisor-photo {
+    width: 60px;
+    height: 60px;
+  }
+
+  .advisor-photo i {
+    font-size: 24px;
+  }
+} 

@@ -16,10 +16,10 @@ const DashboardTabs = ({
     if (tabName === 'profile') {
       await refreshUserProfile();
     }
-  };
-
-  const handleAdvisorProfile = () => {
-    navigate('/advisor-profile');
+    
+    if (tabName === 'advisor-profile') {
+      // This will be handled by the parent component
+    }
   };
 
   return (
@@ -49,8 +49,8 @@ const DashboardTabs = ({
           Profile
         </button>
         <button 
-          className="nav-tab-modern advisor-tab"
-          onClick={handleAdvisorProfile}
+          className={`nav-tab-modern ${activeTab === 'advisor-profile' ? 'active' : ''}`}
+          onClick={() => handleTabChange('advisor-profile')}
         >
           <i className="fas fa-user-tie"></i>
           Advisor Profile

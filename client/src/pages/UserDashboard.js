@@ -79,6 +79,31 @@ const UserDashboard = () => {
   const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
   const [updateSuccessMessage, setUpdateSuccessMessage] = useState('');
   
+  // Advisor Profile state
+  const [advisorProfile, setAdvisorProfile] = useState(null);
+  const [isLoadingAdvisorProfile, setIsLoadingAdvisorProfile] = useState(false);
+  const [isEditingAdvisor, setIsEditingAdvisor] = useState(false);
+  const [isSavingAdvisor, setIsSavingAdvisor] = useState(false);
+  const [advisorFormData, setAdvisorFormData] = useState({
+    advisorType: '',
+    companyName: '',
+    directorName: '',
+    companyLogoUrl: '',
+    companyWebsite: '',
+    companyDescription: '',
+    fullName: '',
+    profilePhotoUrl: '',
+    jobTitle: '',
+    professionalBio: '',
+    contactPhone: '',
+    contactEmail: '',
+    officeHours: '',
+    officeAddress: '',
+    officeCity: '',
+    officePostcode: '',
+    experts: []
+  });
+  
   const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const profileFormRef = useRef(null);
@@ -359,6 +384,13 @@ const UserDashboard = () => {
       setShowPropertiesDropdown(false);
     }
   }, [activeTab, autoCloseTimeout]);
+
+  // Fetch advisor profile when advisor-profile tab is active
+  useEffect(() => {
+    if (activeTab === 'advisor-profile' && user && user.id) {
+      fetchAdvisorProfile();
+    }
+  }, [activeTab, user]);
 
   const loadDashboardData = async () => {
     try {
@@ -1201,6 +1233,162 @@ const UserDashboard = () => {
     }
   };
 
+  // Fetch advisor profile for editing
+  const fetchAdvisorProfile = async () => {
+    try {
+      setIsLoadingAdvisorProfile(true);
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`/api/users/${user.id}/advisor-profile/edit`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.advisorProfile) {
+          console.log('✅ Existing advisor profile found:', result.advisorProfile);
+          setAdvisorProfile(result.advisorProfile);
+          
+          // Load existing data into form
+          const profile = result.advisorProfile;
+          setAdvisorFormData({
+            advisorType: profile.advisor_type || '',
+            companyName: profile.company_name || '',
+            directorName: profile.director_name || '',
+            companyLogoUrl: profile.company_logo_url || '',
+            companyWebsite: profile.company_website || '',
+            companyDescription: profile.company_description || '',
+            fullName: profile.full_name || '',
+            profilePhotoUrl: profile.profile_photo_url || '',
+            jobTitle: profile.job_title || '',
+            professionalBio: profile.professional_bio || '',
+            contactPhone: profile.contact_phone || '',
+            contactEmail: profile.contact_email || '',
+            officeHours: profile.office_hours || '',
+            officeAddress: profile.office_address || '',
+            officeCity: profile.office_city || '',
+            officePostcode: profile.office_postcode || '',
+            experts: profile.experts || []
+          });
+        } else {
+          console.log('ℹ️ No existing advisor profile found');
+          setAdvisorProfile(null);
+        }
+      } else {
+        console.log('ℹ️ No existing advisor profile found');
+        setAdvisorProfile(null);
+      }
+    } catch (error) {
+      console.error('❌ Error checking existing profile:', error);
+      setAdvisorProfile(null);
+    } finally {
+      setIsLoadingAdvisorProfile(false);
+    }
+  };
+
+  // Handle advisor profile save
+  const handleAdvisorProfileSave = async () => {
+    console.log('🔥 SAVE BUTTON CLICKED - Function started!');
+    
+    try {
+      console.log('🔍 Starting advisor profile save...');
+      console.log('Advisor profile data to save:', advisorFormData);
+      
+      // Check if user is authenticated
+      const token = localStorage.getItem('token');
+      console.log('🔑 JWT Token exists:', !!token);
+      
+      if (!token) {
+        console.log('❌ No authentication token found!');
+        setSaveMessage({ 
+          type: 'error', 
+          text: 'Authentication error. Please log in again.' 
+        });
+        return;
+      }
+      
+      setIsSavingAdvisor(true);
+      setSaveMessage({ type: '', text: '' });
+      
+      // Create FormData for file uploads
+      const submitData = new FormData();
+      
+      // Add form data
+      Object.keys(advisorFormData).forEach(key => {
+        if (key === 'experts') {
+          submitData.append(key, JSON.stringify(advisorFormData[key]));
+        } else {
+          submitData.append(key, advisorFormData[key]);
+        }
+      });
+
+      console.log('📤 Sending request with data:', advisorFormData);
+      
+      const response = await fetch(`/api/users/${user.id}/advisor-profile`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: submitData
+      });
+
+      console.log('📥 Response status:', response.status);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Success response:', result);
+        
+        // Refresh advisor profile data
+        await fetchAdvisorProfile();
+        
+        // Exit editing mode
+        setIsEditingAdvisor(false);
+        
+        // Show success message
+        setSaveMessage({ type: 'success', text: 'Advisor profile updated successfully!' });
+        
+        // Clear success message after 4 seconds
+        setTimeout(() => {
+          setSaveMessage({ type: '', text: '' });
+        }, 4000);
+        
+      } else {
+        const errorData = await response.json().catch(() => null);
+        console.log('❌ Error response status:', response.status);
+        console.log('❌ Error response data:', errorData);
+        
+        let errorMessage = 'Failed to update advisor profile. Please try again.';
+        
+        if (response.status === 401) {
+          errorMessage = 'Session expired. Please log in again.';
+          setTimeout(() => {
+            localStorage.removeItem('token');
+            navigate('/login');
+          }, 2000);
+        } else if (response.status === 403) {
+          errorMessage = 'Access denied. Please log in again.';
+        } else if (errorData && errorData.message) {
+          errorMessage = errorData.message;
+        }
+        
+        setSaveMessage({ type: 'error', text: errorMessage });
+      }
+    } catch (error) {
+      console.error('❌ Network/JavaScript error:', error);
+      console.error('❌ Error stack:', error.stack);
+      setSaveMessage({ 
+        type: 'error', 
+        text: 'Network error. Please check your connection and try again.' 
+      });
+    } finally {
+      console.log('🏁 Finally block - setting isSaving to false');
+      setIsSavingAdvisor(false);
+    }
+  };
+
   // Handle property deletion callback
   const handlePropertyDeleted = (deletedPropertyId, propertyTitle) => {
     setProperties(prevProperties => 
@@ -1679,6 +1867,163 @@ const UserDashboard = () => {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'advisor-profile' && (
+            <div className="profile-section">
+              <div className="profile-header">
+                <h2>
+                  <i className="fas fa-user-tie"></i>
+                  Advisor Profile
+                </h2>
+              </div>
+              
+              {isLoadingAdvisorProfile ? (
+                <div className="loading-container">
+                  <i className="fas fa-spinner fa-spin"></i>
+                  <p>Loading advisor profile...</p>
+                </div>
+              ) : advisorProfile ? (
+                <>
+                  <div className="profile-form">
+                    <div className="form-group-modern">
+                      <label className="form-label-modern">Profile Type</label>
+                      <input
+                        type="text"
+                        className="form-input-modern"
+                        value={advisorProfile.advisor_type === 'company' ? 'Company' : 'Person'}
+                        disabled
+                      />
+                    </div>
+                    
+                    {advisorProfile.advisor_type === 'company' && (
+                      <>
+                        <div className="form-group-modern">
+                          <label className="form-label-modern">Company Name</label>
+                          <input
+                            type="text"
+                            className="form-input-modern"
+                            value={advisorProfile.company_name || ''}
+                            disabled
+                          />
+                        </div>
+                        
+                        <div className="form-group-modern">
+                          <label className="form-label-modern">Director Name</label>
+                          <input
+                            type="text"
+                            className="form-input-modern"
+                            value={advisorProfile.director_name || ''}
+                            disabled
+                          />
+                        </div>
+                        
+                        <div className="form-group-modern">
+                          <label className="form-label-modern">Office Address</label>
+                          <input
+                            type="text"
+                            className="form-input-modern"
+                            value={advisorProfile.office_address || ''}
+                            disabled
+                          />
+                        </div>
+                        
+                        <div className="form-group-modern">
+                          <label className="form-label-modern">Office Hours</label>
+                          <input
+                            type="text"
+                            className="form-input-modern"
+                            value={advisorProfile.office_hours || ''}
+                            disabled
+                          />
+                        </div>
+                      </>
+                    )}
+                    
+                    <div className="form-group-modern">
+                      <label className="form-label-modern">Full Name</label>
+                      <input
+                        type="text"
+                        className="form-input-modern"
+                        value={advisorProfile.full_name || ''}
+                        disabled
+                      />
+                    </div>
+                    
+                    <div className="form-group-modern">
+                      <label className="form-label-modern">Job Title</label>
+                      <input
+                        type="text"
+                        className="form-input-modern"
+                        value={advisorProfile.job_title || ''}
+                        disabled
+                      />
+                    </div>
+                    
+                    <div className="form-group-modern">
+                      <label className="form-label-modern">Contact Email</label>
+                      <input
+                        type="email"
+                        className="form-input-modern"
+                        value={advisorProfile.contact_email || ''}
+                        disabled
+                      />
+                    </div>
+                    
+                    <div className="form-group-modern">
+                      <label className="form-label-modern">Contact Phone</label>
+                      <input
+                        type="tel"
+                        className="form-input-modern"
+                        value={advisorProfile.contact_phone || ''}
+                        disabled
+                      />
+                    </div>
+                    
+                    {advisorProfile.experts && advisorProfile.experts.length > 0 && (
+                      <div className="form-group-modern">
+                        <label className="form-label-modern">Expert Team Members</label>
+                        <div className="expert-team-display">
+                          {advisorProfile.experts.map((expert, index) => (
+                            <div key={expert.id || index} className="expert-display-item">
+                              <span className="expert-name">{expert.full_name}</span>
+                              <span className="expert-role">{expert.job_title}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="profile-actions">
+                    <button 
+                      className="btn-save"
+                      onClick={() => navigate('/advisor-profile', { 
+                        state: { isEdit: true } 
+                      })}
+                    >
+                      <i className="fas fa-edit"></i>
+                      Edit Advisor Profile
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="no-advisor-profile">
+                  <div className="no-profile-content">
+                    <i className="fas fa-user-tie"></i>
+                    <h3>No Advisor Profile Found</h3>
+                    <p>You haven't created an advisor profile yet. Create one to appear on your property listings.</p>
+                    <button 
+                      className="btn-create-advisor"
+                      onClick={() => navigate('/advisor-profile')}
+                    >
+                      <i className="fas fa-plus"></i>
+                      Create Advisor Profile
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
