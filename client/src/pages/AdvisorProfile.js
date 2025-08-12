@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Logo from '../components/Logo';
 import './AdvisorProfile.css';
 
@@ -79,6 +79,7 @@ const personJobTitleOptions = [
 
 const AdvisorProfile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || '{}');
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   
@@ -122,6 +123,77 @@ const AdvisorProfile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Detect if in edit mode
+  const isEditMode = location.state && location.state.isEdit;
+
+  // Fetch existing advisor profile if in edit mode
+  useEffect(() => {
+    const fetchAdvisorProfile = async () => {
+      if (isEditMode && user.id) {
+        try {
+          const response = await fetch(`/api/users/${user.id}/advisor-profile/edit`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.advisorProfile) {
+              const profile = data.advisorProfile;
+              
+              // Populate form data with existing profile
+              setFormData(prev => ({
+                ...prev,
+                advisorType: profile.advisor_type || 'person',
+                companyName: profile.company_name || '',
+                directorName: profile.director_name || '',
+                companyLogoUrl: profile.company_logo_url || '',
+                companyWebsite: profile.company_website || '',
+                companyDescription: profile.company_description || '',
+                fullName: profile.full_name || '',
+                profilePhotoUrl: profile.profile_photo_url || '',
+                jobTitle: profile.job_title || '',
+                professionalBio: profile.professional_bio || '',
+                contactPhone: profile.contact_phone || '',
+                contactEmail: profile.contact_email || '',
+                officeHours: profile.office_hours || '',
+                officeAddress: profile.office_address || '',
+                officeCity: profile.office_city || '',
+                officePostcode: profile.office_postcode || '',
+                isAdvisor: profile.is_advisor || false
+              }));
+              
+              // Set expert team if exists
+              if (profile.experts && profile.experts.length > 0) {
+                const mappedExperts = profile.experts.map(expert => ({
+                  id: expert.id,
+                  fullName: expert.full_name || '',
+                  jobTitle: expert.job_title || '',
+                  profilePhotoUrl: expert.profile_photo_url || '',
+                  phone: expert.phone || '',
+                  email: expert.email || ''
+                }));
+                setExpertTeam(mappedExperts);
+              }
+              
+              // Set advisor type and show advisor section
+              setAdvisorType(profile.advisor_type || 'person');
+              setShowAdvisorSection(true);
+            }
+          } else {
+            console.error('Failed to fetch advisor profile:', response.status);
+            setError('Failed to load advisor profile. Please try again.');
+          }
+        } catch (err) {
+          console.error('Network error fetching advisor profile:', err);
+          setError('Network error. Failed to load advisor profile.');
+        }
+      }
+    };
+
+    fetchAdvisorProfile();
+  }, [isEditMode, user.id, token]);
 
   // Handle form field changes
   const handleChange = (e) => {
@@ -253,6 +325,12 @@ const AdvisorProfile = () => {
 
   // Handle back - use browser history navigation
   const handleBack = () => {
+    if (isEditMode) {
+      // In edit mode, always go back to UserDashboard advisor tab
+      navigate('/dashboard?tab=advisor-profile');
+      return;
+    }
+    
     if (advisorType) {
       // If we're in the form (company/person), go back to advisor type selection
       setAdvisorType('');
@@ -319,7 +397,7 @@ const AdvisorProfile = () => {
 
       console.log('📡 Making API call to save advisor profile...');
       const response = await fetch(`/api/users/${user.id}/advisor-profile`, {
-        method: 'POST',
+        method: isEditMode ? 'PUT' : 'POST',
         body: submitData,
         headers: {
           'Authorization': `Bearer ${token}`
@@ -342,9 +420,15 @@ const AdvisorProfile = () => {
 
       if (response.ok) {
         console.log('✅ Advisor profile saved successfully');
-        setSuccess('Advisor profile updated successfully!');
+        setSuccess(isEditMode ? 'Advisor profile updated successfully!' : 'Advisor profile created successfully!');
         setTimeout(() => {
-          navigate('/seller'); // Navigate to seller page after success
+          if (isEditMode) {
+            // In edit mode, navigate back to UserDashboard advisor tab
+            navigate('/dashboard?tab=advisor-profile');
+          } else {
+            // Normal flow, navigate to seller page
+            navigate('/seller');
+          }
         }, 2000);
       } else {
         console.log('❌ API error:', data);
@@ -361,6 +445,12 @@ const AdvisorProfile = () => {
   // Handle skip advisor profile
   const handleSkipAdvisorProfile = () => {
     console.log('🔴 Skip button clicked - setting up one-time skip');
+    
+    if (isEditMode) {
+      // In edit mode, navigate back to UserDashboard advisor tab
+      navigate('/dashboard?tab=advisor-profile');
+      return;
+    }
     
     // Store one-time skip token
     sessionStorage.setItem('oneTimeAdvisorSkip', 'true');
@@ -400,10 +490,15 @@ const AdvisorProfile = () => {
           )}
 
           <div className="form-section">
-            <h3 className="section-title">Before listing your property, get benefit of having a private dashboard and advisor profile</h3>
+            <h3 className="section-title">
+              {isEditMode 
+                ? 'Edit Your Advisor Profile' 
+                : 'Before listing your property, get benefit of having a private dashboard and advisor profile'
+              }
+            </h3>
             
             {/* Initial Benefits Section */}
-            {!showAdvisorSection && (
+            {!showAdvisorSection && !isEditMode && (
               <div className="advisor-card-section">
                 <div className="advisor-card-info">
                   
@@ -965,7 +1060,7 @@ const AdvisorProfile = () => {
                         Successfully Saved!
                       </>
                     ) : (
-                      "Submit Advisor Profile"
+                      isEditMode ? "Update Advisor Profile" : "Submit Advisor Profile"
                     )}
                   </button>
                 </div>

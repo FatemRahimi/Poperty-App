@@ -219,9 +219,82 @@ const skipAdvisorProfile = async (req, res) => {
   }
 };
 
+// Get advisor profile for editing
+const getAdvisorProfileForEdit = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+
+    const profile = await User.getAdvisorProfileForEdit(userId);
+    return res.json({ success: true, advisorProfile: profile });
+  } catch (error) {
+    console.error('❌ Get advisor profile for edit error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch advisor profile for editing' });
+  }
+};
+
+// Add expert team member
+const addExpertTeamMember = async (req, res) => {
+  try {
+    const { advisorProfileId } = req.params;
+    const expertData = req.body;
+    
+    if (!advisorProfileId || !expertData.fullName || !expertData.jobTitle) {
+      return res.status(400).json({ success: false, message: 'Advisor profile ID, full name, and job title are required' });
+    }
+
+    const expert = await User.addExpertTeamMember(advisorProfileId, expertData);
+    return res.json({ success: true, expert });
+  } catch (error) {
+    console.error('❌ Add expert team member error:', error);
+    res.status(500).json({ success: false, message: 'Failed to add expert team member' });
+  }
+};
+
+// Update expert team member
+const updateExpertTeamMember = async (req, res) => {
+  try {
+    const { expertId } = req.params;
+    const expertData = req.body;
+    
+    if (!expertId || !expertData.fullName || !expertData.jobTitle) {
+      return res.status(400).json({ success: false, message: 'Expert ID, full name, and job title are required' });
+    }
+
+    const expert = await User.updateExpertTeamMember(expertId, expertData);
+    return res.json({ success: true, expert });
+  } catch (error) {
+    console.error('❌ Update expert team member error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update expert team member' });
+  }
+};
+
+// Delete expert team member
+const deleteExpertTeamMember = async (req, res) => {
+  try {
+    const { expertId } = req.params;
+    
+    if (!expertId) {
+      return res.status(400).json({ success: false, message: 'Expert ID is required' });
+    }
+
+    const expert = await User.deleteExpertTeamMember(expertId);
+    return res.json({ success: true, expert });
+  } catch (error) {
+    console.error('❌ Delete expert team member error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete expert team member' });
+  }
+};
+
 module.exports = {
   updateProfile,
   checkAdvisorProfile,
   saveAdvisorProfile,
-  skipAdvisorProfile
+  skipAdvisorProfile,
+  getAdvisorProfileForEdit,
+  addExpertTeamMember,
+  updateExpertTeamMember,
+  deleteExpertTeamMember
 }; 

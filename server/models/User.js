@@ -181,7 +181,22 @@ class User {
           office_address TEXT,
           office_city VARCHAR(100),
           office_postcode VARCHAR(20),
-          expert_team JSONB,
+          is_advisor BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Create advisor_experts table if it doesn't exist
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS advisor_experts (
+          id SERIAL PRIMARY KEY,
+          advisor_profile_id INTEGER REFERENCES advisor_profiles(id) ON DELETE CASCADE,
+          full_name VARCHAR(255) NOT NULL,
+          job_title VARCHAR(255) NOT NULL,
+          profile_photo_url TEXT,
+          phone VARCHAR(50),
+          email VARCHAR(255),
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -204,7 +219,8 @@ class User {
         officeAddress,
         officeCity,
         officePostcode,
-        expertTeam
+        expertTeam,
+        isAdvisor
       } = advisorData;
 
       // Check if advisor profile already exists
@@ -212,6 +228,8 @@ class User {
         'SELECT id FROM advisor_profiles WHERE user_id = $1',
         [userId]
       );
+
+      let profileId;
 
       if (existingProfile.rows.length > 0) {
         // Update existing profile
@@ -233,7 +251,7 @@ class User {
             office_address = $14,
             office_city = $15,
             office_postcode = $16,
-            expert_team = $17,
+            is_advisor = $17,
             updated_at = CURRENT_TIMESTAMP
           WHERE user_id = $18
           RETURNING *
@@ -254,10 +272,17 @@ class User {
           officeAddress,
           officeCity,
           officePostcode,
-          JSON.stringify(expertTeam),
+          isAdvisor || false,
           userId
         ]);
-        return result.rows[0];
+        
+        profileId = result.rows[0].id;
+        
+        // Clear existing expert team members
+        await pool.query(
+          'DELETE FROM advisor_experts WHERE advisor_profile_id = $1',
+          [profileId]
+        );
       } else {
         // Create new profile
         const result = await pool.query(`
@@ -265,17 +290,43 @@ class User {
             user_id, advisor_type, company_name, director_name, company_logo_url,
             company_website, company_description, full_name, profile_photo_url,
             job_title, professional_bio, contact_phone, contact_email,
-            office_hours, office_address, office_city, office_postcode, expert_team
+            office_hours, office_address, office_city, office_postcode, is_advisor
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
           RETURNING *
         `, [
           userId, advisorType, companyName, directorName, companyLogoUrl,
           companyWebsite, companyDescription, fullName, profilePhotoUrl,
           jobTitle, professionalBio, contactPhone, contactEmail,
-          officeHours, officeAddress, officeCity, officePostcode, JSON.stringify(expertTeam)
+          officeHours, officeAddress, officeCity, officePostcode, isAdvisor || false
         ]);
-        return result.rows[0];
+        
+        profileId = result.rows[0].id;
       }
+
+      // Add expert team members if provided
+      if (expertTeam && Array.isArray(expertTeam) && expertTeam.length > 0) {
+        for (const expert of expertTeam) {
+          if (expert.fullName && expert.jobTitle) {
+            await pool.query(`
+              INSERT INTO advisor_experts (
+                advisor_profile_id, full_name, job_title, profile_photo_url, phone, email
+              ) VALUES ($1, $2, $3, $4, $5, $6)
+            `, [
+              profileId,
+              expert.fullName,
+              expert.jobTitle,
+              expert.profilePhotoUrl || null,
+              expert.phone || null,
+              expert.email || null
+            ]);
+          }
+        }
+      }
+
+      // Mark advisor profile as completed
+      await this.markAdvisorProfileCompleted(userId);
+
+      return { id: profileId, success: true };
     } catch (error) {
       throw error;
     }
@@ -372,6 +423,159 @@ class User {
 
   static async comparePassword(plainPassword, hashedPassword) {
     return await bcrypt.compare(plainPassword, hashedPassword);
+  }
+
+  // Fetch full advisor profile details by user id (including expert team)
+  static async getAdvisorProfileDetailsByUserId(userId) {
+    try {
+      const profileResult = await pool.query(
+        `SELECT id, user_id, advisor_type, company_name, director_name, company_logo_url, company_website, company_description,
+                full_name, profile_photo_url, job_title, professional_bio, contact_phone, contact_email,
+                office_hours, office_address, office_city, office_postcode, is_advisor, created_at, updated_at
+         FROM advisor_profiles
+         WHERE user_id = $1
+         LIMIT 1`,
+        [userId]
+      );
+
+      if (profileResult.rows.length === 0) {
+        return null;
+      }
+
+      const profile = profileResult.rows[0];
+
+      // Fetch expert team members if any
+      const expertsResult = await pool.query(
+        `SELECT id, full_name, job_title, profile_photo_url, phone, email, created_at, updated_at
+         FROM advisor_experts
+         WHERE advisor_profile_id = $1
+         ORDER BY id ASC`,
+        [profile.id]
+      );
+
+      // Fetch owner's account email/phone as ultimate fallback
+      const accountResult = await pool.query(
+        `SELECT email AS account_email, phone AS account_phone FROM users WHERE id = $1 LIMIT 1`,
+        [userId]
+      );
+      const account = accountResult.rows[0] || {};
+
+      return {
+        ...profile,
+        ...account,
+        experts: expertsResult.rows
+      };
+    } catch (error) {
+      console.error('Error fetching advisor profile details:', error);
+      throw error;
+    }
+  }
+
+  // Get advisor profile for editing (authenticated user)
+  static async getAdvisorProfileForEdit(userId) {
+    try {
+      const profileResult = await pool.query(
+        `SELECT id, user_id, advisor_type, company_name, director_name, company_logo_url, company_website, company_description,
+                full_name, profile_photo_url, job_title, professional_bio, contact_phone, contact_email,
+                office_hours, office_address, office_city, office_postcode, is_advisor, created_at, updated_at
+         FROM advisor_profiles
+         WHERE user_id = $1
+         LIMIT 1`,
+        [userId]
+      );
+
+      if (profileResult.rows.length === 0) {
+        return null;
+      }
+
+      const profile = profileResult.rows[0];
+
+      // Fetch expert team members if any
+      const expertsResult = await pool.query(
+        `SELECT id, full_name, job_title, profile_photo_url, phone, email, created_at, updated_at
+         FROM advisor_experts
+         WHERE advisor_profile_id = $1
+         ORDER BY id ASC`,
+        [profile.id]
+      );
+
+      return {
+        ...profile,
+        experts: expertsResult.rows
+      };
+    } catch (error) {
+      console.error('Error fetching advisor profile for edit:', error);
+      throw error;
+    }
+  }
+
+  // Add expert team member
+  static async addExpertTeamMember(advisorProfileId, expertData) {
+    try {
+      const result = await pool.query(`
+        INSERT INTO advisor_experts (
+          advisor_profile_id, full_name, job_title, profile_photo_url, phone, email
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+      `, [
+        advisorProfileId,
+        expertData.fullName,
+        expertData.jobTitle,
+        expertData.profilePhotoUrl || null,
+        expertData.phone || null,
+        expertData.email || null
+      ]);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error adding expert team member:', error);
+      throw error;
+    }
+  }
+
+  // Update expert team member
+  static async updateExpertTeamMember(expertId, expertData) {
+    try {
+      const result = await pool.query(`
+        UPDATE advisor_experts SET
+          full_name = $1,
+          job_title = $2,
+          profile_photo_url = $3,
+          phone = $4,
+          email = $5,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $6
+        RETURNING *
+      `, [
+        expertData.fullName,
+        expertData.jobTitle,
+        expertData.profilePhotoUrl || null,
+        expertData.phone || null,
+        expertData.email || null,
+        expertId
+      ]);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error updating expert team member:', error);
+      throw error;
+    }
+  }
+
+  // Delete expert team member
+  static async deleteExpertTeamMember(expertId) {
+    try {
+      const result = await pool.query(`
+        DELETE FROM advisor_experts
+        WHERE id = $1
+        RETURNING *
+      `, [expertId]);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error deleting expert team member:', error);
+      throw error;
+    }
   }
 }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import PropertyAdvisorCard from '../components/PropertyAdvisorCard';
 import './PropertyView.css';
 
 const PropertyView = () => {
@@ -30,7 +31,7 @@ const PropertyView = () => {
 
   const fetchAdvisorInfo = async (userId) => {
     try {
-      const response = await fetch(`/api/properties/users/${userId}/advisor-profile`);
+      const response = await fetch(`/api/users/${userId}/advisor-profile/details`);
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.advisorProfile) {
@@ -1187,104 +1188,16 @@ const PropertyView = () => {
           </div>
 
           {/* Property Advisor Card */}
-          <div className="property-advisor-card">
-            <div className="advisor-header">
-              <div className="company-logo">
-                {advisorInfo?.company_logo ? (
-                  <img src={advisorInfo.company_logo} alt="Company Logo" onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'block';
-                  }} />
-                ) : null}
-                <div className="logo-placeholder" style={{ display: advisorInfo?.company_logo ? 'none' : 'block' }}>
-                  <i className="fas fa-building"></i>
-                </div>
-              </div>
-              <div className="company-info">
-                <h3 className="company-name">
-                  {toTitleCase(advisorInfo?.company_name) || 'Property Solutions Ltd'}
-                </h3>
-                <p className="company-tagline">
-                  {toTitleCase(advisorInfo?.company_tagline) || 'Your Trusted Property Partner'}
-                </p>
-                {advisorInfo?.company_description && (
-                  <p className="company-description">
-                    {limitWords(toSentenceCase(advisorInfo.company_description), 100)}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="advisor-team">
-              <h4 className="advisor-title">Meet Our Property Team</h4>
-              <div className="advisor-profile">
-                <div className="advisor-photo">
-                  {advisorInfo?.profile_photo ? (
-                    <img src={advisorInfo.profile_photo} alt="Property Advisor" onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
-                    }} />
-                  ) : null}
-                  <div className="photo-placeholder" style={{ display: advisorInfo?.profile_photo ? 'none' : 'block' }}>
-                    <i className="fas fa-user-tie"></i>
-                  </div>
-                </div>
-                <div className="advisor-details">
-                  <h5 className="advisor-name">
-                    {toTitleCase(advisorInfo?.full_name) || `${property?.contact_name || 'Property Advisor'}`}
-                  </h5>
-                  <p className="advisor-role">
-                    {toTitleCase(advisorInfo?.job_title) || 'Senior Property Advisor'}
-                  </p>
-                  <p className="advisor-description">
-                    {limitWords(toSentenceCase(advisorInfo?.professional_bio), 50) || 'With over 8 years of experience in the property market, our advisor specializes in helping clients find their perfect home. We have successfully assisted hundreds of families in finding their ideal properties across the UK.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="contact-information">
-              <h4 className="contact-title">Contact Information</h4>
-              <div className="contact-details">
-                <div className="property-view-contact-item">
-                  <i className="fas fa-phone"></i>
-                  <div className="property-view-contact-info">
-                    <span className="property-view-contact-label">Phone</span>
-                    <span className="property-view-contact-value">
-                      {advisorInfo?.phone || property?.contact_phone || '+44 (0) 20 7123 4567'}
-                    </span>
-                  </div>
-                </div>
-                <div className="property-view-contact-item">
-                  <i className="fas fa-envelope"></i>
-                  <div className="property-view-contact-info">
-                    <span className="property-view-contact-label">Email</span>
-                    <span className="property-view-contact-value">
-                      {advisorInfo?.email || property?.contact_email || 'contact@propertysolutions.co.uk'}
-                    </span>
-                  </div>
-                </div>
-                {advisorInfo?.office_hours && (
-                  <div className="property-view-contact-item">
-                    <i className="fas fa-clock"></i>
-                    <div className="property-view-contact-info">
-                      <span className="property-view-contact-label">Office Hours</span>
-                      <span className="property-view-contact-value">{toTitleCase(advisorInfo.office_hours)}</span>
-                    </div>
-                  </div>
-                )}
-                {advisorInfo?.office_address && (
-                  <div className="property-view-contact-item">
-                    <i className="fas fa-map-marker-alt"></i>
-                    <div className="property-view-contact-info">
-                      <span className="property-view-contact-label">Office Address</span>
-                      <span className="property-view-contact-value">{toTitleCase(advisorInfo.office_address)}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <PropertyAdvisorCard 
+            advisor={advisorInfo} 
+            fallbackContact={{
+              name: property?.contact_name,
+              firstName: property?.first_name,
+              lastName: property?.last_name,
+              email: property?.contact_email,
+              phone: property?.contact_phone
+            }}
+          />
         </div>
       </div>
     </div>
