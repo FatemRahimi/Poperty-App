@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { updateProfile, checkAdvisorProfile, saveAdvisorProfile, skipAdvisorProfile, getAdvisorProfileForEdit, addExpertTeamMember, updateExpertTeamMember, deleteExpertTeamMember } = require('../controllers/userController');
+const { updateProfile, checkAdvisorProfile, saveAdvisorProfile, skipAdvisorProfile, getAdvisorProfileForEdit } = require('../controllers/userController');
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -94,10 +94,10 @@ router.get('/:userId/advisor-profile', checkAdvisorProfile); // No authenticatio
 // Get advisor profile for editing
 router.get('/:userId/advisor-profile/edit', authenticateJWT, getAdvisorProfileForEdit);
 
-// Expert team management routes
-router.post('/:advisorProfileId/expert-team', authenticateJWT, addExpertTeamMember);
-router.put('/expert-team/:expertId', authenticateJWT, updateExpertTeamMember);
-router.delete('/expert-team/:expertId', authenticateJWT, deleteExpertTeamMember);
+// Expert team management routes (temporarily disabled)
+// router.post('/:advisorProfileId/expert-team', authenticateJWT, addExpertTeamMember);
+// router.put('/expert-team/:expertId', authenticateJWT, updateExpertTeamMember);
+// router.delete('/expert-team/:expertId', authenticateJWT, deleteExpertTeamMember);
 
 // Save advisor profile
 router.post('/:userId/advisor-profile', authenticateJWT, upload.fields([
