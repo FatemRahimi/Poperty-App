@@ -570,7 +570,34 @@
 .advisor-left-button .cancel-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-} 
+}
+
+/* Standalone Cancel Button for Edit Mode */
+.cancel-btn {
+  background: #f3f4f6;
+  color: #2563eb;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cancel-btn:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+.cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 /* Advisor Skip Link Styling */
 .advisor-skip-link {

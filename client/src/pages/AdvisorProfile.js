@@ -565,16 +565,29 @@ const AdvisorProfile = () => {
                   </button>
                 </div>
                 <div className="advisor-form-buttons">
-                  <div className="advisor-left-button">
-                    <button 
-                      type="button" 
+                  {/* Hide back button in edit mode */}
+                  {!isEditMode && (
+                    <button
+                      type="button"
                       className="back-btn"
                       onClick={handleBack}
                       disabled={isLoading}
                     >
                       ← Back
                     </button>
-                  </div>
+                  )}
+
+                  {/* Show cancel button in edit mode */}
+                  {isEditMode && (
+                    <button
+                      type="button"
+                      className="cancel-btn"
+                      onClick={() => navigate('/dashboard?tab=advisor-profile')}
+                      disabled={isLoading}
+                    >
+                      Cancel
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -1026,7 +1039,8 @@ const AdvisorProfile = () => {
             {advisorType && (
               <div className="advisor-form-section">
                 <div className="form-buttons">
-                  <div className="advisor-left-button">
+                  {/* Hide back button in edit mode */}
+                  {!isEditMode && (
                     <button 
                       type="button" 
                       className="back-btn"
@@ -1035,15 +1049,19 @@ const AdvisorProfile = () => {
                     >
                       ← Back
                     </button>
-                    <button 
-                      type="button" 
+                  )}
+
+                  {/* Show cancel button in edit mode */}
+                  {isEditMode && (
+                    <button
+                      type="button"
                       className="cancel-btn"
-                      onClick={() => navigate('/find')}
+                      onClick={() => navigate('/dashboard?tab=advisor-profile')}
                       disabled={isLoading}
                     >
                       Cancel
                     </button>
-                  </div>
+                  )}
                   <button 
                     type="submit" 
                     className={`submit-btn ${success ? 'submit-success' : ''} ${error ? 'submit-error' : ''}`}
