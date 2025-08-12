@@ -95,6 +95,7 @@ const AdvisorProfile = () => {
     companyLogo: null,
     companyLogoUrl: "",
     companyWebsite: "",
+    companyEmail: "",
     companyDescription: "",
     
     // Personal Information
@@ -150,6 +151,7 @@ const AdvisorProfile = () => {
                 directorName: profile.director_name || '',
                 companyLogoUrl: profile.company_logo_url || '',
                 companyWebsite: profile.company_website || '',
+                companyEmail: profile.company_email || '',
                 companyDescription: profile.company_description || '',
                 fullName: profile.full_name || '',
                 profilePhotoUrl: profile.profile_photo_url || '',
@@ -650,17 +652,32 @@ const AdvisorProfile = () => {
                     </small>
                   </div>
 
-                  <div className="advisor-form-group">
-                    <label htmlFor="companyWebsite">Company Website</label>
-                    <input
-                      type="url"
-                      id="companyWebsite"
-                      name="companyWebsite"
-                      value={formData.companyWebsite}
-                      onChange={handleChange}
-                      placeholder="https://www.yourcompany.com"
-                      className="advisor-field-input"
-                    />
+                  <div className="form-row">
+                    <div className="advisor-form-group">
+                      <label htmlFor="companyWebsite">Company Website</label>
+                      <input
+                        type="url"
+                        id="companyWebsite"
+                        name="companyWebsite"
+                        value={formData.companyWebsite}
+                        onChange={handleChange}
+                        placeholder="https://www.yourcompany.com"
+                        className="advisor-field-input"
+                      />
+                    </div>
+
+                    <div className="advisor-form-group">
+                      <label htmlFor="companyEmail">Company Email</label>
+                      <input
+                        type="email"
+                        id="companyEmail"
+                        name="companyEmail"
+                        value={formData.companyEmail}
+                        onChange={handleChange}
+                        placeholder="info@yourcompany.com"
+                        className="advisor-field-input"
+                      />
+                    </div>
                   </div>
 
                   <div className="advisor-form-group">

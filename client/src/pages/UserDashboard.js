@@ -90,6 +90,7 @@ const UserDashboard = () => {
     directorName: '',
     companyLogoUrl: '',
     companyWebsite: '',
+    companyEmail: '',
     companyDescription: '',
     fullName: '',
     profilePhotoUrl: '',
@@ -1260,6 +1261,7 @@ const UserDashboard = () => {
             directorName: profile.director_name || '',
             companyLogoUrl: profile.company_logo_url || '',
             companyWebsite: profile.company_website || '',
+            companyEmail: profile.company_email || '',
             companyDescription: profile.company_description || '',
             fullName: profile.full_name || '',
             profilePhotoUrl: profile.profile_photo_url || '',
@@ -1983,7 +1985,6 @@ const UserDashboard = () => {
                     
                     {advisorProfile.experts && advisorProfile.experts.length > 0 && (
                       <div className="form-group-modern">
-                        <label className="form-label-modern">Expert Team Members</label>
                         <div className="expert-team-display">
                           {advisorProfile.experts.map((expert, index) => (
                             <div key={expert.id || index} className="expert-display-item">

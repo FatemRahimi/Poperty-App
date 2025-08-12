@@ -170,6 +170,7 @@ class User {
           director_name VARCHAR(255),
           company_logo_url TEXT,
           company_website VARCHAR(255),
+          company_email VARCHAR(255),
           company_description TEXT,
           full_name VARCHAR(255),
           profile_photo_url TEXT,
@@ -181,6 +182,7 @@ class User {
           office_address TEXT,
           office_city VARCHAR(100),
           office_postcode VARCHAR(20),
+          expert_team JSONB,
           is_advisor BOOLEAN DEFAULT FALSE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -240,20 +242,22 @@ class User {
             director_name = $3,
             company_logo_url = $4,
             company_website = $5,
-            company_description = $6,
-            full_name = $7,
-            profile_photo_url = $8,
-            job_title = $9,
-            professional_bio = $10,
-            contact_phone = $11,
-            contact_email = $12,
-            office_hours = $13,
-            office_address = $14,
-            office_city = $15,
-            office_postcode = $16,
-            is_advisor = $17,
+            company_email = $6,
+            company_description = $7,
+            full_name = $8,
+            profile_photo_url = $9,
+            job_title = $10,
+            professional_bio = $11,
+            contact_phone = $12,
+            contact_email = $13,
+            office_hours = $14,
+            office_address = $15,
+            office_city = $16,
+            office_postcode = $17,
+            expert_team = $18,
+            is_advisor = $19,
             updated_at = CURRENT_TIMESTAMP
-          WHERE user_id = $18
+          WHERE user_id = $20
           RETURNING *
         `, [
           advisorType,
@@ -261,6 +265,7 @@ class User {
           directorName,
           companyLogoUrl,
           companyWebsite,
+          advisorData.companyEmail,
           companyDescription,
           fullName,
           profilePhotoUrl,
@@ -272,6 +277,7 @@ class User {
           officeAddress,
           officeCity,
           officePostcode,
+          JSON.stringify(expertTeam || []),
           isAdvisor || false,
           userId
         ]);
@@ -288,16 +294,16 @@ class User {
         const result = await pool.query(`
           INSERT INTO advisor_profiles (
             user_id, advisor_type, company_name, director_name, company_logo_url,
-            company_website, company_description, full_name, profile_photo_url,
+            company_website, company_email, company_description, full_name, profile_photo_url,
             job_title, professional_bio, contact_phone, contact_email,
-            office_hours, office_address, office_city, office_postcode, is_advisor
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+            office_hours, office_address, office_city, office_postcode, expert_team, is_advisor
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
           RETURNING *
         `, [
           userId, advisorType, companyName, directorName, companyLogoUrl,
-          companyWebsite, companyDescription, fullName, profilePhotoUrl,
+          companyWebsite, advisorData.companyEmail, companyDescription, fullName, profilePhotoUrl,
           jobTitle, professionalBio, contactPhone, contactEmail,
-          officeHours, officeAddress, officeCity, officePostcode, isAdvisor || false
+          officeHours, officeAddress, officeCity, officePostcode, JSON.stringify(expertTeam || []), isAdvisor || false
         ]);
         
         profileId = result.rows[0].id;
@@ -430,7 +436,7 @@ class User {
     try {
       const result = await pool.query(
         `SELECT ap.id, ap.user_id, ap.advisor_type, ap.company_name, ap.director_name, 
-                ap.company_logo_url, ap.company_website, ap.company_description,
+                ap.company_logo_url, ap.company_website, ap.company_email, ap.company_description,
                 ap.full_name, ap.profile_photo_url, ap.job_title, ap.professional_bio, 
                 ap.contact_phone, ap.contact_email, ap.office_hours, ap.office_address, 
                 ap.office_city, ap.office_postcode, ap.is_advisor, ap.expert_team,
@@ -475,7 +481,7 @@ class User {
   static async getAdvisorProfileForEdit(userId) {
     try {
       const profileResult = await pool.query(
-        `SELECT id, user_id, advisor_type, company_name, director_name, company_logo_url, company_website, company_description,
+        `SELECT id, user_id, advisor_type, company_name, director_name, company_logo_url, company_website, company_email, company_description,
                 full_name, profile_photo_url, job_title, professional_bio, contact_phone, contact_email,
                 office_hours, office_address, office_city, office_postcode, is_advisor, expert_team, created_at, updated_at
          FROM advisor_profiles
