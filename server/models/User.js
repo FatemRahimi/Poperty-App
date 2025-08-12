@@ -216,7 +216,6 @@ class User {
         jobTitle,
         professionalBio,
         contactPhone,
-        contactEmail,
         officeHours,
         officeAddress,
         officeCity,
@@ -224,6 +223,59 @@ class User {
         expertTeam,
         isAdvisor
       } = advisorData;
+
+      // Validate and clean expertTeam data
+      let processedExpertTeam = [];
+      if (expertTeam && Array.isArray(expertTeam)) {
+        console.log('👥 Processing expert team with', expertTeam.length, 'members');
+        
+        processedExpertTeam = expertTeam
+          .filter(expert => expert && typeof expert === 'object') // Filter out invalid entries
+          .map((expert, index) => {
+            // Clean and validate each expert
+            const cleanExpert = {
+              id: expert.id || `expert_${Date.now()}_${index}`, // Generate unique ID if missing
+              fullName: (expert.fullName || expert.full_name || '').trim(),
+              jobTitle: (expert.jobTitle || expert.job_title || '').trim(),
+              profilePhotoUrl: expert.profilePhotoUrl || expert.profile_photo_url || null,
+              phone: expert.phone || null,
+              email: expert.email || null,
+              createdAt: expert.createdAt || new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            
+            // Validate required fields
+            if (!cleanExpert.fullName || !cleanExpert.jobTitle) {
+              console.log(`⚠️ Skipping expert ${index}: missing required fields`);
+              return null;
+            }
+            
+            // Clean email if present
+            if (cleanExpert.email && typeof cleanExpert.email === 'string') {
+              cleanExpert.email = cleanExpert.email.trim();
+              if (cleanExpert.email.length > 255) {
+                cleanExpert.email = cleanExpert.email.substring(0, 255);
+              }
+            }
+            
+            // Clean phone if present
+            if (cleanExpert.phone && typeof cleanExpert.phone === 'string') {
+              cleanExpert.phone = cleanExpert.phone.trim();
+              if (cleanExpert.phone.length > 50) {
+                cleanExpert.phone = cleanExpert.phone.substring(0, 50);
+              }
+            }
+            
+            console.log(`✅ Processed expert: ${cleanExpert.fullName} - ${cleanExpert.jobTitle}`);
+            return cleanExpert;
+          })
+          .filter(expert => expert !== null); // Remove any null entries
+      }
+      
+      console.log('👥 Final processed expert team count:', processedExpertTeam.length);
+      if (processedExpertTeam.length > 0) {
+        console.log('👥 Expert team members:', processedExpertTeam.map(e => `${e.fullName} (${e.jobTitle})`));
+      }
 
       // Check if advisor profile already exists
       const existingProfile = await pool.query(
@@ -249,15 +301,14 @@ class User {
             job_title = $10,
             professional_bio = $11,
             contact_phone = $12,
-            contact_email = $13,
-            office_hours = $14,
-            office_address = $15,
-            office_city = $16,
-            office_postcode = $17,
-            expert_team = $18,
-            is_advisor = $19,
+            office_hours = $13,
+            office_address = $14,
+            office_city = $15,
+            office_postcode = $16,
+            expert_team = $17,
+            is_advisor = $18,
             updated_at = CURRENT_TIMESTAMP
-          WHERE user_id = $20
+          WHERE user_id = $19
           RETURNING *
         `, [
           advisorType,
@@ -272,12 +323,11 @@ class User {
           jobTitle,
           professionalBio,
           contactPhone,
-          contactEmail,
           officeHours,
           officeAddress,
           officeCity,
           officePostcode,
-          JSON.stringify(expertTeam || []),
+          JSON.stringify(processedExpertTeam),
           isAdvisor || false,
           userId
         ]);
@@ -295,23 +345,23 @@ class User {
           INSERT INTO advisor_profiles (
             user_id, advisor_type, company_name, director_name, company_logo_url,
             company_website, company_email, company_description, full_name, profile_photo_url,
-            job_title, professional_bio, contact_phone, contact_email,
+            job_title, professional_bio, contact_phone,
             office_hours, office_address, office_city, office_postcode, expert_team, is_advisor
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
           RETURNING *
         `, [
           userId, advisorType, companyName, directorName, companyLogoUrl,
           companyWebsite, advisorData.companyEmail, companyDescription, fullName, profilePhotoUrl,
-          jobTitle, professionalBio, contactPhone, contactEmail,
-          officeHours, officeAddress, officeCity, officePostcode, JSON.stringify(expertTeam || []), isAdvisor || false
+          jobTitle, professionalBio, contactPhone,
+          officeHours, officeAddress, officeCity, officePostcode, JSON.stringify(processedExpertTeam), isAdvisor || false
         ]);
         
         profileId = result.rows[0].id;
       }
 
       // Add expert team members if provided
-      if (expertTeam && Array.isArray(expertTeam) && expertTeam.length > 0) {
-        for (const expert of expertTeam) {
+      if (processedExpertTeam && processedExpertTeam.length > 0) {
+        for (const expert of processedExpertTeam) {
           if (expert.fullName && expert.jobTitle) {
             await pool.query(`
               INSERT INTO advisor_experts (
@@ -332,8 +382,16 @@ class User {
       // Mark advisor profile as completed
       await this.markAdvisorProfileCompleted(userId);
 
+      console.log('✅ Advisor profile saved successfully with ID:', profileId);
       return { id: profileId, success: true };
     } catch (error) {
+      console.error('❌ Error in saveAdvisorProfile:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        hint: error.hint
+      });
       throw error;
     }
   }
@@ -438,7 +496,7 @@ class User {
         `SELECT ap.id, ap.user_id, ap.advisor_type, ap.company_name, ap.director_name, 
                 ap.company_logo_url, ap.company_website, ap.company_email, ap.company_description,
                 ap.full_name, ap.profile_photo_url, ap.job_title, ap.professional_bio, 
-                ap.contact_phone, ap.contact_email, ap.office_hours, ap.office_address, 
+                ap.contact_phone, ap.office_hours, ap.office_address, 
                 ap.office_city, ap.office_postcode, ap.is_advisor, ap.expert_team,
                 u.email as account_email, u.phone as account_phone
          FROM advisor_profiles ap
@@ -456,15 +514,42 @@ class User {
 
       // Parse expert_team JSONB field
       let experts = [];
-      if (profile.expert_team && typeof profile.expert_team === 'string') {
+      if (profile.expert_team) {
         try {
-          experts = JSON.parse(profile.expert_team);
+          if (typeof profile.expert_team === 'string') {
+            experts = JSON.parse(profile.expert_team);
+          } else if (Array.isArray(profile.expert_team)) {
+            experts = profile.expert_team;
+          } else if (typeof profile.expert_team === 'object') {
+            // Handle case where it might be a PostgreSQL JSONB object
+            experts = [profile.expert_team];
+          }
+          
+          // Validate and clean the parsed experts
+          if (Array.isArray(experts)) {
+            experts = experts
+              .filter(expert => expert && typeof expert === 'object')
+              .map(expert => ({
+                id: expert.id || `expert_${Date.now()}_${Math.random()}`,
+                fullName: expert.fullName || expert.full_name || '',
+                jobTitle: expert.jobTitle || expert.job_title || '',
+                profilePhotoUrl: expert.profilePhotoUrl || expert.profile_photo_url || null,
+                phone: expert.phone || null,
+                email: expert.email || null,
+                createdAt: expert.createdAt || expert.created_at || new Date().toISOString(),
+                updatedAt: expert.updatedAt || expert.updated_at || new Date().toISOString()
+              }))
+              .filter(expert => expert.fullName && expert.jobTitle);
+          } else {
+            experts = [];
+          }
+          
+          console.log('✅ Successfully parsed', experts.length, 'expert team members for public view');
         } catch (error) {
-          console.error('Error parsing expert_team JSON:', error);
+          console.error('❌ Error parsing expert_team JSON for public view:', error);
+          console.error('❌ Raw expert_team data:', profile.expert_team);
           experts = [];
         }
-      } else if (profile.expert_team && Array.isArray(profile.expert_team)) {
-        experts = profile.expert_team;
       }
 
       return {
@@ -482,7 +567,7 @@ class User {
     try {
       const profileResult = await pool.query(
         `SELECT id, user_id, advisor_type, company_name, director_name, company_logo_url, company_website, company_email, company_description,
-                full_name, profile_photo_url, job_title, professional_bio, contact_phone, contact_email,
+                full_name, profile_photo_url, job_title, professional_bio, contact_phone,
                 office_hours, office_address, office_city, office_postcode, is_advisor, expert_team, created_at, updated_at
          FROM advisor_profiles
          WHERE user_id = $1
@@ -498,15 +583,42 @@ class User {
 
       // Parse expert_team JSONB field
       let experts = [];
-      if (profile.expert_team && typeof profile.expert_team === 'string') {
+      if (profile.expert_team) {
         try {
-          experts = JSON.parse(profile.expert_team);
+          if (typeof profile.expert_team === 'string') {
+            experts = JSON.parse(profile.expert_team);
+          } else if (Array.isArray(profile.expert_team)) {
+            experts = profile.expert_team;
+          } else if (typeof profile.expert_team === 'object') {
+            // Handle case where it might be a PostgreSQL JSONB object
+            experts = [profile.expert_team];
+          }
+          
+          // Validate and clean the parsed experts
+          if (Array.isArray(experts)) {
+            experts = experts
+              .filter(expert => expert && typeof expert === 'object')
+              .map(expert => ({
+                id: expert.id || `expert_${Date.now()}_${Math.random()}`,
+                fullName: expert.fullName || expert.full_name || '',
+                jobTitle: expert.jobTitle || expert.job_title || '',
+                profilePhotoUrl: expert.profilePhotoUrl || expert.profile_photo_url || null,
+                phone: expert.phone || null,
+                email: expert.email || null,
+                createdAt: expert.createdAt || expert.created_at || new Date().toISOString(),
+                updatedAt: expert.updatedAt || expert.updated_at || new Date().toISOString()
+              }))
+              .filter(expert => expert.fullName && expert.jobTitle);
+          } else {
+            experts = [];
+          }
+          
+          console.log('✅ Successfully parsed', experts.length, 'expert team members');
         } catch (error) {
-          console.error('Error parsing expert_team JSON:', error);
+          console.error('❌ Error parsing expert_team JSON:', error);
+          console.error('❌ Raw expert_team data:', profile.expert_team);
           experts = [];
         }
-      } else if (profile.expert_team && Array.isArray(profile.expert_team)) {
-        experts = profile.expert_team;
       }
 
       return {
@@ -522,6 +634,9 @@ class User {
   // Add expert team member
   static async addExpertTeamMember(advisorProfileId, expertData) {
     try {
+      console.log('👥 Adding expert team member to profile:', advisorProfileId);
+      console.log('👥 Expert data:', expertData);
+      
       // First get the current expert team
       const profileResult = await pool.query(
         'SELECT expert_team FROM advisor_profiles WHERE id = $1',
@@ -535,31 +650,58 @@ class User {
       let currentExperts = [];
       const currentExpertTeam = profileResult.rows[0].expert_team;
       
-      if (currentExpertTeam && typeof currentExpertTeam === 'string') {
+      // Parse existing expert team
+      if (currentExpertTeam) {
         try {
-          currentExperts = JSON.parse(currentExpertTeam);
+          if (typeof currentExpertTeam === 'string') {
+            currentExperts = JSON.parse(currentExpertTeam);
+          } else if (Array.isArray(currentExpertTeam)) {
+            currentExperts = currentExpertTeam;
+          } else if (typeof currentExpertTeam === 'object') {
+            currentExperts = [currentExpertTeam];
+          }
+          
+          // Ensure it's an array
+          if (!Array.isArray(currentExperts)) {
+            currentExperts = [];
+          }
         } catch (error) {
-          console.error('Error parsing existing expert_team:', error);
+          console.error('❌ Error parsing existing expert_team:', error);
           currentExperts = [];
         }
-      } else if (currentExpertTeam && Array.isArray(currentExpertTeam)) {
-        currentExperts = currentExpertTeam;
+      }
+
+      // Validate and clean the new expert data
+      if (!expertData.fullName || !expertData.jobTitle) {
+        throw new Error('Full name and job title are required for expert team member');
       }
 
       // Create new expert with unique ID
       const newExpert = {
-        id: Date.now() + Math.random(), // Simple unique ID
-        fullName: expertData.fullName,
-        jobTitle: expertData.jobTitle,
+        id: `expert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        fullName: expertData.fullName.trim(),
+        jobTitle: expertData.jobTitle.trim(),
         profilePhotoUrl: expertData.profilePhotoUrl || null,
-        phone: expertData.phone || null,
-        email: expertData.email || null,
+        phone: expertData.phone ? expertData.phone.trim() : null,
+        email: expertData.email ? expertData.email.trim() : null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
+      // Validate email length
+      if (newExpert.email && newExpert.email.length > 255) {
+        newExpert.email = newExpert.email.substring(0, 255);
+      }
+
+      // Validate phone length
+      if (newExpert.phone && newExpert.phone.length > 50) {
+        newExpert.phone = newExpert.phone.substring(0, 50);
+      }
+
       // Add to existing experts
       currentExperts.push(newExpert);
+
+      console.log('👥 Updated expert team count:', currentExperts.length);
 
       // Update the expert_team field
       const result = await pool.query(
@@ -567,9 +709,10 @@ class User {
         [JSON.stringify(currentExperts), advisorProfileId]
       );
       
+      console.log('✅ Expert team member added successfully');
       return newExpert;
     } catch (error) {
-      console.error('Error adding expert team member:', error);
+      console.error('❌ Error adding expert team member:', error);
       throw error;
     }
   }
@@ -577,6 +720,9 @@ class User {
   // Update expert team member
   static async updateExpertTeamMember(expertId, expertData) {
     try {
+      console.log('👥 Updating expert team member:', expertId);
+      console.log('👥 Update data:', expertData);
+      
       // Find the advisor profile that contains this expert
       const profileResult = await pool.query(
         'SELECT id, expert_team FROM advisor_profiles WHERE expert_team::text LIKE $1',
@@ -590,15 +736,25 @@ class User {
       const profile = profileResult.rows[0];
       let experts = [];
       
-      if (profile.expert_team && typeof profile.expert_team === 'string') {
+      // Parse existing expert team
+      if (profile.expert_team) {
         try {
-          experts = JSON.parse(profile.expert_team);
+          if (typeof profile.expert_team === 'string') {
+            experts = JSON.parse(profile.expert_team);
+          } else if (Array.isArray(profile.expert_team)) {
+            experts = profile.expert_team;
+          } else if (typeof profile.expert_team === 'object') {
+            experts = [profile.expert_team];
+          }
+          
+          // Ensure it's an array
+          if (!Array.isArray(experts)) {
+            experts = [];
+          }
         } catch (error) {
-          console.error('Error parsing expert_team:', error);
+          console.error('❌ Error parsing expert_team:', error);
           throw new Error('Invalid expert team data');
         }
-      } else if (profile.expert_team && Array.isArray(profile.expert_team)) {
-        experts = profile.expert_team;
       }
 
       // Find and update the expert
@@ -607,16 +763,33 @@ class User {
         throw new Error('Expert not found');
       }
 
+      // Validate required fields
+      if (!expertData.fullName || !expertData.jobTitle) {
+        throw new Error('Full name and job title are required');
+      }
+
       // Update expert data
       experts[expertIndex] = {
         ...experts[expertIndex],
-        fullName: expertData.fullName,
-        jobTitle: expertData.jobTitle,
+        fullName: expertData.fullName.trim(),
+        jobTitle: expertData.jobTitle.trim(),
         profilePhotoUrl: expertData.profilePhotoUrl || experts[expertIndex].profilePhotoUrl,
-        phone: expertData.phone || experts[expertIndex].phone,
-        email: expertData.email || experts[expertIndex].email,
+        phone: expertData.phone ? expertData.phone.trim() : experts[expertIndex].phone,
+        email: expertData.email ? expertData.email.trim() : experts[expertIndex].email,
         updatedAt: new Date().toISOString()
       };
+
+      // Validate email length
+      if (experts[expertIndex].email && experts[expertIndex].email.length > 255) {
+        experts[expertIndex].email = experts[expertIndex].email.substring(0, 255);
+      }
+
+      // Validate phone length
+      if (experts[expertIndex].phone && experts[expertIndex].phone.length > 50) {
+        experts[expertIndex].phone = experts[expertIndex].phone.substring(0, 50);
+      }
+
+      console.log('👥 Updated expert:', experts[expertIndex].fullName);
 
       // Update the expert_team field
       await pool.query(
@@ -624,9 +797,10 @@ class User {
         [JSON.stringify(experts), profile.id]
       );
       
+      console.log('✅ Expert team member updated successfully');
       return experts[expertIndex];
     } catch (error) {
-      console.error('Error updating expert team member:', error);
+      console.error('❌ Error updating expert team member:', error);
       throw error;
     }
   }
@@ -634,6 +808,8 @@ class User {
   // Delete expert team member
   static async deleteExpertTeamMember(expertId) {
     try {
+      console.log('👥 Deleting expert team member:', expertId);
+      
       // Find the advisor profile that contains this expert
       const profileResult = await pool.query(
         'SELECT id, expert_team FROM advisor_profiles WHERE expert_team::text LIKE $1',
@@ -647,16 +823,34 @@ class User {
       const profile = profileResult.rows[0];
       let experts = [];
       
-      if (profile.expert_team && typeof profile.expert_team === 'string') {
+      // Parse existing expert team
+      if (profile.expert_team) {
         try {
-          experts = JSON.parse(profile.expert_team);
+          if (typeof profile.expert_team === 'string') {
+            experts = JSON.parse(profile.expert_team);
+          } else if (Array.isArray(profile.expert_team)) {
+            experts = profile.expert_team;
+          } else if (typeof profile.expert_team === 'object') {
+            experts = [profile.expert_team];
+          }
+          
+          // Ensure it's an array
+          if (!Array.isArray(experts)) {
+            experts = [];
+          }
         } catch (error) {
-          console.error('Error parsing expert_team:', error);
+          console.error('❌ Error parsing expert_team:', error);
           throw new Error('Invalid expert team data');
         }
-      } else if (profile.expert_team && Array.isArray(profile.expert_team)) {
-        experts = profile.expert_team;
       }
+
+      // Find the expert to delete
+      const expertToDelete = experts.find(expert => expert.id == expertId);
+      if (!expertToDelete) {
+        throw new Error('Expert not found');
+      }
+
+      console.log('👥 Deleting expert:', expertToDelete.fullName);
 
       // Remove the expert
       const filteredExperts = experts.filter(expert => expert.id != expertId);
@@ -665,15 +859,18 @@ class User {
         throw new Error('Expert not found');
       }
 
+      console.log('👥 Expert team count after deletion:', filteredExperts.length);
+
       // Update the expert_team field
       await pool.query(
         'UPDATE advisor_profiles SET expert_team = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         [JSON.stringify(filteredExperts), profile.id]
       );
       
+      console.log('✅ Expert team member deleted successfully');
       return true;
     } catch (error) {
-      console.error('Error deleting expert team member:', error);
+      console.error('❌ Error deleting expert team member:', error);
       throw error;
     }
   }

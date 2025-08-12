@@ -127,6 +127,8 @@ const saveAdvisorProfile = async (req, res) => {
     const userId = req.user.id;
     const advisorData = req.body;
     
+    console.log('📧 Company Email:', advisorData.companyEmail);
+    
     // Handle file uploads if present
     if (req.files) {
       const fs = require('fs');

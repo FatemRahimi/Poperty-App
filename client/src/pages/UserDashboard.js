@@ -1943,58 +1943,20 @@ const UserDashboard = () => {
                       </>
                     )}
                     
-                    <div className="form-group-modern">
-                      <label className="form-label-modern">Full Name</label>
-                      <input
-                        type="text"
-                        className="form-input-modern"
-                        value={advisorProfile.full_name || ''}
-                        disabled
-                      />
-                    </div>
+                  
+                    
                     
                     <div className="form-group-modern">
-                      <label className="form-label-modern">Job Title</label>
-                      <input
-                        type="text"
-                        className="form-input-modern"
-                        value={advisorProfile.job_title || ''}
-                        disabled
-                      />
-                    </div>
-                    
-                    <div className="form-group-modern">
-                      <label className="form-label-modern">Contact Email</label>
+                      <label className="form-label-modern">Company Email</label>
                       <input
                         type="email"
                         className="form-input-modern"
-                        value={advisorProfile.contact_email || ''}
+                        value={advisorProfile.company_email || ''}
                         disabled
                       />
                     </div>
                     
-                    <div className="form-group-modern">
-                      <label className="form-label-modern">Contact Phone</label>
-                      <input
-                        type="tel"
-                        className="form-input-modern"
-                        value={advisorProfile.contact_phone || ''}
-                        disabled
-                      />
-                    </div>
-                    
-                    {advisorProfile.experts && advisorProfile.experts.length > 0 && (
-                      <div className="form-group-modern">
-                        <div className="expert-team-display">
-                          {advisorProfile.experts.map((expert, index) => (
-                            <div key={expert.id || index} className="expert-display-item">
-                              <span className="expert-name">{expert.full_name}</span>
-                              <span className="expert-role">{expert.job_title}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                   
                   </div>
                   
                   <div className="profile-actions">
