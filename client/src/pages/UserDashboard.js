@@ -2011,10 +2011,32 @@ const UserDashboard = () => {
               ) : (
                 <div className="no-advisor-profile">
                   <div className="no-profile-content">
-                    <i className="fas fa-user-tie"></i>
-                    <h3>No Advisor Profile Found</h3>
-                    <p>You haven't created an advisor profile yet. Create one to appear on your property listings.</p>
-                    <button 
+                    <div className="no-profile-icon">
+                      <i className="fas fa-user-tie"></i>
+                    </div>
+                    <h3>Create Your Advisor Profile</h3>
+                    <p>Enhance your property listings with a professional advisor profile to build trust with potential clients.</p>
+                    
+                    <div className="benefits-list">
+                      <div className="benefit-item">
+                        <i className="fas fa-check-circle"></i>
+                        <span>Display on all your property listings</span>
+                      </div>
+                      <div className="benefit-item">
+                        <i className="fas fa-check-circle"></i>
+                        <span>Build professional credibility</span>
+                      </div>
+                      <div className="benefit-item">
+                        <i className="fas fa-check-circle"></i>
+                        <span>Increase client inquiries</span>
+                      </div>
+                      <div className="benefit-item">
+                        <i className="fas fa-check-circle"></i>
+                        <span>Showcase your expertise</span>
+                      </div>
+                    </div>
+                    
+                    <button
                       className="btn-create-advisor"
                       onClick={() => navigate('/advisor-profile')}
                     >
