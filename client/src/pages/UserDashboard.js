@@ -102,7 +102,19 @@ const UserDashboard = () => {
     officeAddress: '',
     officeCity: '',
     officePostcode: '',
-    experts: []
+    isAdvisor: false
+  });
+  
+  // Expert team editing states
+  const [isEditingExpertTeam, setIsEditingExpertTeam] = useState(false);
+  const [expertTeamMembers, setExpertTeamMembers] = useState([]);
+  const [editingExpert, setEditingExpert] = useState(null);
+  const [showAddExpertForm, setShowAddExpertForm] = useState(false);
+  const [newExpertData, setNewExpertData] = useState({
+    fullName: '',
+    jobTitle: '',
+    email: '',
+    phone: ''
   });
   
   const { user, logout, updateUser } = useAuth();
@@ -1251,7 +1263,13 @@ const UserDashboard = () => {
         const result = await response.json();
         if (result.success && result.advisorProfile) {
           console.log('✅ Existing advisor profile found:', result.advisorProfile);
+          console.log('👥 Expert team data received:', {
+            has_experts: !!result.advisorProfile.experts,
+            experts_count: result.advisorProfile.experts?.length || 0,
+            experts_data: result.advisorProfile.experts
+          });
           setAdvisorProfile(result.advisorProfile);
+          setExpertTeamMembers(result.advisorProfile.experts || []);
           
           // Load existing data into form
           const profile = result.advisorProfile;
@@ -1268,24 +1286,26 @@ const UserDashboard = () => {
             jobTitle: profile.job_title || '',
             professionalBio: profile.professional_bio || '',
             contactPhone: profile.contact_phone || '',
-            contactEmail: profile.contact_email || '',
             officeHours: profile.office_hours || '',
             officeAddress: profile.office_address || '',
             officeCity: profile.office_city || '',
             officePostcode: profile.office_postcode || '',
-            experts: profile.experts || []
+            isAdvisor: profile.is_advisor || false
           });
         } else {
-          console.log('ℹ️ No existing advisor profile found');
+          console.log('❌ No existing advisor profile found');
           setAdvisorProfile(null);
+          setExpertTeamMembers([]);
         }
       } else {
-        console.log('ℹ️ No existing advisor profile found');
+        console.error('❌ Error fetching advisor profile:', response.status);
         setAdvisorProfile(null);
+        setExpertTeamMembers([]);
       }
     } catch (error) {
       console.error('❌ Error checking existing profile:', error);
       setAdvisorProfile(null);
+      setExpertTeamMembers([]);
     } finally {
       setIsLoadingAdvisorProfile(false);
     }
@@ -1320,8 +1340,8 @@ const UserDashboard = () => {
       
       // Add form data
       Object.keys(advisorFormData).forEach(key => {
-        if (key === 'experts') {
-          submitData.append(key, JSON.stringify(advisorFormData[key]));
+        if (key === 'isAdvisor') {
+          submitData.append(key, advisorFormData[key]);
         } else {
           submitData.append(key, advisorFormData[key]);
         }
@@ -1592,6 +1612,118 @@ const UserDashboard = () => {
       setLastStableCount(filteredProperties.length);
     }
   }, [filteredProperties.length, hasPerformedSearch, isSearching]);
+
+  // Expert team management functions
+  const handleAddExpert = async () => {
+    try {
+      if (!newExpertData.fullName || !newExpertData.jobTitle) {
+        alert('Full name and job title are required');
+        return;
+      }
+
+      const response = await fetch(`/api/users/${advisorProfile.id}/expert-team`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newExpertData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setExpertTeamMembers([...expertTeamMembers, result.expert]);
+        setNewExpertData({ fullName: '', jobTitle: '', email: '', phone: '' });
+        setShowAddExpertForm(false);
+        // Refresh advisor profile to get updated expert team
+        fetchAdvisorProfile();
+      } else {
+        const error = await response.json();
+        alert(`Error adding expert: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error adding expert:', error);
+      alert('Error adding expert team member');
+    }
+  };
+
+  const handleUpdateExpert = async (expertId, updatedData) => {
+    try {
+      const response = await fetch(`/api/users/expert-team/${expertId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updatedData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setExpertTeamMembers(expertTeamMembers.map(expert => 
+          expert.id === expertId ? result.expert : expert
+        ));
+        setEditingExpert(null);
+        // Refresh advisor profile to get updated expert team
+        fetchAdvisorProfile();
+      } else {
+        const error = await response.json();
+        alert(`Error updating expert: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating expert:', error);
+      alert('Error updating expert team member');
+    }
+  };
+
+  const handleDeleteExpert = async (expertId) => {
+    if (!window.confirm('Are you sure you want to delete this expert team member?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users/expert-team/${expertId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setExpertTeamMembers(expertTeamMembers.filter(expert => expert.id !== expertId));
+        // Refresh advisor profile to get updated expert team
+        fetchAdvisorProfile();
+      } else {
+        const error = await response.json();
+        alert(`Error deleting expert: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting expert:', error);
+      alert('Error deleting expert team member');
+    }
+  };
+
+  const startEditingExpert = (expert) => {
+    setEditingExpert({
+      id: expert.id,
+      fullName: expert.fullName,
+      jobTitle: expert.jobTitle,
+      email: expert.email || '',
+      phone: expert.phone || ''
+    });
+  };
+
+  const cancelEditingExpert = () => {
+    setEditingExpert(null);
+  };
+
+  const saveEditingExpert = () => {
+    if (!editingExpert.fullName || !editingExpert.jobTitle) {
+      alert('Full name and job title are required');
+      return;
+    }
+    handleUpdateExpert(editingExpert.id, editingExpert);
+  };
 
   if (loading) {
     return (

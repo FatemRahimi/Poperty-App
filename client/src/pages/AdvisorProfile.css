@@ -373,6 +373,136 @@
   padding: 2rem; /* Direct compact padding */
 }
 
+/* Existing Experts Display Styling */
+.existing-experts-display {
+  background: var(--advisor-bg-secondary);
+  border: 1px solid var(--advisor-border-primary);
+  border-radius: var(--advisor-radius-lg);
+  padding: var(--advisor-spacing-xl);
+  margin-bottom: var(--advisor-spacing-xl);
+  transition: all var(--advisor-transition-base);
+}
+
+.existing-experts-display:hover {
+  border-color: var(--advisor-border-secondary);
+  box-shadow: var(--advisor-shadow-sm);
+}
+
+.existing-experts-title {
+  font-size: var(--advisor-font-size-lg);
+  font-weight: 600;
+  color: var(--advisor-text-primary);
+  margin: 0 0 var(--advisor-spacing-lg) 0;
+  font-family: var(--advisor-font-family-heading);
+  display: flex;
+  align-items: center;
+  gap: var(--advisor-spacing-sm);
+}
+
+.existing-experts-title::before {
+  content: '👥';
+  font-size: var(--advisor-font-size-base);
+}
+
+.existing-experts-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--advisor-spacing-lg);
+}
+
+.existing-expert-item {
+  background: var(--advisor-bg-primary);
+  border: 1px solid var(--advisor-border-primary);
+  border-radius: var(--advisor-radius-md);
+  padding: var(--advisor-spacing-lg);
+  transition: all var(--advisor-transition-base);
+}
+
+.existing-expert-item:hover {
+  border-color: var(--advisor-border-secondary);
+  box-shadow: var(--advisor-shadow-sm);
+}
+
+.existing-expert-header {
+  display: flex;
+  align-items: center;
+  gap: var(--advisor-spacing-lg);
+}
+
+.existing-expert-photo {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--advisor-bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--advisor-border-primary);
+}
+
+.existing-expert-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.existing-expert-photo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--advisor-text-muted);
+  font-size: var(--advisor-font-size-xl);
+}
+
+.existing-expert-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.existing-expert-name {
+  font-size: var(--advisor-font-size-lg);
+  font-weight: 600;
+  color: var(--advisor-text-primary);
+  margin: 0 0 var(--advisor-spacing-xs) 0;
+  font-family: var(--advisor-font-family-heading);
+}
+
+.existing-expert-role {
+  font-size: var(--advisor-font-size-base);
+  color: var(--advisor-text-secondary);
+  margin: 0 0 var(--advisor-spacing-xs) 0;
+  font-weight: 500;
+}
+
+.existing-expert-email,
+.existing-expert-phone {
+  font-size: var(--advisor-font-size-sm);
+  color: var(--advisor-text-muted);
+  margin: 0 0 var(--advisor-spacing-xs) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--advisor-spacing-xs);
+}
+
+.existing-expert-email::before {
+  content: '📧';
+  font-size: var(--advisor-font-size-xs);
+}
+
+.existing-expert-phone::before {
+  content: '📞';
+  font-size: var(--advisor-font-size-xs);
+}
+
+.existing-expert-item:last-child .existing-expert-email,
+.existing-expert-item:last-child .existing-expert-phone {
+  margin-bottom: 0;
+}
+
 .expert-member {
   background: var(--advisor-bg-secondary);
   border: 1px solid var(--advisor-border-primary);
@@ -520,6 +650,28 @@
     width: 100%;
     justify-content: center;
   }
+  
+  /* Existing Experts Display Responsive */
+  .existing-experts-display {
+    padding: var(--advisor-spacing-lg);
+  }
+  
+  .existing-expert-header {
+    gap: var(--advisor-spacing-md);
+  }
+  
+  .existing-expert-photo {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .existing-expert-name {
+    font-size: var(--advisor-font-size-base);
+  }
+  
+  .existing-expert-role {
+    font-size: var(--advisor-font-size-sm);
+  }
 }
 
 @media (max-width: 480px) {
@@ -535,6 +687,31 @@
   
   .remove-expert-btn {
     align-self: flex-end;
+  }
+  
+  /* Existing Experts Display Mobile */
+  .existing-experts-display {
+    padding: var(--advisor-spacing-md);
+  }
+  
+  .existing-expert-item {
+    padding: var(--advisor-spacing-md);
+  }
+  
+  .existing-expert-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--advisor-spacing-md);
+    text-align: center;
+  }
+  
+  .existing-expert-photo {
+    align-self: center;
+  }
+  
+  .existing-expert-info {
+    text-align: center;
+    width: 100%;
   }
 } 
 

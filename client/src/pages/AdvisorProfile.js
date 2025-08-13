@@ -168,14 +168,16 @@ const AdvisorProfile = () => {
               
               // Set expert team if exists
               if (profile.experts && profile.experts.length > 0) {
-                const mappedExperts = profile.experts.map(expert => ({
-                  id: expert.id,
+                console.log(` Found ${profile.experts.length} experts, mapping them...`);
+                const mappedExperts = profile.experts.map((expert, index) => ({
+                  id: expert.id || `temp-${Date.now()}-${index}`,
                   fullName: expert.full_name || '',
                   jobTitle: expert.job_title || '',
                   profilePhotoUrl: expert.profile_photo_url || '',
                   phone: expert.phone || '',
                   email: expert.email || ''
                 }));
+                console.log('👥 Mapped experts:', mappedExperts);
                 setExpertTeam(mappedExperts);
               }
               
@@ -215,7 +217,7 @@ const AdvisorProfile = () => {
     }));
   };
 
-  // Handle expert team changes
+  // Add new expert
   const handleAddExpert = () => {
     const newExpert = {
       id: Date.now(),
@@ -228,10 +230,12 @@ const AdvisorProfile = () => {
     setExpertTeam(prev => [...prev, newExpert]);
   };
 
+  // Remove expert
   const handleRemoveExpert = (expertId) => {
     setExpertTeam(prev => prev.filter(expert => expert.id !== expertId));
   };
 
+  // Update expert field
   const handleExpertChange = (expertId, field, value) => {
     setExpertTeam(prev => 
       prev.map(expert => 
