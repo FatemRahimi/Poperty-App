@@ -565,6 +565,7 @@ class User {
   // Get advisor profile for editing (authenticated user)
   static async getAdvisorProfileForEdit(userId) {
     try {
+      // First get the advisor profile
       const profileResult = await pool.query(
         `SELECT id, user_id, advisor_type, company_name, director_name, company_logo_url, company_website, company_email, company_description,
                 full_name, profile_photo_url, job_title, professional_bio, contact_phone,
@@ -580,53 +581,63 @@ class User {
       }
 
       const profile = profileResult.rows[0];
-
-      // Parse expert_team JSONB field
       let experts = [];
-      if (profile.expert_team) {
-        try {
-          if (typeof profile.expert_team === 'string') {
-            experts = JSON.parse(profile.expert_team);
-          } else if (Array.isArray(profile.expert_team)) {
-            experts = profile.expert_team;
-          } else if (typeof profile.expert_team === 'object') {
-            // Handle case where it might be a PostgreSQL JSONB object
-            experts = [profile.expert_team];
-          }
-          
-          // Validate and clean the parsed experts
-          if (Array.isArray(experts)) {
-            experts = experts
-              .filter(expert => expert && typeof expert === 'object')
-              .map(expert => ({
-                id: expert.id || `expert_${Date.now()}_${Math.random()}`,
-                fullName: expert.fullName || expert.full_name || '',
-                jobTitle: expert.jobTitle || expert.job_title || '',
-                profilePhotoUrl: expert.profilePhotoUrl || expert.profile_photo_url || null,
-                phone: expert.phone || null,
-                email: expert.email || null,
-                createdAt: expert.createdAt || expert.created_at || new Date().toISOString(),
-                updatedAt: expert.updatedAt || expert.updated_at || new Date().toISOString()
-              }))
-              .filter(expert => expert.fullName && expert.jobTitle);
-          } else {
-            experts = [];
-          }
-          
-          console.log('✅ Successfully parsed', experts.length, 'expert team members');
-        } catch (error) {
-          console.error('❌ Error parsing expert_team JSON:', error);
-          console.error('❌ Raw expert_team data:', profile.expert_team);
-          experts = [];
-        }
+
+      // First check if expert_team field has data (JSONB field)
+      if (profile.expert_team && profile.expert_team.length > 0) {
+        console.log('✅ Found expert team data in expert_team JSONB field');
+        experts = profile.expert_team.map(expert => ({
+          id: expert.id,
+          full_name: expert.fullName || expert.full_name || '',
+          job_title: expert.jobTitle || expert.job_title || '',
+          profile_photo_url: expert.profilePhotoUrl || expert.profile_photo_url || '',
+          phone: expert.phone || '',
+          email: expert.email || ''
+        }));
+        console.log(`👥 Parsed ${experts.length} experts from expert_team JSONB field`);
+      } else {
+        // If no data in expert_team field, check advisor_experts table
+        console.log('🔍 No data in expert_team field, checking advisor_experts table...');
+        const expertsResult = await pool.query(
+          `SELECT id, full_name, job_title, profile_photo_url, phone, email, created_at, updated_at
+           FROM advisor_experts
+           WHERE advisor_profile_id = $1
+           ORDER BY id ASC`,
+          [profile.id]
+        );
+        
+        experts = expertsResult.rows;
+        console.log(`✅ Successfully retrieved ${experts.length} expert team members from advisor_experts table`);
       }
 
+      console.log('👥 Expert team members:', experts);
+
       return {
-        ...profile,
-        experts: experts
+        id: profile.id,
+        user_id: profile.user_id,
+        advisor_type: profile.advisor_type,
+        company_name: profile.company_name,
+        director_name: profile.director_name,
+        company_logo_url: profile.company_logo_url,
+        company_website: profile.company_website,
+        company_email: profile.company_email,
+        company_description: profile.company_description,
+        full_name: profile.full_name,
+        profile_photo_url: profile.profile_photo_url,
+        job_title: profile.job_title,
+        professional_bio: profile.professional_bio,
+        contact_phone: profile.contact_phone,
+        office_hours: profile.office_hours,
+        office_address: profile.office_address,
+        office_city: profile.office_city,
+        office_postcode: profile.office_postcode,
+        is_advisor: profile.is_advisor,
+        experts: experts,
+        created_at: profile.created_at,
+        updated_at: profile.updated_at
       };
     } catch (error) {
-      console.error('Error fetching advisor profile for edit:', error);
+      console.error('❌ Error in getAdvisorProfileForEdit:', error);
       throw error;
     }
   }
