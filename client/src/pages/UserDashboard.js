@@ -1314,6 +1314,9 @@ const UserDashboard = () => {
   // Handle advisor profile save
   const handleAdvisorProfileSave = async () => {
     console.log('🔥 SAVE BUTTON CLICKED - Function started!');
+    console.log('👥 Current expertTeamMembers state:', expertTeamMembers);
+    console.log('👥 expertTeamMembers length:', expertTeamMembers?.length);
+    console.log('👥 expertTeamMembers type:', typeof expertTeamMembers);
     
     try {
       console.log('🔍 Starting advisor profile save...');
@@ -1347,7 +1350,17 @@ const UserDashboard = () => {
         }
       });
 
+      // Add expert team members data
+      if (expertTeamMembers && expertTeamMembers.length > 0) {
+        console.log('👥 Adding expert team members to submission:', expertTeamMembers);
+        submitData.append('expertTeam', JSON.stringify(expertTeamMembers));
+      } else {
+        console.log('👥 No expert team members to add');
+        submitData.append('expertTeam', JSON.stringify([]));
+      }
+
       console.log('📤 Sending request with data:', advisorFormData);
+      console.log('👥 Expert team members being sent:', expertTeamMembers);
       
       const response = await fetch(`/api/users/${user.id}/advisor-profile`, {
         method: 'POST',

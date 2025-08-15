@@ -226,10 +226,31 @@ class User {
 
       // Validate and clean expertTeam data
       let processedExpertTeam = [];
-      if (expertTeam && Array.isArray(expertTeam)) {
-        console.log('👥 Processing expert team with', expertTeam.length, 'members');
+      let expertTeamArray = [];
+      
+      // Handle different expertTeam formats
+      if (expertTeam) {
+        if (Array.isArray(expertTeam)) {
+          expertTeamArray = expertTeam;
+          console.log('👥 Expert team is already an array with', expertTeam.length, 'members');
+        } else if (typeof expertTeam === 'string') {
+          try {
+            expertTeamArray = JSON.parse(expertTeam);
+            console.log('👥 Parsed expert team string into array with', expertTeamArray.length, 'members');
+          } catch (error) {
+            console.log('❌ Error parsing expert team string:', error);
+            expertTeamArray = [];
+          }
+        } else if (typeof expertTeam === 'object' && expertTeam !== null) {
+          expertTeamArray = [expertTeam];
+          console.log('👥 Wrapped expert team object into array');
+        }
+      }
+      
+      if (expertTeamArray && Array.isArray(expertTeamArray) && expertTeamArray.length > 0) {
+        console.log('👥 Processing expert team with', expertTeamArray.length, 'members');
         
-        processedExpertTeam = expertTeam
+        processedExpertTeam = expertTeamArray
           .filter(expert => expert && typeof expert === 'object') // Filter out invalid entries
           .map((expert, index) => {
             // Clean and validate each expert
@@ -584,17 +605,45 @@ class User {
       let experts = [];
 
       // First check if expert_team field has data (JSONB field)
-      if (profile.expert_team && profile.expert_team.length > 0) {
+      if (profile.expert_team) {
         console.log('✅ Found expert team data in expert_team JSONB field');
-        experts = profile.expert_team.map(expert => ({
-          id: expert.id,
-          full_name: expert.fullName || expert.full_name || '',
-          job_title: expert.jobTitle || expert.job_title || '',
-          profile_photo_url: expert.profilePhotoUrl || expert.profile_photo_url || '',
-          phone: expert.phone || '',
-          email: expert.email || ''
-        }));
-        console.log(`👥 Parsed ${experts.length} experts from expert_team JSONB field`);
+        console.log('🔍 Expert team data type:', typeof profile.expert_team);
+        console.log('🔍 Expert team data:', profile.expert_team);
+        
+        let expertTeamArray = [];
+        
+        // Handle different data types
+        if (Array.isArray(profile.expert_team)) {
+          expertTeamArray = profile.expert_team;
+        } else if (typeof profile.expert_team === 'string') {
+          try {
+            expertTeamArray = JSON.parse(profile.expert_team);
+          } catch (error) {
+            console.log('❌ Error parsing expert_team string:', error);
+            expertTeamArray = [];
+          }
+        } else if (typeof profile.expert_team === 'object' && profile.expert_team !== null) {
+          expertTeamArray = [profile.expert_team];
+        }
+        
+        // Ensure it's an array
+        if (!Array.isArray(expertTeamArray)) {
+          expertTeamArray = [];
+        }
+        
+        if (expertTeamArray.length > 0) {
+          experts = expertTeamArray.map(expert => ({
+            id: expert.id,
+            full_name: expert.fullName || expert.full_name || '',
+            job_title: expert.jobTitle || expert.job_title || '',
+            profile_photo_url: expert.profilePhotoUrl || expert.profile_photo_url || '',
+            phone: expert.phone || '',
+            email: expert.email || ''
+          }));
+          console.log(`👥 Parsed ${experts.length} experts from expert_team JSONB field`);
+        } else {
+          console.log('👥 No experts found in expert_team field (empty array)');
+        }
       } else {
         // If no data in expert_team field, check advisor_experts table
         console.log('🔍 No data in expert_team field, checking advisor_experts table...');
