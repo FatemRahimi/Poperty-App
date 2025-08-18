@@ -112,58 +112,36 @@ const ContactInformationSection = ({
         </div>
       )}
 
-      {advisorProfileStatus === 'skipped' && (
+            {advisorProfileStatus === 'skipped' && (
         <div>
           <h3 className="section-title">Contact Information</h3>
-          <div className="form-group">
-            <label htmlFor="contactPhone">Contact Phone Number*</label>
-            <input
-              type="tel"
-              id="contactPhone"
-              name="contactPhone"
-              value={formData.contactPhone || ''}
-              onChange={handleChange}
-              placeholder="+44 7xxx xxx xxx"
-              required
-            />
-            <small style={{color: '#10b981'}}>
-              Potential clients will use this number to contact you.
-            </small>
-          </div>
-          
-          <div className="form-group" style={{
-            background: '#f0f9ff',
-            padding: '1rem',
-            borderRadius: '8px',
-            border: '1px solid #bae6fd',
-            marginTop: '1rem'
-          }}>
-            <label htmlFor="propertyConsultant" style={{
-              color: '#0369a1',
-              fontWeight: '600',
-              marginBottom: '0.5rem',
-              display: 'block'
-            }}>
-              👤 Property Consultant Name
-            </label>
-            <input
-              type="text"
-              id="propertyConsultant"
-              name="propertyConsultant"
-              value={formData.propertyConsultant || ''}
-              onChange={handleChange}
-              placeholder="Enter property consultant name"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #7dd3fc',
-                borderRadius: '6px',
-                fontSize: '0.95rem'
-              }}
-            />
-            <small style={{color: '#0369a1', display: 'block', marginTop: '0.5rem'}}>
-              💡 Optional: Name of the property consultant handling this property. This will be displayed in your advisor card.
-            </small>
+          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
+            <div className="form-group">
+              <label htmlFor="contactPhone">Contact Phone Number*</label>
+              <input
+                type="tel"
+                id="contactPhone"
+                name="contactPhone"
+                value={formData.contactPhone || ''}
+                onChange={handleChange}
+                placeholder="+44 7xxx xxx xxx"
+                required
+              />
+ 
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="propertyConsultant">Property Consultant Name*</label>
+              <input
+                type="text"
+                id="propertyConsultant"
+                name="propertyConsultant"
+                value={formData.propertyConsultant || ''}
+                onChange={handleChange}
+                placeholder="Enter property consultant name"
+                required
+              />
+            </div>
           </div>
         </div>
       )}
@@ -195,18 +173,11 @@ const ContactInformationSection = ({
                 <span style={{color: '#374151'}}>{advisorProfile.contact_phone}</span>
               </div>
             </div>
-            <div style={{
-              marginTop: '1rem',
-              padding: '0.75rem',
-              background: '#ecfdf5',
-              borderRadius: '6px',
-              border: '1px solid #a7f3d0'
-            }}>
-              <small style={{color: '#065f46', fontStyle: 'italic'}}>
-                💡 If you want to change this information, please update it from UserDashboard → Advisor Profile tab.
-              </small>
-            </div>
+                      {/* Note about contact information */}
+          <div style={{background: '#fef3c7', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #f59e0b', color: '#92400e'}}>
+            <strong>Note:</strong> Your contact information is retrieved from your advisor profile. If you want to change your contact details, please update them from your User Dashboard → Advisor Profile tab.
           </div>
+        </div>
         </div>
       )}
 
@@ -314,9 +285,6 @@ const ContactInformationSection = ({
                     <p style={{margin: 0, fontStyle: 'italic'}}>
                       ⚠️ No Property Consultants found in your expert team. Please add a Property Consultant to your team in the Advisor Profile section.
                     </p>
-                    <p style={{margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#6b7280'}}>
-                      Available team members: {expertTeam.map(expert => expert.job_title || expert.jobTitle).join(', ')}
-                    </p>
                   </div>
                 )}
               </div>
@@ -329,10 +297,15 @@ const ContactInformationSection = ({
                 color: '#dc2626'
               }}>
                 <p style={{margin: 0, fontStyle: 'italic'}}>
-                  ⚠️ No expert team members found. Please add team members in your Advisor Profile.
+                  ⚠️ No expert team members found. Please add team members in your Advisor Profile section.
                 </p>
               </div>
             )}
+          </div>
+          
+          {/* Note about contact information */}
+          <div style={{background: '#fef3c7', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #f59e0b', color: '#92400e'}}>
+            <strong>Note:</strong> Your contact information is retrieved from your advisor profile. If you want to change your contact details, please update them from your User Dashboard → Advisor Profile tab.
           </div>
         </div>
       )}
@@ -340,23 +313,33 @@ const ContactInformationSection = ({
       {advisorProfileStatus === 'none' && (
         <div>
           <h3 className="section-title">Contact Information</h3>
-          <div className="form-group">
-            <label htmlFor="contactPhone">Contact Phone Number*</label>
-            <input
-              type="tel"
-              id="contactPhone"
-              name="contactPhone"
-              value={formData.contactPhone || ''}
-              onChange={handleChange}
-              placeholder="+44 7xxx xxx xxx"
-              required
-            />
-            <small style={{color: '#10b981'}}>
-              Potential clients will use this number to contact you. 
-              {user?.phone && formData.contactPhone === user.phone && (
-                <span style={{color: '#666', fontStyle: 'italic'}}> (Using your profile phone - you can change this for this property if needed)</span>
-              )}
-            </small>
+          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
+            <div className="form-group">
+              <label htmlFor="contactPhone">Contact Phone Number*</label>
+              <input
+                type="tel"
+                id="contactPhone"
+                name="contactPhone"
+                value={formData.contactPhone || ''}
+                onChange={handleChange}
+                placeholder="+44 7xxx xxx xxx"
+                required
+              />
+ 
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="propertyConsultant">Property Consultant Name*</label>
+              <input
+                type="text"
+                id="propertyConsultant"
+                name="propertyConsultant"
+                value={formData.propertyConsultant || ''}
+                onChange={handleChange}
+                placeholder="Enter property consultant name"
+                required
+              />
+            </div>
           </div>
         </div>
       )}

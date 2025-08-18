@@ -75,43 +75,31 @@ const AddList = () => {
   const [mediaPreviewUrls, setMediaPreviewUrls] = useState([]);
   const [approvedPropertyNotification, setApprovedPropertyNotification] = useState(""); // Notification for approved property edits
   
-  const [formData, setFormData] = useSessionStorage("propertyListingForm", {
-    // Step 1: Basic Property Information
+  const [formData, setFormData] = useState({
+    // Step 1: Basic Information
+    title: "",
+    propertyCategory: "sale",
     propertyType: "",
-    propertySubtype: "",
-    propertyName: "",
-    isPrivate: false,
-    askingPrice: "",
-    unpriced: false,
-    streetAddress: "",
+    addressLine1: "",
+    addressLine2: "",
     city: "",
-    postalCode: "",
-    earnestDepositAmount: "",
-    earnestDepositType: "$",
-    dueDiligencePeriod: "",
-    closingPeriod: "",
-    loiRequired: false,
-    expirationDate: "",
-    reminderDays: "",
+    state: "",
+    zipCode: "",
+    country: "",
     
     // Step 2: Property Details
     bedrooms: "",
     bathrooms: "",
-    receptionRooms: "",
-    floorArea: "",
-    tenure: "",
-    chainFree: false,
-    garden: false,
-    parking: "",
-    furnished: "",
-    epcRating: "",
-    councilTaxBand: "",
-    builtYear: "",
-    nearestStation: "",
-    primarySchoolNearby: "",
-    secondarySchoolNearby: "",
-    interestRate: "",
-    mortgageEstimate: "",
+    squareFeet: "",
+    lotSize: "",
+    yearBuilt: "",
+    price: "",
+    parkingSpaces: "",
+    hasGarage: false,
+    hasPool: false,
+    hasGarden: false,
+    furnished: false,
+    petsAllowed: false,
     
     // Step 3: Additional Information
     description: "",
@@ -278,6 +266,14 @@ const AddList = () => {
       alert("❌ Please provide a contact phone number before submitting.");
       return false;
     }
+    
+    // Only require Property Consultant if user skipped advisor profile or has none
+    if (advisorProfileStatus === 'skipped' || advisorProfileStatus === 'none') {
+      if (!formData.propertyConsultant?.trim()) {
+        alert("❌ Please provide a Property Consultant name before submitting.");
+        return false;
+      }
+    }
     return true;
   };
 
@@ -324,7 +320,6 @@ const AddList = () => {
     if (!formData.bedrooms) missingFields.push("Bedrooms");
     if (!formData.bathrooms) missingFields.push("Bathrooms");
     if (!formData.description?.trim()) missingFields.push("Property Description");
-    if (!formData.contactPhone?.trim()) missingFields.push("Contact Phone Number");
     
     if (missingFields.length > 0) {
       alert(`Please fill in the following required fields: ${missingFields.join(", ")}`);

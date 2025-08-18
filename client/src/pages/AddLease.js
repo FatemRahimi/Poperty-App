@@ -184,7 +184,8 @@ const AddLease = () => {
         
         // Media
         photos: [],
-        contactPhone: propertyData.contact_phone || ""
+        contactPhone: propertyData.contact_phone || "",
+        propertyConsultant: propertyData.property_consultant || "",
       };
     }
     
@@ -373,10 +374,6 @@ const AddLease = () => {
   const validateStep3 = () => {
     if (!formData.description.trim()) {
       alert("❌ Please provide a property description");
-      return false;
-    }
-    if (!formData.contactPhone.trim()) {
-      alert("❌ Please provide a contact phone number");
       return false;
     }
     
