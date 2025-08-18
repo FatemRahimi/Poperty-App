@@ -1595,87 +1595,139 @@ const AddRent = () => {
         return (
           <div className="form-section">
             <h3 className="section-title">Property Features</h3>
-            
-            <div className="property-features">
-              <div className="addrent-feature-item">
+            <div className="property-features" style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1rem',
+              marginBottom: '1rem'
+            }}>
+              <div className="feature-item" style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0.75rem',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                backgroundColor: '#ffffff'
+              }}>
                 <input 
                   type="checkbox" 
                   id="garden" 
                   name="garden" 
                   checked={formData.garden}
                   onChange={handleChange}
-                  className="addrent-checkbox"
                 />
                 <label htmlFor="garden">Garden</label>
               </div>
               
-              <div className="addrent-feature-item">
+              <div className="feature-item" style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0.75rem',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                backgroundColor: '#ffffff'
+              }}>
                 <input 
                   type="checkbox" 
                   id="parking" 
                   name="parking" 
                   checked={formData.parking}
                   onChange={handleChange}
-                  className="addrent-checkbox"
                 />
                 <label htmlFor="parking">Parking</label>
               </div>
               
-              <div className="addrent-feature-item">
+              <div className="feature-item" style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0.75rem',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                backgroundColor: '#ffffff'
+              }}>
                 <input 
                   type="checkbox" 
                   id="balconyTerrace" 
                   name="balconyTerrace" 
                   checked={formData.balconyTerrace}
                   onChange={handleChange}
-                  className="addrent-checkbox"
                 />
                 <label htmlFor="balconyTerrace">Balcony/Terrace</label>
               </div>
               
-              <div className="addrent-feature-item">
+              <div className="feature-item" style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0.75rem',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                backgroundColor: '#ffffff'
+              }}>
                 <input 
                   type="checkbox" 
                   id="petsAllowed" 
                   name="petsAllowed" 
                   checked={formData.petsAllowed}
                   onChange={handleChange}
-                  className="addrent-checkbox"
                 />
                 <label htmlFor="petsAllowed">Pets Allowed</label>
               </div>
 
-              <div className="addrent-feature-item">
+              <div className="feature-item" style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0.75rem',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                backgroundColor: '#ffffff'
+              }}>
                 <input 
                   type="checkbox" 
                   id="studentHousing" 
                   name="studentHousing" 
                   checked={formData.studentHousing}
                   onChange={handleChange}
-                  className="addrent-checkbox"
                 />
                 <label htmlFor="studentHousing">Suitable for Students</label>
               </div>
             </div>
             
-        
-            
             <div className="key-features-section">
-              {/* Property Features */}
+              {/* Key Features */}
               <div className="key-features-category">
                 <h5>Key Features</h5>
                 
                 <div className="key-features-grid">
                   {keyFeaturesOptions.propertyFeatures.map(feature => (
-                    <div key={feature.value} className="key-feature-item">
+                    <div key={feature.value} className="key-feature-item" style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0.75rem',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '6px',
+                      backgroundColor: '#ffffff',
+                      marginBottom: '0.5rem'
+                    }}>
                       <input
                         type="checkbox"
                         id={feature.value}
                         checked={formData.keyFeatures.includes(feature.value)}
                         onChange={(e) => handleKeyFeatureChange(feature.value, e.target.checked)}
-                        className="addrent-checkbox"
+                        style={{
+                          marginRight: '0.75rem',
+                          width: '18px',
+                          height: '18px',
+                          accentColor: '#3b82f6',
+                          cursor: 'pointer'
+                        }}
                       />
-                      <label htmlFor={feature.value}>{feature.label}</label>
+                      <label htmlFor={feature.value} style={{
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        color: '#374151',
+                        fontWeight: '500',
+                        margin: 0
+                      }}>{feature.label}</label>
                     </div>
                   ))}
                 </div>
@@ -1686,15 +1738,35 @@ const AddRent = () => {
                 <h5>Utilities & Bills</h5>
                 <div className="key-features-grid">
                   {keyFeaturesOptions.utilitiesBills.map(feature => (
-                    <div key={feature.value} className="key-feature-item">
+                    <div key={feature.value} className="key-feature-item" style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0.75rem',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '6px',
+                      backgroundColor: '#ffffff',
+                      marginBottom: '0.5rem'
+                    }}>
                       <input
                         type="checkbox"
                         id={feature.value}
                         checked={formData.keyFeatures.includes(feature.value)}
                         onChange={(e) => handleKeyFeatureChange(feature.value, e.target.checked)}
-                        className="addrent-checkbox"
+                        style={{
+                          marginRight: '0.75rem',
+                          width: '18px',
+                          height: '18px',
+                          accentColor: '#3b82f6',
+                          cursor: 'pointer'
+                        }}
                       />
-                      <label htmlFor={feature.value}>{feature.label}</label>
+                      <label htmlFor={feature.value} style={{
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        color: '#374151',
+                        fontWeight: '500',
+                        margin: 0
+                      }}>{feature.label}</label>
                     </div>
                   ))}
                 </div>
@@ -1705,20 +1777,39 @@ const AddRent = () => {
                 <h5>Financial</h5>
                 <div className="key-features-grid">
                   {keyFeaturesOptions.financial.map(feature => (
-                    <div key={feature.value} className="key-feature-item">
+                    <div key={feature.value} className="key-feature-item" style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0.75rem',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '6px',
+                      backgroundColor: '#ffffff',
+                      marginBottom: '0.5rem'
+                    }}>
                       <input
                         type="checkbox"
                         id={feature.value}
                         checked={formData.keyFeatures.includes(feature.value)}
                         onChange={(e) => handleKeyFeatureChange(feature.value, e.target.checked)}
-                        className="addrent-checkbox"
+                        style={{
+                          marginRight: '0.75rem',
+                          width: '18px',
+                          height: '18px',
+                          accentColor: '#3b82f6',
+                          cursor: 'pointer'
+                        }}
                       />
-                      <label htmlFor={feature.value}>{feature.label}</label>
+                      <label htmlFor={feature.value} style={{
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        color: '#374151',
+                        fontWeight: '500',
+                        margin: 0
+                      }}>{feature.label}</label>
                     </div>
                   ))}
                 </div>
               </div>
-              
             </div>
           </div>
         );

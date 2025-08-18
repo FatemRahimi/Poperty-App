@@ -174,8 +174,8 @@ const ContactInformationSection = ({
               </div>
             </div>
                       {/* Note about contact information */}
-          <div style={{background: '#fef3c7', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #f59e0b', color: '#92400e'}}>
-            <strong>Note:</strong> Your contact information is retrieved from your advisor profile. If you want to change your contact details, please update them from your User Dashboard → Advisor Profile tab.
+          <div style={{background: '#f0fdf4', padding: '0.75rem', borderRadius: '6px', marginTop: '1rem', border: '1px solid #bbf7d0', color: '#166534', fontSize: '0.875rem'}}>
+            <strong>Note:</strong> To update your contact information, please visit your User Dashboard → Advisor Profile tab.
           </div>
         </div>
         </div>
@@ -192,8 +192,8 @@ const ContactInformationSection = ({
             marginBottom: '1rem',
             border: '1px solid #e5e7eb'
           }}>
-            <p style={{color: '#374151', marginBottom: '1.5rem', fontSize: '0.95rem'}}>
-              All expert team members are shown in your company dashboard, but we can only show the Property Consultant's contact information in your advisor card.
+            <p style={{color: 'rgb(16, 185, 129)', marginBottom: '1.5rem', fontSize: '0.95rem'}}>
+              All expert team members are shown in your company dashboard, but we can only show one Property Consultant's contact information in your advisor card.
             </p>
             
             {expertTeam && expertTeam.length > 0 ? (
@@ -304,8 +304,8 @@ const ContactInformationSection = ({
           </div>
           
           {/* Note about contact information */}
-          <div style={{background: '#fef3c7', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #f59e0b', color: '#92400e'}}>
-            <strong>Note:</strong> Your contact information is retrieved from your advisor profile. If you want to change your contact details, please update them from your User Dashboard → Advisor Profile tab.
+          <div style={{background: '#fef3c7', padding: '0.75rem', borderRadius: '6px', marginTop: '1rem', border: '1px solid #e2e8f0', color: '#475569', fontSize: '0.875rem'}}>
+            <strong>Note:</strong> To update your contact information, please visit your User Dashboard → Advisor Profile tab.
           </div>
         </div>
       )}
