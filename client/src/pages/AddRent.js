@@ -10,6 +10,7 @@ import "../styles/AddList.css"; // reusing the AddList CSS
 import "./AddRent.css"; // AddRent specific styles
 import useSessionStorage from "../Utils/useSessionStorage";
 import { useAuth } from "../context/AuthContext";
+import ContactInformationSection from "../components/ContactInformationSection";
 
 // Property type options
 const propertyTypeOptions = [
@@ -341,6 +342,9 @@ const AddRent = () => {
         description: propertyData.description || "",
         photos: [],
         contactPhone: propertyData.contact_phone || "",
+        contactEmail: propertyData.contact_email || "",
+        contactName: propertyData.contact_name || "",
+        propertyConsultant: propertyData.property_consultant || "",
         
         // Advisor Profile Fields
         companyName: "",
@@ -406,7 +410,10 @@ const AddRent = () => {
       
       description: "",
       photos: [],
-      contactPhone: user?.phone || "", // Auto-populate with user's profile phone
+      contactPhone: user?.phone || "",
+      contactEmail: user?.email || "",
+      contactName: user ? `${user.first_name} ${user.last_name}` : "",
+      propertyConsultant: "", // Auto-populate with user's profile phone
       
       // Advisor Profile Fields
       companyName: "",
@@ -497,6 +504,8 @@ const AddRent = () => {
       }
     };
   }, [editMode, propertyId]);
+
+
 
   const handleChange = (e) => {
     const { name, type, value, checked } = e.target;
@@ -1053,10 +1062,12 @@ const AddRent = () => {
         // Contact information
         contact_phone: formData.contactPhone,
         contactPhone: formData.contactPhone,
-        contact_email: user.email,
-        contactEmail: user.email,
-        contact_name: `${user.first_name} ${user.last_name}`,
-        contactName: `${user.first_name} ${user.last_name}`,
+        contact_email: formData.contactEmail || user.email,
+        contactEmail: formData.contactEmail || user.email,
+        contact_name: formData.contactName || `${user.first_name} ${user.last_name}`,
+        contactName: formData.contactName || `${user.first_name} ${user.last_name}`,
+        property_consultant: formData.propertyConsultant || '',
+        propertyConsultant: formData.propertyConsultant || '',
         
         // Property features
         has_garden: formData.garden,
@@ -1944,25 +1955,11 @@ const AddRent = () => {
               
             </div>
             
-            <h3 className="section-title">Contact Information</h3>
-            <div className="form-group">
-              <label htmlFor="contactPhone">Contact Phone Number*</label>
-              <input
-                type="tel"
-                id="contactPhone"
-                name="contactPhone"
-                value={formData.contactPhone}
-                onChange={handleChange}
-                placeholder="+44 7xxx xxx xxx"
-                required
-              />
-              <small style={{color: '#10b981'}}>
-                Potential tenants will use this number to contact you about viewings. 
-                {user?.phone && formData.contactPhone === user.phone && (
-                  <span style={{color: '#666', fontStyle: 'italic'}}> (Using your profile phone - you can change this for this property if needed)</span>
-                )}
-              </small>
-            </div>
+            <ContactInformationSection 
+              formData={formData}
+              setFormData={setFormData}
+              handleChange={handleChange}
+            />
           </div>
         );
       
