@@ -1,7 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { updateProfile, checkAdvisorProfile, saveAdvisorProfile, skipAdvisorProfile, getAdvisorProfileForEdit } = require('../controllers/userController');
+const { 
+  updateProfile, 
+  checkAdvisorProfile, 
+  saveAdvisorProfile, 
+  skipAdvisorProfile, 
+  getAdvisorProfileForEdit,
+  getAdvisorProfileDetails,
+  addExpertTeamMember, 
+  updateExpertTeamMember, 
+  deleteExpertTeamMember 
+} = require('../controllers/userController');
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -91,6 +101,8 @@ router.put('/profile', authenticateJWT, updateProfile);
 
 // Advisor profile routes
 router.get('/:userId/advisor-profile', checkAdvisorProfile); // No authentication required
+// Get advisor profile details for public viewing (PropertyAdvisorCard)
+router.get('/:userId/advisor-profile/details', getAdvisorProfileDetails); // No authentication required
 // Get advisor profile for editing
 router.get('/:userId/advisor-profile/edit', authenticateJWT, getAdvisorProfileForEdit);
 

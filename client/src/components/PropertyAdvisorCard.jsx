@@ -1,184 +1,275 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './PropertyAdvisorCard.css';
 
-const PropertyAdvisorCard = ({ advisor, fallbackContact }) => {
-  // Helper function to get first defined value from multiple possible field names
-  const getFirstDefined = (obj, ...fieldNames) => {
-    for (const fieldName of fieldNames) {
-      if (obj && obj[fieldName] && obj[fieldName].trim() !== '') {
-        return obj[fieldName];
+const PropertyAdvisorCard = ({ userId, fallbackContact }) => {
+  const [advisorData, setAdvisorData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch advisor profile data
+  useEffect(() => {
+    const fetchAdvisorProfile = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
       }
-    }
-    return null;
-  };
 
-  // Helper function to convert to title case
-  const toTitleCase = (str) => {
-    if (!str) return '';
-    return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-  };
-
-  // Helper function to convert to sentence case
-  const toSentenceCase = (str) => {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-  };
-
-  // Helper function to limit words
-  const limitWords = (text, limit = 20) => {
-    if (!text) return '';
-    const words = text.split(' ');
-    if (words.length <= limit) return text;
-    return words.slice(0, limit).join(' ') + '...';
-  };
-
-  // If no advisor data, create a minimal card using fallback contact
-  if (!advisor && fallbackContact) {
-    const minimalAdvisor = {
-      advisor_type: 'person',
-      full_name: fallbackContact.name || `${fallbackContact.firstName || ''} ${fallbackContact.lastName || ''}`.trim(),
-      contact_email: fallbackContact.email,
-      contact_phone: fallbackContact.phone,
-      job_title: 'Property Owner'
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/users/${userId}/advisor-profile/details`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.advisorProfile) {
+            setAdvisorData(data.advisorProfile);
+          } else {
+            setError('No advisor profile found');
+          }
+        } else {
+          setError('Failed to fetch advisor profile');
+        }
+      } catch (err) {
+        console.error('Error fetching advisor profile:', err);
+        setError('Network error');
+      } finally {
+        setLoading(false);
+      }
     };
-    advisor = minimalAdvisor;
+
+    fetchAdvisorProfile();
+  }, [userId]);
+
+  // Helper function to find property consultant from expert team
+  const findPropertyConsultant = (experts) => {
+    if (!experts || !Array.isArray(experts)) return null;
+    
+    return experts.find(expert => 
+      expert.job_title && 
+      expert.job_title.toLowerCase().includes('property consultant')
+    ) || experts[0]; // Fallback to first expert if no property consultant found
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="property-advisor-card-wrapper">
+        <div className="pac-loading">
+          <div className="pac-spinner"></div>
+          <p>Loading advisor information...</p>
+        </div>
+      </div>
+    );
   }
 
-  // If still no advisor data, don't render anything
-  if (!advisor) {
-    return null;
-  }
-
-  const isCompany = advisor.advisor_type === 'company';
-
-  // Get contact information with fallbacks
-  const email = getFirstDefined(advisor, 'contact_email', 'email', 'contactEmail') || 
-                getFirstDefined(advisor, 'account_email') || 
-                (fallbackContact && fallbackContact.email);
-  
-  const phone = getFirstDefined(advisor, 'contact_phone', 'phone', 'contactPhone') || 
-                getFirstDefined(advisor, 'account_phone') || 
-                (fallbackContact && fallbackContact.phone);
-
-  // Get company information
-  const companyName = getFirstDefined(advisor, 'company_name', 'companyName');
-  const companyLogo = getFirstDefined(advisor, 'company_logo_url', 'companyLogoUrl');
-  const companyWebsite = getFirstDefined(advisor, 'company_website', 'companyWebsite');
-  const companyDescription = getFirstDefined(advisor, 'company_description', 'companyDescription');
-  
-  // Get office information
-  const officeAddress = getFirstDefined(advisor, 'office_address', 'officeAddress');
-  const officeHours = getFirstDefined(advisor, 'office_hours', 'officeHours');
-  const officeCity = getFirstDefined(advisor, 'office_city', 'officeCity');
-  const officePostcode = getFirstDefined(advisor, 'office_postcode', 'officePostcode');
-
-  // Get personal information
-  const fullName = getFirstDefined(advisor, 'full_name', 'fullName');
-  const jobTitle = getFirstDefined(advisor, 'job_title', 'jobTitle');
-  const profilePhoto = getFirstDefined(advisor, 'profile_photo_url', 'profilePhotoUrl');
-  const professionalBio = getFirstDefined(advisor, 'professional_bio', 'professionalBio');
-
-  // Get expert team information
-  const experts = advisor.experts || advisor.expert_team || [];
-
-  return (
-    <div className="property-advisor-card">
-      {isCompany ? (
-        // Company Layout
-        <div className="advisor-card-company">
-          <div className="advisor-header">
-            <div className="company-info">
-              {companyLogo && (
-                <div className="company-logo">
-                  <img src={companyLogo} alt={`${companyName} logo`} />
-                </div>
-              )}
-              <div className="company-details">
-                <h3 className="company-name">{toTitleCase(companyName)}</h3>
-                <p className="company-tagline">Trust to this company</p>
-                {companyWebsite && (
-                  <a href={companyWebsite} target="_blank" rel="noopener noreferrer" className="company-website">
-                    Visit Website
-                  </a>
-                )}
-              </div>
-            </div>
+  // No advisor data - show fallback if available
+  if (!advisorData && fallbackContact) {
+    return (
+      <div className="property-advisor-card-wrapper">
+        <div className="pac-fallback-card">
+          <div className="pac-fallback-header">
+            <h3 className="pac-fallback-title">Property Contact</h3>
           </div>
-
-          <div className="advisor-content">
-            <div className="advisor-section">
-              <h4 className="section-title">Our Property Team</h4>
-              <div className="advisor-profile">
-                {profilePhoto ? (
-                  <img src={profilePhoto} alt={fullName} className="advisor-photo" />
-                ) : (
-                  <div className="advisor-photo-placeholder">
-                    <i className="fas fa-user"></i>
-                  </div>
-                )}
-                <div className="advisor-info">
-                  <h5 className="advisor-name">{toTitleCase(fullName)}</h5>
-                  <p className="advisor-role">{toSentenceCase(jobTitle)}</p>
-                  {email && <p className="advisor-email">{email}</p>}
-                  {phone && <p className="advisor-phone">{phone}</p>}
-                </div>
-              </div>
-            </div>
-
-            <div className="office-section">
-              <h4 className="section-title">Contact Information</h4>
-              <div className="office-details">
-                {officeAddress && <p className="office-address">{officeAddress}</p>}
-                {officeHours && <p className="office-hours">{officeHours}</p>}
-                {(officeCity || officePostcode) && (
-                  <p className="office-location">
-                    {officeCity && officeCity}
-                    {officeCity && officePostcode && ', '}
-                    {officePostcode && officePostcode}
-                  </p>
-                )}
-              </div>
+          <div className="pac-fallback-content">
+            <div className="pac-fallback-info">
+              <h4 className="pac-fallback-name">
+                {fallbackContact.name || `${fallbackContact.firstName || ''} ${fallbackContact.lastName || ''}`.trim()}
+              </h4>
+              <p className="pac-fallback-role">Property Owner</p>
+              {fallbackContact.email && (
+                <p className="pac-fallback-email">📧 {fallbackContact.email}</p>
+              )}
+              {fallbackContact.phone && (
+                <p className="pac-fallback-phone">📞 {fallbackContact.phone}</p>
+              )}
             </div>
           </div>
         </div>
-      ) : (
-        // Person Layout
-        <div className="advisor-card-person">
-          <div className="advisor-header">
-            <div className="advisor-profile">
-              {profilePhoto ? (
-                <img src={profilePhoto} alt={fullName} className="advisor-photo" />
+      </div>
+    );
+  }
+
+  // No data at all
+  if (!advisorData) {
+    return null;
+  }
+
+  const isCompany = advisorData.advisor_type === 'company';
+  
+  if (isCompany) {
+    // COMPANY LAYOUT
+    const propertyConsultant = findPropertyConsultant(advisorData.experts);
+    
+    return (
+      <div className="property-advisor-card-wrapper">
+        <div className="pac-company-card">
+          {/* Company Header Section */}
+          <div className="pac-company-header">
+            <div className="pac-company-main">
+              {advisorData.company_logo_url && (
+                <div className="pac-company-logo">
+                  <img 
+                    src={advisorData.company_logo_url} 
+                    alt={`${advisorData.company_name} logo`}
+                    className="pac-logo-image"
+                  />
+                </div>
+              )}
+              <div className="pac-company-info">
+                <h2 className="pac-company-name">{advisorData.company_name}</h2>
+                <p className="pac-company-tagline">Trust to our experts</p>
+                {advisorData.company_website && (
+                  <a 
+                    href={advisorData.company_website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="pac-company-website"
+                  >
+                    🌐 Visit Website
+                  </a>
+                )}
+                {advisorData.company_email && (
+                  <p className="pac-company-email">📧 {advisorData.company_email}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Property Consultant Section */}
+          {propertyConsultant && (
+            <div className="pac-consultant-section">
+              <h3 className="pac-section-title">Property Consultant</h3>
+              <div className="pac-consultant-card">
+                <div className="pac-consultant-photo">
+                  {propertyConsultant.profile_photo_url ? (
+                    <img 
+                      src={propertyConsultant.profile_photo_url} 
+                      alt={propertyConsultant.full_name}
+                      className="pac-consultant-image"
+                    />
+                  ) : (
+                    <div className="pac-consultant-placeholder">
+                      <i className="fas fa-user"></i>
+                    </div>
+                  )}
+                </div>
+                <div className="pac-consultant-details">
+                  <h4 className="pac-consultant-name">{propertyConsultant.full_name}</h4>
+                  <p className="pac-consultant-role">Property Consultant</p>
+                  {propertyConsultant.email && (
+                    <p className="pac-consultant-email">📧 {propertyConsultant.email}</p>
+                  )}
+                  {propertyConsultant.phone && (
+                    <p className="pac-consultant-phone">📞 {propertyConsultant.phone}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Office Information Section */}
+          <div className="pac-office-section">
+            <h3 className="pac-section-title">Office Information</h3>
+            <div className="pac-office-details">
+              {advisorData.office_hours && (
+                <div className="pac-office-item">
+                  <span className="pac-office-label">Office Hours:</span>
+                  <span className="pac-office-value">{advisorData.office_hours}</span>
+                </div>
+              )}
+              {(advisorData.office_address || advisorData.office_city || advisorData.office_postcode) && (
+                <div className="pac-office-item">
+                  <span className="pac-office-label">Address:</span>
+                  <span className="pac-office-value">
+                    {advisorData.office_address && advisorData.office_address}
+                    {advisorData.office_address && (advisorData.office_city || advisorData.office_postcode) && ', '}
+                    {advisorData.office_city && advisorData.office_city}
+                    {advisorData.office_city && advisorData.office_postcode && ' '}
+                    {advisorData.office_postcode && advisorData.office_postcode}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  } else {
+    // PERSON LAYOUT
+    return (
+      <div className="property-advisor-card-wrapper">
+        <div className="pac-person-card">
+          {/* Person Header Section */}
+          <div className="pac-person-header">
+            <div className="pac-person-photo">
+              {advisorData.profile_photo_url ? (
+                <img 
+                  src={advisorData.profile_photo_url} 
+                  alt={advisorData.full_name}
+                  className="pac-person-image"
+                />
               ) : (
-                <div className="advisor-photo-placeholder">
+                <div className="pac-person-placeholder">
                   <i className="fas fa-user"></i>
                 </div>
               )}
-              <div className="advisor-info">
-                <h3 className="advisor-name">{toTitleCase(fullName)}</h3>
-                <p className="advisor-role">{toSentenceCase(jobTitle)}</p>
-              </div>
+            </div>
+            <div className="pac-person-info">
+              <h2 className="pac-person-name">{advisorData.full_name}</h2>
+              <p className="pac-person-role">{advisorData.job_title}</p>
             </div>
           </div>
 
-          <div className="advisor-content">
-            {professionalBio && (
-              <div className="advisor-section">
-                <p className="advisor-bio">{limitWords(professionalBio, 30)}</p>
-              </div>
-            )}
+          {/* Professional Bio Section */}
+          {advisorData.professional_bio && (
+            <div className="pac-bio-section">
+              <h3 className="pac-section-title">About</h3>
+              <p className="pac-bio-text">{advisorData.professional_bio}</p>
+            </div>
+          )}
 
-            <div className="contact-section">
-              <h4 className="section-title">Contact Information</h4>
-              <div className="contact-details">
-                {email && <p className="contact-email">{email}</p>}
-                {phone && <p className="contact-phone">{phone}</p>}
-              </div>
+          {/* Contact Information Section */}
+          <div className="pac-contact-section">
+            <h3 className="pac-section-title">Contact Information</h3>
+            <div className="pac-contact-details">
+              {advisorData.contact_phone && (
+                <p className="pac-contact-phone">📞 {advisorData.contact_phone}</p>
+              )}
+              {(advisorData.contact_email || advisorData.account_email) && (
+                <p className="pac-contact-email">
+                  📧 {advisorData.contact_email || advisorData.account_email}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Office Information Section */}
+          <div className="pac-office-section">
+            <h3 className="pac-section-title">Office Information</h3>
+            <div className="pac-office-details">
+              {advisorData.office_hours && (
+                <div className="pac-office-item">
+                  <span className="pac-office-label">Office Hours:</span>
+                  <span className="pac-office-value">{advisorData.office_hours}</span>
+                </div>
+              )}
+              {(advisorData.office_address || advisorData.office_city || advisorData.office_postcode) && (
+                <div className="pac-office-item">
+                  <span className="pac-office-label">Address:</span>
+                  <span className="pac-office-value">
+                    {advisorData.office_address && advisorData.office_address}
+                    {advisorData.office_address && (advisorData.office_city || advisorData.office_postcode) && ', '}
+                    {advisorData.office_city && advisorData.office_city}
+                    {advisorData.office_city && advisorData.office_postcode && ' '}
+                    {advisorData.office_postcode && advisorData.office_postcode}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  }
 };
 
 export default PropertyAdvisorCard; 

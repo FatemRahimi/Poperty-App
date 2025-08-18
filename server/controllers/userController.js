@@ -290,12 +290,38 @@ const deleteExpertTeamMember = async (req, res) => {
   }
 };
 
+// Get advisor profile details for public viewing
+const getAdvisorProfileDetails = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+
+    const profile = await User.getAdvisorProfileDetailsByUserId(userId);
+    
+    if (!profile) {
+      return res.json({ 
+        success: false, 
+        message: 'No advisor profile found for this user',
+        advisorProfile: null 
+      });
+    }
+
+    return res.json({ success: true, advisorProfile: profile });
+  } catch (error) {
+    console.error('❌ Get advisor profile details error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch advisor profile details' });
+  }
+};
+
 module.exports = {
   updateProfile,
   checkAdvisorProfile,
   saveAdvisorProfile,
   skipAdvisorProfile,
   getAdvisorProfileForEdit,
+  getAdvisorProfileDetails,
   addExpertTeamMember,
   updateExpertTeamMember,
   deleteExpertTeamMember

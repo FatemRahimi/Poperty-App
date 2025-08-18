@@ -20,31 +20,6 @@ const PropertyView = () => {
     }
   }, [property]);
 
-  // Fetch advisor information for the property owner
-  const [advisorInfo, setAdvisorInfo] = useState(null);
-
-  useEffect(() => {
-    if (property && property.user_id) {
-      fetchAdvisorInfo(property.user_id);
-    }
-  }, [property]);
-
-  const fetchAdvisorInfo = async (userId) => {
-    try {
-      const response = await fetch(`/api/users/${userId}/advisor-profile/details`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.advisorProfile) {
-          setAdvisorInfo(data.advisorProfile);
-        } else {
-          console.log('No advisor profile found for user:', userId);
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching advisor info:', err);
-    }
-  };
-
   const initializeMap = () => {
     const postcode = property.zip_code || property.postcode;
     if (!postcode) return;
@@ -1189,7 +1164,7 @@ const PropertyView = () => {
 
           {/* Property Advisor Card */}
           <PropertyAdvisorCard 
-            advisor={advisorInfo} 
+            userId={property?.user_id} 
             fallbackContact={{
               name: property?.contact_name,
               firstName: property?.first_name,
