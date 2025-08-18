@@ -1,268 +1,410 @@
-.property-advisor-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  padding: 24px;
-  color: white;
-  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+/* PropertyAdvisorCard CSS - PAC prefix to avoid interference */
+
+/* Wrapper and Common Styles */
+.property-advisor-card-wrapper {
+  width: 100%;
+  max-width: 400px;
   margin: 20px 0;
-  position: relative;
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Loading State */
+.pac-loading {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.pac-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: pac-spin 1s linear infinite;
+  margin: 0 auto 15px auto;
+}
+
+@keyframes pac-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.pac-loading p {
+  color: #64748b;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Fallback Card */
+.pac-fallback-card {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border: 2px solid #cbd5e1;
+  border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-.property-advisor-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  pointer-events: none;
+.pac-fallback-header {
+  background: #475569;
+  color: white;
+  padding: 15px 20px;
+  text-align: center;
 }
 
-/* Company Layout Styles */
-.company-layout .advisor-header {
+.pac-fallback-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.pac-fallback-content {
+  padding: 20px;
+}
+
+.pac-fallback-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.pac-fallback-role {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 15px 0;
+  font-style: italic;
+}
+
+.pac-fallback-email,
+.pac-fallback-phone {
+  font-size: 14px;
+  color: #475569;
+  margin: 8px 0;
+}
+
+/* Company Card Layout */
+.pac-company-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #e2e8f0;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pac-company-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Company Header */
+.pac-company-header {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  color: white;
+  padding: 25px;
+}
+
+.pac-company-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.pac-company-logo {
+  flex-shrink: 0;
+}
+
+.pac-logo-image {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  background: white;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.pac-company-info {
+  flex: 1;
+}
+
+.pac-company-name {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.025em;
+}
+
+.pac-company-tagline {
+  font-size: 14px;
+  color: #bfdbfe;
+  margin: 0 0 12px 0;
+  font-style: italic;
+}
+
+.pac-company-website {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  transition: background 0.2s ease;
+}
+
+.pac-company-website:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  text-decoration: none;
+}
+
+.pac-company-email {
+  font-size: 13px;
+  color: #dbeafe;
+  margin: 6px 0 0 0;
+}
+
+/* Property Consultant Section */
+.pac-consultant-section {
+  padding: 25px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.pac-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.pac-consultant-card {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
 }
 
-.company-logo {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.pac-consultant-photo {
   flex-shrink: 0;
 }
 
-.company-logo img {
-  width: 100%;
-  height: 100%;
+.pac-consultant-image {
+  width: 56px;
+  height: 56px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 50%;
+  border: 3px solid #3b82f6;
 }
 
-.company-logo i {
+.pac-consultant-placeholder {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #94a3b8;
+}
+
+.pac-consultant-placeholder i {
   font-size: 24px;
-  color: rgba(255, 255, 255, 0.8);
+  color: #64748b;
 }
 
-.company-info {
+.pac-consultant-details {
   flex: 1;
 }
 
-.company-name {
-  font-size: 1.5rem;
+.pac-consultant-name {
+  font-size: 16px;
   font-weight: 700;
+  color: #1e293b;
   margin: 0 0 4px 0;
-  color: white;
 }
 
-.company-tagline {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.9);
+.pac-consultant-role {
+  font-size: 13px;
+  color: #3b82f6;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pac-consultant-email,
+.pac-consultant-phone {
+  font-size: 12px;
+  color: #64748b;
+  margin: 4px 0;
+}
+
+/* Office Section */
+.pac-office-section {
+  padding: 25px;
+}
+
+.pac-office-details {
+  space-y: 12px;
+}
+
+.pac-office-item {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.pac-office-label {
+  font-weight: 600;
+  color: #374151;
+  min-width: 100px;
+  font-size: 14px;
+}
+
+.pac-office-value {
+  color: #64748b;
+  font-size: 14px;
+  flex: 1;
+}
+
+/* Person Card Layout */
+.pac-person-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #e2e8f0;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pac-person-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Person Header */
+.pac-person-header {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: white;
+  padding: 25px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 20px;
 }
 
-.visit-website {
-  color: #ffd700;
-  text-decoration: none;
-  font-weight: 600;
-  transition: color 0.3s ease;
+.pac-person-photo {
+  flex-shrink: 0;
 }
 
-.visit-website:hover {
-  color: #fff;
-  text-decoration: underline;
+.pac-person-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* Person Layout Styles */
-.person-layout .advisor-header {
-  text-align: center;
-  margin-bottom: 20px;
+.pac-person-placeholder {
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid white;
 }
 
-.person-layout .advisor-name {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin: 0 0 8px 0;
+.pac-person-placeholder i {
+  font-size: 32px;
   color: white;
 }
 
-.advisor-role {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.9);
+.pac-person-info {
+  flex: 1;
+}
+
+.pac-person-name {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.025em;
+}
+
+.pac-person-role {
+  font-size: 14px;
+  color: #a7f3d0;
+  margin: 0;
   font-weight: 500;
 }
 
-/* Content Styles */
-.advisor-content {
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
+/* Bio Section */
+.pac-bio-section {
+  padding: 25px;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.advisor-photo {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+.pac-bio-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 0;
 }
 
-.advisor-photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
+/* Contact Section */
+.pac-contact-section {
+  padding: 25px;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.advisor-photo i {
-  font-size: 32px;
-  color: rgba(255, 255, 255, 0.8);
+.pac-contact-details {
+  space-y: 8px;
 }
 
-.advisor-info {
-  flex: 1;
-}
-
-.advisor-name {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin: 0 0 4px 0;
-  color: white;
-}
-
-.advisor-bio {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.9);
-  line-height: 1.5;
-  margin-bottom: 16px;
-}
-
-.advisor-contact {
-  margin-bottom: 16px;
-}
-
-.contact-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-}
-
-.contact-item i {
-  width: 16px;
-  color: #ffd700;
-}
-
-.contact-item span {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* Office Details (Company Only) */
-.office-details {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 12px;
-  margin-top: 12px;
-}
-
-.office-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-  font-size: 0.85rem;
-}
-
-.office-item:last-child {
-  margin-bottom: 0;
-}
-
-.office-item i {
-  width: 14px;
-  color: #ffd700;
-}
-
-.office-item span {
-  color: rgba(255, 255, 255, 0.9);
+.pac-contact-email,
+.pac-contact-phone {
+  font-size: 14px;
+  color: #4b5563;
+  margin: 8px 0;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .property-advisor-card {
-    padding: 20px;
-    margin: 16px 0;
+  .property-advisor-card-wrapper {
+    max-width: 100%;
   }
-
-  .company-layout .advisor-header {
+  
+  .pac-company-main,
+  .pac-person-header {
     flex-direction: column;
     text-align: center;
-    gap: 12px;
+    gap: 15px;
   }
-
-  .company-logo {
-    width: 40px;
-    height: 40px;
-  }
-
-  .company-name {
-    font-size: 1.3rem;
-  }
-
-  .advisor-content {
+  
+  .pac-consultant-card {
     flex-direction: column;
-    align-items: center;
     text-align: center;
-    gap: 16px;
   }
-
-  .advisor-photo {
-    width: 70px;
-    height: 70px;
+  
+  .pac-office-item {
+    flex-direction: column;
+    gap: 4px;
   }
-
-  .advisor-photo i {
-    font-size: 28px;
-  }
-
-  .contact-item,
-  .office-item {
-    justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .property-advisor-card {
-    padding: 16px;
-  }
-
-  .company-name {
-    font-size: 1.1rem;
-  }
-
-  .advisor-name {
-    font-size: 1rem;
-  }
-
-  .advisor-photo {
-    width: 60px;
-    height: 60px;
-  }
-
-  .advisor-photo i {
-    font-size: 24px;
+  
+  .pac-office-label {
+    min-width: auto;
+    font-weight: 700;
   }
 } 
