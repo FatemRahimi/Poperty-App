@@ -965,7 +965,6 @@ const AddRent = () => {
         missingFields.push(`Property Description (minimum 80 words required, currently ${wordCount} words)`);
       }
     }
-    if (!formData.contactPhone?.trim()) missingFields.push("Contact Phone Number");
     
     // These fields are required for new properties but optional for edits (older properties might not have them)
     if (!editMode) {
@@ -1235,7 +1234,7 @@ const AddRent = () => {
       // Submit advisor profile if user has advisor data
       if (formData.isAdvisor && (formData.companyName || formData.fullName)) {
         try {
-          console.log('🏢 Submitting advisor profile data...');
+          console.log('�� Submitting advisor profile data...');
           
           const advisorData = {
             companyName: formData.companyName,

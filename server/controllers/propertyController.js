@@ -219,6 +219,7 @@ const submitProperty = async (req, res) => {
     const contact_name_mapped = contact_name || contactName;
     const contact_phone_mapped = contact_phone || contactPhone;
     const contact_email_mapped = contact_email || contactEmail || req.user?.email;
+    const property_consultant = req.body.property_consultant || req.body.propertyConsultant || null;
 
     // NEW FIELDS: EPC Rating
     const epc_rating_mapped = epc_rating || epcRating || '';
@@ -367,7 +368,7 @@ const submitProperty = async (req, res) => {
       price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
       parking_spaces || 0, has_garage || false, has_pool || false, 
       has_garden || false, furnished_mapped || false, pets_allowed || false,
-      student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, slug,
+      student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, property_consultant || null, slug,
       latitude, longitude,
       // NEW FIELDS
       epc_rating_mapped, JSON.stringify(key_features_mapped),
@@ -385,15 +386,15 @@ const submitProperty = async (req, res) => {
         bedrooms, bathrooms, square_feet, lot_size, year_built,
         price, weekly_rent, monthly_rent, lease_term, deposit_amount,
         parking_spaces, has_garage, has_pool, has_garden, furnished, pets_allowed,
-        student_housing, availability_date, contact_name, contact_phone, contact_email, slug,
+        student_housing, availability_date, contact_name, contact_phone, contact_email, property_consultant, slug,
         latitude, longitude,
         epc_rating, key_features,
         layout_file_name, layout_file_url, apartment_size, floor_number,
         council_tax_band, council_tax_status
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-        $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35,
-        $36, $37, $38, $39, $40, $41, $42, $43, $44
+        $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36,
+        $37, $38, $39, $40, $41, $42, $43, $44, $45
       ) RETURNING *`,
       valuesArray
     );
@@ -1234,6 +1235,7 @@ const updateProperty = async (req, res) => {
     const contact_name_mapped = contact_name || contactName || existingProperty.contact_name;
     const contact_phone_mapped = contact_phone || contactPhone || existingProperty.contact_phone;
     const contact_email_mapped = contact_email || contactEmail || existingProperty.contact_email;
+    const property_consultant = req.body.property_consultant || req.body.propertyConsultant || existingProperty.property_consultant;
 
     // NEW FIELDS: EPC Rating
     const epc_rating_mapped = epc_rating || epcRating || '';
@@ -1349,13 +1351,13 @@ const updateProperty = async (req, res) => {
         bedrooms = $12, bathrooms = $13, square_feet = $14, lot_size = $15, year_built = $16,
         price = $17, weekly_rent = $18, monthly_rent = $19, lease_term = $20, deposit_amount = $21,
         parking_spaces = $22, has_garage = $23, has_pool = $24, has_garden = $25, furnished = $26, pets_allowed = $27,
-        student_housing = $28, availability_date = $29, contact_name = $30, contact_phone = $31, contact_email = $32,
-        epc_rating = $33, key_features = $34,
-        layout_file_name = $35, layout_file_url = $36, apartment_size = $37, floor_number = $38,
+        student_housing = $28, availability_date = $29, contact_name = $30, contact_phone = $31, contact_email = $32, property_consultant = $33,
+        epc_rating = $34, key_features = $35,
+        layout_file_name = $36, layout_file_url = $37, apartment_size = $38, floor_number = $39,
         updated_at = CURRENT_TIMESTAMP, status = 'pending',
-        latitude = $39, longitude = $40,
-        council_tax_band = $41, council_tax_status = $42
-       WHERE id = $43 AND user_id = $44
+        latitude = $40, longitude = $41,
+        council_tax_band = $42, council_tax_status = $43
+       WHERE id = $44 AND user_id = $45
        RETURNING *`,
       [
         title, description || existingProperty.description, category_mapped, property_type_mapped, property_category || existingProperty.property_category,
@@ -1364,7 +1366,7 @@ const updateProperty = async (req, res) => {
         price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
         parking_spaces || existingProperty.parking_spaces, has_garage || existingProperty.has_garage, has_pool || existingProperty.has_pool, 
         has_garden || existingProperty.has_garden, furnished_mapped, pets_allowed || existingProperty.pets_allowed,
-        student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped,
+        student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, property_consultant || existingProperty.property_consultant,
         epc_rating_mapped, JSON.stringify(key_features_mapped),
         layout_file_name_mapped, layout_file_url_mapped, apartment_size_mapped, floor_number_mapped,
         latitude, longitude,
