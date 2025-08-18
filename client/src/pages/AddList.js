@@ -9,6 +9,7 @@ import "../styles/AddList.css"; // your custom CSS file
 import useSessionStorage from "../Utils/useSessionStorage";
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 import { useAuth } from "../context/AuthContext";
+import ContactInformationSection from "../components/ContactInformationSection";
 
 // Property Type Options
 const propertyTypeOptions = [
@@ -117,6 +118,7 @@ const AddList = () => {
     features: [],
     mediaFiles: [],
     contactPhone: user?.phone || "", // Auto-populate with user's profile phone
+    propertyConsultant: "",
     houseNumber: "",
     streetName: "",
     country: "",
@@ -778,25 +780,11 @@ const AddList = () => {
           </div>
         </div>
 
-        <h3 className="section-title">Contact Information</h3>
-        <div className="form-group">
-          <label htmlFor="contactPhone">Contact Phone Number*</label>
-          <input
-            type="tel"
-            id="contactPhone"
-            name="contactPhone"
-            value={formData.contactPhone}
-            onChange={handleChange}
-            placeholder="+44 7xxx xxx xxx"
-            required
-          />
-          <small>
-            Potential buyers will use this number to contact you about viewings. 
-            {user?.phone && formData.contactPhone === user.phone && (
-              <span style={{color: '#666', fontStyle: 'italic'}}> (Using your profile phone - you can change this for this property if needed)</span>
-            )}
-          </small>
-        </div>
+        <ContactInformationSection 
+          formData={formData}
+          setFormData={setFormData}
+          handleChange={handleChange}
+        />
       </>
     );
   };

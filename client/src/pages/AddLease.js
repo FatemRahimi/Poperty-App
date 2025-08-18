@@ -8,6 +8,7 @@ import "../styles/CrossBrowserReset.css";
 import "../styles/AddLease.css";
 import useSessionStorage from "../Utils/useSessionStorage";
 import { useAuth } from "../context/AuthContext";
+import ContactInformationSection from "../components/ContactInformationSection";
 
 const leaseTypeOptions = [
   { value: "full-service", label: "Full-Service" },
@@ -210,7 +211,8 @@ const AddLease = () => {
       furnished: false,
       utilityAccess: false,
       photos: [],
-      contactPhone: user?.phone || "" // Auto-populate with user's profile phone
+            contactPhone: user?.phone || "", // Auto-populate with user's profile phone
+      propertyConsultant: "",
     };
   };
 
@@ -856,25 +858,11 @@ const AddLease = () => {
         )}
       </div>
 
-      <h3 className="section-title">Contact Information</h3>
-      <div className="form-group">
-        <label htmlFor="contactPhone">Contact Phone Number*</label>
-        <input
-          type="tel"
-          id="contactPhone"
-          name="contactPhone"
-          value={formData.contactPhone}
-          onChange={handleChange}
-          placeholder="+44 7xxx xxx xxx"
-          required
-        />
-        <small>
-          Potential tenants will use this number to contact you about lease inquiries. 
-          {user?.phone && formData.contactPhone === user.phone && (
-            <span style={{color: '#666', fontStyle: 'italic'}}> (Using your profile phone - you can change this for this property if needed)</span>
-          )}
-        </small>
-      </div>
+      <ContactInformationSection 
+        formData={formData}
+        setFormData={setFormData}
+        handleChange={handleChange}
+      />
     </>
   );
 
