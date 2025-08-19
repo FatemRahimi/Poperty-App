@@ -224,6 +224,46 @@ class User {
         isAdvisor
       } = advisorData;
 
+      // Clean and validate email data to prevent JSON array issues
+      const cleanEmailData = (emailData) => {
+        if (!emailData) return null;
+        
+        // If it's already a string, check if it's a JSON array
+        if (typeof emailData === 'string') {
+          // Check if it looks like a JSON array
+          if (emailData.trim().startsWith('{') && emailData.trim().endsWith('}')) {
+            try {
+              const parsed = JSON.parse(emailData);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                console.log('🔧 Cleaning JSON array email:', emailData, '->', parsed[0]);
+                return parsed[0];
+              }
+            } catch (error) {
+              console.log('⚠️ Failed to parse email as JSON, using as-is:', emailData);
+            }
+          }
+          return emailData.trim();
+        }
+        
+        // If it's an array, take the first element
+        if (Array.isArray(emailData) && emailData.length > 0) {
+          console.log('🔧 Cleaning array email:', emailData, '->', emailData[0]);
+          return emailData[0];
+        }
+        
+        return emailData;
+      };
+
+      // Clean email data
+      const cleanedCompanyEmail = cleanEmailData(advisorData.companyEmail);
+      const cleanedContactEmail = cleanEmailData(advisorData.contactEmail);
+      
+      console.log('📧 Email cleaning results:');
+      console.log('  Original companyEmail:', advisorData.companyEmail);
+      console.log('  Cleaned companyEmail:', cleanedCompanyEmail);
+      console.log('  Original contactEmail:', advisorData.contactEmail);
+      console.log('  Cleaned contactEmail:', cleanedContactEmail);
+
       // Validate and clean expertTeam data
       let processedExpertTeam = [];
       let expertTeamArray = [];
@@ -322,14 +362,15 @@ class User {
             job_title = $10,
             professional_bio = $11,
             contact_phone = $12,
-            office_hours = $13,
-            office_address = $14,
-            office_city = $15,
-            office_postcode = $16,
-            expert_team = $17,
-            is_advisor = $18,
+            contact_email = $13,
+            office_hours = $14,
+            office_address = $15,
+            office_city = $16,
+            office_postcode = $17,
+            expert_team = $18,
+            is_advisor = $19,
             updated_at = CURRENT_TIMESTAMP
-          WHERE user_id = $19
+          WHERE user_id = $20
           RETURNING *
         `, [
           advisorType,
@@ -337,13 +378,14 @@ class User {
           directorName,
           companyLogoUrl,
           companyWebsite,
-          advisorData.companyEmail,
+          cleanedCompanyEmail,
           companyDescription,
           fullName,
           profilePhotoUrl,
           jobTitle,
           professionalBio,
           contactPhone,
+          cleanedContactEmail,
           officeHours,
           officeAddress,
           officeCity,
@@ -366,14 +408,14 @@ class User {
           INSERT INTO advisor_profiles (
             user_id, advisor_type, company_name, director_name, company_logo_url,
             company_website, company_email, company_description, full_name, profile_photo_url,
-            job_title, professional_bio, contact_phone,
+            job_title, professional_bio, contact_phone, contact_email,
             office_hours, office_address, office_city, office_postcode, expert_team, is_advisor
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
           RETURNING *
         `, [
           userId, advisorType, companyName, directorName, companyLogoUrl,
-          companyWebsite, advisorData.companyEmail, companyDescription, fullName, profilePhotoUrl,
-          jobTitle, professionalBio, contactPhone,
+          companyWebsite, cleanedCompanyEmail, companyDescription, fullName, profilePhotoUrl,
+          jobTitle, professionalBio, contactPhone, cleanedContactEmail,
           officeHours, officeAddress, officeCity, officePostcode, JSON.stringify(processedExpertTeam), isAdvisor || false
         ]);
         
@@ -573,8 +615,50 @@ class User {
         }
       }
 
+      // Clean email data function
+      const cleanEmailData = (emailData) => {
+        if (!emailData) return null;
+        
+        if (typeof emailData === 'string') {
+          // Check if it looks like a JSON array
+          if (emailData.trim().startsWith('{') && emailData.trim().endsWith('}')) {
+            try {
+              const parsed = JSON.parse(emailData);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                console.log('🔧 Cleaning JSON array email in public view:', emailData, '->', parsed[0]);
+                return parsed[0];
+              }
+            } catch (error) {
+              console.log('⚠️ Failed to parse email as JSON in public view, using as-is:', emailData);
+            }
+          }
+          return emailData.trim();
+        }
+        
+        return emailData;
+      };
+
+      // Clean the email fields
+      const cleanedCompanyEmail = cleanEmailData(profile.company_email);
+      const cleanedContactEmail = cleanEmailData(profile.contact_email);
+
+      // Determine the correct email field based on advisor type
+      let email = null;
+      if (profile.advisor_type === 'company') {
+        email = cleanedCompanyEmail;
+        console.log('🏢 Company advisor type - using company_email for public view:', email);
+      } else if (profile.advisor_type === 'person') {
+        email = cleanedContactEmail;
+        console.log('👤 Person advisor type - using contact_email for public view:', email);
+      } else {
+        // Fallback: try both fields
+        email = cleanedContactEmail || cleanedCompanyEmail;
+        console.log('❓ Unknown advisor type - using fallback email for public view:', email);
+      }
+
       return {
         ...profile,
+        email: email, // Add the filtered email field
         experts: experts
       };
     } catch (error) {
@@ -589,7 +673,7 @@ class User {
       // First get the advisor profile
       const profileResult = await pool.query(
         `SELECT id, user_id, advisor_type, company_name, director_name, company_logo_url, company_website, company_email, company_description,
-                full_name, profile_photo_url, job_title, professional_bio, contact_phone,
+                full_name, profile_photo_url, job_title, professional_bio, contact_phone, contact_email,
                 office_hours, office_address, office_city, office_postcode, is_advisor, expert_team, created_at, updated_at
          FROM advisor_profiles
          WHERE user_id = $1
@@ -661,6 +745,47 @@ class User {
 
       console.log('👥 Expert team members:', experts);
 
+      // Clean email data function
+      const cleanEmailData = (emailData) => {
+        if (!emailData) return null;
+        
+        if (typeof emailData === 'string') {
+          // Check if it looks like a JSON array
+          if (emailData.trim().startsWith('{') && emailData.trim().endsWith('}')) {
+            try {
+              const parsed = JSON.parse(emailData);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                console.log('🔧 Cleaning JSON array email in retrieval:', emailData, '->', parsed[0]);
+                return parsed[0];
+              }
+            } catch (error) {
+              console.log('⚠️ Failed to parse email as JSON in retrieval, using as-is:', emailData);
+            }
+          }
+          return emailData.trim();
+        }
+        
+        return emailData;
+      };
+
+      // Clean the email fields
+      const cleanedCompanyEmail = cleanEmailData(profile.company_email);
+      const cleanedContactEmail = cleanEmailData(profile.contact_email);
+
+      // Determine the correct email field based on advisor type
+      let email = null;
+      if (profile.advisor_type === 'company') {
+        email = cleanedCompanyEmail;
+        console.log('🏢 Company advisor type - using company_email:', email);
+      } else if (profile.advisor_type === 'person') {
+        email = cleanedContactEmail;
+        console.log('👤 Person advisor type - using contact_email:', email);
+      } else {
+        // Fallback: try both fields
+        email = cleanedContactEmail || cleanedCompanyEmail;
+        console.log('❓ Unknown advisor type - using fallback email:', email);
+      }
+
       return {
         id: profile.id,
         user_id: profile.user_id,
@@ -669,13 +794,15 @@ class User {
         director_name: profile.director_name,
         company_logo_url: profile.company_logo_url,
         company_website: profile.company_website,
-        company_email: profile.company_email,
+        company_email: cleanedCompanyEmail,
         company_description: profile.company_description,
         full_name: profile.full_name,
         profile_photo_url: profile.profile_photo_url,
         job_title: profile.job_title,
         professional_bio: profile.professional_bio,
         contact_phone: profile.contact_phone,
+        contact_email: cleanedContactEmail,
+        email: email, // Add the filtered email field
         office_hours: profile.office_hours,
         office_address: profile.office_address,
         office_city: profile.office_city,
