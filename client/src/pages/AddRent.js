@@ -189,7 +189,6 @@ const keyFeaturesOptions = {
     { value: "kitchen_white_goods", label: "Kitchen with white goods" },
     { value: "allocated_parking", label: "Allocated parking" },
     { value: "communal_garden", label: "Communal garden" },
-    { value: "balcony_terrace", label: "Balcony/terrace" },
     { value: "storage_space", label: "Storage space" },
     { value: "lift_access", label: "Lift access" },
     { value: "intercom_entry", label: "Intercom entry system" }
@@ -307,6 +306,8 @@ const AddRent = () => {
         balconyTerrace: false, // This data might not be in existing properties
         petsAllowed: propertyData.pets_allowed || false,
         studentHousing: propertyData.student_housing || false,
+        hasGarage: propertyData.has_garage || false,
+        hasPool: propertyData.has_pool || false,
         epcRating: "", // This data might not be in existing properties
         
         // NEW FIELDS: EPC Rating
@@ -393,6 +394,8 @@ const AddRent = () => {
       balconyTerrace: false,
       petsAllowed: false,
       studentHousing: false,
+      hasGarage: false,
+      hasPool: false,
       epcRating: "",
       
       // NEW FIELDS: EPC Rating
@@ -1075,6 +1078,8 @@ const AddRent = () => {
         parkingAvailable: formData.parking,
         pets_allowed: formData.petsAllowed,
         petsAllowed: formData.petsAllowed,
+        has_garage: formData.hasGarage,
+        has_pool: formData.hasPool,
         
         // Additional rental fields
         councilTaxBand: formData.councilTaxBand,
@@ -1689,6 +1694,42 @@ const AddRent = () => {
                   onChange={handleChange}
                 />
                 <label htmlFor="studentHousing">Suitable for Students</label>
+              </div>
+
+              <div className="feature-item" style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0.75rem',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                backgroundColor: '#ffffff'
+              }}>
+                <input 
+                  type="checkbox" 
+                  id="hasGarage" 
+                  name="hasGarage" 
+                  checked={formData.hasGarage}
+                  onChange={handleChange}
+                />
+                <label htmlFor="hasGarage">Garage</label>
+              </div>
+
+              <div className="feature-item" style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0.75rem',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                backgroundColor: '#ffffff'
+              }}>
+                <input 
+                  type="checkbox" 
+                  id="hasPool" 
+                  name="hasPool" 
+                  checked={formData.hasPool}
+                  onChange={handleChange}
+                />
+                <label htmlFor="hasPool">Pool</label>
               </div>
             </div>
             
