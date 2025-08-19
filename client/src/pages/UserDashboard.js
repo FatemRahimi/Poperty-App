@@ -2137,7 +2137,7 @@ const UserDashboard = () => {
                           <input
                             type="email"
                             className="form-input-modern"
-                            value={advisorProfile.contact_email || ''}
+                            value={advisorProfile.email || advisorProfile.contact_email || advisorProfile.company_email || ''}
                             disabled
                           />
                         </div>

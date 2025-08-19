@@ -166,7 +166,7 @@ const ContactInformationSection = ({
               </div>
               <div style={{display: 'flex', alignItems: 'center'}}>
                 <span style={{color: '#166534', fontWeight: '600', minWidth: '60px'}}>✉️ Email:</span>
-                <span style={{color: '#374151'}}>{advisorProfile.contact_email || user.email}</span>
+                <span style={{color: '#374151'}}>{advisorProfile.email || advisorProfile.contact_email || advisorProfile.company_email || user.email}</span>
               </div>
               <div style={{display: 'flex', alignItems: 'center'}}>
                 <span style={{color: '#166534', fontWeight: '600', minWidth: '60px'}}>📞 Phone:</span>

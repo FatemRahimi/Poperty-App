@@ -127,8 +127,8 @@ const PropertyAdvisorCard = ({ userId, fallbackContact }) => {
                     🌐 Visit Website
                   </a>
                 )}
-                {advisorData.company_email && (
-                  <p className="pac-company-email">📧 {advisorData.company_email}</p>
+                {(advisorData.email || advisorData.company_email) && (
+                  <p className="pac-company-email">📧 {advisorData.email || advisorData.company_email}</p>
                 )}
               </div>
             </div>
@@ -234,9 +234,9 @@ const PropertyAdvisorCard = ({ userId, fallbackContact }) => {
               {advisorData.contact_phone && (
                 <p className="pac-contact-phone">📞 {advisorData.contact_phone}</p>
               )}
-              {(advisorData.contact_email || advisorData.account_email) && (
+              {(advisorData.email || advisorData.contact_email || advisorData.company_email || advisorData.account_email) && (
                 <p className="pac-contact-email">
-                  📧 {advisorData.contact_email || advisorData.account_email}
+                  📧 {advisorData.email || advisorData.contact_email || advisorData.company_email || advisorData.account_email}
                 </p>
               )}
             </div>
