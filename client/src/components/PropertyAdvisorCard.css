@@ -1,28 +1,64 @@
 /* PropertyAdvisorCard CSS - PAC prefix to avoid interference */
 
+/* Professional Color Palette - Consistent with Brand */
+:root {
+  --pac-primary: #1e40af;
+  --pac-primary-light: #3b82f6;
+  --pac-primary-dark: #1e3a8a;
+  --pac-secondary: #64748b;
+  --pac-accent: #f59e0b;
+  --pac-success: #10b981;
+  --pac-warning: #f59e0b;
+  --pac-error: #ef4444;
+  
+  /* Neutral Colors */
+  --pac-white: #ffffff;
+  --pac-gray-50: #f8fafc;
+  --pac-gray-100: #f1f5f9;
+  --pac-gray-200: #e2e8f0;
+  --pac-gray-300: #cbd5e1;
+  --pac-gray-400: #94a3b8;
+  --pac-gray-500: #64748b;
+  --pac-gray-600: #475569;
+  --pac-gray-700: #334155;
+  --pac-gray-800: #1e293b;
+  --pac-gray-900: #0f172a;
+  
+  /* Typography */
+  --pac-font-primary: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+  --pac-font-secondary: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  
+  /* Shadows */
+  --pac-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --pac-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --pac-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --pac-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --pac-shadow-brand: 0 15px 35px -5px rgba(30, 64, 175, 0.3), 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+}
+
 /* Wrapper and Common Styles */
 .property-advisor-card-wrapper {
   width: 100%;
-  max-width: 400px;
   margin: 20px 0;
-  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--pac-font-primary);
+  box-sizing: border-box;
 }
 
 /* Loading State */
 .pac-loading {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, var(--pac-gray-50) 0%, var(--pac-gray-100) 100%);
+  border: 1px solid var(--pac-gray-200);
   border-radius: 16px;
   padding: 30px;
   text-align: center;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--pac-shadow-md);
 }
 
 .pac-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top: 3px solid #3b82f6;
+  border: 3px solid var(--pac-gray-200);
+  border-top: 3px solid var(--pac-primary-light);
   border-radius: 50%;
   animation: pac-spin 1s linear infinite;
   margin: 0 auto 15px auto;
@@ -34,23 +70,24 @@
 }
 
 .pac-loading p {
-  color: #64748b;
+  color: var(--pac-gray-500);
   font-size: 14px;
   margin: 0;
+  font-family: var(--pac-font-primary);
 }
 
 /* Fallback Card */
 .pac-fallback-card {
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  border: 2px solid #cbd5e1;
+  background: linear-gradient(135deg, var(--pac-gray-100) 0%, var(--pac-gray-200) 100%);
+  border: 2px solid var(--pac-gray-300);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--pac-shadow-md);
 }
 
 .pac-fallback-header {
-  background: #475569;
-  color: white;
+  background: var(--pac-primary);
+  color: var(--pac-white);
   padding: 15px 20px;
   text-align: center;
 }
@@ -59,6 +96,7 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+  font-family: var(--pac-font-primary);
 }
 
 .pac-fallback-content {
@@ -68,45 +106,60 @@
 .pac-fallback-name {
   font-size: 20px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--pac-gray-800);
   margin: 0 0 8px 0;
+  font-family: var(--pac-font-primary);
 }
 
 .pac-fallback-role {
   font-size: 14px;
-  color: #64748b;
+  color: var(--pac-gray-500);
   margin: 0 0 15px 0;
   font-style: italic;
+  font-family: var(--pac-font-primary);
 }
 
 .pac-fallback-email,
 .pac-fallback-phone {
   font-size: 14px;
-  color: #475569;
+  color: var(--pac-gray-600);
   margin: 8px 0;
+  font-family: var(--pac-font-primary);
 }
 
 /* Company Card Layout - Standard */
 .pac-company-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 2px solid #e2e8f0;
- 
+  background: linear-gradient(135deg, var(--pac-white) 0%, var(--pac-gray-50) 100%);
+  border: 2px solid var(--pac-gray-200);
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--pac-shadow-lg);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .pac-company-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--pac-shadow-xl);
 }
 
-/* Company Card Layout - Rectangle Design (for company advisor type) */
+/* Company Card Layout - Professional Brand Design */
 .pac-company-card.pac-company-angled {
-  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--pac-primary) 0%, var(--pac-primary-light) 100%);
   border: none;
-/* Rounded corners for modern look */
-  box-shadow: 0 15px 35px -5px rgba(30, 64, 175, 0.3), 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+  border-radius: 0;
+  box-shadow: var(--pac-shadow-brand);
+  position: relative;
+  overflow: hidden;
+}
+
+.pac-company-card.pac-company-angled::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--pac-accent) 0%, var(--pac-success) 50%, var(--pac-warning) 100%);
 }
 
 .pac-company-card.pac-company-angled:hover {
@@ -116,41 +169,59 @@
 
 /* Company Header - Standard */
 .pac-company-header {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, var(--pac-gray-50) 0%, var(--pac-gray-100) 100%);
   padding: 25px 20px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--pac-gray-200);
 }
 
-/* Company Header - Angled Design */
+/* Company Header - Professional Brand Design */
 .pac-company-header.pac-company-header-angled {
-  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--pac-primary) 0%, var(--pac-primary-light) 100%);
   padding: 30px 20px 40px 20px;
   border-bottom: none;
-  color: white;
+  color: var(--pac-white);
+  position: relative;
+}
+
+.pac-company-header.pac-company-header-angled::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
 }
 
 .pac-company-header.pac-company-header-angled .pac-company-name {
-  color: white !important;
+  color: var(--pac-white) !important;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-family: var(--pac-font-primary);
 }
 
 .pac-company-header.pac-company-header-angled .pac-company-tagline {
-  color: #bfdbfe !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-family: var(--pac-font-primary);
 }
 
 .pac-company-header.pac-company-header-angled .pac-company-website {
-  color: #dbeafe !important;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--pac-white) !important;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
 .pac-company-header.pac-company-header-angled .pac-company-website:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: white !important;
+  background: rgba(255, 255, 255, 0.25);
+  color: var(--pac-white) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .pac-company-header.pac-company-header-angled .pac-company-email {
-  color: #bfdbfe !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-family: var(--pac-font-primary);
 }
 
 .pac-company-main {
@@ -164,12 +235,18 @@
   height: 80px;
   border-radius: 12px;
   overflow: hidden;
-  background: #f8f9fa;
+  background: var(--pac-white);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: var(--pac-shadow-sm);
+  transition: transform 0.2s ease;
+}
+
+.pac-company-logo:hover {
+  transform: scale(1.05);
 }
 
 .pac-logo-image {
@@ -186,62 +263,94 @@
 .pac-company-name {
   font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--pac-gray-800);
   margin: 0 0 8px 0;
-  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+  font-family: var(--pac-font-primary);
+  line-height: 1.2;
 }
 
 .pac-company-tagline {
   font-size: 14px;
-  color: #64748b;
+  color: var(--pac-gray-500);
   margin: 0 0 12px 0;
   font-style: italic;
+  font-family: var(--pac-font-primary);
 }
 
 .pac-company-website {
   display: inline-block;
-  color: #3b82f6;
+  color: var(--pac-primary-light);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 6px;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  transition: all 0.2s ease;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--pac-gray-50);
+  border: 1px solid var(--pac-gray-200);
+  transition: all 0.3s ease;
   margin-bottom: 8px;
+  font-family: var(--pac-font-primary);
+  box-shadow: var(--pac-shadow-sm);
 }
 
 .pac-company-website:hover {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--pac-primary-light);
+  color: var(--pac-white);
   transform: translateY(-1px);
+  box-shadow: var(--pac-shadow-md);
 }
 
 .pac-company-email {
   font-size: 14px;
-  color: #64748b;
+  color: var(--pac-gray-500);
   margin: 8px 0 0 0;
+  font-family: var(--pac-font-primary);
 }
 
 /* Property Consultant Section */
 .pac-consultant-section {
-  padding: 20px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 25px 20px;
+  background: var(--pac-white);
+  border-bottom: 1px solid var(--pac-gray-200);
 }
 
 .pac-section-title {
   font-size: 18px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--pac-gray-800);
   margin: 0 0 15px 0;
-  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+  font-family: var(--pac-font-primary);
+  position: relative;
+  padding-left: 12px;
+}
+
+.pac-section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(135deg, var(--pac-primary) 0%, var(--pac-primary-light) 100%);
+  border-radius: 2px;
 }
 
 .pac-consultant-card {
   display: flex;
-  gap: 15px;
+  gap: 20px;
   align-items: center;
+  padding: 15px;
+  background: var(--pac-gray-50);
+  border-radius: 12px;
+  border: 1px solid var(--pac-gray-200);
+  transition: all 0.3s ease;
+}
+
+.pac-consultant-card:hover {
+  background: var(--pac-white);
+  box-shadow: var(--pac-shadow-md);
+  transform: translateY(-1px);
 }
 
 /* Property Consultant Photo - Standard (Circle) */
@@ -250,20 +359,22 @@
   height: 80px;
   border-radius: 50%;
   overflow: hidden;
-  background: #f8f9fa;
+  background: var(--pac-gray-100);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 3px solid #e5e7eb;
+  border: 3px solid var(--pac-primary-light);
+  box-shadow: var(--pac-shadow-sm);
 }
 
 /* Property Consultant Photo - Rectangle (for company advisor type) */
 .pac-consultant-photo.pac-consultant-photo-rectangle {
   width: 100px;
   height: 120px;
-  border-radius: 8px;
-  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  border: 2px solid var(--pac-primary-light);
+  box-shadow: var(--pac-shadow-sm);
 }
 
 .pac-consultant-image {
@@ -273,7 +384,7 @@
 }
 
 .pac-consultant-image.pac-consultant-image-rectangle {
-  border-radius: 6px;
+  border-radius: 10px;
 }
 
 .pac-consultant-placeholder {
@@ -282,12 +393,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  color: var(--pac-gray-400);
   font-size: 24px;
 }
 
 .pac-consultant-placeholder.pac-consultant-placeholder-rectangle {
-  border-radius: 6px;
+  border-radius: 10px;
 }
 
 .pac-consultant-details {
@@ -298,84 +409,112 @@
 .pac-consultant-name {
   font-size: 18px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--pac-gray-800);
   margin: 0 0 5px 0;
-  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+  font-family: var(--pac-font-primary);
+  line-height: 1.3;
 }
 
 .pac-consultant-role {
   font-size: 14px;
-  color: #3b82f6;
+  color: var(--pac-primary);
   font-weight: 500;
   margin: 0 0 8px 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-family: var(--pac-font-primary);
 }
 
 .pac-consultant-email,
 .pac-consultant-phone {
   font-size: 13px;
-  color: #64748b;
+  color: var(--pac-gray-500);
   margin: 4px 0;
+  font-family: var(--pac-font-primary);
 }
 
 /* Office Information Section */
 .pac-office-section {
-  padding: 20px;
+  padding: 25px 20px;
+  background: var(--pac-gray-50);
 }
 
 .pac-office-details {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .pac-office-item {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 10px;
+  gap: 15px;
+  padding: 12px 16px;
+  background: var(--pac-white);
+  border-radius: 8px;
+  border: 1px solid var(--pac-gray-200);
+  transition: all 0.2s ease;
+}
+
+.pac-office-item:hover {
+  border-color: var(--pac-primary-light);
+  box-shadow: var(--pac-shadow-sm);
 }
 
 .pac-office-label {
   font-size: 13px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--pac-gray-600);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   min-width: 80px;
   flex-shrink: 0;
+  font-family: var(--pac-font-primary);
 }
 
 .pac-office-value {
   font-size: 13px;
-  color: #1e293b;
+  color: var(--pac-gray-800);
   text-align: right;
   flex: 1;
+  font-family: var(--pac-font-primary);
+  line-height: 1.4;
 }
 
 /* Person Card Layout */
 .pac-person-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 2px solid #e2e8f0;
+  background: linear-gradient(135deg, var(--pac-white) 0%, var(--pac-gray-50) 100%);
+  border: 2px solid var(--pac-gray-200);
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--pac-shadow-lg);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.pac-person-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--pac-primary) 0%, var(--pac-primary-light) 100%);
 }
 
 .pac-person-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--pac-shadow-xl);
 }
 
 .pac-person-header {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, var(--pac-gray-50) 0%, var(--pac-gray-100) 100%);
   padding: 25px 20px;
   display: flex;
   align-items: center;
   gap: 20px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--pac-gray-200);
 }
 
 .pac-person-photo {
@@ -383,12 +522,18 @@
   height: 80px;
   border-radius: 50%;
   overflow: hidden;
-  background: #f8f9fa;
+  background: var(--pac-gray-100);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 3px solid #667eea;
+  border: 3px solid var(--pac-primary-light);
+  box-shadow: var(--pac-shadow-sm);
+  transition: transform 0.2s ease;
+}
+
+.pac-person-photo:hover {
+  transform: scale(1.05);
 }
 
 .pac-person-image {
@@ -403,7 +548,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  color: var(--pac-gray-400);
   font-size: 24px;
 }
 
@@ -415,70 +560,98 @@
 .pac-person-name {
   font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--pac-gray-800);
   margin: 0 0 8px 0;
-  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+  font-family: var(--pac-font-primary);
+  line-height: 1.2;
 }
 
 .pac-person-role {
   font-size: 16px;
-  color: #667eea;
+  color: var(--pac-primary);
   font-weight: 500;
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-family: var(--pac-font-primary);
 }
 
 /* Bio Section */
 .pac-bio-section {
-  padding: 20px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 25px 20px;
+  background: var(--pac-white);
+  border-bottom: 1px solid var(--pac-gray-200);
 }
 
 .pac-bio-text {
   font-size: 14px;
-  color: #4a5568;
+  color: var(--pac-gray-700);
   line-height: 1.6;
   margin: 0;
+  font-family: var(--pac-font-primary);
 }
 
 /* Contact Section */
 .pac-contact-section {
-  padding: 20px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 25px 20px;
+  background: var(--pac-gray-50);
+  border-bottom: 1px solid var(--pac-gray-200);
 }
 
 .pac-contact-details {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .pac-contact-phone,
 .pac-contact-email {
   font-size: 14px;
-  color: #64748b;
+  color: var(--pac-gray-600);
   margin: 0;
+  font-family: var(--pac-font-primary);
+  padding: 8px 12px;
+  background: var(--pac-white);
+  border-radius: 6px;
+  border: 1px solid var(--pac-gray-200);
+  transition: all 0.2s ease;
+}
+
+.pac-contact-phone:hover,
+.pac-contact-email:hover {
+  border-color: var(--pac-primary-light);
+  box-shadow: var(--pac-shadow-sm);
 }
 
 /* AddRent Card Layout (No Advisor Profile) */
 .pac-addrent-card {
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  border: 2px solid #cbd5e1;
+  background: linear-gradient(135deg, var(--pac-gray-100) 0%, var(--pac-gray-200) 100%);
+  border: 2px solid var(--pac-gray-300);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--pac-shadow-md);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.pac-addrent-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--pac-secondary) 0%, var(--pac-gray-500) 100%);
 }
 
 .pac-addrent-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--pac-shadow-lg);
 }
 
 .pac-addrent-header {
-  background: #475569;
-  color: white;
+  background: var(--pac-primary);
+  color: var(--pac-white);
   padding: 15px 20px;
   text-align: center;
 }
@@ -487,6 +660,7 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+  font-family: var(--pac-font-primary);
 }
 
 .pac-addrent-content {
@@ -500,28 +674,31 @@
 .pac-addrent-name {
   font-size: 20px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--pac-gray-800);
   margin: 0 0 8px 0;
+  font-family: var(--pac-font-primary);
 }
 
 .pac-addrent-role {
   font-size: 14px;
-  color: #64748b;
+  color: var(--pac-gray-500);
   margin: 0 0 15px 0;
   font-style: italic;
+  font-family: var(--pac-font-primary);
 }
 
 .pac-addrent-email,
 .pac-addrent-phone {
   font-size: 14px;
-  color: #475569;
+  color: var(--pac-gray-600);
   margin: 8px 0;
+  font-family: var(--pac-font-primary);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
   .property-advisor-card-wrapper {
-    max-width: 100%;
+    width: 100%;
   }
   
   .pac-company-main,
