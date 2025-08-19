@@ -594,15 +594,15 @@ class User {
               .filter(expert => expert && typeof expert === 'object')
               .map(expert => ({
                 id: expert.id || `expert_${Date.now()}_${Math.random()}`,
-                fullName: expert.fullName || expert.full_name || '',
-                jobTitle: expert.jobTitle || expert.job_title || '',
-                profilePhotoUrl: expert.profilePhotoUrl || expert.profile_photo_url || null,
+                full_name: expert.fullName || expert.full_name || '',
+                job_title: expert.jobTitle || expert.job_title || '',
+                profile_photo_url: expert.profilePhotoUrl || expert.profile_photo_url || null,
                 phone: expert.phone || null,
                 email: expert.email || null,
-                createdAt: expert.createdAt || expert.created_at || new Date().toISOString(),
-                updatedAt: expert.updatedAt || expert.updated_at || new Date().toISOString()
+                created_at: expert.createdAt || expert.created_at || new Date().toISOString(),
+                updated_at: expert.updatedAt || expert.updated_at || new Date().toISOString()
               }))
-              .filter(expert => expert.fullName && expert.jobTitle);
+              .filter(expert => expert.full_name && expert.job_title);
           } else {
             experts = [];
           }
