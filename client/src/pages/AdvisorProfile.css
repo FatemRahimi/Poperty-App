@@ -587,6 +587,115 @@
 }
 
 /* ========================================
+   PHOTO UPLOAD STYLING FOR EXPERT TEAM
+   ======================================== */
+
+/* Photo Upload Area */
+.photo-upload-area {
+  margin-top: var(--advisor-spacing-sm);
+}
+
+.photo-upload-label {
+  display: block;
+  cursor: pointer;
+  transition: all var(--advisor-transition-base);
+}
+
+.photo-upload-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  border: 2px dashed var(--advisor-border-primary);
+  border-radius: var(--advisor-radius-lg);
+  background: var(--advisor-bg-secondary);
+  transition: all var(--advisor-transition-base);
+}
+
+.photo-upload-content:hover {
+  border-color: var(--advisor-border-focus);
+  background: var(--advisor-bg-focus);
+}
+
+/* Photo Placeholder */
+.photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--advisor-spacing-sm);
+  color: var(--advisor-text-muted);
+  font-size: var(--advisor-font-size-sm);
+  font-family: var(--advisor-font-family-primary);
+}
+
+.photo-placeholder i {
+  font-size: 2rem;
+  color: var(--advisor-text-muted);
+}
+
+/* Photo Preview Container */
+.photo-preview-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Photo Preview - Ensure Circular Shape */
+.photo-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50% !important;
+  border: 3px solid var(--advisor-border-primary);
+  transition: all var(--advisor-transition-base);
+  display: block;
+}
+
+.photo-preview:hover {
+  border-color: var(--advisor-border-focus);
+  transform: scale(1.05);
+}
+
+/* Remove Photo Button */
+.remove-photo-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background: var(--advisor-error);
+  color: var(--advisor-text-inverse);
+  border: none;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--advisor-shadow-sm);
+  transition: all var(--advisor-transition-base);
+  z-index: 10;
+}
+
+.remove-photo-btn:hover {
+  background: var(--advisor-error-dark);
+  transform: scale(1.1);
+}
+
+/* Expert Team Specific Photo Styling */
+.expert-member .photo-preview {
+  width: 100px;
+  height: 100px;
+  border-radius: 50% !important;
+  border: 2px solid var(--advisor-border-primary);
+}
+
+.expert-member .photo-preview:hover {
+  border-color: var(--advisor-border-focus);
+  transform: scale(1.02);
+}
+
+/* ========================================
    RESPONSIVE DESIGN
    ======================================== */
 
@@ -793,4 +902,45 @@
 .advisor-skip-link:hover {
   color: #059669; /* Darker green on hover */
   text-decoration: none;
+} 
+
+/* Responsive Photo Styling */
+@media (max-width: 768px) {
+  .photo-preview {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .expert-member .photo-preview {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .photo-upload-content {
+    min-height: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .photo-preview {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .expert-member .photo-preview {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .photo-upload-content {
+    min-height: 80px;
+  }
+  
+  .photo-placeholder {
+    font-size: var(--advisor-font-size-xs);
+  }
+  
+  .photo-placeholder i {
+    font-size: 1.5rem;
+  }
 } 
