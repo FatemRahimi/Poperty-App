@@ -2085,23 +2085,64 @@ const UserDashboard = () => {
                             disabled
                           />
                         </div>
+
+                        <div className="form-group-modern">
+                          <label className="form-label-modern">Company Email</label>
+                          <input
+                            type="email"
+                            className="form-input-modern"
+                            value={advisorProfile.company_email || ''}
+                            disabled
+                          />
+                        </div>
                       </>
                     )}
-                    
-                  
-                    
-                    
-                    <div className="form-group-modern">
-                      <label className="form-label-modern">Company Email</label>
-                      <input
-                        type="email"
-                        className="form-input-modern"
-                        value={advisorProfile.company_email || ''}
-                        disabled
-                      />
-                    </div>
-                    
-                   
+
+                    {advisorProfile.advisor_type === 'person' && (
+                      <>
+                        <div className="form-group-modern">
+                          <label className="form-label-modern">Full Name</label>
+                          <input
+                            type="text"
+                            className="form-input-modern"
+                            value={advisorProfile.full_name || ''}
+                            disabled
+                          />
+                        </div>
+                        
+                        <div className="form-group-modern">
+                          <label className="form-label-modern">Job Title</label>
+                          <input
+                            type="text"
+                            className="form-input-modern"
+                            value={advisorProfile.job_title || ''}
+                            disabled
+                          />
+                        </div>
+                        
+
+                        
+                        <div className="form-group-modern">
+                          <label className="form-label-modern">Contact Number</label>
+                          <input
+                            type="tel"
+                            className="form-input-modern"
+                            value={advisorProfile.contact_phone || ''}
+                            disabled
+                          />
+                        </div>
+
+                        <div className="form-group-modern">
+                          <label className="form-label-modern">Email Address</label>
+                          <input
+                            type="email"
+                            className="form-input-modern"
+                            value={advisorProfile.contact_email || ''}
+                            disabled
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
                   
                   <div className="profile-actions">
