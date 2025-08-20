@@ -6,6 +6,17 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Helper function to extract domain from website URL
+  const extractDomain = (url) => {
+    try {
+      const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+      return urlObj.hostname.replace('www.', '');
+    } catch (error) {
+      // If URL parsing fails, return the original string
+      return url.replace(/^https?:\/\//, '').replace(/^www\./, '');
+    }
+  };
+
   // Fetch advisor profile data
   useEffect(() => {
     const fetchAdvisorProfile = async () => {
@@ -133,7 +144,17 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
                 </h2>
                 <p className="pac-company-tagline">Trust to our experts</p>
                 {(advisorData.email || advisorData.company_email) && (
-                  <p className="pac-company-email">📧 {advisorData.email || advisorData.company_email}</p>
+                  <p className="pac-company-email">✉️ {advisorData.email || advisorData.company_email}</p>
+                )}
+                {advisorData.company_website && (
+                  <a 
+                    href={advisorData.company_website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="pac-company-address"
+                  >
+                    {advisorData.company_website}
+                  </a>
                 )}
               </div>
             </div>
