@@ -222,7 +222,10 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
                 </h2>
                 <p className="pac-company-tagline">Trust to our experts</p>
                 {(advisorData.email || advisorData.company_email) && (
-                  <p className="pac-company-email">✉️ {advisorData.email || advisorData.company_email}</p>
+                  <p className="pac-company-email">
+                    <i className="fas fa-envelope" style={{ marginRight: '8px', color: '#6b7280' }}></i>
+                    {advisorData.email || advisorData.company_email}
+                  </p>
                 )}
                 {advisorData.company_website && (
                   <a 
@@ -267,7 +270,8 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
                   <p className="pac-consultant-role">Property Consultant</p>
                   {(propertyConsultant.email || propertyConsultant.contactEmail) && (
                     <p className="pac-consultant-email">
-                      📧 {propertyConsultant.email || propertyConsultant.contactEmail}
+                      <i className="fas fa-envelope" style={{ marginRight: '8px', color: '#6b7280' }}></i>
+                      {propertyConsultant.email || propertyConsultant.contactEmail}
                     </p>
                   )}
                   {(propertyConsultant.phone || propertyConsultant.contactPhone) && (
@@ -381,7 +385,8 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
                 <p className="pac-consultant-role">{advisorData.job_title}</p>
                 {(advisorData.email || advisorData.contact_email || advisorData.contactEmail || advisorData.company_email || advisorData.account_email) && (
                   <p className="pac-company-email">
-                    📧 {advisorData.email || advisorData.contact_email || advisorData.contactEmail || advisorData.company_email || advisorData.account_email}
+                    <i className="fas fa-envelope" style={{ marginRight: '8px', color: '#6b7280' }}></i>
+                    {advisorData.email || advisorData.contact_email || advisorData.contactEmail || advisorData.company_email || advisorData.account_email}
                   </p>
                 )}
               </div>
@@ -391,7 +396,7 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
           {/* Professional Bio Section */}
           {advisorData.professional_bio && (
             <div className="pac-consultant-section">
-              <h3 className="pac-section-title">About</h3>
+              <h3 className="pac-section-title">Professional Bio</h3>
               <div className="pac-consultant-card">
                 <div className="pac-consultant-details">
                   <p className="pac-consultant-email">{advisorData.professional_bio}</p>
@@ -413,7 +418,10 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
               {(advisorData.email || advisorData.contact_email || advisorData.contactEmail || advisorData.company_email || advisorData.account_email) && (
                 <div className="pac-office-item">
                   <span className="pac-office-label">Email:</span>
-                  <span className="pac-office-value">📧 {advisorData.email || advisorData.contact_email || advisorData.contactEmail || advisorData.company_email || advisorData.account_email}</span>
+                  <span className="pac-office-value">
+                    <i className="fas fa-envelope" style={{ marginRight: '8px', color: '#6b7280' }}></i>
+                    {advisorData.email || advisorData.contact_email || advisorData.contactEmail || advisorData.company_email || advisorData.account_email}
+                  </span>
                 </div>
               )}
             </div>
@@ -444,7 +452,8 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
               </p>
               {(fallbackContact?.email || propertyConsultantData?.contactEmail) && (
                 <p className="pac-addrent-email">
-                  📧 {fallbackContact?.email || propertyConsultantData?.contactEmail}
+                  <i className="fas fa-envelope" style={{ marginRight: '8px', color: '#6b7280' }}></i>
+                  {fallbackContact?.email || propertyConsultantData?.contactEmail}
                 </p>
               )}
               {(fallbackContact?.phone || propertyConsultantData?.contactPhone) && (
