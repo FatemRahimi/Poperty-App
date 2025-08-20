@@ -479,6 +479,7 @@
 .pac-consultant-details {
   flex: 1;
   min-width: 0;
+  font-family: 'Gotham', 'Montserrat', Arial, sans-serif;
 }
 
 .pac-consultant-name {
@@ -505,7 +506,7 @@
   font-size: 13px;
   color: var(--pac-gray-500);
   margin: 4px 0;
-  font-family: var(--pac-font-primary);
+  font-family: 'Gotham', 'Montserrat', Arial, sans-serif;
 }
 
 /* Office Information Section */
