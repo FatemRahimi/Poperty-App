@@ -206,6 +206,50 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
           <div className="pac-office-section">
             <h3 className="pac-section-title">Office Information</h3>
             <div className="pac-office-details">
+              {advisorData.company_website && (
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  margin: '0 auto 24px auto',
+                  gap: '12px',
+                  paddingLeft: '20px',
+                  paddingRight: '20px'
+                }}>
+                  <span style={{ 
+                    display: 'inline-block',
+                    animation: 'pointingHand 2s ease-in-out infinite',
+                    fontSize: '20px'
+                  }}>
+                    👆
+                  </span>
+                  <a 
+                    href={advisorData.company_website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="pac-company-website"
+                    style={{ 
+                      display: 'inline-block',
+                      padding: '8px 16px',
+                      textDecoration: 'none',
+                      borderRadius: '6px',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      transition: 'all 0.3s ease',
+                      border: '1.5px solid #3b82f6',
+                      cursor: 'pointer'
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    🌐 Visit Company Dashboard
+                  </a>
+                </div>
+              )}
               <div className="pac-office-item">
                 <span className="pac-office-label">Office Hours:</span>
                 <span className="pac-office-value">
@@ -222,48 +266,6 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
                     {advisorData.office_city && advisorData.office_postcode && ' '}
                     {advisorData.office_postcode && advisorData.office_postcode}
                   </span>
-                </div>
-              )}
-              {advisorData.company_website && (
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  margin: '24px auto 0 auto',
-                  gap: '12px'
-                }}>
-                  <span style={{ 
-                    display: 'inline-block',
-                    animation: 'pointingHand 2s ease-in-out infinite',
-                    fontSize: '20px'
-                  }}>
-                    👆
-                  </span>
-                  <a 
-                    href={advisorData.company_website} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="pac-company-website"
-                    style={{ 
-                      display: 'inline-block',
-                      padding: '12px 24px',
-                      textDecoration: 'none',
-                      borderRadius: '8px',
-                      fontWeight: '600',
-                      fontSize: '16px',
-                      transition: 'all 0.3s ease',
-                      border: '2px solid #3b82f6',
-                      cursor: 'pointer'
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    🌐 Visit Company Dashboard
-                  </a>
                 </div>
               )}
             </div>
