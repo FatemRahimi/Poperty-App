@@ -132,16 +132,6 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
                   {advisorData.company_name && !advisorData.company_name.toLowerCase().includes('ltd') && ' Ltd'}
                 </h2>
                 <p className="pac-company-tagline">Trust to our experts</p>
-                {advisorData.company_website && (
-                  <a 
-                    href={advisorData.company_website} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="pac-company-website"
-                  >
-                    🌐 Visit Website
-                  </a>
-                )}
                 {(advisorData.email || advisorData.company_email) && (
                   <p className="pac-company-email">📧 {advisorData.email || advisorData.company_email}</p>
                 )}
@@ -195,12 +185,12 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
           <div className="pac-office-section">
             <h3 className="pac-section-title">Office Information</h3>
             <div className="pac-office-details">
-              {advisorData.office_hours && (
-                <div className="pac-office-item">
-                  <span className="pac-office-label">Office Hours:</span>
-                  <span className="pac-office-value">{advisorData.office_hours}</span>
-                </div>
-              )}
+              <div className="pac-office-item">
+                <span className="pac-office-label">Office Hours:</span>
+                <span className="pac-office-value">
+                  {advisorData.office_hours || "Monday - Friday: 9:00 AM - 6:00 PM"}
+                </span>
+              </div>
               {(advisorData.office_address || advisorData.office_city || advisorData.office_postcode) && (
                 <div className="pac-office-item">
                   <span className="pac-office-label">Address:</span>
@@ -215,6 +205,25 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
               )}
             </div>
           </div>
+
+          {/* Website Link Section */}
+          {advisorData.company_website && (
+            <div className="pac-office-section">
+              <div className="pac-office-details">
+                <div className="pac-office-item">
+                  <a 
+                    href={advisorData.company_website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="pac-company-website"
+                    style={{ display: 'block', textAlign: 'center', margin: '0 auto' }}
+                  >
+                    🌐 Visit Website
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
