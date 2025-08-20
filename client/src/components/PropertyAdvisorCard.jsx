@@ -225,15 +225,46 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
                 </div>
               )}
               {advisorData.company_website && (
-                <a 
-                  href={advisorData.company_website} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="pac-company-website"
-                  style={{ display: 'block', textAlign: 'center', margin: '24px auto 0 auto' }}
-                >
-                  🌐 Visit Comoany Dashboard
-                </a>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  margin: '24px auto 0 auto',
+                  gap: '12px'
+                }}>
+                  <span style={{ 
+                    display: 'inline-block',
+                    animation: 'pointingHand 2s ease-in-out infinite',
+                    fontSize: '20px'
+                  }}>
+                    👆
+                  </span>
+                  <a 
+                    href={advisorData.company_website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="pac-company-website"
+                    style={{ 
+                      display: 'inline-block',
+                      padding: '12px 24px',
+                      textDecoration: 'none',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      fontSize: '16px',
+                      transition: 'all 0.3s ease',
+                      border: '2px solid #3b82f6',
+                      cursor: 'pointer'
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    🌐 Visit Company Dashboard
+                  </a>
+                </div>
               )}
             </div>
           </div>
