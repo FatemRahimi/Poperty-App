@@ -152,6 +152,26 @@ const PropertyView = () => {
         console.log('📋 key_features RAW:', data.property.key_features);
         console.log('📋 key_features TYPE:', Object.prototype.toString.call(data.property.key_features));
         console.log('📋 key_features JSON:', JSON.stringify(data.property.key_features, null, 2));
+        console.log('🔍 Property Consultant Debug:');
+        console.log('📋 property_consultant:', data.property.property_consultant);
+        console.log('📋 contact_name:', data.property.contact_name);
+        console.log('📋 contact_email:', data.property.contact_email);
+        console.log('📋 contact_phone:', data.property.contact_phone);
+        console.log('🔍 PropertyAdvisorCard Props Debug:');
+        console.log('📋 propertyConsultantData being passed:', data.property.property_consultant ? {
+          fullName: data.property.property_consultant,
+          jobTitle: 'Property Consultant',
+          contactEmail: data.property.contact_email,
+          contactPhone: data.property.contact_phone
+        } : null);
+        console.log('🔍 PropertyAdvisorCard fallbackContact Debug:');
+        console.log('📋 fallbackContact being passed:', {
+          name: data.property.contact_name,
+          firstName: data.property.first_name,
+          lastName: data.property.last_name,
+          email: data.property.contact_email,
+          phone: data.property.contact_phone
+        });
       } else {
         setError(data.message || 'Property not found');
       }
@@ -1172,6 +1192,12 @@ const PropertyView = () => {
               email: property?.contact_email,
               phone: property?.contact_phone
             }}
+            propertyConsultantData={property?.property_consultant ? {
+              fullName: property.property_consultant,
+              jobTitle: 'Property Consultant',
+              contactEmail: property?.contact_email,
+              contactPhone: property?.contact_phone
+            } : null}
           />
         </div>
       </div>

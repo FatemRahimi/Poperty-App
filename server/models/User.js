@@ -559,7 +559,7 @@ class User {
         `SELECT ap.id, ap.user_id, ap.advisor_type, ap.company_name, ap.director_name, 
                 ap.company_logo_url, ap.company_website, ap.company_email, ap.company_description,
                 ap.full_name, ap.profile_photo_url, ap.job_title, ap.professional_bio, 
-                ap.contact_phone, ap.office_hours, ap.office_address, 
+                ap.contact_phone, ap.contact_email, ap.office_hours, ap.office_address, 
                 ap.office_city, ap.office_postcode, ap.is_advisor, ap.expert_team,
                 u.email as account_email, u.phone as account_phone
          FROM advisor_profiles ap
