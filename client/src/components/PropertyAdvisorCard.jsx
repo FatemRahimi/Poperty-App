@@ -224,27 +224,19 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
                   </span>
                 </div>
               )}
+              {advisorData.company_website && (
+                <a 
+                  href={advisorData.company_website} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="pac-company-website"
+                  style={{ display: 'block', textAlign: 'center', margin: '24px auto 0 auto' }}
+                >
+                  🌐 Visit Comoany Dashboard
+                </a>
+              )}
             </div>
           </div>
-
-          {/* Website Link Section */}
-          {advisorData.company_website && (
-            <div className="pac-office-section">
-              <div className="pac-office-details">
-                <div className="pac-office-item">
-                  <a 
-                    href={advisorData.company_website} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="pac-company-website"
-                    style={{ display: 'block', textAlign: 'center', margin: '0 auto' }}
-                  >
-                    🌐 Visit Website
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     );
