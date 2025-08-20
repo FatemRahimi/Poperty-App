@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { socket } from '../socket';
+import { socket } from '../services/socket';
 import SearchFilterHeader from '../components/dashboard/SearchFilterHeader';
 import DashboardTabs from '../components/dashboard/DashboardTabs';
 import OverviewStats from '../components/dashboard/OverviewStats';
@@ -242,6 +242,63 @@ const UserDashboard = () => {
       created_at: user?.created_at || ''
     });
   }, [user, navigate]);
+
+  // 🔧 SOCKET.IO: Real-time updates for property approval
+  useEffect(() => {
+    if (!user) return;
+
+    // Listen for property approval notifications
+    socket.on('propertyApproved', (property) => {
+      console.log('🎉 Property approved notification received:', property);
+      
+      // Only update if this property belongs to the current user
+      if (property.ownerId === user.id || property.user_id === user.id) {
+        console.log('✅ Updating user dashboard with approved property');
+        
+        // Update the property status in the local state
+        setProperties(prevProperties => 
+          prevProperties.map(prop => 
+            prop.id === property.id 
+              ? { ...prop, status: 'approved', approved_at: new Date().toISOString() }
+              : prop
+          )
+        );
+        
+        // Show success notification
+        setUpdateSuccessMessage('🎉 Your property has been approved!');
+        setTimeout(() => setUpdateSuccessMessage(''), 5000);
+        
+        // Refresh dashboard data to get latest stats
+        loadDashboardData();
+      }
+    });
+
+    // Listen for property rejection notifications
+    socket.on('propertyRejected', (property) => {
+      console.log('❌ Property rejected notification received:', property);
+      
+      if (property.ownerId === user.id || property.user_id === user.id) {
+        setProperties(prevProperties => 
+          prevProperties.map(prop => 
+            prop.id === property.id 
+              ? { ...prop, status: 'rejected' }
+              : prop
+          )
+        );
+        
+        setUpdateSuccessMessage('❌ Your property has been rejected. Please check the details and resubmit.');
+        setTimeout(() => setUpdateSuccessMessage(''), 5000);
+        
+        loadDashboardData();
+      }
+    });
+
+    // Cleanup socket listeners on unmount
+    return () => {
+      socket.off('propertyApproved');
+      socket.off('propertyRejected');
+    };
+  }, [user]);
 
   // Refresh data when component gains focus
   useEffect(() => {

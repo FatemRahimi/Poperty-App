@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { socket } from '../socket';
+import { socket } from '../services/socket';
 import './AdminDashboard.css';
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
@@ -341,8 +341,13 @@ const AdminDashboard = () => {
         <p><strong>Price:</strong> {formatPrice(property)}</p>
         <p><strong>Address:</strong> {property.address_line1}, {property.city}</p>
         <p><strong>Submitted:</strong> {formatDate(property.created_at)}</p>
-        <p><strong>Submitted by:</strong> {property.user_email}</p>
+        <p><strong>Submitted by:</strong> {property.user_email} ({property.first_name} {property.last_name})</p>
         {property.bedrooms && <p><strong>Bed/Bath:</strong> {property.bedrooms} bed, {property.bathrooms} bath</p>}
+        {property.contact_name && <p><strong>Contact:</strong> {property.contact_name} - {property.contact_phone}</p>}
+        {property.contact_email && <p><strong>Contact Email:</strong> {property.contact_email}</p>}
+        {property.description && (
+          <p><strong>Description:</strong> {property.description.substring(0, 100)}...</p>
+        )}
       </div>
 
       <div className="property-actions">
