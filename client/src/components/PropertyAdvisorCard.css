@@ -42,6 +42,19 @@
   margin: 20px 0;
   font-family: var(--pac-font-primary);
   box-sizing: border-box;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.property-advisor-card-wrapper.scroll-up {
+  transform: translateY(-10px);
+  opacity: 0.9;
+}
+
+.property-advisor-card-wrapper.scroll-down {
+  transform: translateY(10px);
+  opacity: 0.9;
 }
 
 /* Loading State */
@@ -274,6 +287,22 @@
   }
   50% {
     transform: translateY(-8px);
+  }
+}
+
+/* Animation for pointing hand */
+@keyframes pointingHand {
+  0%, 100% {
+    transform: rotate(90deg) scale(1);
+  }
+  25% {
+    transform: rotate(75deg) scale(1.1);
+  }
+  50% {
+    transform: rotate(65deg) scale(1.2);
+  }
+  75% {
+    transform: rotate(75deg) scale(1.1);
   }
 }
 
