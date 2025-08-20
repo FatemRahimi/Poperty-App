@@ -130,10 +130,9 @@
 /* Company Card Layout - Standard */
 .pac-company-card {
   background: linear-gradient(135deg, var(--pac-white) 0%, var(--pac-gray-50) 100%);
-  border: 2px solid var(--pac-gray-200);
-  border-radius: 0;
+
   overflow: hidden;
-  box-shadow: var(--pac-shadow-lg);
+  box-shadow: none;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -171,7 +170,7 @@
 .pac-company-header {
   background: linear-gradient(135deg, var(--pac-gray-50) 0%, var(--pac-gray-100) 100%);
   padding: 25px 20px;
-  border-bottom: 1px solid var(--pac-gray-200);
+  border-bottom: none;
 }
 
 /* Company Header - Professional Brand Design */
@@ -228,25 +227,64 @@
   display: flex;
   align-items: center;
   gap: 20px;
+
 }
 
 .pac-company-logo {
-  width: 80px;
-  height: 80px;
-  border-radius: 12px;
+  width: 60px;
+  height: 60px;
+
   overflow: hidden;
   background: var(--pac-white);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+ 
   box-shadow: var(--pac-shadow-sm);
-  transition: transform 0.2s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  animation: logoFloat 2s ease-in-out infinite;
+}
+
+.pac-company-logo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(254, 252, 232, 0.6) 0%, rgba(254, 243, 199, 0.4) 50%, rgba(59, 130, 246, 0.2) 100%);
+  backdrop-filter: blur(2px);
+  z-index: 1;
+  transition: all 0.1s ease;
+  mix-blend-mode: soft-light;
+}
+
+.pac-company-logo img,
+.pac-company-logo .pac-logo-image {
+  position: relative;
+  z-index: 2;
+  transition: all 0.8s ease;
+}
+
+@keyframes logoFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 .pac-company-logo:hover {
-  transform: scale(1.05);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.pac-company-logo:hover::before {
+  background: linear-gradient(135deg, rgba(254, 252, 232, 0.3) 0%, rgba(254, 243, 199, 0.2) 50%, rgba(59, 130, 246, 0.1) 100%);
+  mix-blend-mode: multiply;
 }
 
 .pac-logo-image {
@@ -310,30 +348,12 @@
 /* Property Consultant Section */
 .pac-consultant-section {
   padding: 25px 20px;
-  background: var(--pac-white);
-  border-bottom: 1px solid var(--pac-gray-200);
+  background:#f9f8ea;
+  border-bottom: 0px solid var(--pac-gray-200);
 }
 
 .pac-section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--pac-gray-800);
-  margin: 0 0 15px 0;
-  font-family: var(--pac-font-primary);
-  position: relative;
-  padding-left: 12px;
-}
-
-.pac-section-title::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 20px;
-  background: linear-gradient(135deg, var(--pac-primary) 0%, var(--pac-primary-light) 100%);
-  border-radius: 2px;
+  display: none;
 }
 
 .pac-consultant-card {
@@ -341,15 +361,15 @@
   gap: 20px;
   align-items: center;
   padding: 15px;
-  background: linear-gradient(135deg, #fef7ff 0%, #f3e8ff 50%, #e9d5ff 100%);
-  border-radius: 12px;
-  border: 1px solid #d8b4fe;
+  
+  border-radius: 2px;
+  border: 2px solid #9f9fa8;
   transition: all 0.3s ease;
 }
 
 .pac-consultant-card:hover {
-  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #e9d5ff 100%);
-  box-shadow: 0 8px 25px rgba(168, 85, 247, 0.15);
+  background: linear-gradient(135deg, #ece9ef 0%, #d6e1e2 50%, #a7ccd2 100%);
+ 
   transform: translateY(-1px);
   border-color: #c084fc;
 }
@@ -371,10 +391,10 @@
 
 /* Property Consultant Photo - Rectangle (for company advisor type) */
 .pac-consultant-photo.pac-consultant-photo-rectangle {
-  width: 100px;
+  width: 90px;
   height: 120px;
   border-radius: 12px;
-  border: 2px solid var(--pac-primary-light);
+  border: 1px solid var(--pac-gray-200);
   box-shadow: var(--pac-shadow-sm);
 }
 
@@ -385,7 +405,7 @@
 }
 
 .pac-consultant-image.pac-consultant-image-rectangle {
-  border-radius: 10px;
+  border-radius:0px ;
 }
 
 .pac-consultant-placeholder {
@@ -437,7 +457,7 @@
 /* Office Information Section */
 .pac-office-section {
   padding: 25px 20px;
-  background: var(--pac-gray-50);
+  background: #f9f8ea;
 }
 
 .pac-office-details {
