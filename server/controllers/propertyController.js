@@ -609,21 +609,24 @@ const getUserProperties = async (req, res) => {
     console.log('📋 Request headers:', req.headers.authorization ? 'Authorization header present' : 'No authorization header');
     console.log('📋 Request user agent:', req.headers['user-agent']);
 
-    // 🎯 ADMIN LOGIC: If user is admin, show ALL properties, otherwise show only user's properties
+    // 🎯 SECURITY FIX: Ensure users only see their own properties, admins see all
     let whereClause;
     let queryParams = [];
     let paramCount = 0;
 
-    if (user_role === 'admin' || user_role === 'super_admin') {
-      // Admin sees all properties
+    // Check if this is an admin request (from admin dashboard)
+    const isAdminRequest = req.path.includes('/admin/');
+    
+    if ((user_role === 'admin' || user_role === 'super_admin') && isAdminRequest) {
+      // Admin dashboard request - show ALL properties for management
       whereClause = 'WHERE 1=1';
-      console.log('👑 Admin mode: Showing ALL properties');
+      console.log('👑 Admin dashboard: Showing ALL properties for management');
     } else {
-      // Regular user sees only their properties
+      // Regular user request - show ONLY their own properties
       paramCount++;
       whereClause = 'WHERE p.user_id = $1';
       queryParams.push(user_id);
-      console.log('👤 User mode: Showing only user properties');
+      console.log(`👤 User mode: Showing only properties for user ID ${user_id}`);
     }
 
     if (status) {
@@ -667,11 +670,24 @@ const getUserProperties = async (req, res) => {
     console.log('🔍 getUserProperties DEBUG:');
     console.log('📋 User ID:', user_id);
     console.log('📋 User Role:', user_role);
+    console.log('📋 Is Admin Request:', isAdminRequest);
+    console.log('📋 Request Path:', req.path);
     console.log('📋 Query params:', queryParams);
     console.log('📋 Where clause:', whereClause);
     console.log('📋 Full query:', query);
 
     const result = await pool.query(query, queryParams);
+
+    // 🔒 SECURITY CHECK: Verify all returned properties belong to the requesting user (for non-admin requests)
+    if (!isAdminRequest && result.rows.length > 0) {
+      const unauthorizedProperties = result.rows.filter(property => property.user_id !== user_id);
+      if (unauthorizedProperties.length > 0) {
+        console.error('🚨 SECURITY BREACH: User accessing unauthorized properties!');
+        console.error('🚨 User ID:', user_id);
+        console.error('🚨 Unauthorized properties:', unauthorizedProperties.map(p => ({ id: p.id, user_id: p.user_id })));
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
 
     // Debug logging - check what data is returned from database
     console.log('🔍 Backend getUserProperties Debug:');
@@ -938,9 +954,29 @@ const updatePropertyStatus = async (req, res) => {
       notificationType: status === 'approved' ? 'approval' : 'rejection'
     });
 
+    // 🔧 SOCKET.IO: Send real-time notification to user
+    const io = req.app.get('io');
+    if (io) {
+      const notificationData = {
+        ...property,
+        ownerId: property.user_id,
+        approvedBy: admin_id,
+        adminNotes: admin_notes,
+        rejectionReason: rejection_reason
+      };
+
+      if (status === 'approved') {
+        console.log(`📢 Emitting propertyApproved to user ${property.user_id} for property ${property.id}`);
+        io.emit('propertyApproved', notificationData);
+      } else {
+        console.log(`📢 Emitting propertyRejected to user ${property.user_id} for property ${property.id}`);
+        io.emit('propertyRejected', notificationData);
+      }
+    }
+
     res.json({
       success: true,
-      message: `Property ${status} successfully. User has been notified via email.`,
+      message: `Property ${status} successfully. User has been notified via email and real-time notification.`,
       property
     });
 
@@ -1666,6 +1702,20 @@ const updateProperty = async (req, res) => {
     }
 
     await client.query('COMMIT');
+
+    // 🔧 SOCKET.IO: Send real-time notification to admin about property update
+    const io = req.app.get('io');
+    if (io && property.status === 'pending') {
+      const notificationData = {
+        ...property,
+        ownerId: property.user_id,
+        updatedBy: user.first_name + ' ' + user.last_name,
+        userEmail: user.email
+      };
+
+      console.log(`📢 Emitting propertyEdited to notify admin of property update for property ${property.id}`);
+      io.emit('propertyEdited', notificationData);
+    }
 
     console.log(`🔄 Property updated successfully: ${property.title} (ID: ${property.id})`);
 
