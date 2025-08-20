@@ -345,6 +345,30 @@
   font-family: var(--pac-font-primary);
 }
 
+.pac-company-address {
+  font-size: 14px;
+  color: var(--pac-primary);
+  margin: 4px 0 0 0;
+  font-family: var(--pac-font-primary);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.pac-company-address:hover {
+  color: var(--pac-primary-light);
+  text-decoration: underline;
+  transform: translateY(-1px);
+}
+
+/* Website link in office section */
+.pac-office-section .pac-company-address {
+  background: #f9f8ea;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #e5e4d0;
+}
+
 /* Property Consultant Section */
 .pac-consultant-section {
   padding: 25px 20px;
@@ -487,7 +511,7 @@
 .pac-office-label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--pac-gray-600);
+  color: var(--pac-gray-1000);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   min-width: 80px;
@@ -497,11 +521,11 @@
 
 .pac-office-value {
   font-size: 13px;
-  color: var(--pac-gray-800);
-  text-align: right;
+  color: var(--pac-gray-600);
+  text-align: left;
   flex: 1;
   font-family: var(--pac-font-primary);
-  line-height: 1.4;
+  line-height: 1;
 }
 
 /* Person Card Layout */
