@@ -3,6 +3,7 @@ import './PropertyAdvisorCard.css';
 
 const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }) => {
   const [advisorData, setAdvisorData] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -21,6 +22,29 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
   const capitalizeWords = (str) => {
     if (!str) return '';
     return str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  // Fetch user data when no advisor profile exists
+  const fetchUserData = async (userId) => {
+    try {
+      console.log('🔍 PropertyAdvisorCard: Fetching user data for userId:', userId);
+      const response = await fetch(`/api/users/${userId}?t=${Date.now()}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 PropertyAdvisorCard: User data response:', data);
+        
+        if (data.success && data.user) {
+          setUserData(data.user);
+        } else {
+          console.log('🔍 PropertyAdvisorCard: No user data found');
+        }
+      } else {
+        console.log('🔍 PropertyAdvisorCard: Failed to fetch user data:', response.status);
+      }
+    } catch (err) {
+      console.error('🔍 PropertyAdvisorCard: Error fetching user data:', err);
+    }
   };
 
   // Fetch advisor profile data
@@ -58,6 +82,10 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
           } else {
             console.log('🔍 PropertyAdvisorCard: No advisor profile found or success is false');
             setError('No advisor profile found');
+            // If no advisor profile, try to fetch user data for fallback
+            if (userId) {
+              await fetchUserData(userId);
+            }
           }
         } else {
           console.log('🔍 PropertyAdvisorCard: API request failed with status:', response.status);
@@ -432,28 +460,28 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
       <div className="property-advisor-card-wrapper">
         <div className="pac-addrent-card">
           <div className="pac-addrent-header">
-            <h3 className="pac-addrent-title">Property Contact</h3>
+            <h3 className="pac-addrent-title">Contact Information</h3>
           </div>
           <div className="pac-addrent-content">
             <div className="pac-addrent-info">
               <h4 className="pac-addrent-name">
-                {fallbackContact?.name || 
-                 `${fallbackContact?.firstName || ''} ${fallbackContact?.lastName || ''}`.trim() ||
+                {userData?.fullName || 
+                 `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() ||
                  propertyConsultantData?.fullName ||
                  'Property Owner'}
               </h4>
               <p className="pac-addrent-role">
-                {propertyConsultantData?.jobTitle || 'Property Owner'}
+                Property Owner
               </p>
-              {(fallbackContact?.email || propertyConsultantData?.contactEmail) && (
+              {(userData?.email || propertyConsultantData?.contactEmail) && (
                 <p className="pac-addrent-email">
                   <i className="fas fa-envelope" style={{ marginRight: '8px', color: '#6b7280' }}></i>
-                  {fallbackContact?.email || propertyConsultantData?.contactEmail}
+                  {userData?.email || propertyConsultantData?.contactEmail}
                 </p>
               )}
-              {(fallbackContact?.phone || propertyConsultantData?.contactPhone) && (
+              {(userData?.phone || propertyConsultantData?.contactPhone) && (
                 <p className="pac-addrent-phone">
-                  📞 {fallbackContact?.phone || propertyConsultantData?.contactPhone}
+                  📞 {userData?.phone || propertyConsultantData?.contactPhone}
                 </p>
               )}
             </div>

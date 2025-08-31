@@ -707,7 +707,7 @@
 .pac-addrent-card {
   background: linear-gradient(135deg, var(--pac-gray-100) 0%, var(--pac-gray-200) 100%);
   border: 2px solid var(--pac-gray-300);
-  border-radius: 16px;
+  border-radius: 0; /* Removed border radius */
   overflow: hidden;
   box-shadow: var(--pac-shadow-md);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -730,7 +730,8 @@
 }
 
 .pac-addrent-header {
-  background: var(--pac-primary);
+  background:#d0dc8b;
+  
   color: var(--pac-white);
   padding: 15px 20px;
   text-align: center;
@@ -738,7 +739,7 @@
 
 .pac-addrent-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 22px; /* Increased from 18px */
   font-weight: 600;
   font-family: var(--pac-font-primary);
 }
@@ -752,15 +753,20 @@
 }
 
 .pac-addrent-name {
-  font-size: 20px;
+  font-size: 24px; /* Increased from 20px */
   font-weight: 700;
   color: var(--pac-gray-800);
   margin: 0 0 8px 0;
   font-family: var(--pac-font-primary);
 }
 
+.pac-addrent-name::before {
+  content: '';
+  font-size: 24px;
+}
+
 .pac-addrent-role {
-  font-size: 14px;
+  font-size: 18px; /* Increased from 14px */
   color: var(--pac-gray-500);
   margin: 0 0 15px 0;
   font-style: italic;
@@ -769,7 +775,7 @@
 
 .pac-addrent-email,
 .pac-addrent-phone {
-  font-size: 14px;
+  font-size: 18px; /* Increased from 14px */
   color: var(--pac-gray-600);
   margin: 8px 0;
   font-family: var(--pac-font-primary);
