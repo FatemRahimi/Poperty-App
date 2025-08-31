@@ -419,13 +419,13 @@
   border-radius: 2px;
   border: 1.1px solid #281c6a;
   transition: all 0.3s ease;
+  background: transparent; /* Remove background color */
 }
 
 .pac-consultant-card:hover {
-  background: linear-gradient(135deg, #7a93a6 0%, #a5d4d8 50%, #f5f5f3 100%);
- 
+  background: transparent; /* Remove background color on hover */
   transform: translateY(-1px);
-  border-color: #c084fc;
+  border-color: #c084fc; /* Only change border color on hover */
 }
 
 /* Property Consultant Photo - Standard (Circle) */
@@ -480,11 +480,12 @@
   flex: 1;
   min-width: 0;
   font-family: 'Gotham', 'Montserrat', Arial, sans-serif;
+  font-weight: 600; /* Increased font weight for better visibility */
 }
 
 .pac-consultant-name {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700; /* Increased from 600 to 700 */
   color: var(--pac-gray-800);
   margin: 0 0 5px 0;
   font-family: var(--pac-font-primary);
@@ -494,7 +495,7 @@
 .pac-consultant-role {
   font-size: 14px;
   color: var(--pac-primary);
-  font-weight: 500;
+  font-weight: 600; /* Increased from 500 to 600 */
   margin: 0 0 8px 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -503,10 +504,11 @@
 
 .pac-consultant-email,
 .pac-consultant-phone {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--pac-gray-500);
   margin: 4px 0;
   font-family: 'Gotham', 'Montserrat', Arial, sans-serif;
+  font-weight: 600; /* Increased font weight for better visibility */
 }
 
 /* Office Information Section */
@@ -526,7 +528,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px 16px;
-  background: var(--pac-white);
+  background: transparent; /* Remove background color */
   border: 1.1px solid #281c6a;
   transition: all 0.2s ease;
   align-items: flex-start;
@@ -534,9 +536,9 @@
 }
 
 .pac-office-item:hover {
-  border-color: #c084fc;
+  border-color: #c084fc; /* Only change border color on hover */
   box-shadow: var(--pac-shadow-sm);
-  background: linear-gradient(135deg, #7a93a6 0%, #a5d4d8 50%, #f5f5f3 100%);
+  background: transparent; /* Remove background color on hover */
   transform: translateY(-1px);
 }
 

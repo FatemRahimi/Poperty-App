@@ -383,12 +383,7 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
               <div className="pac-company-info">
                 <h2 className="pac-company-name">{capitalizeWords(advisorData.full_name)}</h2>
                 <p className="pac-consultant-role">{advisorData.job_title}</p>
-                {(advisorData.email || advisorData.contact_email || advisorData.contactEmail || advisorData.company_email || advisorData.account_email) && (
-                  <p className="pac-company-email">
-                    <i className="fas fa-envelope" style={{ marginRight: '8px', color: '#6b7280' }}></i>
-                    {advisorData.email || advisorData.contact_email || advisorData.contactEmail || advisorData.company_email || advisorData.account_email}
-                  </p>
-                )}
+                {/* Removed email display for person advisor type */}
               </div>
             </div>
           </div>
