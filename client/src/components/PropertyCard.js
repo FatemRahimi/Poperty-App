@@ -67,19 +67,22 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
     const isPerson = hasAdvisorProfile && advisorData.advisor_type === 'person';
     const hasOnlyAddRentData = !hasAdvisorProfile && (fallbackContact || propertyConsultantData);
 
-    // For company advisors, prioritize the contact information from the AddRent form
+    // For company advisors, show company name and contact info
     if (isCompany) {
-      let propertyConsultant = null;
+      let contactPhone = null;
       
-      if (fallbackContact && (fallbackContact.name || fallbackContact.email || fallbackContact.phone)) {
-        const selectedExpert = advisorData.experts?.find(expert => {
+      // Get phone from selected expert or fallback
+      if (fallbackContact && fallbackContact.phone) {
+        contactPhone = fallbackContact.phone;
+      } else if (advisorData.experts && advisorData.experts.length > 0) {
+        const selectedExpert = advisorData.experts.find(expert => {
           const expertName = expert.full_name || expert.fullName || '';
           const expertEmail = expert.email || '';
           const expertPhone = expert.phone || '';
           
-          const formName = fallbackContact.name || `${fallbackContact.firstName || ''} ${fallbackContact.lastName || ''}`.trim();
-          const formEmail = fallbackContact.email || '';
-          const formPhone = fallbackContact.phone || '';
+          const formName = fallbackContact?.name || `${fallbackContact?.firstName || ''} ${fallbackContact?.lastName || ''}`.trim();
+          const formEmail = fallbackContact?.email || '';
+          const formPhone = fallbackContact?.phone || '';
           
           return (expertName && formName && expertName.toLowerCase() === formName.toLowerCase()) ||
                  (expertEmail && formEmail && expertEmail.toLowerCase() === formEmail.toLowerCase()) ||
@@ -87,47 +90,23 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
         });
         
         if (selectedExpert) {
-          propertyConsultant = {
-            full_name: selectedExpert.full_name || selectedExpert.fullName,
-            email: selectedExpert.email,
-            phone: selectedExpert.phone
-          };
+          contactPhone = selectedExpert.phone;
         } else {
-          propertyConsultant = {
-            full_name: fallbackContact.name || `${fallbackContact.firstName || ''} ${fallbackContact.lastName || ''}`.trim(),
-            email: fallbackContact.email,
-            phone: fallbackContact.phone
-          };
-        }
-      } else {
-        // Find property consultant from expert team
-        const experts = advisorData.experts || [];
-        let propertyConsultant = experts.find(expert => {
-          const jobTitle = (expert.job_title || expert.jobTitle || '').toLowerCase();
-          return jobTitle.includes('property consultant') || jobTitle.includes('property') || jobTitle.includes('consultant');
-        });
-        
-        if (!propertyConsultant && experts.length > 0) {
-          propertyConsultant = experts[0];
-        }
-        
-        if (propertyConsultant) {
-          propertyConsultant = {
-            full_name: propertyConsultant.full_name || propertyConsultant.fullName,
-            email: propertyConsultant.email,
-            phone: propertyConsultant.phone
-          };
+          // Use first expert's phone
+          contactPhone = advisorData.experts[0].phone;
         }
       }
       
-      return propertyConsultant;
+      return {
+        full_name: advisorData.company_name || 'Company',
+        phone: contactPhone || advisorData.company_phone || advisorData.contact_phone
+      };
     }
     
     // For person advisors
     if (isPerson) {
       return {
         full_name: advisorData.full_name,
-        email: advisorData.email || advisorData.contact_email || advisorData.contactEmail || advisorData.company_email || advisorData.account_email,
         phone: advisorData.contact_phone
       };
     }
@@ -139,7 +118,6 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                    `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() ||
                    propertyConsultantData?.fullName ||
                    'Property Owner',
-        email: userData?.email || propertyConsultantData?.contactEmail,
         phone: userData?.phone || propertyConsultantData?.contactPhone
       };
     }
@@ -149,7 +127,6 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
       full_name: property.first_name && property.last_name 
         ? `${property.first_name} ${property.last_name}` 
         : property.owner_name || property.contact_name || 'Owner',
-      email: property.contact_email,
       phone: property.contact_phone || property.user_phone || property.phone || property.contact_number
     };
   };
@@ -587,30 +564,38 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
           <div className="property-contact-info">
             <div className="contact-item">
               <i className="fas fa-user"></i>
-              <span className="contact-name">
-                {getContactInfo().full_name}
+              <span className={`contact-name ${!getContactInfo().full_name ? 'unavailable' : ''}`}>
+                {getContactInfo().full_name || 'Contact Name'}
               </span>
             </div>
-            {(getContactInfo().phone || getContactInfo().email) && (
-              <>
-                {getContactInfo().phone && (
-                  <div className="contact-item">
-                    <i className="fas fa-phone"></i>
-                    <span className="contact-phone">
-                      {getContactInfo().phone}
-                    </span>
-                  </div>
-                )}
-                {getContactInfo().email && (
-                  <div className="contact-item">
-                    <i className="fas fa-envelope"></i>
-                    <span className="contact-email">
-                      {getContactInfo().email}
-                    </span>
-                  </div>
-                )}
-              </>
-            )}
+            <div className="contact-item">
+              <i className="fas fa-phone"></i>
+              <span className={`contact-phone ${!getContactInfo().phone ? 'unavailable' : ''}`}>
+                {getContactInfo().phone || 'Phone not available'}
+              </span>
+            </div>
+            <div className="contact-item">
+              <i className="fas fa-info-circle"></i>
+              <span 
+                className="contact-more-info"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Capture current location as returnPath
+                  const returnPath = location.pathname.includes('/dashboard')
+                    ? '/dashboard?tab=properties'
+                    : location.pathname + location.search;
+                  
+                  // Also store in sessionStorage as backup
+                  sessionStorage.setItem('lastDashboardPath', returnPath);
+                  
+                  navigate(`/property/${property.slug || property.id}`, {
+                    state: { returnPath: returnPath }
+                  });
+                }}
+              >
+                More Info
+              </span>
+            </div>
           </div>
         </div>
         
