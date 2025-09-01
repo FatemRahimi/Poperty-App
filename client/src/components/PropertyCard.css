@@ -9,7 +9,7 @@
 /* Horizontal layout for image and details side by side */
 .property-card-content {
   display: flex;
-  height: 310px; /* Increased height to accommodate rental prices section */
+  height: 320px; /* Reduced height since we show fewer contact items */
   position: relative;
 }
 
@@ -251,7 +251,7 @@
   .property-card-content {
     flex-direction: column;
     height: auto;
-    min-height: 400px;
+    min-height: 420px; /* Reduced height since we show fewer contact items */
   }
   
   .property-left-column {
@@ -539,58 +539,85 @@
 
 /* Contact Information Section */
 .property-contact-info {
-  margin: 0 4rem 1rem 0; /* Right margin to avoid action buttons, reduced bottom margin */
+  margin: 0 4rem 0.5rem 0; /* Reduced bottom margin */
   padding: 0;
   background: transparent; /* Remove background */
   border: none; /* Remove border */
   display: flex;
-  align-items: center; /* Align items horizontally */
-  gap: 1rem; /* Gap between name and phone */
-  flex-wrap: wrap; /* Allow wrapping on small screens */
+  flex-direction: row; /* Put items in the same line */
+  align-items: center; /* Center align items */
+  gap: 1rem; /* Gap between items */
+  flex-wrap: wrap; /* Allow wrapping if needed */
+  min-height: 30px; /* Reduced height for single line */
 }
 
 .contact-item {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.95rem;
+  gap: 0.3rem; /* Reduced gap */
+  font-size: 0.85rem; /* Smaller font size */
   color: #374151;
   flex-shrink: 0; /* Prevent shrinking */
+  min-height: 18px; /* Ensure consistent item height */
 }
 
 .contact-item i {
-  width: 14px;
+  width: 12px; /* Smaller icon width */
   color: #6b7280;
-  font-size: 0.8rem;
+  font-size: 0.7rem; /* Smaller icon size */
   flex-shrink: 0;
 }
 
 .contact-name {
-  font-weight: 700; /* Increased from 600 */
+  font-weight: 700;
   color: #1f2937;
   text-transform: capitalize;
   white-space: nowrap; /* Prevent name from wrapping */
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 120px; /* Limit width to prevent interference */
+  max-width: 140px; /* Increased max width */
+  font-size: 0.85rem; /* Smaller font size */
 }
 
 .contact-phone {
-  font-weight: 600; /* Increased from 500 */
+  font-weight: 600;
   color: #1f2937;
   font-family: monospace;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px; /* Reduced letter spacing */
   white-space: nowrap; /* Prevent phone from wrapping */
-  font-size: 0.9rem;
+  font-size: 0.8rem; /* Smaller font size */
 }
 
 .contact-email {
-  font-weight: 600; /* Increased from 500 */
+  font-weight: 600;
   color: #1f2937;
   font-family: monospace;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px; /* Reduced letter spacing */
   white-space: nowrap; /* Prevent email from wrapping */
-  font-size: 0.9rem;
+  font-size: 0.8rem; /* Smaller font size */
+}
+
+.contact-more-info {
+  font-weight: 600;
+  color: #3b82f6; /* Blue color for "More Info" */
+  font-family: inherit;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.contact-more-info:hover {
+  color: #1d4ed8; /* Darker blue on hover */
+}
+
+/* Style for unavailable contact information */
+.contact-name.unavailable,
+.contact-phone.unavailable,
+.contact-email.unavailable {
+  color: #9ca3af;
+  font-style: italic;
 }
 
 .property-card-content .property-type-badge {
@@ -731,27 +758,31 @@
   
   .property-contact-info {
     margin: 0 0 1rem 0; /* Remove right margin on mobile */
-    gap: 0.80rem; /* Smaller gap on mobile */
-    flex-direction: column; /* Stack vertically on mobile */
-    align-items: flex-start; /* Align to start */
+    gap: 0.5rem; /* Smaller gap on mobile */
+    flex-direction: row; /* Keep horizontal on mobile */
+    align-items: center; /* Center align items */
+    min-height: 25px; /* Reduced height on mobile */
   }
   
   .contact-item {
-    font-size: 0.8rem;
+    font-size: 0.75rem; /* Smaller font on mobile */
+    min-height: 16px; /* Smaller height on mobile */
   }
   
   .contact-item i {
-    font-size: 0.7rem;
-    width: 12px;
+    font-size: 0.65rem; /* Smaller icon on mobile */
+    width: 10px; /* Smaller width on mobile */
   }
   
   .contact-name {
     max-width: 150px; /* Allow more width on mobile */
-    font-size: 0.75rem;
+    font-size: 0.7rem; /* Smaller font on mobile */
   }
   
-  .contact-phone {
-    font-size: 0.7rem;
+  .contact-phone,
+  .contact-email,
+  .contact-more-info {
+    font-size: 0.65rem; /* Smaller font on mobile */
   }
 }
 
