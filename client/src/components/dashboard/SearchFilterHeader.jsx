@@ -196,7 +196,7 @@ const SearchFilterHeader = memo(({
           onSearchQueryChange={setSearchQuery}
           radius={searchFilters.radius}
           onRadiusChange={(value) => setSearchFilters({...searchFilters, radius: value})}
-          placeholder="Enter location (e.g. 'London', 'M1 4DY', 'Stone Road')..."
+          placeholder="Enter Location(e.g. 'M1 4DY',  'London', 'Ealing')"
           isSearching={isSearching}
           onKeyPress={handleKeyPress}
           onSuggestionSelect={handleSuggestionSelect}

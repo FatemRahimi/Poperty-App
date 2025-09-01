@@ -5,7 +5,8 @@ const DashboardTabs = ({
   activeTab, 
   setActiveTab, 
   setShowPropertiesDropdown, 
-  refreshUserProfile 
+  refreshUserProfile,
+  showProfileTab = false // Profile tab hidden for all users
 }) => {
   const navigate = useNavigate();
 
@@ -41,13 +42,15 @@ const DashboardTabs = ({
             My Properties
           </button>
         </div>
-        <button 
-          className={`nav-tab-modern ${activeTab === 'profile' ? 'active' : ''}`}
-          onClick={() => handleTabChange('profile')}
-        >
-          <i className="fas fa-user"></i>
-          Profile
-        </button>
+        {showProfileTab && (
+          <button 
+            className={`nav-tab-modern ${activeTab === 'profile' ? 'active' : ''}`}
+            onClick={() => handleTabChange('profile')}
+          >
+            <i className="fas fa-user"></i>
+            Profile
+          </button>
+        )}
         <button 
           className={`nav-tab-modern ${activeTab === 'advisor-profile' ? 'active' : ''}`}
           onClick={() => handleTabChange('advisor-profile')}
