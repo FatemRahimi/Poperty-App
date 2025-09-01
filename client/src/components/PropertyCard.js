@@ -114,9 +114,10 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
     // For no advisor profile (only AddRent form data)
     if (hasOnlyAddRentData) {
       return {
-        full_name: userData?.fullName || 
-                   `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() ||
+        full_name: property.property_consultant ||
                    propertyConsultantData?.fullName ||
+                   userData?.fullName || 
+                   `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() ||
                    'Property Owner',
         phone: userData?.phone || propertyConsultantData?.contactPhone
       };
@@ -563,9 +564,9 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
           {/* Contact Information Section */}
           <div className="property-contact-info">
             <div className="contact-item">
-              <i className="fas fa-user"></i>
+              <i className={`fas ${advisorData && advisorData.is_advisor && advisorData.advisor_type === 'company' ? 'fa-building' : 'fa-user'}`}></i>
               <span className={`contact-name ${!getContactInfo().full_name ? 'unavailable' : ''}`}>
-                {getContactInfo().full_name || 'Contact Name'}
+                {(getContactInfo().full_name || 'Contact Name').toUpperCase()}
               </span>
             </div>
             <div className="contact-item">
@@ -690,4 +691,4 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
   );
 };
 
-export default PropertyCard; 
+export default PropertyCard;

@@ -217,12 +217,12 @@ const AdvisorProfile = () => {
     }));
   };
 
-  // Add new expert
+  // Add expert
   const handleAddExpert = () => {
     const newExpert = {
       id: Date.now(),
       fullName: "",
-      jobTitle: "",
+      jobTitle: "Property Consultant", // Set Property Consultant as default
       profilePhotoUrl: "",
       phone: "",
       email: ""
@@ -366,6 +366,18 @@ const AdvisorProfile = () => {
       console.log('❌ Missing user ID or token');
       setError('Authentication error. Please login again.');
       return;
+    }
+
+    // Validate that at least one expert team member has "Property Consultant" job title
+    if (formData.advisorType === 'company' && expertTeam.length > 0) {
+      const hasPropertyConsultant = expertTeam.some(expert => 
+        expert.jobTitle === 'Property Consultant'
+      );
+      
+      if (!hasPropertyConsultant) {
+        setError('For having an advisor card, at least one expert team member must have "Property Consultant" job title.');
+        return;
+      }
     }
     
     setIsLoading(true);
@@ -782,8 +794,20 @@ const AdvisorProfile = () => {
                 {/* Expert Team Section */}
                 <div className="advisor-form-section expert-team-section">
                   <h4 className="advisor-subsection-title">Expert Team</h4>
-                  <p className="section-description">Add your team members who will be featured on property listings</p>
+                  <p className="section-description">Add your team members who will be featured on property listings. <strong>At least one team member must have "Property Consultant" job title.</strong></p>
                   
+                  {/* Property Consultant Status */}
+                  {expertTeam.length > 0 && (
+                    <div className="property-consultant-status">
+                      <span className={`status-indicator ${expertTeam.some(expert => expert.jobTitle === 'Property Consultant') ? 'status-valid' : 'status-invalid'}`}>
+                        {expertTeam.some(expert => expert.jobTitle === 'Property Consultant') 
+                          ? `✅ ${expertTeam.filter(expert => expert.jobTitle === 'Property Consultant').length} Property Consultant(s) selected`
+                          : '❌ No Property Consultant selected (required)'
+                        }
+                      </span>
+                    </div>
+                  )}
+
                   {expertTeam.map((expert, index) => (
                     <div key={expert.id} className="expert-member">
                       <div className="expert-header">
@@ -815,12 +839,16 @@ const AdvisorProfile = () => {
                             value={expert.jobTitle}
                             onChange={(e) => handleExpertChange(expert.id, 'jobTitle', e.target.value)}
                             required
-                            className="advisor-field-input"
+                            className={`advisor-field-input ${expert.jobTitle === 'Property Consultant' ? 'property-consultant-selected' : ''}`}
                           >
                             <option value="">Select Job Title</option>
                             {companyJobTitleOptions.map(option => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
+                              <option 
+                                key={option.value} 
+                                value={option.value}
+                                className={option.value === 'Property Consultant' ? 'property-consultant-option' : ''}
+                              >
+                                {option.value === 'Property Consultant' ? '⭐ Property Consultant (Required)' : option.label}
                               </option>
                             ))}
                           </select>

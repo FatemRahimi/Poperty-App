@@ -79,6 +79,9 @@ const UserDashboard = () => {
   const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
   const [updateSuccessMessage, setUpdateSuccessMessage] = useState('');
   
+  // Profile tab management state
+  // Profile tab state removed - tab is hidden for all users
+  
   // Advisor Profile state
   const [advisorProfile, setAdvisorProfile] = useState(null);
   const [isLoadingAdvisorProfile, setIsLoadingAdvisorProfile] = useState(false);
@@ -175,24 +178,9 @@ const UserDashboard = () => {
       // Register user with socket
       socket.emit('register', 'user', user.id);
 
-      // Listen for property approval notifications
-      socket.on('propertyApproved', (property) => {
-        console.log("✅ Property approved notification received:", property);
-        
-        // Show notification to user
-        alert(`✅ Your property "${property.title}" is now approved!`);
-        
-        // Update the property in the local state
-        setProperties(prev => 
-          prev.map(p => p.id === property.id ? { ...p, status: 'approved' } : p)
-        );
-        
-        // Refresh dashboard data to get latest status
-        loadDashboardData();
-      });
-
+      // Socket listeners are handled in the main useEffect below
       return () => {
-        socket.off('propertyApproved');
+        // Cleanup handled in main useEffect
       };
     }
   }, [user]);
@@ -455,12 +443,16 @@ const UserDashboard = () => {
     }
   }, [activeTab, autoCloseTimeout]);
 
+  // Profile tab management removed - tab is hidden for all users
+
   // Fetch advisor profile when advisor-profile tab is active
   useEffect(() => {
     if (activeTab === 'advisor-profile' && user && user.id) {
       fetchAdvisorProfile();
     }
   }, [activeTab, user]);
+
+  // Profile tab management removed - tab is hidden for all users
 
   const loadDashboardData = async () => {
     try {
@@ -578,37 +570,7 @@ const UserDashboard = () => {
     navigate('/');
   };
 
-  const handleCancelEdit = () => {
-    // Check if there are unsaved changes
-    const hasChanges = 
-      profileData.first_name !== (user?.first_name || '') ||
-      profileData.last_name !== (user?.last_name || '') ||
-      profileData.phone !== (user?.phone || '');
-
-    if (hasChanges) {
-      const confirmCancel = window.confirm(
-        'You have unsaved changes. Are you sure you want to cancel? Your changes will be lost.'
-      );
-      if (!confirmCancel) {
-        return; // User chose to continue editing
-      }
-    }
-
-    // Reset form data to original user data
-    setProfileData({
-      first_name: user?.first_name || '',
-      last_name: user?.last_name || '',
-      email: user?.email || '',
-      phone: user?.phone || '',
-      created_at: user?.created_at || ''
-    });
-    
-    // Exit editing mode
-    setIsEditing(false);
-    
-    // Clear any save messages
-    setSaveMessage({ type: '', text: '' });
-  };
+  // Profile tab functions removed - tab is hidden for all users
 
   const handleProfileSave = async () => {
     console.log('🔥 SAVE BUTTON CLICKED - Function started!');
@@ -1303,6 +1265,10 @@ const UserDashboard = () => {
     }
   };
 
+  // Profile tab management function removed - tab is hidden for all users
+
+  // Profile tab data population function removed - tab is hidden for all users
+
   // Fetch advisor profile for editing
   const fetchAdvisorProfile = async () => {
     try {
@@ -1441,6 +1407,9 @@ const UserDashboard = () => {
         
         // Show success message
         setSaveMessage({ type: 'success', text: 'Advisor profile updated successfully!' });
+        
+        // Trigger advisor profile change event to update tab visibility
+        window.dispatchEvent(new Event('advisorProfileUpdated'));
         
         // Clear success message after 4 seconds
         setTimeout(() => {
@@ -1834,21 +1803,33 @@ const UserDashboard = () => {
                   <div className="add-listing-dropdown-menu">
                     <button 
                       className="dropdown-item-btn"
-                      onClick={() => {navigate('/addlist'); setShowAddListingDropdown(false);}}
+                      onClick={() => {
+                        const currentPath = `/dashboard?tab=${activeTab}`;
+                        navigate('/addlist', { state: { returnPath: currentPath } });
+                        setShowAddListingDropdown(false);
+                      }}
                     >
                       <i className="fas fa-home" style={{marginRight: '0.5rem'}}></i>
                       For Sale
                     </button>
                     <button 
                       className="dropdown-item-btn"
-                      onClick={() => {navigate('/addrent'); setShowAddListingDropdown(false);}}
+                      onClick={() => {
+                        const currentPath = `/dashboard?tab=${activeTab}`;
+                        navigate('/addrent', { state: { returnPath: currentPath } });
+                        setShowAddListingDropdown(false);
+                      }}
                     >
                       <i className="fas fa-key" style={{marginRight: '0.5rem'}}></i>
                       For Rent
                     </button>
                     <button 
                       className="dropdown-item-btn"
-                      onClick={() => {navigate('/addlease'); setShowAddListingDropdown(false);}}
+                      onClick={() => {
+                        const currentPath = `/dashboard?tab=${activeTab}`;
+                        navigate('/addlease', { state: { returnPath: currentPath } });
+                        setShowAddListingDropdown(false);
+                      }}
                     >
                       <i className="fas fa-file-contract" style={{marginRight: '0.5rem'}}></i>
                       For Lease
@@ -1948,141 +1929,8 @@ const UserDashboard = () => {
             />
           )}
 
-          {activeTab === 'profile' && (
-            <div className={`profile-section ${isEditing ? 'editing' : ''}`}>
-              <div className="profile-header">
-                <h2>
-                  <i className="fas fa-user"></i>
-                  Profile Information
-                </h2>
-                {isEditing && (
-                  <small style={{color: '#64748b', fontStyle: 'italic'}}>
-                    Make your changes and click Save or Cancel
-                  </small>
-                )}
-              </div>
-              
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  console.log('🚫 Form submission prevented');
-                  if (isEditing) {
-                    handleProfileSave();
-                  }
-                }}
-              >
-                <div className="profile-form" ref={profileFormRef}>
-                  <div className="form-group-modern">
-                    <label className="form-label-modern">First Name</label>
-                    <input
-                      type="text"
-                      className="form-input-modern"
-                      value={profileData.first_name}
-                      onChange={(e) => setProfileData({...profileData, first_name: e.target.value})}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  
-                  <div className="form-group-modern">
-                    <label className="form-label-modern">Last Name</label>
-                    <input
-                      type="text"
-                      className="form-input-modern"
-                      value={profileData.last_name}
-                      onChange={(e) => setProfileData({...profileData, last_name: e.target.value})}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  
-                  <div className="form-group-modern">
-                    <label className="form-label-modern">Email Address</label>
-                    <input
-                      type="email"
-                      className="form-input-modern"
-                      value={profileData.email}
-                      disabled
-                      title="Email cannot be changed for security reasons"
-                    />
-                  </div>
-                  
-                  <div className="form-group-modern">
-                    <label className="form-label-modern">Phone Number</label>
-                    <input
-                      type="tel"
-                      className="form-input-modern"
-                      value={profileData.phone}
-                      onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
-                      disabled={!isEditing}
-                      placeholder="+1 (555) 123-4567"
-                    />
-                  </div>
-                </div>
-              </form>
-              
-              <div className="profile-actions">
-                {saveMessage.text && (
-                  <div className={`save-message ${saveMessage.type}`}>
-                    <i className={`fas ${saveMessage.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i>
-                    {saveMessage.text}
-                  </div>
-                )}
-                
-                {!isEditing ? (
-                  <button 
-                    className="btn-save"
-                    onClick={async () => {
-                      // Refresh profile data before editing to ensure latest values
-                      await refreshUserProfile();
-                      setIsEditing(true);
-                    }}
-                  >
-                    <i className="fas fa-edit"></i>
-                    Edit Profile
-                  </button>
-                ) : (
-                  <div className="edit-buttons-container">
-                    <button 
-                      type="button"
-                      className="btn-cancel"
-                      onClick={handleCancelEdit}
-                      disabled={isSaving}
-                    >
-                      <i className="fas fa-times"></i>
-                      Cancel
-                    </button>
-                    <button 
-                      type="button"
-                      className="btn-save"
-                      onClick={handleProfileSave}
-                      disabled={isSaving}
-                    >
-                      {isSaving ? (
-                        <>
-                          <i className="fas fa-spinner fa-spin"></i>
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-save"></i>
-                          Save Changes
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {activeTab === 'advisor-profile' && (
             <div className="profile-section">
-              <div className="profile-header">
-                <h2>
-                  <i className="fas fa-user-tie"></i>
-                  Advisor Profile
-                </h2>
-              </div>
-              
               {isLoadingAdvisorProfile ? (
                 <div className="loading-container">
                   <i className="fas fa-spinner fa-spin"></i>
@@ -2090,6 +1938,13 @@ const UserDashboard = () => {
                 </div>
               ) : advisorProfile ? (
                 <>
+                  <div className="profile-header">
+                    <h2>
+                      <i className="fas fa-user-tie"></i>
+                      Advisor Profile
+                    </h2>
+                  </div>
+                  
                   <div className="profile-form">
                     <div className="form-group-modern">
                       <label className="form-label-modern">Profile Type</label>
@@ -2177,8 +2032,6 @@ const UserDashboard = () => {
                           />
                         </div>
                         
-
-                        
                         <div className="form-group-modern">
                           <label className="form-label-modern">Contact Number</label>
                           <input
@@ -2217,9 +2070,6 @@ const UserDashboard = () => {
               ) : (
                 <div className="no-advisor-profile">
                   <div className="no-profile-content">
-                    <div className="no-profile-icon">
-                      <i className="fas fa-user-tie"></i>
-                    </div>
                     <h3>Create Your Advisor Profile</h3>
                     <p>Enhance your property listings with a professional advisor profile to build trust with potential clients.</p>
                     

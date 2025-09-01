@@ -632,7 +632,7 @@ const AddRent = () => {
     const newExpert = {
       id: Date.now(),
       fullName: '',
-      jobTitle: '',
+      jobTitle: 'Property Consultant', // Set Property Consultant as default
       profilePhoto: null,
       profilePhotoUrl: '',
       phone: '',
@@ -1002,6 +1002,20 @@ const AddRent = () => {
     }
     
     console.log('✅ All validations passed - Proceeding with submission');
+    
+    // Validate that at least one expert team member has "Property Consultant" job title
+    if (expertTeam.length > 0) {
+      const hasPropertyConsultant = expertTeam.some(expert => 
+        expert.jobTitle === 'Property Consultant'
+      );
+      
+      if (!hasPropertyConsultant) {
+        alert('For having an advisor card, at least one expert team member must have "Property Consultant" job title.');
+        console.log('❌ FORM SUBMISSION STOPPED - No Property Consultant in expert team');
+        return;
+      }
+    }
+    
     setError("");
     
     // Prevent double submissions

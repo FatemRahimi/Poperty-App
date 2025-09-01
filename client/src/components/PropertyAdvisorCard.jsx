@@ -465,10 +465,10 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
           <div className="pac-addrent-content">
             <div className="pac-addrent-info">
               <h4 className="pac-addrent-name">
-                {userData?.fullName || 
+                {(propertyConsultantData?.fullName ||
+                 userData?.fullName || 
                  `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() ||
-                 propertyConsultantData?.fullName ||
-                 'Property Owner'}
+                 'Property Owner').toUpperCase()}
               </h4>
               <p className="pac-addrent-role">
                 Property Owner
