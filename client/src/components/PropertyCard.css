@@ -87,12 +87,7 @@
   justify-content: flex-start;
   position: relative;
   min-width: 0; /* Allow text to wrap */
-  transition: background-color 0.3s ease;
   border: none; /* Remove any inherited borders */
-}
-
-.property-card-content .property-details-modern:hover {
-  background-color: #f8fafc;
 }
 
 /* Status badge positioning in horizontal layout */
@@ -586,6 +581,15 @@
   font-family: monospace;
   letter-spacing: 0.3px;
   white-space: nowrap; /* Prevent phone from wrapping */
+  font-size: 0.9rem;
+}
+
+.contact-email {
+  font-weight: 600; /* Increased from 500 */
+  color: #1f2937;
+  font-family: monospace;
+  letter-spacing: 0.3px;
+  white-space: nowrap; /* Prevent email from wrapping */
   font-size: 0.9rem;
 }
 
