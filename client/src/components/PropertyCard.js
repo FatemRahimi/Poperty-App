@@ -1,14 +1,158 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './PropertyCard.css';
 
-const PropertyCard = ({ property, showActions = true, compact = false, onPropertyDeleted, sourcePage }) => {
+const PropertyCard = ({ property, showActions = true, compact = false, onPropertyDeleted, sourcePage, userId, fallbackContact, propertyConsultantData }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [advisorData, setAdvisorData] = useState(null);
+  const [userData, setUserData] = useState(null);
 
+  // Fetch user data when no advisor profile exists
+  const fetchUserData = async (userId) => {
+    try {
+      const response = await fetch(`/api/users/${userId}?t=${Date.now()}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success && data.user) {
+          setUserData(data.user);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+    }
+  };
 
+  // Fetch advisor profile data
+  useEffect(() => {
+    const fetchAdvisorProfile = async () => {
+      if (!userId) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/users/${userId}/advisor-profile/details?t=${Date.now()}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.success && data.advisorProfile) {
+            setAdvisorData(data.advisorProfile);
+          } else {
+            // If no advisor profile, fetch user data
+            await fetchUserData(userId);
+          }
+        } else {
+          // If API call fails, fetch user data
+          await fetchUserData(userId);
+        }
+      } catch (err) {
+        console.error('Error fetching advisor profile:', err);
+        // If error, fetch user data
+        await fetchUserData(userId);
+      }
+    };
+
+    fetchAdvisorProfile();
+  }, [userId]);
+
+  // Helper function to get contact information (same logic as PropertyAdvisorCard)
+  const getContactInfo = () => {
+    const hasAdvisorProfile = advisorData && advisorData.is_advisor;
+    const isCompany = hasAdvisorProfile && advisorData.advisor_type === 'company';
+    const isPerson = hasAdvisorProfile && advisorData.advisor_type === 'person';
+    const hasOnlyAddRentData = !hasAdvisorProfile && (fallbackContact || propertyConsultantData);
+
+    // For company advisors, prioritize the contact information from the AddRent form
+    if (isCompany) {
+      let propertyConsultant = null;
+      
+      if (fallbackContact && (fallbackContact.name || fallbackContact.email || fallbackContact.phone)) {
+        const selectedExpert = advisorData.experts?.find(expert => {
+          const expertName = expert.full_name || expert.fullName || '';
+          const expertEmail = expert.email || '';
+          const expertPhone = expert.phone || '';
+          
+          const formName = fallbackContact.name || `${fallbackContact.firstName || ''} ${fallbackContact.lastName || ''}`.trim();
+          const formEmail = fallbackContact.email || '';
+          const formPhone = fallbackContact.phone || '';
+          
+          return (expertName && formName && expertName.toLowerCase() === formName.toLowerCase()) ||
+                 (expertEmail && formEmail && expertEmail.toLowerCase() === formEmail.toLowerCase()) ||
+                 (expertPhone && formPhone && expertPhone === formPhone);
+        });
+        
+        if (selectedExpert) {
+          propertyConsultant = {
+            full_name: selectedExpert.full_name || selectedExpert.fullName,
+            email: selectedExpert.email,
+            phone: selectedExpert.phone
+          };
+        } else {
+          propertyConsultant = {
+            full_name: fallbackContact.name || `${fallbackContact.firstName || ''} ${fallbackContact.lastName || ''}`.trim(),
+            email: fallbackContact.email,
+            phone: fallbackContact.phone
+          };
+        }
+      } else {
+        // Find property consultant from expert team
+        const experts = advisorData.experts || [];
+        let propertyConsultant = experts.find(expert => {
+          const jobTitle = (expert.job_title || expert.jobTitle || '').toLowerCase();
+          return jobTitle.includes('property consultant') || jobTitle.includes('property') || jobTitle.includes('consultant');
+        });
+        
+        if (!propertyConsultant && experts.length > 0) {
+          propertyConsultant = experts[0];
+        }
+        
+        if (propertyConsultant) {
+          propertyConsultant = {
+            full_name: propertyConsultant.full_name || propertyConsultant.fullName,
+            email: propertyConsultant.email,
+            phone: propertyConsultant.phone
+          };
+        }
+      }
+      
+      return propertyConsultant;
+    }
+    
+    // For person advisors
+    if (isPerson) {
+      return {
+        full_name: advisorData.full_name,
+        email: advisorData.email || advisorData.contact_email || advisorData.contactEmail || advisorData.company_email || advisorData.account_email,
+        phone: advisorData.contact_phone
+      };
+    }
+    
+    // For no advisor profile (only AddRent form data)
+    if (hasOnlyAddRentData) {
+      return {
+        full_name: userData?.fullName || 
+                   `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() ||
+                   propertyConsultantData?.fullName ||
+                   'Property Owner',
+        email: userData?.email || propertyConsultantData?.contactEmail,
+        phone: userData?.phone || propertyConsultantData?.contactPhone
+      };
+    }
+    
+    // Fallback to property data
+    return {
+      full_name: property.first_name && property.last_name 
+        ? `${property.first_name} ${property.last_name}` 
+        : property.owner_name || property.contact_name || 'Owner',
+      email: property.contact_email,
+      phone: property.contact_phone || property.user_phone || property.phone || property.contact_number
+    };
+  };
 
   const formatPrice = (property) => {
     if (property.category === 'sale' && property.price) {
@@ -444,18 +588,28 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
             <div className="contact-item">
               <i className="fas fa-user"></i>
               <span className="contact-name">
-                {property.first_name && property.last_name 
-                  ? `${property.first_name} ${property.last_name}` 
-                  : property.owner_name || property.contact_name || 'Owner'}
+                {getContactInfo().full_name}
               </span>
             </div>
-            {(property.contact_phone || property.user_phone || property.phone || property.contact_number) && (
-              <div className="contact-item">
-                <i className="fas fa-phone"></i>
-                <span className="contact-phone">
-                  {property.contact_phone || property.user_phone || property.phone || property.contact_number}
-                </span>
-              </div>
+            {(getContactInfo().phone || getContactInfo().email) && (
+              <>
+                {getContactInfo().phone && (
+                  <div className="contact-item">
+                    <i className="fas fa-phone"></i>
+                    <span className="contact-phone">
+                      {getContactInfo().phone}
+                    </span>
+                  </div>
+                )}
+                {getContactInfo().email && (
+                  <div className="contact-item">
+                    <i className="fas fa-envelope"></i>
+                    <span className="contact-email">
+                      {getContactInfo().email}
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

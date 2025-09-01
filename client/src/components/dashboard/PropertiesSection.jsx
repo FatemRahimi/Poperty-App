@@ -56,6 +56,20 @@ const PropertiesSection = ({
                 property={property} 
                 onPropertyDeleted={handlePropertyDeleted}
                 sourcePage="/dashboard?tab=properties"
+                userId={property.user_id}
+                fallbackContact={{
+                  name: property.contact_name,
+                  firstName: property.first_name,
+                  lastName: property.last_name,
+                  email: property.contact_email,
+                  phone: property.contact_phone
+                }}
+                propertyConsultantData={property.property_consultant ? {
+                  fullName: property.property_consultant,
+                  jobTitle: 'Property Consultant',
+                  contactEmail: property.contact_email,
+                  contactPhone: property.contact_phone
+                } : null}
               />
             ))}
           </div>
