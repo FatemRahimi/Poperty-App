@@ -95,6 +95,8 @@ const AddList = () => {
   const [floorPlanFile, setFloorPlanFile] = useState(null);
   const [epcDocumentFile, setEpcDocumentFile] = useState(null);
   const [approvedPropertyNotification, setApprovedPropertyNotification] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState('idle'); // idle | loading | success | error
   
   const [formData, setFormData] = useState({
     // Step 1: Property Basics
@@ -290,6 +292,12 @@ const AddList = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Block any accidental double submissions
+    if (isSubmitting) {
+      console.log('⚠️ Submission already in progress; ignoring.');
+      return;
+    }
     
     // Only allow submit on final step
     if (currentStep !== 7) {
@@ -300,6 +308,8 @@ const AddList = () => {
     if (!validateStep(currentStep)) return;
     
     try {
+      setIsSubmitting(true);
+      setSubmitStatus('loading');
       const formDataToSend = new FormData();
       // Map required backend fields for sale listings
       formDataToSend.append('category', 'sale');
@@ -377,15 +387,18 @@ const AddList = () => {
       const data = await response.json();
       
       if (data.success) {
-        alert('Property submitted successfully! You will receive a confirmation email shortly.');
+        setSubmitStatus('success');
         sessionStorage.removeItem("propertyListingForm");
-        navigate('/dashboard');
+        setTimeout(() => navigate('/dashboard'), 800);
       } else {
         throw new Error(data.message || 'Failed to submit property');
       }
     } catch (error) {
       console.error('Error submitting property:', error);
+      setSubmitStatus('error');
       alert(`Error submitting property: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1148,7 +1161,7 @@ const AddList = () => {
             {approvedPropertyNotification}
           </div>
         )}
-        <form onSubmit={handleSubmit} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (currentStep < 7) { goToNextStep(); } } }} className="property-form">
+        <form onSubmit={(e) => e.preventDefault()} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); } }} onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); } }} onKeyUp={(e) => { if (e.key === 'Enter') { e.preventDefault(); } }} className="property-form">
           {renderCurrentStep()}
 
           {/* Navigation Buttons */}
@@ -1181,10 +1194,14 @@ const AddList = () => {
               </button>
             ) : (
               <button 
-                type="submit" 
-                className="submit-btn"
+                type="button" 
+                className={`submit-btn ${submitStatus === 'success' ? 'success' : ''}`}
+                disabled={isSubmitting || submitStatus === 'success'}
+                onClick={handleSubmit}
               >
-                Submit Listing
+                {submitStatus === 'loading' && 'Submitting...'}
+                {submitStatus === 'success' && 'Submitted ✔'}
+                {submitStatus === 'idle' || submitStatus === 'error' ? 'Submit Listing' : ''}
               </button>
             )}
           </div>
