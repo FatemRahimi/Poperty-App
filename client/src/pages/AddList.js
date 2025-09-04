@@ -9,6 +9,7 @@ import "../styles/AddList.css";
 import useSessionStorage from "../Utils/useSessionStorage";
 import "../styles/CrossBrowserReset.css";
 import { useAuth } from "../context/AuthContext";
+import ContactInformationSection from "../components/ContactInformationSection";
 
 // Property Type Options
 const propertyTypeOptions = [
@@ -945,7 +946,10 @@ const AddList = () => {
           )}
         </div>
         
-        {/* Floor Plan Upload */}
+        {/* Expert Team Contact (shared component) */}
+        <ContactInformationSection formData={formData} setFormData={setFormData} handleChange={handleChange} />
+
+        {/* Layout of Property */}
         <h4 className="subsection-title">Layout of Property</h4>
         
         <div className="layout-section">
