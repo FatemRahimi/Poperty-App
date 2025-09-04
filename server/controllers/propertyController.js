@@ -191,7 +191,14 @@ const submitProperty = async (req, res) => {
     // Map frontend field names to backend field names
     const title = providedTitle || propertyTitle;
     const category_mapped = category || 'rent'; // Default to rent if not specified
-    const property_type_mapped = property_type || propertyType; // flat/house/detached/etc
+    // Normalize property_type to a single string
+    const normalizePropertyType = (val) => {
+      if (Array.isArray(val)) return val.find(Boolean) || '';
+      if (typeof val === 'string') return val;
+      if (val && typeof val === 'object') return (val.value || val.label || '').toString();
+      return '';
+    };
+    const property_type_mapped = normalizePropertyType(property_type) || normalizePropertyType(propertyType); // flat/house/detached/etc
     const address_line1_mapped = address_line1 || streetAddress;
     const state_mapped = state || region;
     const zip_code_mapped = zip_code || postcode;
@@ -511,7 +518,7 @@ const submitProperty = async (req, res) => {
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="color: #667eea; margin-top: 0;">${title}</h3>
           <p><strong>Category:</strong> ${category_mapped.charAt(0).toUpperCase() + category_mapped.slice(1)}</p>
-          <p><strong>Type:</strong> ${property_type_mapped ? property_type_mapped.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) : 'Not specified'}</p>
+          <p><strong>Type:</strong> ${typeof property_type_mapped === 'string' ? property_type_mapped.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) : 'Not specified'}</p>
           <p><strong>Address:</strong> ${address_line1_mapped}, ${city}, ${state_mapped} ${zip_code_mapped}</p>
           <p><strong>Price:</strong> $${price_mapped ? price_mapped.toLocaleString() : monthly_rent_mapped?.toLocaleString() + '/month'}</p>
           <p><strong>Status:</strong> Pending Review</p>
@@ -548,7 +555,7 @@ const submitProperty = async (req, res) => {
           <h3 style="color: #667eea; margin-top: 0;">${title}</h3>
           <p><strong>Submitted by:</strong> ${user.first_name} ${user.last_name} (${user.email})</p>
           <p><strong>Category:</strong> ${category_mapped.charAt(0).toUpperCase() + category_mapped.slice(1)}</p>
-          <p><strong>Type:</strong> ${property_type_mapped ? property_type_mapped.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) : 'Not specified'}</p>
+          <p><strong>Type:</strong> ${typeof property_type_mapped === 'string' ? property_type_mapped.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) : 'Not specified'}</p>
           <p><strong>Address:</strong> ${address_line1_mapped}, ${city}, ${state_mapped} ${zip_code_mapped}</p>
           <p><strong>Price:</strong> $${price_mapped ? price_mapped.toLocaleString() : monthly_rent_mapped?.toLocaleString() + '/month'}</p>
           <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
@@ -689,11 +696,33 @@ const getUserProperties = async (req, res) => {
       }
     }
 
+    // Normalize property_type so UI never sees array-like values
+    const normalizePropertyTypeValue = (val) => {
+      if (!val) return '';
+      if (Array.isArray(val)) return (val.find(Boolean) || '').toString();
+      if (typeof val === 'string') {
+        // Handle postgres array literal formatted as string: {"Semi Detached","Semi-Detached"}
+        if (/^\{.*\}$/.test(val)) {
+          const inner = val.slice(1, -1);
+          const parts = inner.split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+          return (parts.find(Boolean) || '').toString();
+        }
+        return val;
+      }
+      if (typeof val === 'object') return (val.value || val.label || '').toString();
+      return String(val);
+    };
+
+    const normalizedRows = result.rows.map(p => ({
+      ...p,
+      property_type: normalizePropertyTypeValue(p.property_type)
+    }));
+
     // Debug logging - check what data is returned from database
     console.log('🔍 Backend getUserProperties Debug:');
-    console.log('📊 Total properties returned:', result.rows.length);
-    if (result.rows.length > 0) {
-      const firstProperty = result.rows[0];
+    console.log('📊 Total properties returned:', normalizedRows.length);
+    if (normalizedRows.length > 0) {
+      const firstProperty = normalizedRows[0];
       console.log('🏠 First property debug:', {
         id: firstProperty.id,
         title: firstProperty.title,
@@ -701,7 +730,7 @@ const getUserProperties = async (req, res) => {
         hasDescription: !!firstProperty.description,
         descriptionLength: firstProperty.description?.length || 0,
         descriptionValue: firstProperty.description ? firstProperty.description.substring(0, 100) + '...' : 'NULL/EMPTY',
-        allFields: Object.keys(firstProperty)
+        propertyTypeValue: firstProperty.property_type
       });
       
       // Debug contact information specifically
@@ -756,7 +785,7 @@ const getUserProperties = async (req, res) => {
 
     res.json({
       success: true,
-      properties: result.rows,
+      properties: normalizedRows,
       pagination: paginationResponse
     });
 
@@ -1743,6 +1772,29 @@ const updateProperty = async (req, res) => {
   }
 };
 
+// Sale-specific wrappers to keep AddList isolated from other forms
+const submitSaleProperty = async (req, res) => {
+  try {
+    // Force category to 'sale' regardless of incoming payload
+    req.body = { ...req.body, category: 'sale' };
+    return submitProperty(req, res);
+  } catch (e) {
+    console.error('submitSaleProperty error:', e);
+    return res.status(500).json({ success: false, message: 'Failed to submit sale property', error: e.message });
+  }
+};
+
+const updateSaleProperty = async (req, res) => {
+  try {
+    // Force category to 'sale' regardless of incoming payload
+    req.body = { ...req.body, category: 'sale' };
+    return updateProperty(req, res);
+  } catch (e) {
+    console.error('updateSaleProperty error:', e);
+    return res.status(500).json({ success: false, message: 'Failed to update sale property', error: e.message });
+  }
+};
+
 module.exports = {
   submitProperty,
   updateProperty,
@@ -1750,5 +1802,7 @@ module.exports = {
   getAllProperties,
   updatePropertyStatus,
   getDashboardStats,
-  deleteProperty
+  deleteProperty,
+  submitSaleProperty,
+  updateSaleProperty
 }; 

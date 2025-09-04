@@ -86,6 +86,7 @@ const AddList = () => {
   // Check if we're in edit mode and get return path
   const editMode = location.state?.editMode || false;
   const propertyData = location.state?.propertyData || null;
+  const propertyId = location.state?.propertyId || propertyData?.id || null;
   const returnPath = location.state?.returnPath || '/seller';
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -290,20 +291,47 @@ const AddList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Only allow submit on final step
+    if (currentStep !== 7) {
+      alert(`Please complete all steps before submitting. You are on step ${currentStep} of 7.`);
+      return;
+    }
+
     if (!validateStep(currentStep)) return;
     
     try {
       const formDataToSend = new FormData();
+      // Map required backend fields for sale listings
+      formDataToSend.append('category', 'sale');
+      if (formData.propertyTitle) formDataToSend.append('title', formData.propertyTitle);
+      if (formData.fullDescription) formDataToSend.append('description', formData.fullDescription);
+      if (formData.propertyType) formDataToSend.append('property_type', formData.propertyType);
+      // Address mappings
+      if (formData.fullAddress || formData.houseNumber) {
+        const addr1 = `${formData.houseNumber || ''} ${formData.fullAddress || ''}`.trim();
+        formDataToSend.append('address_line1', addr1);
+        formDataToSend.append('streetAddress', addr1);
+      }
+      if (formData.postcode) formDataToSend.append('zip_code', formData.postcode);
+      if (formData.region) formDataToSend.append('state', formData.region);
+      if (formData.country) formDataToSend.append('country', formData.country);
+      // Price mapping for sale
+      if (formData.askingPrice) formDataToSend.append('price', formData.askingPrice);
       
-      // Add all form fields
+      // Add all form fields (exclude duplicates we explicitly mapped)
+      const skipKeys = new Set(['category','title','propertyTitle','description','property_type','propertyType','address_line1','streetAddress','zip_code','postcode','state','region','country','price','askingPrice']);
       Object.keys(formData).forEach(key => {
-        if (formData[key] !== undefined && formData[key] !== null && formData[key] !== '') {
+        if (!skipKeys.has(key) && formData[key] !== undefined && formData[key] !== null && formData[key] !== '') {
           formDataToSend.append(key, formData[key]);
         }
       });
       
-      // Add listing type
-      formDataToSend.append('listingType', 'sale');
+      // Ensure category & type mapping for backend (single source of truth)
+      formDataToSend.append('category', 'sale');
+      formDataToSend.append('property_type', formData.propertyType || 'house');
+      // Title/description fallbacks
+      if (!formData.propertyTitle) formDataToSend.append('propertyTitle', 'Property for Sale');
+      if (!formData.fullDescription) formDataToSend.append('description', 'Property for sale');
       
       // Handle status for approved properties being edited
       if (editMode && propertyData?.status === 'approved') {
@@ -315,18 +343,26 @@ const AddList = () => {
         formDataToSend.append('photos', file);
       });
       
-      // Add floor plan
+      // Add floor plan (backend expects 'layoutFile')
       if (floorPlanFile) {
-        formDataToSend.append('floorPlan', floorPlanFile);
+        formDataToSend.append('layoutFile', floorPlanFile);
       }
       
-      // Add EPC document
+      // Add EPC document (send meta only; controller logs will ignore file)
       if (epcDocumentFile) {
-        formDataToSend.append('epcDocument', epcDocumentFile);
+        formDataToSend.append('epcDocumentName', epcDocumentFile.name);
+        formDataToSend.append('epcDocumentSize', String(epcDocumentFile.size));
+        formDataToSend.append('epcDocumentType', epcDocumentFile.type);
       }
       
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050'}/api/properties/submit`, {
-        method: 'POST',
+      const baseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050';
+      const endpoint = editMode && propertyId 
+        ? `${baseUrl}/api/properties/sale/update/${propertyId}`
+        : `${baseUrl}/api/properties/sale/submit`;
+      const method = editMode && propertyId ? 'PUT' : 'POST';
+
+      const response = await fetch(endpoint, {
+        method,
         body: formDataToSend,
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -1112,7 +1148,7 @@ const AddList = () => {
             {approvedPropertyNotification}
           </div>
         )}
-        <form onSubmit={handleSubmit} className="property-form">
+        <form onSubmit={handleSubmit} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (currentStep < 7) { goToNextStep(); } } }} className="property-form">
           {renderCurrentStep()}
 
           {/* Navigation Buttons */}
