@@ -2,13 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import SelectInput from "../components/inputs/SelectInput";
 import TextInput from "../components/inputs/TextInput";
-import DateInput from "../components/inputs/DateInput";
-import CheckboxInput from "../components/inputs/CheckboxInput";
 import Logo from "../components/Logo";
 import "../styles/AddList.css";
 import useSessionStorage from "../Utils/useSessionStorage";
 import "../styles/CrossBrowserReset.css";
-import { useAuth } from "../context/AuthContext";
 import ContactInformationSection from "../components/ContactInformationSection";
 
 // Property Type Options
@@ -75,6 +72,12 @@ const broadbandOptions = [
   { value: "unknown", label: "Unknown" }
 ];
 
+// Floor Area Unit Options (for normalization)
+const floorAreaUnitOptions = [
+  { value: "sq_m", label: "Square Meters" },
+  { value: "sq_ft", label: "Square Feet" }
+];
+
 // EPC Rating Options
 const epcOptions = ["A", "B", "C", "D", "E", "F", "G"].map((r) => ({ value: r, label: r }));
 const councilTaxOptions = ["A", "B", "C", "D", "E", "F", "G", "H"].map((b) => ({ value: b, label: `Band ${b}` }));
@@ -82,13 +85,16 @@ const councilTaxOptions = ["A", "B", "C", "D", "E", "F", "G", "H"].map((b) => ({
 const AddList = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
   
   // Check if we're in edit mode and get return path
   const editMode = location.state?.editMode || false;
   const propertyData = location.state?.propertyData || null;
   const propertyId = location.state?.propertyId || propertyData?.id || null;
-  const returnPath = location.state?.returnPath || '/seller';
+  const returnPath = location.state?.returnPath || '/dashboard';
+ 
+  // Resolve complete property details for edit mode (fallback fetch if needed)
+  const [resolvedPropertyData, setResolvedPropertyData] = useState(propertyData);
+  const effectiveProperty = resolvedPropertyData || propertyData;
   
   const [currentStep, setCurrentStep] = useState(1);
   const [mediaFiles, setMediaFiles] = useState([]);
@@ -99,58 +105,204 @@ const AddList = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState('idle'); // idle | loading | success | error
   
-  const [formData, setFormData] = useState({
-    // Step 1: Property Basics
-    propertyTitle: "",
-    propertyType: "",
-    tenure: "",
-    bedrooms: "",
-    bathrooms: "",
-    receptionRooms: "",
-    floorArea: "",
-    floorAreaUnit: "sq_m",
-    epcRating: "",
+
+  // Helper to handle null strings from database
+  const nullSafe = (value) => {
+    if (value === null || value === undefined || value === 'null' || value === '') {
+      return '';
+    }
+    return value;
+  };
+  // Helpers
+    const toBool = (value) => {
+    if (typeof value === 'boolean') return value;
+    if (value === 1 || value === '1') return true;
+    if (value === 0 || value === '0') return false;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      return normalized === 'true' || normalized === 't' || normalized === 'yes' || 
+             normalized === 'on' || normalized === 'y' || normalized === 'available' ||
+             normalized === 'included' || normalized === 'present';
+    }
+    return !!value;
+  };
+
+  // Normalize a raw string to one of the provided Select options' value
+  const normalizeToOptionValue = (options, raw) => {
+    if (!raw) return "";
+    const rawStr = String(raw).trim();
+    const rawLower = rawStr.toLowerCase();
+    const rawAlnum = rawLower.replace(/[^a-z0-9]/g, '');
+    // Try direct value match
+    const directVal = options.find(o => String(o.value).toLowerCase() === rawLower);
+    if (directVal) return directVal.value;
+    // Try label match
+    const labelVal = options.find(o => String(o.label).toLowerCase() === rawLower);
+    if (labelVal) return labelVal.value;
+    // Try relaxed match ignoring punctuation/spaces
+    const relaxedVal = options.find(o => String(o.value).toLowerCase().replace(/[^a-z0-9]/g, '') === rawAlnum);
+    if (relaxedVal) return relaxedVal.value;
+    const relaxedLabel = options.find(o => String(o.label).toLowerCase().replace(/[^a-z0-9]/g, '') === rawAlnum);
+    if (relaxedLabel) return relaxedLabel.value;
+    return "";
+  };
+
+  // Normalize council tax band to letter A-H
+    const normalizeCouncilBand = (raw) => {
+    if (!raw) return "";
+    const str = String(raw).toUpperCase();
     
-    // Step 2: Location Info
-    houseNumber: "",
-    fullAddress: "",
-    city: "",
-    country: "United Kingdom",
-    region: "",
-    postcode: "",
-    localAuthority: "",
-    nearestTransportLinks: "",
+    // Handle "Band D" format
+    const bandMatch = str.match(/BAND\s*([A-H])/);
+    if (bandMatch) return bandMatch[1];
     
-    // Step 3: Financials
-    askingPrice: "",
-    priceType: "fixed_price",
-    serviceCharges: "",
-    groundRent: "",
-    councilTaxBand: "",
+    // Handle just the letter
+    const letterMatch = str.match(/[A-H]/);
+    if (letterMatch) return letterMatch[0];
     
-    // Step 4: Property Description
-    shortDescription: "",
-    fullDescription: "",
+    // Handle numeric (1-8) and convert to letter
+    const numMatch = str.match(/(\d+)/);
+    if (numMatch) {
+      const num = parseInt(numMatch[1]);
+      if (num >= 1 && num <= 8) {
+        return String.fromCharCode(64 + num); // A=1, B=2, etc.
+      }
+    }
     
-    // Step 5: Key Features
-    hasGarden: false,
-    hasParking: false,
-    hasBalconyTerrace: false,
-    isNewBuild: false,
-    isChainFree: false,
-    isRecentlyRenovated: false,
-    hasAccessibleAccess: false,
-    isFurnished: false,
-    
-    // Step 6: Additional Info
-    yearBuilt: "",
-    heatingType: "",
-    broadbandAvailability: "",
-    accessibilityFeatures: "",
-    apartmentSize: "",
-    floorNumber: "",
-    virtualTourLink: "",
-  });
+    return "";
+  };
+ 
+  // Existing files (edit mode)
+  const [existingLayoutUrl, setExistingLayoutUrl] = useState("");
+  const [existingLayoutName, setExistingLayoutName] = useState("");
+  const [existingEpcUrl, setExistingEpcUrl] = useState("");
+  const [existingEpcName, setExistingEpcName] = useState("");
+ 
+  // Helpers to prefill edit mode like AddRent
+  const parseAddress = (addressLine1) => {
+    if (!addressLine1) return { houseNumber: "", streetName: "" };
+    const parts = addressLine1.trim().split(' ');
+    if (parts.length === 0) return { houseNumber: "", streetName: "" };
+    const firstPart = parts[0];
+    if (/^\d+[A-Za-z]*$/.test(firstPart)) {
+      return { houseNumber: firstPart, streetName: parts.slice(1).join(' ') };
+    }
+    return { houseNumber: "", streetName: addressLine1 };
+  };
+ 
+  const getInitialFormData = () => {
+    if (editMode && effectiveProperty) {
+      const src = effectiveProperty;
+      const addr = parseAddress(src.address_line1 || src.streetAddress);
+
+      return {
+        // Step 1: Basics
+        propertyTitle: src.title || src.propertyTitle || "",
+        propertyType: normalizeToOptionValue(propertyTypeOptions, src.property_type || src.propertyType) || "",
+        tenure: normalizeToOptionValue(tenureOptions, src.tenure || src.tenure_type || src.tenureType) || "",
+        bedrooms: (src.bedrooms ?? "").toString(),
+        bathrooms: (src.bathrooms ?? "").toString(),
+        receptionRooms: (src.reception_rooms ?? src.receptions ?? "").toString(),
+        floorArea: (src.floor_area ?? src.square_feet ?? "").toString(),
+        floorAreaUnit: normalizeToOptionValue(
+          floorAreaUnitOptions,
+          src.floor_area_unit || (src.square_feet ? "sq_ft" : src.floorAreaUnit)
+        ) || (src.square_feet ? "sq_ft" : "sq_m"),
+        epcRating: src.epc_rating ? String(src.epc_rating).toUpperCase() : "",
+
+        // Step 2: Location
+        houseNumber: addr.houseNumber,
+        fullAddress: addr.streetName,
+        city: src.city || "",
+        country: src.country || "United Kingdom",
+        region: src.region || src.state || "",
+        postcode: src.postcode || src.zip_code || "",
+        localAuthority: src.local_authority || src.localAuthority || "",
+        nearestTransportLinks: src.nearest_transport_links || src.nearestTransportLinks || "",
+
+        // Step 3: Financials
+        askingPrice: (src.price ?? "").toString(),
+        priceType: normalizeToOptionValue(priceTypeOptions, src.price_type || src.priceType) || "fixed_price",
+        serviceCharges: (src.service_charges ?? src.serviceCharges ?? "").toString(),
+        groundRent: (src.ground_rent ?? src.groundRent ?? "").toString(),
+        councilTaxBand: normalizeCouncilBand(src.council_tax_band || src.councilTaxBand),
+
+        // Step 4: Descriptions
+        shortDescription: src.short_description || src.shortDescription || (src.description ? String(src.description).slice(0, 160) : ""),
+        fullDescription: src.description || "",
+
+        // Step 5: Features
+        hasGarden: toBool(src.has_garden || src.garden),
+        hasParking: toBool((src.parking_spaces || 0) > 0) || toBool(src.has_parking || src.parking),
+        hasBalconyTerrace: toBool(src.has_balcony_terrace || src.balcony),
+        isNewBuild: toBool(src.is_new_build || src.new_build),
+        isChainFree: toBool(src.is_chain_free || src.chain_free),
+        isRecentlyRenovated: toBool(src.is_recently_renovated || src.recentlyRenovated),
+        hasAccessibleAccess: toBool(src.has_accessible_access || src.accessibility),
+        isFurnished: toBool(src.is_furnished || src.furnished),
+
+        // Step 6: Media / Layout
+        apartmentSize: src.apartment_size || src.apartmentSize || "",
+        floorNumber: src.floor_number || src.floorNumber || "",
+        virtualTourLink: src.virtual_tour_link || src.virtualTourLink || src.tour_link || "",
+
+        // Step 7: Additional Info
+        yearBuilt: (src.year_built || src.yearBuilt || "").toString(),
+        heatingType: normalizeToOptionValue(heatingTypeOptions, src.heating_type || src.heatingType) || "",
+        broadbandAvailability: normalizeToOptionValue(
+          broadbandOptions,
+          src.broadband_availability || src.broadbandAvailability || src.broadband
+        ) || "",
+        accessibilityFeatures: src.accessibility_features || src.accessibilityFeatures || "",
+      };
+    }
+
+    // Defaults (new listing)
+    return {
+      propertyTitle: "",
+      propertyType: "",
+      tenure: "",
+      bedrooms: "",
+      bathrooms: "",
+      receptionRooms: "",
+      floorArea: "",
+      floorAreaUnit: "sq_m",
+      epcRating: "",
+      houseNumber: "",
+      fullAddress: "",
+      city: "",
+      country: "United Kingdom",
+      region: "",
+      postcode: "",
+      localAuthority: "",
+      nearestTransportLinks: "",
+      askingPrice: "",
+      priceType: "fixed_price",
+      serviceCharges: "",
+      groundRent: "",
+      councilTaxBand: "",
+      shortDescription: "",
+      fullDescription: "",
+      hasGarden: false,
+      hasParking: false,
+      hasBalconyTerrace: false,
+      isNewBuild: false,
+      isChainFree: false,
+      isRecentlyRenovated: false,
+      hasAccessibleAccess: false,
+      isFurnished: false,
+      yearBuilt: "",
+      heatingType: "",
+      broadbandAvailability: "",
+      accessibilityFeatures: "",
+      apartmentSize: "",
+      floorNumber: "",
+      virtualTourLink: "",
+    };
+  };
+  // Use session-backed state like AddRent
+  const storageKey = editMode ? `editSaleForm_${propertyId}` : 'addListForm';
+  const [formData, setFormData] = useSessionStorage(storageKey, getInitialFormData());
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("token");
@@ -163,12 +315,96 @@ const AddList = () => {
 
   // Set notification for approved property edits
   useEffect(() => {
-    if (editMode && propertyData?.status === 'approved') {
+    if (editMode && effectiveProperty?.status === 'approved') {
       setApprovedPropertyNotification(
         "⚠️ You are editing an approved property. After saving, it will require admin approval before being visible again."
       );
     }
-  }, [editMode, propertyData]);
+  }, [editMode, effectiveProperty]);
+
+  useEffect(() => {
+    if (editMode && effectiveProperty) {
+      // Re-hydrate from latest property source on open or when it changes
+      const initial = getInitialFormData();
+      setFormData(initial);
+      // Existing layout/EPC URLs if backend provides them
+      if (effectiveProperty.layout_url || effectiveProperty.layoutFileUrl || effectiveProperty.layout_file_url) {
+        setExistingLayoutUrl(
+          effectiveProperty.layout_url || effectiveProperty.layoutFileUrl || effectiveProperty.layout_file_url
+        );
+        if (effectiveProperty.layout_file_name || effectiveProperty.layoutFileName) {
+          setExistingLayoutName(effectiveProperty.layout_file_name || effectiveProperty.layoutFileName);
+        }
+      }
+      if (effectiveProperty.epc_url || effectiveProperty.epcDocumentUrl || effectiveProperty.epc_document_url) {
+        setExistingEpcUrl(
+          effectiveProperty.epc_url || effectiveProperty.epcDocumentUrl || effectiveProperty.epc_document_url
+        );
+        if (effectiveProperty.epc_document_name || effectiveProperty.epcDocumentName) {
+          setExistingEpcName(effectiveProperty.epc_document_name || effectiveProperty.epcDocumentName);
+        }
+      }
+    }
+  }, [editMode, effectiveProperty]);
+
+  useEffect(() => {
+    if (editMode && effectiveProperty && effectiveProperty.images) {
+      const imageUrls = effectiveProperty.images.map((img) => {
+        const imageUrl = img.url || img.image_url;
+        const filename = imageUrl?.split('/')?.pop() || 'image.jpg';
+        return {
+          url: imageUrl,
+          type: (img.type || 'image/jpeg'),
+          name: filename,
+          size: 0,
+          isExisting: true
+        };
+      });
+      setMediaPreviewUrls(imageUrls);
+    }
+  }, [editMode, effectiveProperty]);
+
+  // Clear form data when creating a new property (not in edit mode)
+  useEffect(() => {
+    if (!editMode) {
+      // Clear any existing form data from previous sessions
+      const emptyFormData = getInitialFormData();
+      setFormData(emptyFormData);
+      setMediaFiles([]);
+      setMediaPreviewUrls([]);
+      setFloorPlanFile(null);
+      setEpcDocumentFile(null);
+      setExistingLayoutUrl("");
+      setExistingLayoutName("");
+      setExistingEpcUrl("");
+      setExistingEpcName("");
+      console.log('🆕 NEW PROPERTY MODE - Form cleared');
+    }
+  }, [editMode]);
+
+  // Fetch full property details if needed in edit mode
+  useEffect(() => {
+    const loadPropertyIfNeeded = async () => {
+      if (!editMode) return;
+      if (resolvedPropertyData) return;
+      if (!propertyId) return;
+      try {
+        const resp = await fetch('/api/properties/my-properties', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const list = data?.properties || [];
+        const found = list.find(p => String(p.id) === String(propertyId));
+        if (found) {
+          setResolvedPropertyData(found);
+        }
+      } catch (e) {
+        console.error('Failed to resolve property for edit:', e);
+      }
+    };
+    loadPropertyIfNeeded();
+  }, [editMode, propertyId, resolvedPropertyData]);
 
   const handleChange = (e) => {
     const { name, type, value, checked } = e.target;
@@ -293,7 +529,12 @@ const AddList = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    
+    console.log('🚀 ADDLIST SUBMIT DEBUG: Starting submission process');
+    console.log('📊 Current step:', currentStep);
+    console.log('🔒 Is submitting:', isSubmitting);
+    console.log('📝 Form data:', formData);
+    
     // Block any accidental double submissions
     if (isSubmitting) {
       console.log('⚠️ Submission already in progress; ignoring.');
@@ -305,18 +546,21 @@ const AddList = () => {
       alert(`Please complete all steps before submitting. You are on step ${currentStep} of 7.`);
       return;
     }
-
+    
     if (!validateStep(currentStep)) return;
     
     try {
       setIsSubmitting(true);
       setSubmitStatus('loading');
+      console.log('✅ Starting form data preparation...');
+      
       const formDataToSend = new FormData();
       // Map required backend fields for sale listings
       formDataToSend.append('category', 'sale');
       if (formData.propertyTitle) formDataToSend.append('title', formData.propertyTitle);
       if (formData.fullDescription) formDataToSend.append('description', formData.fullDescription);
       if (formData.propertyType) formDataToSend.append('property_type', formData.propertyType);
+      if (formData.shortDescription) formDataToSend.append('short_description', formData.shortDescription);
       // Address mappings
       if (formData.fullAddress || formData.houseNumber) {
         const addr1 = `${formData.houseNumber || ''} ${formData.fullAddress || ''}`.trim();
@@ -330,22 +574,42 @@ const AddList = () => {
       if (formData.askingPrice) formDataToSend.append('price', formData.askingPrice);
       
       // Add all form fields (exclude duplicates we explicitly mapped)
-      const skipKeys = new Set(['category','title','propertyTitle','description','property_type','propertyType','address_line1','streetAddress','zip_code','postcode','state','region','country','price','askingPrice']);
+      const skipKeys = new Set(['category','title','propertyTitle','description','short_description','shortDescription','property_type','propertyType','address_line1','streetAddress','zip_code','postcode','state','region','country','price','askingPrice']);
       Object.keys(formData).forEach(key => {
         if (!skipKeys.has(key) && formData[key] !== undefined && formData[key] !== null && formData[key] !== '') {
           formDataToSend.append(key, formData[key]);
         }
       });
       
+      // Map property features to backend field names
+      formDataToSend.append('has_parking', formData.hasParking ? 'true' : 'false');
+      formDataToSend.append('has_balcony_terrace', formData.hasBalconyTerrace ? 'true' : 'false');
+      formDataToSend.append('is_new_build', formData.isNewBuild ? 'true' : 'false');
+      formDataToSend.append('is_chain_free', formData.isChainFree ? 'true' : 'false');
+      formDataToSend.append('is_recently_renovated', formData.isRecentlyRenovated ? 'true' : 'false');
+      formDataToSend.append('has_accessible_access', formData.hasAccessibleAccess ? 'true' : 'false');
+      
+      // Map other fields to backend field names
+      formDataToSend.append('local_authority', formData.localAuthority || '');
+      formDataToSend.append('nearest_transport_links', formData.nearestTransportLinks || '');
+      formDataToSend.append('service_charges', formData.serviceCharges || '');
+      formDataToSend.append('ground_rent', formData.groundRent || '');
+      formDataToSend.append('heating_type', formData.heatingType || '');
+      formDataToSend.append('broadband_availability', formData.broadbandAvailability || '');
+      formDataToSend.append('accessibility_features', formData.accessibilityFeatures || '');
+      formDataToSend.append('apartment_size', formData.apartmentSize || '');
+      formDataToSend.append('floor_number', formData.floorNumber || '');
+      formDataToSend.append('virtual_tour_link', formData.virtualTourLink || '');
+      
       // Ensure category & type mapping for backend (single source of truth)
       formDataToSend.append('category', 'sale');
       formDataToSend.append('property_type', formData.propertyType || 'house');
       // Title/description fallbacks
       if (!formData.propertyTitle) formDataToSend.append('propertyTitle', 'Property for Sale');
-      if (!formData.fullDescription) formDataToSend.append('description', 'Property for sale');
+      if (!formData.fullDescription) formDataToSend.append('description', formData.shortDescription || 'Property for sale');
       
       // Handle status for approved properties being edited
-      if (editMode && propertyData?.status === 'approved') {
+      if (editMode && effectiveProperty?.status === 'approved') {
         formDataToSend.append('status', 'pending');
       }
       
@@ -372,6 +636,13 @@ const AddList = () => {
         : `${baseUrl}/api/properties/sale/submit`;
       const method = editMode && propertyId ? 'PUT' : 'POST';
 
+      console.log('🌐 Endpoint:', endpoint);
+      console.log('📡 Method:', method);
+      console.log('🔑 Token exists:', !!localStorage.getItem('token'));
+      console.log('📎 Media files count:', mediaFiles.length);
+      console.log('📋 Floor plan file:', !!floorPlanFile);
+      console.log('📄 EPC document file:', !!epcDocumentFile);
+
       const response = await fetch(endpoint, {
         method,
         body: formDataToSend,
@@ -380,12 +651,17 @@ const AddList = () => {
         }
       });
       
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+      
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Response error data:', errorData);
         throw new Error(errorData.message || `Server error: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log('✅ Response data:', data);
       
       if (data.success) {
         setSubmitStatus('success');
@@ -395,7 +671,8 @@ const AddList = () => {
         throw new Error(data.message || 'Failed to submit property');
       }
     } catch (error) {
-      console.error('Error submitting property:', error);
+      console.error('❌ Error submitting property:', error);
+      console.error('❌ Error stack:', error.stack);
       setSubmitStatus('error');
       alert(`Error submitting property: ${error.message}`);
     } finally {
@@ -480,10 +757,7 @@ const AddList = () => {
             name="floorAreaUnit"
             value={formData.floorAreaUnit}
             onChange={handleChange}
-            options={[
-              { value: "sq_m", label: "Square Meters" },
-              { value: "sq_ft", label: "Square Feet" }
-            ]}
+            options={floorAreaUnitOptions}
           />
         </div>
         
@@ -691,15 +965,15 @@ const AddList = () => {
               id="fullDescription"
               name="fullDescription"
               value={formData.fullDescription}
-              onChange={handleChange}
+            onChange={handleChange}
               className="form-textarea"
               rows="8"
               placeholder="Provide a detailed description of your property. Highlight key features, renovations, unique selling points..."
-              required
+            required
             ></textarea>
-          </div>
         </div>
-        
+        </div>
+
         <div className="form-tip">
           <i className="fas fa-lightbulb"></i>
           <span>Encourage sellers to highlight key features, renovations, unique selling points.</span>
@@ -946,9 +1220,6 @@ const AddList = () => {
           )}
         </div>
         
-        {/* Expert Team Contact (shared component) */}
-        <ContactInformationSection formData={formData} setFormData={setFormData} handleChange={handleChange} />
-
         {/* Layout of Property */}
         <h4 className="subsection-title">Layout of Property</h4>
         
@@ -1000,6 +1271,31 @@ const AddList = () => {
                   </div>
                 </div>
               )}
+              {!floorPlanFile && existingLayoutUrl && (
+                <div className="uploaded-file">
+                  {/* If existing file is an image, show preview; otherwise show link */}
+                  {/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(existingLayoutUrl) ? (
+                    <div className="layout-preview-container">
+                      <img 
+                        src={existingLayoutUrl} 
+                        alt="Existing Layout" 
+                        className="layout-preview-image"
+                      />
+            </div>
+                  ) : (
+                    <div className="layout-preview-container" style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '8px 0'
+                    }}>
+                      <a href={existingLayoutUrl} target="_blank" rel="noreferrer" className="file-name">
+                        {existingLayoutName || 'View existing floor plan'}
+                      </a>
+                    </div>
+                  )}
+                  <div className="file-info">
+                    <span className="file-name">{existingLayoutName || 'Existing floor plan'}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
@@ -1024,7 +1320,7 @@ const AddList = () => {
             />
           </div>
         </div>
-        
+
         {/* EPC Document Upload */}
         <h4 className="subsection-title">Upload EPC Document (Mandatory by Law)</h4>
         <div className="file-upload-section">
@@ -1035,26 +1331,63 @@ const AddList = () => {
             style={{ display: 'none' }}
             id="epc-document-upload"
           />
-          <label htmlFor="epc-document-upload" className="file-upload-label">
-            <div className="file-upload-content">
+              <label htmlFor="epc-document-upload" className="file-upload-label">
+                <div className="file-upload-content">
               <div className="file-upload-icon">📋</div>
-              <div className="file-upload-text">
-                <span>Click to upload EPC document</span>
+                  <div className="file-upload-text">
+                    <span>Click to upload EPC document</span>
                 <small>PDF, JPG, PNG • Max 512MB • Required by law</small>
-              </div>
-            </div>
-          </label>
-          {epcDocumentFile && (
+                  </div>
+                </div>
+              </label>
+              {epcDocumentFile && (
+                <div className="uploaded-file">
+              {/* Show preview if the uploaded EPC is an image; otherwise just show file name */}
+              {epcDocumentFile.type.startsWith('image/') && (
+                <div className="layout-preview-container">
+                  <img 
+                    src={URL.createObjectURL(epcDocumentFile)} 
+                    alt="EPC Preview" 
+                    className="layout-preview-image"
+                  />
+                </div>
+              )}
+                  <div className="file-info">
+                    <span className="file-name">{epcDocumentFile.name}</span>
+                    <button 
+                      type="button" 
+                      className="remove-file-btn"
+                      onClick={() => setEpcDocumentFile(null)}
+                  title="Remove EPC document"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
+          {!epcDocumentFile && existingEpcUrl && (
             <div className="uploaded-file">
-              <span className="file-name">{epcDocumentFile.name}</span>
-              <button 
-                type="button" 
-                className="remove-file-btn"
-                onClick={() => setEpcDocumentFile(null)}
-                title="Remove EPC document"
-              >
-                ×
-              </button>
+              {/* If existing EPC is an image, show preview; otherwise link */}
+              {/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(existingEpcUrl) ? (
+                <div className="layout-preview-container">
+                  <img 
+                    src={existingEpcUrl} 
+                    alt="Existing EPC" 
+                    className="layout-preview-image"
+                  />
+            </div>
+              ) : (
+                <div className="layout-preview-container" style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '8px 0'
+                }}>
+                  <a href={existingEpcUrl} target="_blank" rel="noreferrer" className="file-name">
+                    {existingEpcName || 'View existing EPC'}
+                  </a>
+          </div>
+              )}
+              <div className="file-info">
+                <span className="file-name">{existingEpcName || 'Existing EPC'}</span>
+        </div>
             </div>
           )}
         </div>
@@ -1076,6 +1409,9 @@ const AddList = () => {
   const renderStep7 = () => {
     return (
       <>
+        {/* Expert Team Contact (shared component) */}
+        <ContactInformationSection formData={formData} setFormData={setFormData} handleChange={handleChange} />
+        
         <h3 className="section-title">Additional Information</h3>
         <div className="form-group">
           <TextInput
@@ -1109,7 +1445,7 @@ const AddList = () => {
             onChange={handleChange}
             placeholder="e.g., Wheelchair access, lifts, ramps"
           />
-        </div>
+                </div>
       </>
     );
   };
@@ -1144,7 +1480,9 @@ const AddList = () => {
         </div>
         <div className="form-title-add">ADD LISTING FOR SALE</div>
         <ul className="form-title-find-link">
+          {!editMode && (
           <li><Link to="/seller">BACK TO ADD LISTING</Link></li>
+          )}
         </ul>
       </div>
 
@@ -1165,12 +1503,13 @@ const AddList = () => {
             {approvedPropertyNotification}
           </div>
         )}
-        <form onSubmit={(e) => e.preventDefault()} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); } }} onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); } }} onKeyUp={(e) => { if (e.key === 'Enter') { e.preventDefault(); } }} className="property-form">
+        <form onSubmit={(e) => e.preventDefault()} className="property-form">
           {renderCurrentStep()}
 
           {/* Navigation Buttons */}
           <div className="form-buttons">
-            {currentStep > 1 ? (
+            <div className="left-buttons">
+              {currentStep > 1 && (
               <button 
                 type="button" 
                 className="back-btn"
@@ -1178,15 +1517,16 @@ const AddList = () => {
               >
                 Back
               </button>
-            ) : (
+              )}
               <button 
                 type="button" 
                 className="back-btn"
                 onClick={() => navigate(returnPath)}
+                style={{ marginLeft: currentStep > 1 ? '8px' : 0 }}
               >
                 Cancel
               </button>
-            )}
+            </div>
             
             {currentStep < 7 ? (
               <button 

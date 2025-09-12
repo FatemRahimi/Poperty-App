@@ -185,7 +185,24 @@ const submitProperty = async (req, res) => {
       apartment_size,
       apartmentSize, // Alternative field name from frontend
       floor_number,
-      floorNumber // Alternative field name from frontend
+      floorNumber, // Alternative field name from frontend
+      
+      // MISSING FIELDS: Added for complete field mapping
+      reception_rooms,
+      receptionRooms, // Alternative field name from frontend
+      house_number,
+      houseNumber, // Alternative field name from frontend
+      street_name,
+      streetName, // Alternative field name from frontend  
+      fullAddress, // Alternative field name from frontend
+      local_authority,
+      localAuthority, // Alternative field name from frontend
+      nearest_transport_links,
+      nearestTransportLinks, // Alternative field name from frontend
+      short_description,
+      shortDescription, // Alternative field name from frontend
+      virtual_tour_link,
+      virtualTourLink // Alternative field name from frontend
     } = req.body;
 
     // Map frontend field names to backend field names
@@ -254,11 +271,23 @@ const submitProperty = async (req, res) => {
       }
     })();
     
-    // NEW FIELDS: Layout of Property
+    // NEW FIELDS: Layout of Property (preserve existing values if not provided)
     const layout_file_name_mapped = layout_file_name || layoutFileName || '';
     const layout_file_url_mapped = layout_file_url || layoutFileUrl || '';
     const apartment_size_mapped = apartment_size || apartmentSize || '';
     const floor_number_mapped = floor_number || floorNumber || '';
+    
+    // MISSING FIELDS: Field mappings for submitProperty (new properties)
+    const reception_rooms_mapped = reception_rooms || receptionRooms || null;
+    const house_number_mapped = house_number || houseNumber || '';
+    const street_name_mapped = street_name || streetName || fullAddress || '';
+    const local_authority_mapped = local_authority || localAuthority || '';
+    const nearest_transport_links_mapped = nearest_transport_links || nearestTransportLinks || '';
+    const short_description_mapped = short_description || shortDescription || '';
+    const virtual_tour_link_mapped = virtual_tour_link || virtualTourLink || '';
+    
+    
+    
 
     // Data conversion for numeric fields
     const convertBathrooms = (bathrooms) => {
@@ -380,7 +409,8 @@ const submitProperty = async (req, res) => {
       // NEW FIELDS
       epc_rating_mapped, JSON.stringify(key_features_mapped),
       layout_file_name_mapped, layout_file_url_mapped, apartment_size_mapped, floor_number_mapped,
-      council_tax_band_mapped, council_tax_status_mapped
+      council_tax_band_mapped, council_tax_status_mapped,
+      reception_rooms_mapped, house_number_mapped, street_name_mapped, local_authority_mapped, nearest_transport_links_mapped, short_description_mapped, virtual_tour_link_mapped
     ];
     
     console.log('Values array position 21 (lease_term):', valuesArray[20]);
@@ -397,11 +427,12 @@ const submitProperty = async (req, res) => {
         latitude, longitude,
         epc_rating, key_features,
         layout_file_name, layout_file_url, apartment_size, floor_number,
-        council_tax_band, council_tax_status
+        council_tax_band, council_tax_status,
+        reception_rooms, house_number, street_name, local_authority, nearest_transport_links, short_description, virtual_tour_link
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36,
-        $37, $38, $39, $40, $41, $42, $43, $44, $45
+        $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52
       ) RETURNING *`,
       valuesArray
     );
@@ -1273,7 +1304,24 @@ const updateProperty = async (req, res) => {
       apartment_size,
       apartmentSize, // Alternative field name from frontend
       floor_number,
-      floorNumber // Alternative field name from frontend
+      floorNumber, // Alternative field name from frontend
+      
+      // MISSING FIELDS: Added for complete field mapping (updateProperty)
+      reception_rooms,
+      receptionRooms, // Alternative field name from frontend
+      house_number,
+      houseNumber, // Alternative field name from frontend
+      street_name,
+      streetName, // Alternative field name from frontend  
+      fullAddress, // Alternative field name from frontend
+      local_authority,
+      localAuthority, // Alternative field name from frontend
+      nearest_transport_links,
+      nearestTransportLinks, // Alternative field name from frontend
+      short_description,
+      shortDescription, // Alternative field name from frontend
+      virtual_tour_link,
+      virtualTourLink // Alternative field name from frontend
     } = req.body;
 
     // Map frontend field names to backend field names
@@ -1328,11 +1376,57 @@ const updateProperty = async (req, res) => {
       }
     })();
     
-    // NEW FIELDS: Layout of Property
-    const layout_file_name_mapped = layout_file_name || layoutFileName || '';
-    const layout_file_url_mapped = layout_file_url || layoutFileUrl || '';
+    // NEW FIELDS: Layout of Property (preserve existing values if not provided)
+    const layout_file_name_mapped = layout_file_name || layoutFileName || existingProperty.layout_file_name || '';
+    const layout_file_url_mapped = layout_file_url || layoutFileUrl || existingProperty.layout_file_url || '';
     const apartment_size_mapped = apartment_size || apartmentSize || '';
     const floor_number_mapped = floor_number || floorNumber || '';
+
+    // NEW: Additional information fields (map camelCase and snake_case)
+    const tenure_mapped = req.body.tenure || existingProperty.tenure || null;
+    const service_charges_mapped = req.body.service_charges || req.body.serviceCharges || existingProperty.service_charges || null;
+    const ground_rent_mapped = req.body.ground_rent || req.body.groundRent || existingProperty.ground_rent || null;
+    const price_type_mapped = req.body.price_type || req.body.priceType || existingProperty.price_type || null;
+    const floor_area_unit_mapped = req.body.floor_area_unit || req.body.floorAreaUnit || existingProperty.floor_area_unit || null;
+    const heating_type_mapped = req.body.heating_type || req.body.heatingType || existingProperty.heating_type || null;
+    const broadband_availability_mapped = req.body.broadband_availability || req.body.broadbandAvailability || existingProperty.broadband_availability || null;
+    const accessibility_features_mapped = req.body.accessibility_features || req.body.accessibilityFeatures || existingProperty.accessibility_features || null;
+
+    // NEW: EPC document name/url (preserve if not provided; upload may override below)
+    const epc_document_name_mapped = req.body.epc_document_name || existingProperty.epc_document_name || '';
+    const epc_document_url_mapped = req.body.epc_document_url || existingProperty.epc_document_url || '';
+    
+    // MISSING FIELDS: Field mappings for updateProperty (add missing ones)
+    const reception_rooms_mapped = reception_rooms || receptionRooms || existingProperty.reception_rooms || null;
+    const house_number_mapped = house_number || houseNumber || existingProperty.house_number || "";
+    const street_name_mapped = street_name || streetName || fullAddress || existingProperty.street_name || "";
+    const local_authority_mapped = local_authority || localAuthority || existingProperty.local_authority || "";
+    const nearest_transport_links_mapped = nearest_transport_links || nearestTransportLinks || existingProperty.nearest_transport_links || "";
+    const short_description_mapped = short_description || shortDescription || existingProperty.short_description || "";
+    const virtual_tour_link_mapped = virtual_tour_link || virtualTourLink || existingProperty.virtual_tour_link || "";
+    const is_furnished_mapped = req.body.is_furnished !== undefined ? (req.body.is_furnished === "true" || req.body.is_furnished === true) : (req.body.isFurnished === true || existingProperty.is_furnished);
+    
+    
+    
+    
+    
+    
+    
+
+    // NEW: Floor area mapping - compute square_feet from floorArea + unit if provided
+    const rawFloorArea = req.body.square_feet || req.body.squareFeet || req.body.floor_area || req.body.floorArea;
+    let square_feet_mapped = existingProperty.square_feet;
+    if (rawFloorArea !== undefined && rawFloorArea !== null && rawFloorArea !== '') {
+      const areaVal = parseFloat(rawFloorArea);
+      const unit = (floor_area_unit_mapped || '').toLowerCase();
+      if (!isNaN(areaVal)) {
+        if (unit === 'sq_m' || unit === 'sqm' || unit === 'm2') {
+          square_feet_mapped = Math.round(areaVal * 10.7639);
+        } else {
+          square_feet_mapped = Math.round(areaVal);
+        }
+      }
+    }
 
     // Geocode location for all properties
     let latitude = null;
@@ -1389,15 +1483,26 @@ const updateProperty = async (req, res) => {
     const params = [
       title, description || existingProperty.description, category_mapped, property_type_mapped, property_category || existingProperty.property_category,
       address_line1_mapped, address_line2 || existingProperty.address_line2, city || existingProperty.city, state_mapped, zip_code_mapped, country || existingProperty.country,
-      bedrooms_converted, bathrooms_converted, square_feet || existingProperty.square_feet, lot_size || existingProperty.lot_size, year_built || existingProperty.year_built,
+      bedrooms_converted, bathrooms_converted, square_feet_mapped, lot_size || existingProperty.lot_size, year_built || existingProperty.year_built,
       price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
       parking_spaces || existingProperty.parking_spaces, has_garage || existingProperty.has_garage, has_pool || existingProperty.has_pool, 
-      has_garden || existingProperty.has_garden, furnished_mapped, pets_allowed || existingProperty.pets_allowed,
+      has_garden || existingProperty.has_garden, is_furnished_mapped, pets_allowed || existingProperty.pets_allowed,
       student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped,
+      property_consultant || existingProperty.property_consultant,
       epc_rating_mapped, JSON.stringify(key_features_mapped),
       layout_file_name_mapped, layout_file_url_mapped, apartment_size_mapped, floor_number_mapped,
+      epc_document_name_mapped, epc_document_url_mapped,
+      heating_type_mapped, broadband_availability_mapped, accessibility_features_mapped,
+      tenure_mapped, service_charges_mapped, ground_rent_mapped, price_type_mapped, floor_area_unit_mapped,
+      (req.body.has_parking !== undefined) ? (req.body.has_parking === 'true' || req.body.has_parking === true) : (existingProperty.has_parking || (req.body.hasParking === true)),
+      (req.body.has_balcony_terrace !== undefined) ? (req.body.has_balcony_terrace === 'true' || req.body.has_balcony_terrace === true) : (req.body.hasBalconyTerrace === true || existingProperty.has_balcony_terrace),
+      (req.body.is_new_build !== undefined) ? (req.body.is_new_build === 'true' || req.body.is_new_build === true) : (req.body.isNewBuild === true || existingProperty.is_new_build),
+      (req.body.is_chain_free !== undefined) ? (req.body.is_chain_free === 'true' || req.body.is_chain_free === true) : (req.body.isChainFree === true || existingProperty.is_chain_free),
+      (req.body.is_recently_renovated !== undefined) ? (req.body.is_recently_renovated === 'true' || req.body.is_recently_renovated === true) : (req.body.isRecentlyRenovated === true || existingProperty.is_recently_renovated),
+      (req.body.has_accessible_access !== undefined) ? (req.body.has_accessible_access === 'true' || req.body.has_accessible_access === true) : (req.body.hasAccessibleAccess === true || existingProperty.has_accessible_access),
       latitude, longitude,
       council_tax_band_mapped, council_tax_status_mapped,
+      reception_rooms_mapped, house_number_mapped, street_name_mapped, local_authority_mapped, nearest_transport_links_mapped, short_description_mapped, virtual_tour_link_mapped,
       parseInt(id), parseInt(user_id)
     ];
 
@@ -1415,29 +1520,21 @@ const updateProperty = async (req, res) => {
         address_line1 = $6, address_line2 = $7, city = $8, state = $9, zip_code = $10, country = $11,
         bedrooms = $12, bathrooms = $13, square_feet = $14, lot_size = $15, year_built = $16,
         price = $17, weekly_rent = $18, monthly_rent = $19, lease_term = $20, deposit_amount = $21,
-        parking_spaces = $22, has_garage = $23, has_pool = $24, has_garden = $25, furnished = $26, pets_allowed = $27,
+        parking_spaces = $22, has_garage = $23, has_pool = $24, has_garden = $25, is_furnished = $26, pets_allowed = $27,
         student_housing = $28, availability_date = $29, contact_name = $30, contact_phone = $31, contact_email = $32, property_consultant = $33,
         epc_rating = $34, key_features = $35,
         layout_file_name = $36, layout_file_url = $37, apartment_size = $38, floor_number = $39,
+        epc_document_name = $40, epc_document_url = $41,
+        heating_type = $42, broadband_availability = $43, accessibility_features = $44,
+        tenure = $45, service_charges = $46, ground_rent = $47, price_type = $48, floor_area_unit = $49,
+        has_parking = $50, has_balcony_terrace = $51, is_new_build = $52, is_chain_free = $53, is_recently_renovated = $54, has_accessible_access = $55,
         updated_at = CURRENT_TIMESTAMP, status = 'pending',
-        latitude = $40, longitude = $41,
-        council_tax_band = $42, council_tax_status = $43
-       WHERE id = $44 AND user_id = $45
+        latitude = $56, longitude = $57,
+        council_tax_band = $58, council_tax_status = $59,
+        reception_rooms = $60, house_number = $61, street_name = $62, local_authority = $63, nearest_transport_links = $64, short_description = $65, virtual_tour_link = $66
+       WHERE id = $67 AND user_id = $68
        RETURNING *`,
-      [
-        title, description || existingProperty.description, category_mapped, property_type_mapped, property_category || existingProperty.property_category,
-        address_line1_mapped, address_line2 || existingProperty.address_line2, city || existingProperty.city, state_mapped, zip_code_mapped, country || existingProperty.country,
-        bedrooms_converted, bathrooms_converted, square_feet || existingProperty.square_feet, lot_size || existingProperty.lot_size, year_built || existingProperty.year_built,
-        price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
-        parking_spaces || existingProperty.parking_spaces, has_garage || existingProperty.has_garage, has_pool || existingProperty.has_pool, 
-        has_garden || existingProperty.has_garden, furnished_mapped, pets_allowed || existingProperty.pets_allowed,
-        student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped, property_consultant || existingProperty.property_consultant,
-        epc_rating_mapped, JSON.stringify(key_features_mapped),
-        layout_file_name_mapped, layout_file_url_mapped, apartment_size_mapped, floor_number_mapped,
-        latitude, longitude,
-        council_tax_band_mapped, council_tax_status_mapped,
-        parseInt(id), parseInt(user_id)
-      ]
+      params
     );
 
     if (propertyResult.rows.length === 0) {
