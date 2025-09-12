@@ -105,14 +105,6 @@ const AddList = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState('idle'); // idle | loading | success | error
   
-
-  // Helper to handle null strings from database
-  const nullSafe = (value) => {
-    if (value === null || value === undefined || value === 'null' || value === '') {
-      return '';
-    }
-    return value;
-  };
   // Helpers
     const toBool = (value) => {
     if (typeof value === 'boolean') return value;
@@ -193,104 +185,97 @@ const AddList = () => {
   const getInitialFormData = () => {
     if (editMode && effectiveProperty) {
       const src = effectiveProperty;
-      const addr = parseAddress(src.address_line1 || src.streetAddress);
-
+      const addr = parseAddress(src.address_line1);
       return {
-        // Step 1: Basics
-        propertyTitle: src.title || src.propertyTitle || "",
+        // Step 1
+        propertyTitle: src.title || "",
         propertyType: normalizeToOptionValue(propertyTypeOptions, src.property_type || src.propertyType) || "",
-        tenure: normalizeToOptionValue(tenureOptions, src.tenure || src.tenure_type || src.tenureType) || "",
-        bedrooms: (src.bedrooms ?? "").toString(),
-        bathrooms: (src.bathrooms ?? "").toString(),
-        receptionRooms: (src.reception_rooms ?? src.receptions ?? "").toString(),
-        floorArea: (src.floor_area ?? src.square_feet ?? "").toString(),
+        tenure: normalizeToOptionValue(tenureOptions, src.tenure) || "",
+        bedrooms: src.bedrooms?.toString() || "",
+        bathrooms: src.bathrooms?.toString() || "",
+        receptionRooms: src.reception_rooms?.toString() || "",
+        floorArea: (src.floor_area ?? src.square_feet)?.toString() || "",
         floorAreaUnit: normalizeToOptionValue(
           floorAreaUnitOptions,
-          src.floor_area_unit || (src.square_feet ? "sq_ft" : src.floorAreaUnit)
-        ) || (src.square_feet ? "sq_ft" : "sq_m"),
-        epcRating: src.epc_rating ? String(src.epc_rating).toUpperCase() : "",
-
-        // Step 2: Location
+          src.floor_area_unit || (src.square_feet ? 'sq_ft' : '')
+        ) || (src.square_feet ? 'sq_ft' : 'sq_m'),
+        epcRating: (src.epc_rating ? String(src.epc_rating).toUpperCase() : ""),
+        
+        // Step 2
         houseNumber: addr.houseNumber,
         fullAddress: addr.streetName,
         city: src.city || "",
         country: src.country || "United Kingdom",
         region: src.region || src.state || "",
         postcode: src.postcode || src.zip_code || "",
-        localAuthority: src.local_authority || src.localAuthority || "",
-        nearestTransportLinks: src.nearest_transport_links || src.nearestTransportLinks || "",
-
-        // Step 3: Financials
-        askingPrice: (src.price ?? "").toString(),
-        priceType: normalizeToOptionValue(priceTypeOptions, src.price_type || src.priceType) || "fixed_price",
-        serviceCharges: (src.service_charges ?? src.serviceCharges ?? "").toString(),
-        groundRent: (src.ground_rent ?? src.groundRent ?? "").toString(),
-        councilTaxBand: normalizeCouncilBand(src.council_tax_band || src.councilTaxBand),
-
-        // Step 4: Descriptions
+        localAuthority: src.local_authority || "",
+        nearestTransportLinks: src.nearest_transport_links || "",
+        
+        // Step 3
+        askingPrice: src.price?.toString() || "",
+        priceType: normalizeToOptionValue(priceTypeOptions, src.price_type) || "fixed_price",
+        serviceCharges: src.service_charges?.toString() || "",
+        groundRent: src.ground_rent?.toString() || "",
+        councilTaxBand: normalizeCouncilBand(src.council_tax_band),
+        
+        // Step 4
         shortDescription: src.short_description || src.shortDescription || (src.description ? String(src.description).slice(0, 160) : ""),
         fullDescription: src.description || "",
-
-        // Step 5: Features
-        hasGarden: toBool(src.has_garden || src.garden),
-        hasParking: toBool((src.parking_spaces || 0) > 0) || toBool(src.has_parking || src.parking),
-        hasBalconyTerrace: toBool(src.has_balcony_terrace || src.balcony),
-        isNewBuild: toBool(src.is_new_build || src.new_build),
-        isChainFree: toBool(src.is_chain_free || src.chain_free),
-        isRecentlyRenovated: toBool(src.is_recently_renovated || src.recentlyRenovated),
-        hasAccessibleAccess: toBool(src.has_accessible_access || src.accessibility),
-        isFurnished: toBool(src.is_furnished || src.furnished),
-
-        // Step 6: Media / Layout
-        apartmentSize: src.apartment_size || src.apartmentSize || "",
-        floorNumber: src.floor_number || src.floorNumber || "",
-        virtualTourLink: src.virtual_tour_link || src.virtualTourLink || src.tour_link || "",
-
-        // Step 7: Additional Info
-        yearBuilt: (src.year_built || src.yearBuilt || "").toString(),
-        heatingType: normalizeToOptionValue(heatingTypeOptions, src.heating_type || src.heatingType) || "",
-        broadbandAvailability: normalizeToOptionValue(
-          broadbandOptions,
-          src.broadband_availability || src.broadbandAvailability || src.broadband
-        ) || "",
-        accessibilityFeatures: src.accessibility_features || src.accessibilityFeatures || "",
+        
+        // Step 5 (map booleans defensively)
+        hasGarden: toBool(src.has_garden),
+        hasParking: toBool((src.parking_spaces || 0) > 0) || toBool(src.has_parking),
+        hasBalconyTerrace: toBool(src.has_balcony_terrace),
+        isNewBuild: toBool(src.is_new_build),
+        isChainFree: toBool(src.is_chain_free),
+        isRecentlyRenovated: toBool(src.is_recently_renovated),
+        hasAccessibleAccess: toBool(src.has_accessible_access),
+        isFurnished: toBool(src.is_furnished),
+        
+        // Step 6
+        yearBuilt: src.year_built?.toString() || "",
+        heatingType: normalizeToOptionValue(heatingTypeOptions, src.heating_type) || "",
+        broadbandAvailability: normalizeToOptionValue(broadbandOptions, src.broadband_availability) || "",
+        accessibilityFeatures: src.accessibility_features || "",
+        apartmentSize: src.apartment_size || "",
+        floorNumber: src.floor_number || "",
+        virtualTourLink: src.virtual_tour_link || "",
       };
     }
-
-    // Defaults (new listing)
+    // New listing defaults
     return {
-      propertyTitle: "",
-      propertyType: "",
-      tenure: "",
-      bedrooms: "",
-      bathrooms: "",
-      receptionRooms: "",
+    propertyTitle: "",
+    propertyType: "",
+    tenure: "",
+    bedrooms: "",
+    bathrooms: "",
+    receptionRooms: "",
       floorArea: "",
       floorAreaUnit: "sq_m",
-      epcRating: "",
-      houseNumber: "",
-      fullAddress: "",
-      city: "",
-      country: "United Kingdom",
-      region: "",
-      postcode: "",
-      localAuthority: "",
-      nearestTransportLinks: "",
-      askingPrice: "",
-      priceType: "fixed_price",
-      serviceCharges: "",
-      groundRent: "",
-      councilTaxBand: "",
+    epcRating: "",
+    houseNumber: "",
+    fullAddress: "",
+    city: "",
+    country: "United Kingdom",
+    region: "",
+    postcode: "",
+    localAuthority: "",
+    nearestTransportLinks: "",
+    askingPrice: "",
+    priceType: "fixed_price",
+    serviceCharges: "",
+    groundRent: "",
+    councilTaxBand: "",
       shortDescription: "",
-      fullDescription: "",
-      hasGarden: false,
-      hasParking: false,
-      hasBalconyTerrace: false,
-      isNewBuild: false,
-      isChainFree: false,
-      isRecentlyRenovated: false,
-      hasAccessibleAccess: false,
-      isFurnished: false,
+    fullDescription: "",
+    hasGarden: false,
+    hasParking: false,
+    hasBalconyTerrace: false,
+    isNewBuild: false,
+    isChainFree: false,
+    isRecentlyRenovated: false,
+    hasAccessibleAccess: false,
+    isFurnished: false,
       yearBuilt: "",
       heatingType: "",
       broadbandAvailability: "",
@@ -300,6 +285,7 @@ const AddList = () => {
       virtualTourLink: "",
     };
   };
+
   // Use session-backed state like AddRent
   const storageKey = editMode ? `editSaleForm_${propertyId}` : 'addListForm';
   const [formData, setFormData] = useSessionStorage(storageKey, getInitialFormData());
@@ -363,24 +349,6 @@ const AddList = () => {
       setMediaPreviewUrls(imageUrls);
     }
   }, [editMode, effectiveProperty]);
-
-  // Clear form data when creating a new property (not in edit mode)
-  useEffect(() => {
-    if (!editMode) {
-      // Clear any existing form data from previous sessions
-      const emptyFormData = getInitialFormData();
-      setFormData(emptyFormData);
-      setMediaFiles([]);
-      setMediaPreviewUrls([]);
-      setFloorPlanFile(null);
-      setEpcDocumentFile(null);
-      setExistingLayoutUrl("");
-      setExistingLayoutName("");
-      setExistingEpcUrl("");
-      setExistingEpcName("");
-      console.log('🆕 NEW PROPERTY MODE - Form cleared');
-    }
-  }, [editMode]);
 
   // Fetch full property details if needed in edit mode
   useEffect(() => {
@@ -530,11 +498,6 @@ const AddList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    console.log('🚀 ADDLIST SUBMIT DEBUG: Starting submission process');
-    console.log('📊 Current step:', currentStep);
-    console.log('🔒 Is submitting:', isSubmitting);
-    console.log('📝 Form data:', formData);
-    
     // Block any accidental double submissions
     if (isSubmitting) {
       console.log('⚠️ Submission already in progress; ignoring.');
@@ -552,8 +515,6 @@ const AddList = () => {
     try {
       setIsSubmitting(true);
       setSubmitStatus('loading');
-      console.log('✅ Starting form data preparation...');
-      
       const formDataToSend = new FormData();
       // Map required backend fields for sale listings
       formDataToSend.append('category', 'sale');
@@ -636,13 +597,6 @@ const AddList = () => {
         : `${baseUrl}/api/properties/sale/submit`;
       const method = editMode && propertyId ? 'PUT' : 'POST';
 
-      console.log('🌐 Endpoint:', endpoint);
-      console.log('📡 Method:', method);
-      console.log('🔑 Token exists:', !!localStorage.getItem('token'));
-      console.log('📎 Media files count:', mediaFiles.length);
-      console.log('📋 Floor plan file:', !!floorPlanFile);
-      console.log('📄 EPC document file:', !!epcDocumentFile);
-
       const response = await fetch(endpoint, {
         method,
         body: formDataToSend,
@@ -651,17 +605,12 @@ const AddList = () => {
         }
       });
       
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
-      
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('❌ Response error data:', errorData);
         throw new Error(errorData.message || `Server error: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('✅ Response data:', data);
       
       if (data.success) {
         setSubmitStatus('success');
@@ -671,8 +620,7 @@ const AddList = () => {
         throw new Error(data.message || 'Failed to submit property');
       }
     } catch (error) {
-      console.error('❌ Error submitting property:', error);
-      console.error('❌ Error stack:', error.stack);
+      console.error('Error submitting property:', error);
       setSubmitStatus('error');
       alert(`Error submitting property: ${error.message}`);
     } finally {

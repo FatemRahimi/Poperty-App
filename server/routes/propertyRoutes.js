@@ -126,22 +126,26 @@ const requireAdmin = (req, res, next) => {
 // Use multer to handle FormData with file uploads
 router.post('/submit', authenticateJWT, upload.fields([
   { name: 'photos', maxCount: 15 },
-  { name: 'layoutFile', maxCount: 1 }
+  { name: 'layoutFile', maxCount: 1 },
+  { name: 'epcDocument', maxCount: 1 }
 ]), handleMulterError, submitProperty);
 
 // Sale-specific endpoints for AddList (isolated from rent/lease)
 router.post('/sale/submit', authenticateJWT, upload.fields([
   { name: 'photos', maxCount: 15 },
-  { name: 'layoutFile', maxCount: 1 }
+  { name: 'layoutFile', maxCount: 1 },
+  { name: 'epcDocument', maxCount: 1 }
 ]), handleMulterError, submitSaleProperty);
 router.put('/update/:id', authenticateJWT, upload.fields([
   { name: 'photos', maxCount: 15 },
-  { name: 'layoutFile', maxCount: 1 }
+  { name: 'layoutFile', maxCount: 1 },
+  { name: 'epcDocument', maxCount: 1 }
 ]), handleMulterError, updateProperty);
 
 router.put('/sale/update/:id', authenticateJWT, upload.fields([
   { name: 'photos', maxCount: 15 },
-  { name: 'layoutFile', maxCount: 1 }
+  { name: 'layoutFile', maxCount: 1 },
+  { name: 'epcDocument', maxCount: 1 }
 ]), handleMulterError, updateSaleProperty);
 router.get('/my-properties', authenticateJWT, getUserProperties);
 router.delete('/:id', authenticateJWT, deleteProperty);

@@ -1397,14 +1397,6 @@ const updateProperty = async (req, res) => {
     const epc_document_url_mapped = req.body.epc_document_url || existingProperty.epc_document_url || '';
     
     // MISSING FIELDS: Field mappings for updateProperty (add missing ones)
-    const reception_rooms_mapped = reception_rooms || receptionRooms || existingProperty.reception_rooms || null;
-    const house_number_mapped = house_number || houseNumber || existingProperty.house_number || "";
-    const street_name_mapped = street_name || streetName || fullAddress || existingProperty.street_name || "";
-    const local_authority_mapped = local_authority || localAuthority || existingProperty.local_authority || "";
-    const nearest_transport_links_mapped = nearest_transport_links || nearestTransportLinks || existingProperty.nearest_transport_links || "";
-    const short_description_mapped = short_description || shortDescription || existingProperty.short_description || "";
-    const virtual_tour_link_mapped = virtual_tour_link || virtualTourLink || existingProperty.virtual_tour_link || "";
-    const is_furnished_mapped = req.body.is_furnished !== undefined ? (req.body.is_furnished === "true" || req.body.is_furnished === true) : (req.body.isFurnished === true || existingProperty.is_furnished);
     
     
     
@@ -1486,7 +1478,7 @@ const updateProperty = async (req, res) => {
       bedrooms_converted, bathrooms_converted, square_feet_mapped, lot_size || existingProperty.lot_size, year_built || existingProperty.year_built,
       price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
       parking_spaces || existingProperty.parking_spaces, has_garage || existingProperty.has_garage, has_pool || existingProperty.has_pool, 
-      has_garden || existingProperty.has_garden, is_furnished_mapped, pets_allowed || existingProperty.pets_allowed,
+      has_garden || existingProperty.has_garden, furnished_mapped, pets_allowed || existingProperty.pets_allowed,
       student_housing_mapped, availability_date_mapped, contact_name_mapped, contact_phone_mapped, contact_email_mapped,
       property_consultant || existingProperty.property_consultant,
       epc_rating_mapped, JSON.stringify(key_features_mapped),
@@ -1520,7 +1512,7 @@ const updateProperty = async (req, res) => {
         address_line1 = $6, address_line2 = $7, city = $8, state = $9, zip_code = $10, country = $11,
         bedrooms = $12, bathrooms = $13, square_feet = $14, lot_size = $15, year_built = $16,
         price = $17, weekly_rent = $18, monthly_rent = $19, lease_term = $20, deposit_amount = $21,
-        parking_spaces = $22, has_garage = $23, has_pool = $24, has_garden = $25, is_furnished = $26, pets_allowed = $27,
+        parking_spaces = $22, has_garage = $23, has_pool = $24, has_garden = $25, furnished = $26, pets_allowed = $27,
         student_housing = $28, availability_date = $29, contact_name = $30, contact_phone = $31, contact_email = $32, property_consultant = $33,
         epc_rating = $34, key_features = $35,
         layout_file_name = $36, layout_file_url = $37, apartment_size = $38, floor_number = $39,
