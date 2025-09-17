@@ -239,7 +239,6 @@ const AddList = () => {
         isChainFree: toBool(src.is_chain_free || src.chain_free),
         isRecentlyRenovated: toBool(src.is_recently_renovated || src.recentlyRenovated),
         hasAccessibleAccess: toBool(src.has_accessible_access || src.accessibility),
-        isFurnished: toBool(src.is_furnished || src.furnished),
 
         // Step 6: Media / Layout
         apartmentSize: src.apartment_size || src.apartmentSize || "",
@@ -290,7 +289,6 @@ const AddList = () => {
       isChainFree: false,
       isRecentlyRenovated: false,
       hasAccessibleAccess: false,
-      isFurnished: false,
       yearBuilt: "",
       heatingType: "",
       broadbandAvailability: "",
@@ -623,11 +621,9 @@ const AddList = () => {
         formDataToSend.append('layoutFile', floorPlanFile);
       }
       
-      // Add EPC document (send meta only; controller logs will ignore file)
+      // Add EPC document file
       if (epcDocumentFile) {
-        formDataToSend.append('epcDocumentName', epcDocumentFile.name);
-        formDataToSend.append('epcDocumentSize', String(epcDocumentFile.size));
-        formDataToSend.append('epcDocumentType', epcDocumentFile.type);
+        formDataToSend.append('epcDocument', epcDocumentFile);
       }
       
       const baseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050';
@@ -1119,23 +1115,6 @@ const AddList = () => {
             <label htmlFor="hasAccessibleAccess">Accessible/Step-Free Access</label>
           </div>
 
-          <div className="feature-item" style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0.75rem',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
-            backgroundColor: '#ffffff'
-          }}>
-            <input 
-              type="checkbox" 
-              id="isFurnished" 
-              name="isFurnished" 
-              checked={formData.isFurnished}
-              onChange={handleChange}
-            />
-            <label htmlFor="isFurnished">Furnished/Unfurnished (if applicable)</label>
-          </div>
         </div>
       </>
     );
