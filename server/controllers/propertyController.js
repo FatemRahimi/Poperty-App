@@ -132,6 +132,7 @@ const submitProperty = async (req, res) => {
       square_feet, 
       lot_size, 
       year_built,
+      yearBuilt, // Alternative field name from frontend
       price, 
       askingPrice, // Alternative field name from frontend
       weekly_rent,
@@ -202,7 +203,15 @@ const submitProperty = async (req, res) => {
       short_description,
       shortDescription, // Alternative field name from frontend
       virtual_tour_link,
-      virtualTourLink // Alternative field name from frontend
+      virtualTourLink, // Alternative field name from frontend
+      
+      // ADDITIONAL INFO FIELDS: Added for complete additional information
+      heating_type,
+      heatingType, // Alternative field name from frontend
+      broadband_availability,
+      broadbandAvailability, // Alternative field name from frontend
+      accessibility_features,
+      accessibilityFeatures // Alternative field name from frontend
     } = req.body;
 
     // Map frontend field names to backend field names
@@ -286,8 +295,11 @@ const submitProperty = async (req, res) => {
     const short_description_mapped = short_description || shortDescription || '';
     const virtual_tour_link_mapped = virtual_tour_link || virtualTourLink || '';
     
-    
-    
+    // Additional information field mappings
+    const year_built_mapped = year_built || yearBuilt;
+    const heating_type_mapped = heating_type || heatingType || '';
+    const broadband_availability_mapped = broadband_availability || broadbandAvailability || '';
+    const accessibility_features_mapped = accessibility_features || accessibilityFeatures || '';
 
     // Data conversion for numeric fields
     const convertBathrooms = (bathrooms) => {
@@ -314,9 +326,32 @@ const submitProperty = async (req, res) => {
       return bedrooms;
     };
 
+    // Convert year_built to proper integer
+    const convertYearBuilt = (yearValue) => {
+      if (!yearValue) return null;
+      
+      // Convert to string first to handle various input types
+      const yearStr = String(yearValue).trim();
+      
+      // If it's empty or null-like, return null
+      if (!yearStr || yearStr === 'null' || yearStr === 'undefined') return null;
+      
+      // Parse as integer
+      const yearInt = parseInt(yearStr);
+      
+      // Validate year range (reasonable bounds for building years)
+      if (isNaN(yearInt) || yearInt < 1500 || yearInt > new Date().getFullYear() + 5) {
+        console.warn(`⚠️ Invalid year_built value: ${yearValue} -> ${yearInt}`);
+        return null;
+      }
+      
+      return yearInt;
+    };
+
     // Convert form values to database-compatible types
     const bathrooms_converted = convertBathrooms(bathrooms);
     const bedrooms_converted = convertBedrooms(bedrooms);
+    const year_built_converted = convertYearBuilt(year_built_mapped);
 
     // Debug logging for property submission
     console.log('🔍 Property submission debug:');
@@ -400,7 +435,7 @@ const submitProperty = async (req, res) => {
     const valuesArray = [
       user_id, title, description, category_mapped, property_type_mapped, property_category,
       address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
-      bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built,
+      bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built_converted,
       price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
       parking_spaces || 0, has_garage || false, has_pool || false, 
       has_garden || false, furnished_mapped || false, pets_allowed || false,
@@ -412,7 +447,9 @@ const submitProperty = async (req, res) => {
       council_tax_band_mapped, council_tax_status_mapped,
       reception_rooms_mapped, house_number_mapped, street_name_mapped, local_authority_mapped, nearest_transport_links_mapped, short_description_mapped, virtual_tour_link_mapped,
       // EPC Document fields (initially empty, will be updated if file is uploaded)
-      '', '' // epc_document_name, epc_document_url
+      '', '', // epc_document_name, epc_document_url
+      // Additional information fields
+      heating_type_mapped, broadband_availability_mapped, accessibility_features_mapped
     ];
     
     console.log('Values array position 21 (lease_term):', valuesArray[20]);
@@ -431,11 +468,12 @@ const submitProperty = async (req, res) => {
         layout_file_name, layout_file_url, apartment_size, floor_number,
         council_tax_band, council_tax_status,
         reception_rooms, house_number, street_name, local_authority, nearest_transport_links, short_description, virtual_tour_link,
-        epc_document_name, epc_document_url
+        epc_document_name, epc_document_url,
+        heating_type, broadband_availability, accessibility_features
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36,
-        $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54
+        $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57
       ) RETURNING *`,
       valuesArray
     );
@@ -1280,6 +1318,7 @@ const updateProperty = async (req, res) => {
       square_feet, 
       lot_size, 
       year_built,
+      yearBuilt, // Alternative field name from frontend
       price, 
       askingPrice, // Alternative field name from frontend
       weekly_rent,
@@ -1420,6 +1459,7 @@ const updateProperty = async (req, res) => {
     const heating_type_mapped = req.body.heating_type || req.body.heatingType || existingProperty.heating_type || null;
     const broadband_availability_mapped = req.body.broadband_availability || req.body.broadbandAvailability || existingProperty.broadband_availability || null;
     const accessibility_features_mapped = req.body.accessibility_features || req.body.accessibilityFeatures || existingProperty.accessibility_features || null;
+    const year_built_mapped = year_built || yearBuilt || existingProperty.year_built;
 
     // NEW: EPC document name/url (preserve if not provided; upload may override below)
     const epc_document_name_mapped = req.body.epc_document_name || existingProperty.epc_document_name || '';
@@ -1449,10 +1489,23 @@ const updateProperty = async (req, res) => {
       const areaVal = parseFloat(rawFloorArea);
       const unit = (floor_area_unit_mapped || '').toLowerCase();
       if (!isNaN(areaVal)) {
+        // Validate reasonable floor area bounds
         if (unit === 'sq_m' || unit === 'sqm' || unit === 'm2') {
-          square_feet_mapped = Math.round(areaVal * 10.7639);
+          // For square meters: reasonable range 1-50,000 sq_m
+          if (areaVal > 0 && areaVal <= 50000) {
+            square_feet_mapped = Math.round(areaVal * 10.7639);
+          } else {
+            console.warn(`⚠️ Invalid floor area in sq_m: ${areaVal}, keeping existing: ${existingProperty.square_feet}`);
+            square_feet_mapped = existingProperty.square_feet;
+          }
         } else {
-          square_feet_mapped = Math.round(areaVal);
+          // For square feet: reasonable range 1-500,000 sq_ft
+          if (areaVal > 0 && areaVal <= 500000) {
+            square_feet_mapped = Math.round(areaVal);
+          } else {
+            console.warn(`⚠️ Invalid floor area in sq_ft: ${areaVal}, keeping existing: ${existingProperty.square_feet}`);
+            square_feet_mapped = existingProperty.square_feet;
+          }
         }
       }
     }
@@ -1494,8 +1547,31 @@ const updateProperty = async (req, res) => {
       return bedrooms;
     };
 
+    // Convert year_built to proper integer for updateProperty
+    const convertYearBuilt = (yearValue) => {
+      if (!yearValue) return existingProperty.year_built;
+      
+      // Convert to string first to handle various input types
+      const yearStr = String(yearValue).trim();
+      
+      // If it's empty or null-like, return existing value
+      if (!yearStr || yearStr === 'null' || yearStr === 'undefined') return existingProperty.year_built;
+      
+      // Parse as integer
+      const yearInt = parseInt(yearStr);
+      
+      // Validate year range (reasonable bounds for building years)
+      if (isNaN(yearInt) || yearInt < 1500 || yearInt > new Date().getFullYear() + 5) {
+        console.warn(`⚠️ Invalid year_built value in update: ${yearValue} -> ${yearInt}, keeping existing: ${existingProperty.year_built}`);
+        return existingProperty.year_built;
+      }
+      
+      return yearInt;
+    };
+
     const bedrooms_converted = convertBedrooms(bedrooms);
     const bathrooms_converted = convertBathrooms(bathrooms);
+    const year_built_converted = convertYearBuilt(year_built_mapped);
 
     console.log('🔄 UPDATE DEBUG - Values being updated:');
     console.log('Property ID:', id);
@@ -1507,12 +1583,27 @@ const updateProperty = async (req, res) => {
     console.log('Council Tax Status:', council_tax_status_mapped);
     console.log('Bedrooms:', bedrooms_converted, typeof bedrooms_converted);
     console.log('Bathrooms:', bathrooms_converted, typeof bathrooms_converted);
+    console.log('🗓️ YEAR BUILT DEBUG:');
+    console.log('Raw year_built from req.body:', req.body.year_built);
+    console.log('Raw yearBuilt from req.body:', req.body.yearBuilt);
+    console.log('year_built_mapped:', year_built_mapped);
+    console.log('year_built_converted:', year_built_converted, typeof year_built_converted);
+    console.log('Existing year_built:', existingProperty.year_built);
+    console.log('📐 FLOOR AREA DEBUG:');
+    console.log('Raw square_feet from req.body:', req.body.square_feet);
+    console.log('Raw squareFeet from req.body:', req.body.squareFeet);
+    console.log('Raw floor_area from req.body:', req.body.floor_area);
+    console.log('Raw floorArea from req.body:', req.body.floorArea);
+    console.log('rawFloorArea:', rawFloorArea);
+    console.log('floor_area_unit_mapped:', floor_area_unit_mapped);
+    console.log('square_feet_mapped:', square_feet_mapped, typeof square_feet_mapped);
+    console.log('Existing square_feet:', existingProperty.square_feet);
 
     // Create parameter array for debugging
     const params = [
       title, description || existingProperty.description, category_mapped, property_type_mapped, property_category || existingProperty.property_category,
       address_line1_mapped, address_line2 || existingProperty.address_line2, city || existingProperty.city, state_mapped, zip_code_mapped, country || existingProperty.country,
-      bedrooms_converted, bathrooms_converted, square_feet_mapped, lot_size || existingProperty.lot_size, year_built || existingProperty.year_built,
+      bedrooms_converted, bathrooms_converted, square_feet_mapped, lot_size || existingProperty.lot_size, year_built_converted,
       price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
       parking_spaces || existingProperty.parking_spaces, has_garage || existingProperty.has_garage, has_pool || existingProperty.has_pool, 
       has_garden || existingProperty.has_garden, is_furnished_mapped, pets_allowed || existingProperty.pets_allowed,
