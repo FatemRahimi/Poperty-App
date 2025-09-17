@@ -410,7 +410,9 @@ const submitProperty = async (req, res) => {
       epc_rating_mapped, JSON.stringify(key_features_mapped),
       layout_file_name_mapped, layout_file_url_mapped, apartment_size_mapped, floor_number_mapped,
       council_tax_band_mapped, council_tax_status_mapped,
-      reception_rooms_mapped, house_number_mapped, street_name_mapped, local_authority_mapped, nearest_transport_links_mapped, short_description_mapped, virtual_tour_link_mapped
+      reception_rooms_mapped, house_number_mapped, street_name_mapped, local_authority_mapped, nearest_transport_links_mapped, short_description_mapped, virtual_tour_link_mapped,
+      // EPC Document fields (initially empty, will be updated if file is uploaded)
+      '', '' // epc_document_name, epc_document_url
     ];
     
     console.log('Values array position 21 (lease_term):', valuesArray[20]);
@@ -428,11 +430,12 @@ const submitProperty = async (req, res) => {
         epc_rating, key_features,
         layout_file_name, layout_file_url, apartment_size, floor_number,
         council_tax_band, council_tax_status,
-        reception_rooms, house_number, street_name, local_authority, nearest_transport_links, short_description, virtual_tour_link
+        reception_rooms, house_number, street_name, local_authority, nearest_transport_links, short_description, virtual_tour_link,
+        epc_document_name, epc_document_url
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36,
-        $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52
+        $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54
       ) RETURNING *`,
       valuesArray
     );
@@ -499,6 +502,32 @@ const submitProperty = async (req, res) => {
           console.log(`✅ Layout file updated in database: ${layoutFile.originalname}`);
         } catch (fileError) {
           console.error(`❌ Error saving layout file ${layoutFilename}:`, fileError);
+        }
+      }
+
+      // Handle EPC document file
+      if (req.files.epcDocument && req.files.epcDocument.length > 0) {
+        const epcFile = req.files.epcDocument[0];
+        
+        // Create unique filename for EPC document
+        const epcFilename = `${property.id}_epc_${epcFile.originalname}`;
+        const epcFilepath = path.join(uploadsDir, epcFilename);
+        
+        // Save EPC document to disk
+        try {
+          fs.writeFileSync(epcFilepath, epcFile.buffer);
+          console.log(`📄 EPC document saved: ${epcFilename}`);
+          
+          // Update property with EPC document information
+          const epcUrl = `/uploads/${epcFilename}`;
+          await client.query(
+            `UPDATE properties SET epc_document_name = $1, epc_document_url = $2 WHERE id = $3`,
+            [epcFile.originalname, epcUrl, property.id]
+          );
+          
+          console.log(`✅ EPC document updated in database: ${epcFile.originalname}`);
+        } catch (fileError) {
+          console.error(`❌ Error saving EPC document ${epcFilename}:`, fileError);
         }
       }
     }
@@ -1707,6 +1736,32 @@ const updateProperty = async (req, res) => {
           console.log(`✅ Layout file updated in database: ${layoutFile.originalname}`);
         } catch (fileError) {
           console.error(`❌ Error saving layout file ${layoutFilename}:`, fileError);
+        }
+      }
+
+      // Handle EPC document file
+      if (req.files.epcDocument && req.files.epcDocument.length > 0) {
+        const epcFile = req.files.epcDocument[0];
+        
+        // Create unique filename for EPC document
+        const epcFilename = `${property.id}_epc_${epcFile.originalname}`;
+        const epcFilepath = path.join(uploadsDir, epcFilename);
+        
+        // Save EPC document to disk
+        try {
+          fs.writeFileSync(epcFilepath, epcFile.buffer);
+          console.log(`📄 EPC document saved: ${epcFilename}`);
+          
+          // Update property with EPC document information
+          const epcUrl = `/uploads/${epcFilename}`;
+          await client.query(
+            `UPDATE properties SET epc_document_name = $1, epc_document_url = $2 WHERE id = $3`,
+            [epcFile.originalname, epcUrl, property.id]
+          );
+          
+          console.log(`✅ EPC document updated in database: ${epcFile.originalname}`);
+        } catch (fileError) {
+          console.error(`❌ Error saving EPC document ${epcFilename}:`, fileError);
         }
       }
     }

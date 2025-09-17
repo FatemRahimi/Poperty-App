@@ -1,0 +1,37 @@
+--- a/client/src/pages/AddList.js
++++ b/client/src/pages/AddList.js
+@@ -175,6 +175,8 @@ const AddList = () => {
+   // Existing files (edit mode)
+   const [existingLayoutUrl, setExistingLayoutUrl] = useState("");
+   const [existingLayoutName, setExistingLayoutName] = useState("");
++  const [existingEpcUrl, setExistingEpcUrl] = useState("");
++  const [existingEpcName, setExistingEpcName] = useState("");
+ 
+   // Helpers to prefill edit mode like AddRent
+   const parseAddress = (addressLine1) => {
+@@ -330,6 +332,13 @@ const AddList = () => {
+         if (effectiveProperty.layout_file_name || effectiveProperty.layoutFileName) {
+           setExistingLayoutName(effectiveProperty.layout_file_name || effectiveProperty.layoutFileName);
+         }
+       }
++      if (effectiveProperty.epc_url || effectiveProperty.epcDocumentUrl || effectiveProperty.epc_document_url) {
++        setExistingEpcUrl(
++          effectiveProperty.epc_url || effectiveProperty.epcDocumentUrl || effectiveProperty.epc_document_url
++        );
++        if (effectiveProperty.epc_document_name || effectiveProperty.epcDocumentName) {
++          setExistingEpcName(effectiveProperty.epc_document_name || effectiveProperty.epcDocumentName);
++        }
++      }
+     }
+   }, [editMode, effectiveProperty]);
+ 
+@@ -375,6 +384,8 @@ const AddList = () => {
+       setFloorPlanFile(null);
+       setEpcDocumentFile(null);
+       setExistingLayoutUrl("");
+       setExistingLayoutName("");
++      setExistingEpcUrl("");
++      setExistingEpcName("");
+       console.log('🆕 NEW PROPERTY MODE - Form cleared');
+     }
+   }, [editMode]);
