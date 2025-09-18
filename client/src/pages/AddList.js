@@ -7,6 +7,7 @@ import "../styles/AddList.css";
 import useSessionStorage from "../Utils/useSessionStorage";
 import "../styles/CrossBrowserReset.css";
 import ContactInformationSection from "../components/ContactInformationSection";
+import CustomFeaturesInput from "../components/CustomFeaturesInput";
 
 // Property Type Options
 const propertyTypeOptions = [
@@ -253,6 +254,11 @@ const AddList = () => {
           src.broadband_availability || src.broadbandAvailability || src.broadband
         ) || "",
         accessibilityFeatures: src.accessibility_features || src.accessibilityFeatures || "",
+        
+        // Custom Features
+        customFeatures: Array.isArray(src.custom_features) 
+          ? src.custom_features 
+          : (src.custom_features ? JSON.parse(src.custom_features) : []),
       };
     }
 
@@ -296,6 +302,9 @@ const AddList = () => {
       apartmentSize: "",
       floorNumber: "",
       virtualTourLink: "",
+      
+      // Custom Features
+      customFeatures: [],
     };
   };
   // Use session-backed state like AddRent
@@ -572,7 +581,7 @@ const AddList = () => {
       if (formData.askingPrice) formDataToSend.append('price', formData.askingPrice);
       
       // Add all form fields (exclude duplicates we explicitly mapped)
-      const skipKeys = new Set(['category','title','propertyTitle','description','short_description','shortDescription','property_type','propertyType','address_line1','streetAddress','zip_code','postcode','state','region','country','price','askingPrice']);
+      const skipKeys = new Set(['category','title','propertyTitle','description','short_description','shortDescription','property_type','propertyType','address_line1','streetAddress','zip_code','postcode','state','region','country','price','askingPrice','hasGarden','hasParking','hasBalconyTerrace','isNewBuild','isChainFree','isRecentlyRenovated','hasAccessibleAccess','customFeatures']);
       Object.keys(formData).forEach(key => {
         if (!skipKeys.has(key) && formData[key] !== undefined && formData[key] !== null && formData[key] !== '') {
           formDataToSend.append(key, formData[key]);
@@ -580,6 +589,7 @@ const AddList = () => {
       });
       
       // Map property features to backend field names
+      formDataToSend.append('has_garden', formData.hasGarden ? 'true' : 'false');
       formDataToSend.append('has_parking', formData.hasParking ? 'true' : 'false');
       formDataToSend.append('has_balcony_terrace', formData.hasBalconyTerrace ? 'true' : 'false');
       formDataToSend.append('is_new_build', formData.isNewBuild ? 'true' : 'false');
@@ -595,6 +605,7 @@ const AddList = () => {
       formDataToSend.append('heating_type', formData.heatingType || '');
       formDataToSend.append('broadband_availability', formData.broadbandAvailability || '');
       formDataToSend.append('accessibility_features', formData.accessibilityFeatures || '');
+      formDataToSend.append('custom_features', JSON.stringify(formData.customFeatures || []));
       formDataToSend.append('apartment_size', formData.apartmentSize || '');
       formDataToSend.append('floor_number', formData.floorNumber || '');
       formDataToSend.append('virtual_tour_link', formData.virtualTourLink || '');
@@ -1116,6 +1127,15 @@ const AddList = () => {
           </div>
 
         </div>
+        
+        {/* Custom Features Section */}
+        <CustomFeaturesInput
+          customFeatures={formData.customFeatures}
+          setCustomFeatures={(features) => setFormData({...formData, customFeatures: features})}
+          label="Add Your Extra Features"
+          placeholder="Type additional features (e.g., Sea view, Wine cellar, Smart home system)"
+          maxFeatures={12}
+        />
       </>
     );
   };
