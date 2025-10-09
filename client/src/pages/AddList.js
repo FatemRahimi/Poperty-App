@@ -82,6 +82,14 @@ const floorAreaUnitOptions = [
 // EPC Rating Options
 const epcOptions = ["A", "B", "C", "D", "E", "F", "G"].map((r) => ({ value: r, label: r }));
 const councilTaxOptions = ["A", "B", "C", "D", "E", "F", "G", "H"].map((b) => ({ value: b, label: `Band ${b}` }));
+// Helper function to format numbers - remove decimal places for integers
+const formatNumberForInput = (value) => {
+  if (value === null || value === undefined || value === "") return "";
+  const num = Number(value);
+  if (isNaN(num)) return value.toString();
+  // If it's an integer, remove decimal places
+  return Number.isInteger(num) ? num.toString() : num.toString();
+};
 
 const AddList = () => {
   const navigate = useNavigate();
@@ -201,8 +209,8 @@ const AddList = () => {
         propertyTitle: src.title || src.propertyTitle || "",
         propertyType: normalizeToOptionValue(propertyTypeOptions, src.property_type || src.propertyType) || "",
         tenure: normalizeToOptionValue(tenureOptions, src.tenure || src.tenure_type || src.tenureType) || "",
-        bedrooms: (src.bedrooms ?? "").toString(),
-        bathrooms: (src.bathrooms ?? "").toString(),
+        bedrooms: formatNumberForInput(src.bedrooms),
+        bathrooms: formatNumberForInput(src.bathrooms),
         receptionRooms: (src.reception_rooms ?? src.receptions ?? "").toString(),
         floorArea: (src.floor_area ?? src.square_feet ?? "").toString(),
         floorAreaUnit: normalizeToOptionValue(
@@ -222,10 +230,10 @@ const AddList = () => {
         nearestTransportLinks: src.nearest_transport_links || src.nearestTransportLinks || "",
 
         // Step 3: Financials
-        askingPrice: (src.price ?? "").toString(),
+        askingPrice: formatNumberForInput(src.price),
         priceType: normalizeToOptionValue(priceTypeOptions, src.price_type || src.priceType) || "fixed_price",
-        serviceCharges: (src.service_charges ?? src.serviceCharges ?? "").toString(),
-        groundRent: (src.ground_rent ?? src.groundRent ?? "").toString(),
+        serviceCharges: formatNumberForInput(src.service_charges ?? src.serviceCharges),
+        groundRent: formatNumberForInput(src.ground_rent ?? src.groundRent),
         councilTaxBand: normalizeCouncilBand(src.council_tax_band || src.councilTaxBand),
 
         // Step 4: Descriptions
@@ -487,38 +495,7 @@ const AddList = () => {
   };
 
   const validateStep = (step) => {
-    switch(step) {
-      case 1: // Property Basics
-        if (!formData.propertyTitle.trim() || !formData.propertyType || !formData.bedrooms || !formData.bathrooms || !formData.epcRating) {
-          alert("❌ Please fill in all required property basics fields.");
-          return false;
-        }
-        break;
-      case 2: // Location Info
-        if (!formData.fullAddress.trim() || !formData.postcode.trim()) {
-          alert("❌ Please fill in all required location fields.");
-          return false;
-        }
-        break;
-      case 3: // Financials
-        if (!formData.askingPrice.trim() || !formData.councilTaxBand) {
-          alert("❌ Please fill in all required financial fields.");
-          return false;
-        }
-        break;
-      case 4: // Property Description
-        if (!formData.shortDescription.trim() || !formData.fullDescription.trim()) {
-          alert("❌ Please fill in all required description fields.");
-          return false;
-        }
-        break;
-      case 5: // Key Features - no validation needed
-        break;
-      case 6: // Media Uploads - no validation needed
-        break;
-      case 7: // Additional Info - no validation needed
-        break;
-    }
+    // All fields are now optional - no validation needed
     return true;
   };
 
@@ -562,7 +539,7 @@ const AddList = () => {
       console.log('✅ Starting form data preparation...');
       
       const formDataToSend = new FormData();
-      // Map required backend fields for sale listings
+      // Map  backend fields for sale listings
       formDataToSend.append('category', 'sale');
       if (formData.propertyTitle) formDataToSend.append('title', formData.propertyTitle);
       if (formData.fullDescription) formDataToSend.append('description', formData.fullDescription);
@@ -710,7 +687,7 @@ const AddList = () => {
             value={formData.propertyType}
             onChange={handleChange}
             options={propertyTypeOptions}
-            required
+            
           />
         </div>
         
@@ -722,7 +699,7 @@ const AddList = () => {
             type="number"
             value={formData.bedrooms}
             onChange={handleChange}
-            required
+            
             min="0"
           />
           
@@ -732,7 +709,7 @@ const AddList = () => {
             type="number"
             value={formData.bathrooms}
             onChange={handleChange}
-            required
+            
             min="0"
           />
           
@@ -755,7 +732,7 @@ const AddList = () => {
             type="number"
             value={formData.floorArea}
             onChange={handleChange}
-            required
+            
             placeholder="Enter floor area"
           />
           
@@ -776,7 +753,7 @@ const AddList = () => {
             value={formData.tenure}
             onChange={handleChange}
             options={tenureOptions}
-            required
+            
           />
           
           <SelectInput
@@ -785,7 +762,7 @@ const AddList = () => {
             value={formData.epcRating}
             onChange={handleChange}
             options={epcOptions}
-            required
+            
           />
         </div>
       </>
@@ -806,7 +783,7 @@ const AddList = () => {
             value={formData.houseNumber || ""}
             onChange={handleChange}
             placeholder="123, Flat 2A"
-            required
+            
           />
           
           <TextInput
@@ -815,7 +792,7 @@ const AddList = () => {
             value={formData.fullAddress}
             onChange={handleChange}
             placeholder="e.g. Westminster, Main Street, Oak Avenue"
-            required
+            
           />
         </div>
         
@@ -827,7 +804,7 @@ const AddList = () => {
             value={formData.city || ""}
             onChange={handleChange}
             placeholder="London"
-            required
+            
             className="muted-placeholder"
           />
           
@@ -837,7 +814,7 @@ const AddList = () => {
             value={formData.country || "United Kingdom"}
             onChange={handleChange}
             placeholder="United Kingdom"
-            required
+            
             className="muted-placeholder"
           />
           
@@ -859,7 +836,7 @@ const AddList = () => {
             value={formData.postcode}
             onChange={handleChange}
             placeholder="SW1A 1AA"
-            required
+            
           />
         </div>
         
@@ -899,7 +876,7 @@ const AddList = () => {
             type="number"
             value={formData.askingPrice}
             onChange={handleChange}
-            required
+            
             placeholder="Enter asking price in £"
           />
           
@@ -909,7 +886,7 @@ const AddList = () => {
             value={formData.priceType}
             onChange={handleChange}
             options={priceTypeOptions}
-            required
+            
           />
         </div>
         
@@ -942,7 +919,7 @@ const AddList = () => {
             value={formData.councilTaxBand}
             onChange={handleChange}
             options={councilTaxOptions}
-            required
+            
           />
         </div>
       </>
@@ -961,7 +938,7 @@ const AddList = () => {
             name="shortDescription"
             value={formData.shortDescription}
             onChange={handleChange}
-            required
+            
             placeholder="Brief summary for search results (max 200 characters)"
             maxLength="200"
           />
@@ -976,7 +953,7 @@ const AddList = () => {
               className="form-textarea"
               rows="8"
               placeholder="Provide a detailed description of your property. Highlight key features, renovations, unique selling points..."
-            required
+            
             ></textarea>
         </div>
         </div>
@@ -1155,7 +1132,7 @@ const AddList = () => {
                 <div className="upload-icon">📷🎥</div>
                 <div className="upload-text">
                   <span>Drag & drop or click to upload</span>
-                  <small>Photos & videos • Up to 20 files • Max 1GB each • Min 5 required</small>
+                  <small>Photos & videos • Up to 20 files • Max 1GB each • Min 5 </small>
                 </div>
               </div>
             </label>
@@ -1498,7 +1475,7 @@ const AddList = () => {
       {/* Form Section */}
       <div className="form-wrapper">
         {approvedPropertyNotification && (
-          <div className="alert alert-warning" style={{ marginBottom: '1rem' }}>
+          <div className="alert alert-warning" style={{ marginBottom: '0.5rem', marginTop: '0' }}>
             {approvedPropertyNotification}
           </div>
         )}
