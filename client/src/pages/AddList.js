@@ -366,6 +366,46 @@ const AddList = () => {
     }
   }, [editMode, effectiveProperty]);
 
+  // Track initial load to avoid resetting on edit mode load
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  useEffect(() => {
+    if (isInitialLoad && formData.propertyType) {
+      setIsInitialLoad(false);
+    }
+  }, [formData.propertyType, isInitialLoad]);
+
+  // Reset hasResidentialAccommodation when switching property types (but not on initial load)
+  useEffect(() => {
+    // Skip on initial load (edit mode needs to preserve the value)
+    if (isInitialLoad) return;
+    
+    // When property type changes to/from commercial, handle the residential toggle
+    if (formData.propertyType) {
+      const isCommercial = isCommercialProperty(formData.propertyType);
+      const isLand = isLandProperty(formData.propertyType);
+      
+      // If switching to non-commercial, reset the toggle
+      if (!isCommercial && formData.hasResidentialAccommodation) {
+        setFormData(prev => ({
+          ...prev,
+          hasResidentialAccommodation: false
+        }));
+      }
+      
+      // If switching to land, clear fields that shouldn't exist for land
+      if (isLand) {
+        setFormData(prev => ({
+          ...prev,
+          hasResidentialAccommodation: false,
+          bedrooms: '',
+          bathrooms: '',
+          receptionRooms: ''
+        }));
+      }
+    }
+  }, [formData.propertyType, isInitialLoad]);
+
   useEffect(() => {
     if (editMode && effectiveProperty && effectiveProperty.images) {
       const imageUrls = effectiveProperty.images.map((img) => {
@@ -561,13 +601,30 @@ const AddList = () => {
       // Price mapping for sale
       if (formData.askingPrice) formDataToSend.append('price', formData.askingPrice);
       
+      // Check if this is commercial without residential accommodation
+      const isCommercialNoResidential = isCommercialProperty(formData.propertyType) && !formData.hasResidentialAccommodation;
+      const isLand = isLandProperty(formData.propertyType);
+      
       // Add all form fields (exclude duplicates we explicitly mapped)
-      const skipKeys = new Set(['category','title','propertyTitle','description','short_description','shortDescription','property_type','propertyType','address_line1','streetAddress','zip_code','postcode','state','region','country','price','askingPrice','hasGarden','hasParking','hasBalconyTerrace','isNewBuild','isChainFree','isRecentlyRenovated','hasAccessibleAccess','customFeatures']);
+      const skipKeys = new Set(['category','title','propertyTitle','description','short_description','shortDescription','property_type','propertyType','address_line1','streetAddress','zip_code','postcode','state','region','country','price','askingPrice','hasGarden','hasParking','hasBalconyTerrace','isNewBuild','isChainFree','isRecentlyRenovated','hasAccessibleAccess','customFeatures','bedrooms','bathrooms','receptionRooms']);
       Object.keys(formData).forEach(key => {
         if (!skipKeys.has(key) && formData[key] !== undefined && formData[key] !== null && formData[key] !== '') {
           formDataToSend.append(key, formData[key]);
         }
       });
+      
+      // Handle bedrooms/bathrooms/receptionRooms conditionally
+      // Only send if NOT (commercial without residential OR land)
+      if (!isCommercialNoResidential && !isLand) {
+        if (formData.bedrooms) formDataToSend.append('bedrooms', formData.bedrooms);
+        if (formData.bathrooms) formDataToSend.append('bathrooms', formData.bathrooms);
+        if (formData.receptionRooms) formDataToSend.append('receptionRooms', formData.receptionRooms);
+      } else {
+        // Explicitly send empty/null for commercial without residential or land
+        formDataToSend.append('bedrooms', '');
+        formDataToSend.append('bathrooms', '');
+        formDataToSend.append('receptionRooms', '');
+      }
       
       // Map property features to backend field names
       formDataToSend.append('has_garden', formData.hasGarden ? 'true' : 'false');
@@ -694,21 +751,32 @@ const AddList = () => {
   const shouldShowField = (fieldName) => {
     const propertyType = formData.propertyType;
     
-    // Fields that should NEVER show for land
+    // Fields that should NEVER show for LAND
     const landExclusions = [
       'bedrooms', 'bathrooms', 'receptionRooms', 'epcRating', 
       'heatingType', 'broadbandAvailability', 'floorNumber', 
       'yearBuilt', 'hasBalconyTerrace', 'isRecentlyRenovated', 
-      'hasAccessibleAccess', 'floorPlan'
+      'hasAccessibleAccess', 'floorPlan',
+      // Financial fields not applicable to land
+      'serviceCharges', 'groundRent', 'councilTaxBand',
+      // Other land exclusions
+      'epcDocument', 'apartmentSize', 'chainFree'
     ];
     
-    // Fields that are less relevant for commercial (but not completely hidden)
-    const commercialOptional = [
-      'hasGarden', 'hasBalconyTerrace', 'isChainFree'
+    // Fields to hide for COMMERCIAL (when NO residential accommodation)
+    const commercialExclusionsNoResidential = [
+      'bedrooms', 'bathrooms', 'receptionRooms',
+      'councilTaxBand', 'hasGarden', 'hasBalconyTerrace', 'chainFree'
     ];
     
+    // Apply land exclusions
     if (isLandProperty(propertyType)) {
       return !landExclusions.includes(fieldName);
+    }
+    
+    // Apply commercial exclusions (only when residential toggle is OFF)
+    if (isCommercialProperty(propertyType) && !formData.hasResidentialAccommodation) {
+      return !commercialExclusionsNoResidential.includes(fieldName);
     }
     
     return true; // Show everything else
@@ -968,6 +1036,18 @@ const AddList = () => {
       <>
         <h3 className="section-title">Financial Information</h3>
         
+        {/* Info message for land pricing */}
+        {isLandProperty(formData.propertyType) && (
+          <div className="form-tip" style={{ 
+            background: '#f0f9ff', 
+            borderColor: '#3b82f6',
+            marginBottom: '1rem' 
+          }}>
+            <i className="fas fa-info-circle"></i>
+            <span>Land pricing: Only basic pricing fields are shown. Additional fees don't typically apply to undeveloped land.</span>
+          </div>
+        )}
+        
         {/* Asking Price and Price Type */}
         <div className="form-row">
           <TextInput
@@ -990,44 +1070,73 @@ const AddList = () => {
           />
         </div>
         
-        {/* Service Charges and Ground Rent */}
-        <div className="form-row">
-          <TextInput
-            label="Service Charges (if applicable)"
-            name="serviceCharges"
-            type="number"
-            value={formData.serviceCharges}
-            onChange={handleChange}
-            placeholder="Monthly service charges in £"
-          />
-          
-          <TextInput
-            label="Ground Rent (if leasehold)"
-            name="groundRent"
-            type="number"
-            value={formData.groundRent}
-            onChange={handleChange}
-            placeholder="Annual ground rent in £"
-          />
-        </div>
-        
-        {/* Council Tax Band */}
-        <div className="form-row single-col" style={{maxWidth: '300px'}}>
-          <SelectInput
-            label="Council Tax Band"
-            name="councilTaxBand"
-            value={formData.councilTaxBand}
-            onChange={handleChange}
-            options={councilTaxOptions}
+        {/* Service Charges and Ground Rent - Not for land */}
+        {shouldShowField('serviceCharges') && shouldShowField('groundRent') && (
+          <div className="form-row">
+            <TextInput
+              label="Service Charges (if applicable)"
+              name="serviceCharges"
+              type="number"
+              value={formData.serviceCharges}
+              onChange={handleChange}
+              placeholder="Monthly service charges in £"
+            />
             
-          />
-        </div>
+            <TextInput
+              label="Ground Rent (if leasehold)"
+              name="groundRent"
+              type="number"
+              value={formData.groundRent}
+              onChange={handleChange}
+              placeholder="Annual ground rent in £"
+            />
+          </div>
+        )}
+        
+        {/* Council Tax Band / Business Rates - Context-aware label */}
+        {shouldShowField('councilTaxBand') && (
+          <div className="form-row">
+            <SelectInput
+              label={
+                isCommercialProperty(formData.propertyType) 
+                  ? "Council Tax Band (if residential included)" 
+                  : "Council Tax Band"
+              }
+              name="councilTaxBand"
+              value={formData.councilTaxBand}
+              onChange={handleChange}
+              options={councilTaxOptions}
+              
+            />
+          </div>
+        )}
       </>
     );
   };
 
   // Render Step 4: Property Description
   const renderStep4 = () => {
+    // Dynamic placeholder based on property type
+    const getDescriptionPlaceholder = () => {
+      if (isLandProperty(formData.propertyType)) {
+        return "Describe the land: size, location benefits, planning permission status, access, utilities, potential uses...";
+      } else if (isCommercialProperty(formData.propertyType)) {
+        return "Describe the commercial space: size, layout, facilities, parking, transport links, business potential, previous use...";
+      } else {
+        return "Provide a detailed description of your property. Highlight key features, renovations, unique selling points...";
+      }
+    };
+
+    const getDescriptionTip = () => {
+      if (isLandProperty(formData.propertyType)) {
+        return "For land: Mention planning permission, utilities, access roads, nearby amenities, and development potential.";
+      } else if (isCommercialProperty(formData.propertyType)) {
+        return "For commercial: Highlight business advantages, foot traffic, parking, loading facilities, and zoning details.";
+      } else {
+        return "Encourage sellers to highlight key features, renovations, unique selling points.";
+      }
+    };
+
     return (
       <>
         <h3 className="section-title">Property Description</h3>
@@ -1052,7 +1161,7 @@ const AddList = () => {
             onChange={handleChange}
               className="form-textarea"
               rows="8"
-              placeholder="Provide a detailed description of your property. Highlight key features, renovations, unique selling points..."
+              placeholder={getDescriptionPlaceholder()}
             
             ></textarea>
         </div>
@@ -1060,7 +1169,7 @@ const AddList = () => {
 
         <div className="form-tip">
           <i className="fas fa-lightbulb"></i>
-          <span>Encourage sellers to highlight key features, renovations, unique selling points.</span>
+          <span>{getDescriptionTip()}</span>
         </div>
       </>
     );
@@ -1077,23 +1186,25 @@ const AddList = () => {
           gap: '1rem',
           marginBottom: '1rem'
         }}>
-          <div className="feature-item" style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0.75rem',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
-            backgroundColor: '#ffffff'
-          }}>
-            <input 
-              type="checkbox" 
-              id="hasGarden" 
-              name="hasGarden" 
-              checked={formData.hasGarden}
-              onChange={handleChange}
-            />
-            <label htmlFor="hasGarden">Garden</label>
-          </div>
+          {shouldShowField('hasGarden') && (
+            <div className="feature-item" style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.75rem',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              backgroundColor: '#ffffff'
+            }}>
+              <input 
+                type="checkbox" 
+                id="hasGarden" 
+                name="hasGarden" 
+                checked={formData.hasGarden}
+                onChange={handleChange}
+              />
+              <label htmlFor="hasGarden">Garden</label>
+            </div>
+          )}
           
           <div className="feature-item" style={{
             display: 'flex',
@@ -1110,7 +1221,9 @@ const AddList = () => {
               checked={formData.hasParking}
               onChange={handleChange}
             />
-            <label htmlFor="hasParking">Parking (Garage/Driveway/Permit)</label>
+            <label htmlFor="hasParking">
+              {isLandProperty(formData.propertyType) ? "Parking/Access Road" : "Parking (Garage/Driveway/Permit)"}
+            </label>
           </div>
           
           {shouldShowField('hasBalconyTerrace') && (
@@ -1151,23 +1264,25 @@ const AddList = () => {
             <label htmlFor="isNewBuild">New Build</label>
           </div>
 
-          <div className="feature-item" style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0.75rem',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
-            backgroundColor: '#ffffff'
-          }}>
-            <input 
-              type="checkbox" 
-              id="isChainFree" 
-              name="isChainFree" 
-              checked={formData.isChainFree}
-              onChange={handleChange}
-            />
-            <label htmlFor="isChainFree">Chain Free</label>
-          </div>
+          {shouldShowField('chainFree') && (
+            <div className="feature-item" style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.75rem',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              backgroundColor: '#ffffff'
+            }}>
+              <input 
+                type="checkbox" 
+                id="isChainFree" 
+                name="isChainFree" 
+                checked={formData.isChainFree}
+                onChange={handleChange}
+              />
+              <label htmlFor="isChainFree">Chain Free</label>
+            </div>
+          )}
 
           {shouldShowField('isRecentlyRenovated') && (
             <div className="feature-item" style={{
@@ -1384,47 +1499,69 @@ const AddList = () => {
           </div>
           
               {/* Property Details */}
-              <div className="form-row">
-                <TextInput
-                  label="Approximate Area"
-                  name="apartmentSize"
-                  value={formData.apartmentSize || ""}
-                  onChange={handleChange}
-                  placeholder="e.g. 106.4 sq m"
-                  type="text"
-                  inputMode="text"
-                />
-                
-                {shouldShowField('floorNumber') && (
-                  <TextInput
-                    label="Floor Number"
-                    name="floorNumber"
-                    value={formData.floorNumber || ""}
-                    onChange={handleChange}
-                    placeholder="e.g. 10"
-                  />
-                )}
-              </div>
+              {(shouldShowField('apartmentSize') || shouldShowField('floorNumber')) && (
+                <div className="form-row">
+                  {shouldShowField('apartmentSize') && (
+                    <TextInput
+                      label="Approximate Area"
+                      name="apartmentSize"
+                      value={formData.apartmentSize || ""}
+                      onChange={handleChange}
+                      placeholder="e.g. 106.4 sq m"
+                      type="text"
+                      inputMode="text"
+                    />
+                  )}
+                  
+                  {shouldShowField('floorNumber') && (
+                    <TextInput
+                      label="Floor Number"
+                      name="floorNumber"
+                      value={formData.floorNumber || ""}
+                      onChange={handleChange}
+                      placeholder="e.g. 10"
+                    />
+                  )}
+                </div>
+              )}
             </div>
           </>
         )}
 
-        {/* EPC Document Upload */}
-        <h4 className="subsection-title">Upload EPC Document (Mandatory by Law)</h4>
-        <div className="file-upload-section">
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            onChange={handleEpcDocumentChange}
-            style={{ display: 'none' }}
-            id="epc-document-upload"
-          />
+        {/* EPC Document Upload - Not for land */}
+        {shouldShowField('epcDocument') && (
+          <>
+            <h4 className="subsection-title">
+              Upload EPC Document {isCommercialProperty(formData.propertyType) ? "(if applicable)" : "(Mandatory by Law)"}
+            </h4>
+            
+            {/* Info message for commercial EPC */}
+            {isCommercialProperty(formData.propertyType) && (
+              <div className="form-tip" style={{ 
+                background: '#fef3c7', 
+                borderColor: '#f59e0b',
+                marginBottom: '0.75rem',
+                fontSize: '0.9rem'
+              }}>
+                <i className="fas fa-lightbulb"></i>
+                <span>Commercial properties have different EPC requirements. Upload if available.</span>
+              </div>
+            )}
+            
+            <div className="file-upload-section">
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={handleEpcDocumentChange}
+                style={{ display: 'none' }}
+                id="epc-document-upload"
+              />
               <label htmlFor="epc-document-upload" className="file-upload-label">
                 <div className="file-upload-content">
-              <div className="file-upload-icon">📋</div>
+                  <div className="file-upload-icon">📋</div>
                   <div className="file-upload-text">
                     <span>Click to upload EPC document</span>
-                <small>PDF, JPG, PNG • Max 512MB • Required by law</small>
+                    <small>PDF, JPG, PNG • Max 512MB • {isCommercialProperty(formData.propertyType) ? "Optional for commercial" : "Required by law"}</small>
                   </div>
                 </div>
               </label>
@@ -1478,7 +1615,9 @@ const AddList = () => {
         </div>
             </div>
           )}
-        </div>
+            </div>
+          </>
+        )}
         
         {/* Virtual Tour Link */}
         <h4 className="subsection-title">Virtual Tour/Video Link (Optional)</h4>
@@ -1487,7 +1626,7 @@ const AddList = () => {
           name="virtualTourLink"
           value={formData.virtualTourLink || ""}
           onChange={handleChange}
-          placeholder="YouTube/Vimeo link or 360° tour URL"
+          placeholder={isLandProperty(formData.propertyType) ? "Virtual tour URL (optional for land)" : "YouTube/Vimeo link or 360° tour URL"}
         />
       </>
     );

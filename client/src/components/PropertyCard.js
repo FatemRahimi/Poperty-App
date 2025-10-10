@@ -491,22 +491,38 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                 <span>{property.property_type.replace('-', ' ').replace(/\b\w/g, char => char.toUpperCase())}</span>
               </div>
             )}
-            {property.bedrooms && (
-              <div className="property-feature-item">
-                <div className="feature-icon">
-                  <i className="fas fa-bed"></i>
+            {(() => {
+              // Check if this is a commercial property without residential accommodation
+              const isCommercial = ['warehouse', 'commercial', 'office', 'retail'].includes(property.property_type);
+              const hasResidential = property.has_residential_accommodation || property.hasResidentialAccommodation;
+              const shouldShowBedrooms = !isCommercial || hasResidential;
+              
+              // Only show bedrooms if: it exists AND (not commercial OR has residential)
+              return shouldShowBedrooms && property.bedrooms && (
+                <div className="property-feature-item">
+                  <div className="feature-icon">
+                    <i className="fas fa-bed"></i>
+                  </div>
+                  <span>{property.bedrooms} Bed{property.bedrooms !== 1 ? 's' : ''}</span>
                 </div>
-                <span>{property.bedrooms} Bed{property.bedrooms !== 1 ? 's' : ''}</span>
-              </div>
-            )}
-            {property.bathrooms && (
-              <div className="property-feature-item">
-                <div className="feature-icon">
-                  <i className="fas fa-bath"></i>
+              );
+            })()}
+            {(() => {
+              // Check if this is a commercial property without residential accommodation
+              const isCommercial = ['warehouse', 'commercial', 'office', 'retail'].includes(property.property_type);
+              const hasResidential = property.has_residential_accommodation || property.hasResidentialAccommodation;
+              const shouldShowBathrooms = !isCommercial || hasResidential;
+              
+              // Only show bathrooms if: it exists AND (not commercial OR has residential)
+              return shouldShowBathrooms && property.bathrooms && (
+                <div className="property-feature-item">
+                  <div className="feature-icon">
+                    <i className="fas fa-bath"></i>
+                  </div>
+                  <span>{Math.floor(property.bathrooms)} Bath{Math.floor(property.bathrooms) !== 1 ? 's' : ''}</span>
                 </div>
-                <span>{Math.floor(property.bathrooms)} Bath{Math.floor(property.bathrooms) !== 1 ? 's' : ''}</span>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Short Description - Moved below features */}
