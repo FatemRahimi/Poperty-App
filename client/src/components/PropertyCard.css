@@ -61,6 +61,10 @@
   order: 2; /* Weekly rent appears second (bottom) */
 }
 
+.rental-text-item.asking-price {
+  order: 1; /* Asking price appears first for sale properties */
+}
+
 .rental-amount {
   font-size: 1.1rem;
   font-weight: 700;
@@ -77,6 +81,12 @@
 .rental-amount.monthly {
   font-weight: 700; /* Bold for monthly rent */
   color: #374151; /* Dark grey for monthly rent */
+}
+
+.rental-amount.asking-price {
+  font-weight: 700; /* Bold for asking price */
+  color: #374151; /* Dark grey for asking price */
+  font-size: 1.1rem; /* Same size as monthly rent */
 }
 
 .property-card-content .property-details-modern {

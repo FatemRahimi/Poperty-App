@@ -457,6 +457,11 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                 ) : null}
               </>
             )}
+            {property.category === 'sale' && property.price && (
+              <div className="rental-text-item asking-price">
+                <span className="rental-amount asking-price">£{Number(property.price).toLocaleString()}</span>
+              </div>
+            )}
           </div>
         </div>
         

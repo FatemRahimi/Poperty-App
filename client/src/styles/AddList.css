@@ -2737,4 +2737,49 @@ select:focus {
   color: #2c3e50;
   font-weight: 600;
 }
+
+/* Commercial/Warehouse Residential Accommodation Checkbox - Special Styling */
+#hasResidentialAccommodation {
+  width: 20px;
+  height: 20px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: 2.5px solid #0369a1;
+  border-radius: 4px;
+  background-color: white;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+#hasResidentialAccommodation:hover {
+  border-color: #0284c7;
+  background-color: #f0f9ff;
+}
+
+#hasResidentialAccommodation:checked {
+  background-color: #0369a1;
+  border-color: #0369a1;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.2);
+}
+
+#hasResidentialAccommodation:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+#hasResidentialAccommodation:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.3);
+}
   

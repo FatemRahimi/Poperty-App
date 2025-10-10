@@ -262,6 +262,7 @@ const AddList = () => {
           src.broadband_availability || src.broadbandAvailability || src.broadband
         ) || "",
         accessibilityFeatures: src.accessibility_features || src.accessibilityFeatures || "",
+        hasResidentialAccommodation: src.has_residential_accommodation || src.hasResidentialAccommodation || false,
         
         // Custom Features
         customFeatures: Array.isArray(src.custom_features) 
@@ -310,6 +311,9 @@ const AddList = () => {
       apartmentSize: "",
       floorNumber: "",
       virtualTourLink: "",
+      
+      // Commercial/Warehouse specific
+      hasResidentialAccommodation: false,
       
       // Custom Features
       customFeatures: [],
@@ -573,6 +577,7 @@ const AddList = () => {
       formDataToSend.append('is_chain_free', formData.isChainFree ? 'true' : 'false');
       formDataToSend.append('is_recently_renovated', formData.isRecentlyRenovated ? 'true' : 'false');
       formDataToSend.append('has_accessible_access', formData.hasAccessibleAccess ? 'true' : 'false');
+      formDataToSend.append('has_residential_accommodation', formData.hasResidentialAccommodation ? 'true' : 'false');
       
       // Map other fields to backend field names
       formDataToSend.append('local_authority', formData.localAuthority || '');
@@ -664,6 +669,51 @@ const AddList = () => {
     }
   };
 
+  // Helper functions for conditional field visibility
+  const isCommercialProperty = (propertyType) => {
+    return ['warehouse', 'commercial', 'office', 'retail'].includes(propertyType);
+  };
+
+  const isLandProperty = (propertyType) => {
+    return propertyType === 'land';
+  };
+
+  const shouldShowResidentialFields = () => {
+    // Never show for land
+    if (isLandProperty(formData.propertyType)) return false;
+    
+    // For commercial properties, show only if residential accommodation checkbox is checked
+    if (isCommercialProperty(formData.propertyType)) {
+      return formData.hasResidentialAccommodation === true;
+    }
+    
+    // For all other residential properties, always show
+    return true;
+  };
+
+  const shouldShowField = (fieldName) => {
+    const propertyType = formData.propertyType;
+    
+    // Fields that should NEVER show for land
+    const landExclusions = [
+      'bedrooms', 'bathrooms', 'receptionRooms', 'epcRating', 
+      'heatingType', 'broadbandAvailability', 'floorNumber', 
+      'yearBuilt', 'hasBalconyTerrace', 'isRecentlyRenovated', 
+      'hasAccessibleAccess', 'floorPlan'
+    ];
+    
+    // Fields that are less relevant for commercial (but not completely hidden)
+    const commercialOptional = [
+      'hasGarden', 'hasBalconyTerrace', 'isChainFree'
+    ];
+    
+    if (isLandProperty(propertyType)) {
+      return !landExclusions.includes(fieldName);
+    }
+    
+    return true; // Show everything else
+  };
+
   // Render Step 1: Property Basics
   const renderStep1 = () => {
     return (
@@ -691,53 +741,101 @@ const AddList = () => {
           />
         </div>
         
-        {/* Bedrooms, Bathrooms, and Reception Rooms */}
-        <div className="form-row three-cols">
-          <TextInput
-            label="Bedrooms"
-            name="bedrooms"
-            type="number"
-            value={formData.bedrooms}
-            onChange={handleChange}
+        {/* Commercial/Warehouse Residential Toggle */}
+        {isCommercialProperty(formData.propertyType) && (
+          <div style={{ 
+            padding: '1rem', 
+            background: '#f0f9ff', 
+            borderRadius: '8px', 
+            border: '1px solid #bae6fd',
+            marginBottom: '1rem'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.5rem'
+            }}>
+              <input 
+                type="checkbox" 
+                id="hasResidentialAccommodation" 
+                name="hasResidentialAccommodation" 
+                checked={formData.hasResidentialAccommodation}
+                onChange={handleChange}
+              />
+              <label htmlFor="hasResidentialAccommodation" style={{ 
+                cursor: 'pointer', 
+                fontWeight: '600',
+                color: '#0369a1',
+                fontSize: '0.95rem',
+                userSelect: 'none'
+              }}>
+                Includes Residential/Living Accommodation (e.g., caretaker flat, living quarters)
+              </label>
+            </div>
+          </div>
+        )}
+        
+        {/* Info message for land */}
+        {isLandProperty(formData.propertyType) && (
+          <div className="form-tip" style={{ 
+            background: '#fef3c7', 
+            borderColor: '#fbbf24',
+            marginBottom: '1rem' 
+          }}>
+            <i className="fas fa-info-circle"></i>
+            <span>Land properties: Only relevant fields are shown. Use "Floor Area" for land size.</span>
+          </div>
+        )}
+        
+        {/* Bedrooms, Bathrooms, and Reception Rooms - Conditional */}
+        {shouldShowResidentialFields() && (
+          <div className="form-row three-cols">
+            <TextInput
+              label="Bedrooms"
+              name="bedrooms"
+              type="number"
+              value={formData.bedrooms}
+              onChange={handleChange}
+              
+              min="0"
+            />
             
-            min="0"
-          />
-          
-          <TextInput
-            label="Bathrooms"
-            name="bathrooms"
-            type="number"
-            value={formData.bathrooms}
-            onChange={handleChange}
+            <TextInput
+              label="Bathrooms"
+              name="bathrooms"
+              type="number"
+              value={formData.bathrooms}
+              onChange={handleChange}
+              
+              min="0"
+            />
             
-            min="0"
-          />
-          
-          <TextInput
-            label="Reception Rooms"
-            name="receptionRooms"
-            type="number"
-            value={formData.receptionRooms}
-            onChange={handleChange}
-            min="0"
-            placeholder="Optional"
-          />
-        </div>
+            <TextInput
+              label="Reception Rooms"
+              name="receptionRooms"
+              type="number"
+              value={formData.receptionRooms}
+              onChange={handleChange}
+              min="0"
+              placeholder="Optional"
+            />
+          </div>
+        )}
         
         {/* Floor Area and Tenure */}
         <div className="form-row">
           <TextInput
-            label="Floor Area"
+            label={isLandProperty(formData.propertyType) ? "Land Size" : "Floor Area"}
             name="floorArea"
             type="number"
             value={formData.floorArea}
             onChange={handleChange}
             
-            placeholder="Enter floor area"
+            placeholder={isLandProperty(formData.propertyType) ? "Enter land size" : "Enter floor area"}
           />
           
           <SelectInput
-            label="Floor Area Unit"
+            label={isLandProperty(formData.propertyType) ? "Land Size Unit" : "Floor Area Unit"}
             name="floorAreaUnit"
             value={formData.floorAreaUnit}
             onChange={handleChange}
@@ -756,14 +854,16 @@ const AddList = () => {
             
           />
           
-          <SelectInput
-            label="EPC Rating"
-            name="epcRating"
-            value={formData.epcRating}
-            onChange={handleChange}
-            options={epcOptions}
-            
-          />
+          {shouldShowField('epcRating') && (
+            <SelectInput
+              label="EPC Rating"
+              name="epcRating"
+              value={formData.epcRating}
+              onChange={handleChange}
+              options={epcOptions}
+              
+            />
+          )}
         </div>
       </>
     );
@@ -1013,23 +1113,25 @@ const AddList = () => {
             <label htmlFor="hasParking">Parking (Garage/Driveway/Permit)</label>
           </div>
           
-          <div className="feature-item" style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0.75rem',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
-            backgroundColor: '#ffffff'
-          }}>
-            <input 
-              type="checkbox" 
-              id="hasBalconyTerrace" 
-              name="hasBalconyTerrace" 
-              checked={formData.hasBalconyTerrace}
-              onChange={handleChange}
-            />
-            <label htmlFor="hasBalconyTerrace">Balcony/Terrace</label>
-          </div>
+          {shouldShowField('hasBalconyTerrace') && (
+            <div className="feature-item" style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.75rem',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              backgroundColor: '#ffffff'
+            }}>
+              <input 
+                type="checkbox" 
+                id="hasBalconyTerrace" 
+                name="hasBalconyTerrace" 
+                checked={formData.hasBalconyTerrace}
+                onChange={handleChange}
+              />
+              <label htmlFor="hasBalconyTerrace">Balcony/Terrace</label>
+            </div>
+          )}
           
           <div className="feature-item" style={{
             display: 'flex',
@@ -1067,41 +1169,45 @@ const AddList = () => {
             <label htmlFor="isChainFree">Chain Free</label>
           </div>
 
-          <div className="feature-item" style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0.75rem',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
-            backgroundColor: '#ffffff'
-          }}>
-            <input 
-              type="checkbox" 
-              id="isRecentlyRenovated" 
-              name="isRecentlyRenovated" 
-              checked={formData.isRecentlyRenovated}
-              onChange={handleChange}
-            />
-            <label htmlFor="isRecentlyRenovated">Recently Renovated</label>
-          </div>
+          {shouldShowField('isRecentlyRenovated') && (
+            <div className="feature-item" style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.75rem',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              backgroundColor: '#ffffff'
+            }}>
+              <input 
+                type="checkbox" 
+                id="isRecentlyRenovated" 
+                name="isRecentlyRenovated" 
+                checked={formData.isRecentlyRenovated}
+                onChange={handleChange}
+              />
+              <label htmlFor="isRecentlyRenovated">Recently Renovated</label>
+            </div>
+          )}
 
-          <div className="feature-item" style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0.75rem',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
-            backgroundColor: '#ffffff'
-          }}>
-            <input 
-              type="checkbox" 
-              id="hasAccessibleAccess" 
-              name="hasAccessibleAccess" 
-              checked={formData.hasAccessibleAccess}
-              onChange={handleChange}
-            />
-            <label htmlFor="hasAccessibleAccess">Accessible/Step-Free Access</label>
-          </div>
+          {shouldShowField('hasAccessibleAccess') && (
+            <div className="feature-item" style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.75rem',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              backgroundColor: '#ffffff'
+            }}>
+              <input 
+                type="checkbox" 
+                id="hasAccessibleAccess" 
+                name="hasAccessibleAccess" 
+                checked={formData.hasAccessibleAccess}
+                onChange={handleChange}
+              />
+              <label htmlFor="hasAccessibleAccess">Accessible/Step-Free Access</label>
+            </div>
+          )}
 
         </div>
         
@@ -1197,30 +1303,32 @@ const AddList = () => {
         </div>
         
         {/* Layout of Property */}
-        <h4 className="subsection-title">Layout of Property</h4>
-        
-        <div className="layout-section">
-          <div className="form-group">
-            <label htmlFor="layoutFile">Floor Plan (PDF, JPG, PNG)</label>
-            <p className="section-description">Upload floor plan and provide property details</p>
-            <div className="file-upload-area">
-              <label htmlFor="layoutFileUpload" className="file-upload-label">
-                <div className="file-upload-content">
-                  <div className="file-upload-icon">📄</div>
-                  <div className="file-upload-text">
-                    <span>Click to upload floor plan</span>
-                    <small>PDF, JPG, PNG • Max 512MB</small>
-                  </div>
+        {shouldShowField('floorPlan') && (
+          <>
+            <h4 className="subsection-title">Layout of Property</h4>
+            
+            <div className="layout-section">
+              <div className="form-group">
+                <label htmlFor="layoutFile">Floor Plan (PDF, JPG, PNG)</label>
+                <p className="section-description">Upload floor plan and provide property details</p>
+                <div className="file-upload-area">
+                  <label htmlFor="layoutFileUpload" className="file-upload-label">
+                    <div className="file-upload-content">
+                      <div className="file-upload-icon">📄</div>
+                      <div className="file-upload-text">
+                        <span>Click to upload floor plan</span>
+                        <small>PDF, JPG, PNG • Max 512MB</small>
+                      </div>
+                    </div>
+                  </label>
+                  <input
+                    type="file"
+                    id="layoutFileUpload"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleFloorPlanChange}
+                    style={{ display: 'none' }}
+                  />
                 </div>
-              </label>
-              <input
-                type="file"
-                id="layoutFileUpload"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={handleFloorPlanChange}
-                style={{ display: 'none' }}
-              />
-            </div>
             
             {/* File Display Section */}
             <div style={{ marginTop: '1rem' }}>
@@ -1275,27 +1383,31 @@ const AddList = () => {
             </div>
           </div>
           
-          {/* Property Details */}
-          <div className="form-row">
-            <TextInput
-              label="Approximate Area"
-              name="apartmentSize"
-              value={formData.apartmentSize || ""}
-              onChange={handleChange}
-              placeholder="e.g. 106.4 sq m"
-              type="text"
-              inputMode="text"
-            />
-            
-            <TextInput
-              label="Floor Number"
-              name="floorNumber"
-              value={formData.floorNumber || ""}
-              onChange={handleChange}
-              placeholder="e.g. 10"
-            />
-          </div>
-        </div>
+              {/* Property Details */}
+              <div className="form-row">
+                <TextInput
+                  label="Approximate Area"
+                  name="apartmentSize"
+                  value={formData.apartmentSize || ""}
+                  onChange={handleChange}
+                  placeholder="e.g. 106.4 sq m"
+                  type="text"
+                  inputMode="text"
+                />
+                
+                {shouldShowField('floorNumber') && (
+                  <TextInput
+                    label="Floor Number"
+                    name="floorNumber"
+                    value={formData.floorNumber || ""}
+                    onChange={handleChange}
+                    placeholder="e.g. 10"
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* EPC Document Upload */}
         <h4 className="subsection-title">Upload EPC Document (Mandatory by Law)</h4>
@@ -1390,38 +1502,44 @@ const AddList = () => {
         
         <h3 className="section-title">Additional Information</h3>
         <div className="form-group">
-          <TextInput
-            label="Year Built (Approximate)"
-            name="yearBuilt"
-            type="number"
-            value={formData.yearBuilt}
-            onChange={handleChange}
-            placeholder="e.g., 1995"
-            min="1500"
-            max={new Date().getFullYear()}
-          />
-          <SelectInput
-            label="Heating Type"
-            name="heatingType"
-            value={formData.heatingType}
-            onChange={handleChange}
-            options={heatingTypeOptions}
-          />
-          <SelectInput
-            label="Broadband Availability"
-            name="broadbandAvailability"
-            value={formData.broadbandAvailability}
-            onChange={handleChange}
-            options={broadbandOptions}
-          />
+          {shouldShowField('yearBuilt') && (
+            <TextInput
+              label="Year Built (Approximate)"
+              name="yearBuilt"
+              type="number"
+              value={formData.yearBuilt}
+              onChange={handleChange}
+              placeholder="e.g., 1995"
+              min="1500"
+              max={new Date().getFullYear()}
+            />
+          )}
+          {shouldShowField('heatingType') && (
+            <SelectInput
+              label="Heating Type"
+              name="heatingType"
+              value={formData.heatingType}
+              onChange={handleChange}
+              options={heatingTypeOptions}
+            />
+          )}
+          {shouldShowField('broadbandAvailability') && (
+            <SelectInput
+              label="Broadband Availability"
+              name="broadbandAvailability"
+              value={formData.broadbandAvailability}
+              onChange={handleChange}
+              options={broadbandOptions}
+            />
+          )}
           <TextInput
             label="Accessibility Features"
             name="accessibilityFeatures"
             value={formData.accessibilityFeatures}
             onChange={handleChange}
-            placeholder="e.g., Wheelchair access, lifts, ramps"
+            placeholder={isLandProperty(formData.propertyType) ? "e.g., Level access, wide pathways" : "e.g., Wheelchair access, lifts, ramps"}
           />
-                </div>
+        </div>
       </>
     );
   };
