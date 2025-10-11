@@ -213,7 +213,9 @@ const submitProperty = async (req, res) => {
       accessibility_features,
       accessibilityFeatures, // Alternative field name from frontend
       custom_features,
-      customFeatures // Alternative field name from frontend
+      customFeatures, // Alternative field name from frontend
+      has_residential_accommodation,
+      hasResidentialAccommodation // Alternative field name from frontend
     } = req.body;
 
     // Map frontend field names to backend field names
@@ -303,6 +305,7 @@ const submitProperty = async (req, res) => {
     const broadband_availability_mapped = broadband_availability || broadbandAvailability || '';
     const accessibility_features_mapped = accessibility_features || accessibilityFeatures || '';
     const custom_features_mapped = custom_features || customFeatures || '[]';
+    const has_residential_accommodation_mapped = (has_residential_accommodation === 'true' || has_residential_accommodation === true || hasResidentialAccommodation === 'true' || hasResidentialAccommodation === true) ? true : false;
 
     // Data conversion for numeric fields
     const convertBathrooms = (bathrooms) => {
@@ -452,7 +455,7 @@ const submitProperty = async (req, res) => {
       // EPC Document fields (initially empty, will be updated if file is uploaded)
       '', '', // epc_document_name, epc_document_url
       // Additional information fields
-      heating_type_mapped, broadband_availability_mapped, accessibility_features_mapped, custom_features_mapped
+      heating_type_mapped, broadband_availability_mapped, accessibility_features_mapped, custom_features_mapped, has_residential_accommodation_mapped
     ];
     
     console.log('Values array position 21 (lease_term):', valuesArray[20]);
@@ -472,11 +475,11 @@ const submitProperty = async (req, res) => {
         council_tax_band, council_tax_status,
         reception_rooms, house_number, street_name, local_authority, nearest_transport_links, short_description, virtual_tour_link,
         epc_document_name, epc_document_url,
-        heating_type, broadband_availability, accessibility_features, custom_features
+        heating_type, broadband_availability, accessibility_features, custom_features, has_residential_accommodation
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36,
-        $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58
+        $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59
       ) RETURNING *`,
       valuesArray
     );
@@ -1415,7 +1418,9 @@ const updateProperty = async (req, res) => {
       short_description,
       shortDescription, // Alternative field name from frontend
       virtual_tour_link,
-      virtualTourLink // Alternative field name from frontend
+      virtualTourLink, // Alternative field name from frontend
+      has_residential_accommodation,
+      hasResidentialAccommodation // Alternative field name from frontend
     } = req.body;
 
     // Map frontend field names to backend field names
@@ -1486,6 +1491,7 @@ const updateProperty = async (req, res) => {
     const broadband_availability_mapped = req.body.broadband_availability || req.body.broadbandAvailability || existingProperty.broadband_availability || null;
     const accessibility_features_mapped = req.body.accessibility_features || req.body.accessibilityFeatures || existingProperty.accessibility_features || null;
     const custom_features_mapped = req.body.custom_features || req.body.customFeatures || existingProperty.custom_features || '[]';
+    const has_residential_accommodation_mapped = (req.body.has_residential_accommodation === 'true' || req.body.has_residential_accommodation === true || req.body.hasResidentialAccommodation === 'true' || req.body.hasResidentialAccommodation === true) ? true : (existingProperty.has_residential_accommodation || false);
     const year_built_mapped = year_built || yearBuilt || existingProperty.year_built;
 
     // NEW: EPC document name/url (preserve if not provided; upload may override below)
@@ -1649,7 +1655,7 @@ const updateProperty = async (req, res) => {
       (req.body.has_accessible_access !== undefined) ? (req.body.has_accessible_access === 'true' || req.body.has_accessible_access === true) : (req.body.hasAccessibleAccess === true || existingProperty.has_accessible_access),
       latitude, longitude,
       council_tax_band_mapped, council_tax_status_mapped,
-      reception_rooms_mapped, house_number_mapped, street_name_mapped, local_authority_mapped, nearest_transport_links_mapped, short_description_mapped, virtual_tour_link_mapped,
+      reception_rooms_mapped, house_number_mapped, street_name_mapped, local_authority_mapped, nearest_transport_links_mapped, short_description_mapped, virtual_tour_link_mapped, has_residential_accommodation_mapped,
       parseInt(id), parseInt(user_id)
     ];
 
@@ -1678,8 +1684,8 @@ const updateProperty = async (req, res) => {
         updated_at = CURRENT_TIMESTAMP, status = 'pending',
         latitude = $57, longitude = $58,
         council_tax_band = $59, council_tax_status = $60,
-        reception_rooms = $61, house_number = $62, street_name = $63, local_authority = $64, nearest_transport_links = $65, short_description = $66, virtual_tour_link = $67
-       WHERE id = $68 AND user_id = $69
+        reception_rooms = $61, house_number = $62, street_name = $63, local_authority = $64, nearest_transport_links = $65, short_description = $66, virtual_tour_link = $67, has_residential_accommodation = $68
+       WHERE id = $69 AND user_id = $70
        RETURNING *`,
       params
     );
