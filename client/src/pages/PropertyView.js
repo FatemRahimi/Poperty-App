@@ -796,7 +796,7 @@ const PropertyView = () => {
 
             {/* NEW: Property Information Section */}
             <h3 className="property-view-info-title">Property Details</h3>
-            <div className="property-view-info-section" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            <div className="property-view-info-section" style={{ fontFamily: "Effra, sans-serif" }}>
               
               <div className="property-view-info-grid">
                 {/* Row 1: Basic Property Info */}
