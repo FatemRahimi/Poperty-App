@@ -563,13 +563,13 @@ const PropertyView = () => {
           {/* Property Details Section */}
           <div className="view-property-details">
             {/* Heading with property for rent/sale/lease - property type - address - prices */}
-            <div className="property-details-heading" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            <div className="property-details-heading" style={{ fontFamily: "Effra, sans-serif" }}>
               <div className="property-details-main-row">
-                <span className="property-details-category" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                <span className="property-details-category" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "Effra, sans-serif" }}>
                   Property for {property.category ? property.category.charAt(0).toUpperCase() + property.category.slice(1) : ''}
                 </span>
-                <span className="property-details-dash" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}> - </span>
-                <span className="property-details-type" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                <span className="property-details-dash" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "Effra, sans-serif" }}> - </span>
+                <span className="property-details-type" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "Effra, sans-serif" }}>
                   {(() => {
                     // Extract property type safely
                     let propType = property.property_type || property.propertyType || 'Property';
@@ -587,7 +587,7 @@ const PropertyView = () => {
                 </span>
               </div>
               <div className="property-details-location-prices" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 8 }}>
-                <div className="property-details-address" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", fontWeight: 500, fontSize: '1.1rem', flex: 1 }}>
+                <div className="property-details-address" style={{ fontFamily: "Effra, sans-serif", fontWeight: 500, fontSize: '1.1rem', flex: 1 }}>
                   <i className="fas fa-map-marker-alt" style={{ color: '#667eea', marginRight: 6 }}></i>
                   {(() => {
                     // Modern address formatting (like PropertyCard)
@@ -623,11 +623,11 @@ const PropertyView = () => {
                   {/* Sale Property - Asking Price */}
                   {property.category === 'sale' && property.price ? (
                     <>
-                      <span className="property-details-price" style={{ fontWeight: 'bold', fontSize: '1.3rem', marginBottom: 4, fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: '#059669' }}>
+                      <span className="property-details-price" style={{ fontWeight: 'bold', fontSize: '1.3rem', marginBottom: 4, fontFamily: "Effra, sans-serif", color: '#059669' }}>
                         £{Number(property.price).toLocaleString()}
                       </span>
                       {property.price_type && (
-                        <span className="property-details-price-type" style={{ fontSize: '0.9rem', marginBottom: 4, fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: '#6b7280', fontWeight: '500' }}>
+                        <span className="property-details-price-type" style={{ fontSize: '0.9rem', marginBottom: 4, fontFamily: "Effra, sans-serif", color: '#6b7280', fontWeight: '500' }}>
                           {property.price_type.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
                         </span>
                       )}
@@ -636,24 +636,24 @@ const PropertyView = () => {
                   
                   {/* Rent Property - Monthly & Weekly Rent */}
                   {property.category === 'rent' && (property.monthly_rent || property.monthlyRent) ? (
-                    <span className="property-details-price" style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: 4, fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                    <span className="property-details-price" style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: 4, fontFamily: "Effra, sans-serif" }}>
                       £{Number(property.monthly_rent || property.monthlyRent).toLocaleString()}/month
                     </span>
                   ) : null}
                   {property.category === 'rent' && (property.weekly_rent || property.weeklyRent) ? (
-                    <span className="property-details-price" style={{ fontSize: '1rem', marginBottom: 4, fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                    <span className="property-details-price" style={{ fontSize: '1rem', marginBottom: 4, fontFamily: "Effra, sans-serif" }}>
                       £{Number(property.weekly_rent || property.weeklyRent).toLocaleString()}/week
                     </span>
                   ) : null}
                   {property.category === 'rent' && (property.deposit_amount || property.depositAmount) ? (
-                    <span className="property-details-price" style={{ fontSize: '0.9rem', color: '#059669', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                    <span className="property-details-price" style={{ fontSize: '0.9rem', color: '#059669', fontFamily: "Effra, sans-serif" }}>
                       £{Number(property.deposit_amount || property.depositAmount).toLocaleString()} deposit
                     </span>
                   ) : null}
                   
                   {/* Lease Property - Monthly Rent */}
                   {property.category === 'lease' && (property.monthly_rent || property.monthlyRent) ? (
-                    <span className="property-details-price" style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: 4, fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                    <span className="property-details-price" style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: 4, fontFamily: "Effra, sans-serif" }}>
                       £{Number(property.monthly_rent || property.monthlyRent).toLocaleString()}/month
                     </span>
                   ) : null}
@@ -678,7 +678,7 @@ const PropertyView = () => {
               // For all other cases (residential properties, commercial WITH residential, rent, lease), show the section
               return (
                 <>
-                  <div className="view-property-features" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                  <div className="view-property-features" style={{ fontFamily: "Effra, sans-serif" }}>
                     {property.property_type && (
                       <div className="view-feature">
                         <i className="fas fa-home"></i>
@@ -717,7 +717,7 @@ const PropertyView = () => {
               );
             })()}
 
-            <div className="view-property-description" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            <div className="view-property-description" style={{ fontFamily: "Effra, sans-serif" }}>
               <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: '#1f2937', textTransform: 'none' }}>Description</h3>
               <p>{property.description || 'No description available.'}</p>
             </div>
@@ -750,7 +750,7 @@ const PropertyView = () => {
                     <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
                     
                     <div className="view-property-custom-features" style={{ 
-                      fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                      fontFamily: "Effra, sans-serif",
                       marginBottom: '1.5rem'
                     }}>
                       <h3 style={{ 
@@ -927,15 +927,17 @@ const PropertyView = () => {
                 <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
                 
                 <div className="sale-property-features-section" style={{ 
-                  fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                  fontFamily: "Effra, sans-serif",
                   marginBottom: '2rem'
                 }}>
                   <h3 style={{ 
-                    fontSize: '1rem', 
+                    fontSize: '1.3rem', 
                     fontWeight: '600', 
                     color: '#1f2937',
                     marginBottom: '1rem',
-                    textTransform: 'none'
+                    textTransform: 'none',
+                    borderBottom: '2px solid #e5e7eb',
+                    paddingBottom: '0.5rem'
                   }}>Property Features</h3>
 
                   {/* Key Features Subsection */}
@@ -1559,7 +1561,7 @@ const PropertyView = () => {
             <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
 
             {/* NEW: Property Features Section */}
-            <div className="property-view-features-section" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            <div className="property-view-features-section" style={{ fontFamily: "Effra, sans-serif" }}>
               <h3 className="property-view-features-title">Property Features</h3>
               
               {/* Basic Property Features */}
