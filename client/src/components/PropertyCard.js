@@ -458,9 +458,18 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
               </>
             )}
             {property.category === 'sale' && property.price && (
-              <div className="rental-text-item asking-price">
-                <span className="rental-amount asking-price">£{Number(property.price).toLocaleString()}</span>
-              </div>
+              <>
+                <div className="rental-text-item asking-price">
+                  <span className="rental-amount asking-price">£{Number(property.price).toLocaleString()}</span>
+                </div>
+                {property.price_type && (
+                  <div className="rental-text-item price-type">
+                    <span className="rental-amount price-type">
+                      {property.price_type.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

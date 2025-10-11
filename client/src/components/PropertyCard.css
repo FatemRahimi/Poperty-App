@@ -65,6 +65,10 @@
   order: 1; /* Asking price appears first for sale properties */
 }
 
+.rental-text-item.price-type {
+  order: 2; /* Price type appears second (below asking price) */
+}
+
 .rental-amount {
   font-size: 1.1rem;
   font-weight: 700;
@@ -87,6 +91,13 @@
   font-weight: 700; /* Bold for asking price */
   color: #374151; /* Dark grey for asking price */
   font-size: 1.1rem; /* Same size as monthly rent */
+}
+
+.rental-amount.price-type {
+  font-weight: 500; /* Medium weight for price type */
+  color: #6b7280; /* Lighter grey for price type */
+  font-size: 0.9rem; /* Smaller font for price type */
+  text-transform: capitalize; /* Capitalize price type text */
 }
 
 .property-card-content .property-details-modern {
