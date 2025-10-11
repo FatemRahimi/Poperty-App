@@ -583,6 +583,7 @@
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid #171719;
+  font-family: Effra-Medium, Tahoma, sans-serif;
 }
 
 .property-view-info-grid {
@@ -673,6 +674,7 @@
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
   border-bottom:2px solid #171719;
+  font-family: Effra-Medium, Tahoma, sans-serif;
 }
 
 /* Approximate Area Display */
@@ -929,6 +931,7 @@
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
   border-bottom:2px solid #171719;
+  font-family: Effra-Medium, Tahoma, sans-serif;
 }
 
 .property-view-features-category {
@@ -937,16 +940,14 @@
 
 .features-category-title {
   font-size: .9rem;
-
-  color: #4a5568;
+  color: #3b7585;
   margin-bottom: 1rem;
   padding-bottom: 0.25rem;
   border-bottom: 1px solid #cbd5e0;
-  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+  font-family: Effra-Medium, Tahoma, sans-serif;
   letter-spacing: 0.025em;
   text-transform: uppercase;
   font-weight: 600;
-  color: #3b7585;
 }
 
 .property-view-features-grid {
@@ -1129,7 +1130,7 @@
 .property-view-info-title,
 .property-layout-title,
 .property-view-features-title {
-  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+  font-family: Effra-Medium, Tahoma, sans-serif;
   font-weight: 700;
   letter-spacing: 0.025em;
   text-transform: uppercase;

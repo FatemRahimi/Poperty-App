@@ -627,7 +627,7 @@ const PropertyView = () => {
                         £{Number(property.price).toLocaleString()}
                       </span>
                       {property.price_type && (
-                        <span className="property-details-price-type" style={{ fontSize: '0.9rem', marginBottom: 4, fontFamily: "Effra, sans-serif", color: '#6b7280', fontWeight: '500' }}>
+                        <span className="property-details-price-type" style={{ fontSize: '0.9rem', marginBottom: 4, fontFamily: "Effra, sans-serif", color: '#5b7ba8', fontWeight: '500' }}>
                           {property.price_type.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
                         </span>
                       )}
@@ -718,7 +718,7 @@ const PropertyView = () => {
             })()}
 
             <div className="view-property-description" style={{ fontFamily: "Effra, sans-serif" }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: '#1f2937', textTransform: 'none' }}>Description</h3>
+              <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: '#1f2937', textTransform: 'none', fontFamily: "Effra-Medium, Tahoma, sans-serif" }}>Description</h3>
               <p>{property.description || 'No description available.'}</p>
             </div>
 
@@ -758,7 +758,8 @@ const PropertyView = () => {
                         fontWeight: '600', 
                         marginBottom: '1rem',
                         color: '#1f2937',
-                        textTransform: 'none'
+                        textTransform: 'none',
+                        fontFamily: "Effra-Medium, Tahoma, sans-serif"
                       }}>
                         Additional Features
                       </h3>
@@ -936,8 +937,9 @@ const PropertyView = () => {
                     color: '#1f2937',
                     marginBottom: '1rem',
                     textTransform: 'none',
-                    borderBottom: '2px solid #e5e7eb',
-                    paddingBottom: '0.5rem'
+                    borderBottom: '2px solid #000000',
+                    paddingBottom: '0.5rem',
+                    fontFamily: "Effra-Medium, Tahoma, sans-serif"
                   }}>Property Features</h3>
 
                   {/* Key Features Subsection */}
@@ -948,12 +950,13 @@ const PropertyView = () => {
                       color: '#1f2937',
                       marginBottom: '1rem',
                       borderBottom: '2px solid #e5e7eb',
-                      paddingBottom: '0.5rem'
+                      paddingBottom: '0.5rem',
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif"
                     }}>Key Features</h4>
                     <div style={{ 
                       display: 'grid',
                       gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: '1rem',
+                      gap: '0.5rem',
                       padding: '0.5rem 0'
                     }}>
                       {/* Tenure */}
@@ -962,11 +965,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Tenure:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Tenure:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: property.tenure ? '#059669' : '#3b82f6',
-                          fontSize: '1rem' 
+                          fontWeight: '400', 
+                          color: property.tenure ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {property.tenure ? property.tenure.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) : 'Contact Us'}
                         </span>
@@ -978,11 +981,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>EPC Rating:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>EPC Rating:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.epc_rating || property.epcRating) ? '#059669' : '#3b82f6',
-                          fontSize: '1rem' 
+                          fontWeight: '400', 
+                          color: (property.epc_rating || property.epcRating) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {property.epc_rating || property.epcRating || 'Contact Us'}
                         </span>
@@ -994,10 +997,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Local Authority:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Local Authority:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.local_authority || property.localAuthority) ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: (property.local_authority || property.localAuthority) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {property.local_authority || property.localAuthority || 'Contact Us'}
                         </span>
@@ -1009,10 +1013,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Nearest Transport Link:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Nearest Transport Link:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.nearest_transport_links || property.nearestTransportLinks) ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: (property.nearest_transport_links || property.nearestTransportLinks) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {property.nearest_transport_links || property.nearestTransportLinks || 'Contact Us'}
                         </span>
@@ -1024,10 +1029,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Service Charges:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Service Charges:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.service_charges || property.serviceCharges) ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: (property.service_charges || property.serviceCharges) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {(property.service_charges || property.serviceCharges) 
                             ? `£${Number(property.service_charges || property.serviceCharges).toLocaleString()}/month` 
@@ -1041,10 +1047,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Ground Rent:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Ground Rent:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.ground_rent || property.groundRent) ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: (property.ground_rent || property.groundRent) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {(property.ground_rent || property.groundRent) 
                             ? `£${Number(property.ground_rent || property.groundRent).toLocaleString()}/year` 
@@ -1058,10 +1065,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Council Tax Band:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Council Tax Band:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.council_tax_band || property.councilTaxBand) ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: (property.council_tax_band || property.councilTaxBand) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {(property.council_tax_band || property.councilTaxBand) 
                             ? `Band ${property.council_tax_band || property.councilTaxBand}` 
@@ -1079,12 +1087,13 @@ const PropertyView = () => {
                       color: '#1f2937',
                       marginBottom: '1rem',
                       borderBottom: '2px solid #e5e7eb',
-                      paddingBottom: '0.5rem'
+                      paddingBottom: '0.5rem',
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif"
                     }}>Basic Features</h4>
                     <div style={{ 
                       display: 'grid',
                       gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: '1rem',
+                      gap: '0.5rem',
                       padding: '0.5rem 0'
                     }}>
                       {/* Garden */}
@@ -1093,10 +1102,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Garden:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Garden:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: property.has_garden || property.hasGarden ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: property.has_garden || property.hasGarden ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {property.has_garden || property.hasGarden ? 'Yes' : 'Contact Us'}
                         </span>
@@ -1108,10 +1118,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Parking:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Parking:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: property.has_parking || property.hasParking ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: property.has_parking || property.hasParking ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {property.has_parking || property.hasParking ? 'Yes' : 'Contact Us'}
                         </span>
@@ -1123,10 +1134,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Balcony:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Balcony:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: property.has_balcony_terrace || property.hasBalconyTerrace ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: property.has_balcony_terrace || property.hasBalconyTerrace ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {property.has_balcony_terrace || property.hasBalconyTerrace ? 'Yes' : 'Contact Us'}
                         </span>
@@ -1138,10 +1150,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>New Build:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>New Build:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: property.is_new_build || property.isNewBuild ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: property.is_new_build || property.isNewBuild ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {property.is_new_build || property.isNewBuild ? 'Yes' : 'Contact Us'}
                         </span>
@@ -1153,10 +1166,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Chain Free:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Chain Free:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: property.is_chain_free || property.isChainFree ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: property.is_chain_free || property.isChainFree ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {property.is_chain_free || property.isChainFree ? 'Yes' : 'Contact Us'}
                         </span>
@@ -1168,11 +1182,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Recently Renovated:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Recently Renovated:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.is_recently_renovated || property.isRecentlyRenovated) ? '#059669' : '#3b82f6',
-                          fontSize: '1rem' 
+                          fontWeight: '400', 
+                          color: (property.is_recently_renovated || property.isRecentlyRenovated) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {(property.is_recently_renovated || property.isRecentlyRenovated) ? 'Yes' : 'Contact Us'}
                         </span>
@@ -1188,12 +1202,13 @@ const PropertyView = () => {
                       color: '#1f2937',
                       marginBottom: '1rem',
                       borderBottom: '2px solid #e5e7eb',
-                      paddingBottom: '0.5rem'
+                      paddingBottom: '0.5rem',
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif"
                     }}>More Vision</h4>
                     <div style={{ 
                       display: 'grid',
                       gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: '1rem',
+                      gap: '0.5rem',
                       padding: '0.5rem 0'
                     }}>
                       {/* Recently Renovated */}
@@ -1202,10 +1217,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Recently Renovated:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Recently Renovated:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.is_recently_renovated || property.isRecentlyRenovated) ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: (property.is_recently_renovated || property.isRecentlyRenovated) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {(property.is_recently_renovated || property.isRecentlyRenovated) ? 'Yes' : 'Contact Us'}
                         </span>
@@ -1217,10 +1233,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Accessible/Step-Free:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Accessible/Step-Free:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.has_accessible_access || property.hasAccessibleAccess) ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: (property.has_accessible_access || property.hasAccessibleAccess) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {(property.has_accessible_access || property.hasAccessibleAccess) ? 'Yes' : 'Contact Us'}
                         </span>
@@ -1232,10 +1249,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Year Built:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Year Built:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.year_built || property.yearBuilt) ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: (property.year_built || property.yearBuilt) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {property.year_built || property.yearBuilt || 'Contact Us'}
                         </span>
@@ -1247,10 +1265,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Heating Type:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Heating Type:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.heating_type || property.heatingType) ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: (property.heating_type || property.heatingType) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {(property.heating_type || property.heatingType) 
                             ? (property.heating_type || property.heatingType).replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) 
@@ -1264,10 +1283,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Broadband:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Broadband:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.broadband_availability || property.broadbandAvailability) ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: (property.broadband_availability || property.broadbandAvailability) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {(property.broadband_availability || property.broadbandAvailability) 
                             ? (property.broadband_availability || property.broadbandAvailability).replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) 
@@ -1281,10 +1301,11 @@ const PropertyView = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}>
-                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Accessibility Features:</span>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Accessibility Features:</span>
                         <span style={{ 
-                          fontWeight: '600', 
-                          color: (property.accessibility_features || property.accessibilityFeatures) ? '#059669' : '#3b82f6' 
+                          fontWeight: '400', 
+                          color: (property.accessibility_features || property.accessibilityFeatures) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
                         }}>
                           {property.accessibility_features || property.accessibilityFeatures || 'Contact Us'}
                         </span>
@@ -1560,7 +1581,8 @@ const PropertyView = () => {
             {/* Border line after property information */}
             <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
 
-            {/* NEW: Property Features Section */}
+            {/* NEW: Property Features Section - RENT CATEGORY ONLY */}
+            {property.category === 'rent' && (
             <div className="property-view-features-section" style={{ fontFamily: "Effra, sans-serif" }}>
               <h3 className="property-view-features-title">Property Features</h3>
               
@@ -1853,6 +1875,7 @@ const PropertyView = () => {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Border line after property features */}
             <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
