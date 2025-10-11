@@ -12,6 +12,8 @@ const PropertyView = () => {
   const [error, setError] = useState('');
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   // Initialize map when property loads
   useEffect(() => {
@@ -369,6 +371,11 @@ const PropertyView = () => {
                               src={currentMedia.url}
                               alt={`${property.title} - Media ${currentMediaIndex + 1}`}
                               className="main-image"
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => {
+                                setGalleryIndex(currentMediaIndex);
+                                setShowGalleryModal(true);
+                              }}
                               onError={(e) => {
                                 console.error('Image load error:', currentMedia.url, e);
                               }}
@@ -404,7 +411,15 @@ const PropertyView = () => {
                             <div
                               key={index}
                               className="side-image"
-                              onClick={() => setCurrentMediaIndex(index)}
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => {
+                                if (!isVideo) {
+                                  setGalleryIndex(index);
+                                  setShowGalleryModal(true);
+                                } else {
+                                  setCurrentMediaIndex(index);
+                                }
+                              }}
                             >
                               {isVideo ? (
                                 <div className="video-thumbnail">
@@ -446,7 +461,15 @@ const PropertyView = () => {
                           <div
                             key={index}
                             className="all-images-item"
-                            onClick={() => setCurrentMediaIndex(index)}
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => {
+                              if (!isVideo) {
+                                setGalleryIndex(index);
+                                setShowGalleryModal(true);
+                              } else {
+                                setCurrentMediaIndex(index);
+                              }
+                            }}
                           >
                             {isVideo ? (
                               <div className="video-thumbnail">
@@ -497,6 +520,11 @@ const PropertyView = () => {
                             src={currentMedia.url}
                             alt={`${property.title} - Media ${currentMediaIndex + 1}`}
                             className="main-image"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => {
+                              setGalleryIndex(currentMediaIndex);
+                              setShowGalleryModal(true);
+                            }}
                             onError={(e) => {
                               console.error('Image load error:', currentMedia.url, e);
                             }}
@@ -2066,6 +2094,144 @@ const PropertyView = () => {
           />
         </div>
       </div>
+
+      {/* Full-Screen Gallery Modal */}
+      {showGalleryModal && property.images && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'black',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onClick={() => setShowGalleryModal(false)}
+        >
+          {/* Close Button */}
+          <button
+            onClick={() => setShowGalleryModal(false)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              cursor: 'pointer',
+              color: 'white',
+              fontSize: '1.2rem',
+              zIndex: 10000
+            }}
+          >
+            <i className="fas fa-times"></i>
+          </button>
+
+          {/* Current Image */}
+          <img
+            src={property.images.filter(m => {
+              const isVideo = m.type === 'video' || m.image_type === 'video' || 
+                (m.url && (m.url.toLowerCase().endsWith('.mp4') || m.url.toLowerCase().endsWith('.mov') || 
+                 m.url.toLowerCase().endsWith('.avi') || m.url.toLowerCase().endsWith('.webm') || 
+                 m.url.toLowerCase().endsWith('.ogg')));
+              return !isVideo;
+            })[galleryIndex]?.url}
+            alt="Full screen view"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Previous Button */}
+          {property.images.filter(m => {
+            const isVideo = m.type === 'video' || m.image_type === 'video' || 
+              (m.url && (m.url.toLowerCase().endsWith('.mp4') || m.url.toLowerCase().endsWith('.mov') || 
+               m.url.toLowerCase().endsWith('.avi') || m.url.toLowerCase().endsWith('.webm') || 
+               m.url.toLowerCase().endsWith('.ogg')));
+            return !isVideo;
+          }).length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const images = property.images.filter(m => {
+                  const isVideo = m.type === 'video' || m.image_type === 'video' || 
+                    (m.url && (m.url.toLowerCase().endsWith('.mp4') || m.url.toLowerCase().endsWith('.mov') || 
+                     m.url.toLowerCase().endsWith('.avi') || m.url.toLowerCase().endsWith('.webm') || 
+                     m.url.toLowerCase().endsWith('.ogg')));
+                  return !isVideo;
+                });
+                setGalleryIndex((galleryIndex - 1 + images.length) % images.length);
+              }}
+              style={{
+                position: 'absolute',
+                left: '20px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'rgba(255,255,255,0.3)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '45px',
+                height: '45px',
+                cursor: 'pointer',
+                fontSize: '1.2rem',
+                color: 'white',
+                zIndex: 10000
+              }}
+            >
+              <i className="fas fa-chevron-left"></i>
+            </button>
+          )}
+
+          {/* Next Button */}
+          {property.images.filter(m => {
+            const isVideo = m.type === 'video' || m.image_type === 'video' || 
+              (m.url && (m.url.toLowerCase().endsWith('.mp4') || m.url.toLowerCase().endsWith('.mov') || 
+               m.url.toLowerCase().endsWith('.avi') || m.url.toLowerCase().endsWith('.webm') || 
+               m.url.toLowerCase().endsWith('.ogg')));
+            return !isVideo;
+          }).length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const images = property.images.filter(m => {
+                  const isVideo = m.type === 'video' || m.image_type === 'video' || 
+                    (m.url && (m.url.toLowerCase().endsWith('.mp4') || m.url.toLowerCase().endsWith('.mov') || 
+                     m.url.toLowerCase().endsWith('.avi') || m.url.toLowerCase().endsWith('.webm') || 
+                     m.url.toLowerCase().endsWith('.ogg')));
+                  return !isVideo;
+                });
+                setGalleryIndex((galleryIndex + 1) % images.length);
+              }}
+              style={{
+                position: 'absolute',
+                right: '20px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'rgba(255,255,255,0.3)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '45px',
+                height: '45px',
+                cursor: 'pointer',
+                fontSize: '1.2rem',
+                color: 'white',
+                zIndex: 10000
+              }}
+            >
+              <i className="fas fa-chevron-right"></i>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
