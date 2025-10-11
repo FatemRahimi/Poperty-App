@@ -954,6 +954,29 @@ const getAllProperties = async (req, res) => {
 
     const result = await pool.query(query, queryParams);
 
+    // Normalize property_type for all properties (fix {"retail","retail"} bug)
+    const normalizePropertyTypeValue = (val) => {
+      if (!val) return '';
+      if (Array.isArray(val)) return (val.find(Boolean) || '').toString();
+      if (typeof val === 'string') {
+        // Handle postgres array literal formatted as string: {"Terraced","Terraced"}
+        if (/^\{.*\}$/.test(val)) {
+          const inner = val.slice(1, -1);
+          const parts = inner.split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+          return (parts.find(Boolean) || '').toString();
+        }
+        return val.trim();
+      }
+      if (typeof val === 'object') return (val.value || val.label || '').toString();
+      return String(val).trim();
+    };
+
+    // Normalize all properties before sending to admin dashboard
+    const normalizedProperties = result.rows.map(property => ({
+      ...property,
+      property_type: normalizePropertyTypeValue(property.property_type)
+    }));
+
     // Get total count
     const countQuery = `SELECT COUNT(*) FROM properties p LEFT JOIN users u ON p.user_id = u.id ${whereClause}`;
     const countResult = await pool.query(countQuery, queryParams.slice(0, paramCount));
@@ -961,7 +984,7 @@ const getAllProperties = async (req, res) => {
 
     res.json({
       success: true,
-      properties: result.rows,
+      properties: normalizedProperties,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

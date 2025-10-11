@@ -137,40 +137,56 @@ const PropertyView = () => {
       const data = await response.json();
       
       if (data.success) {
-        setProperty(data.property);
+        // Extract property_type properly from database
+        const propertyData = data.property;
+        
+        // Ensure property_type is a string (not array or object)
+        if (propertyData.property_type) {
+          if (Array.isArray(propertyData.property_type)) {
+            propertyData.property_type = propertyData.property_type[0]; // Take first element if array
+          } else if (typeof propertyData.property_type === 'object') {
+            propertyData.property_type = Object.values(propertyData.property_type)[0]; // Take first value if object
+          }
+          propertyData.property_type = String(propertyData.property_type); // Ensure it's a string
+        }
+        
+        setProperty(propertyData);
         
         // Debug: Log property features received
         console.log('🔍 Frontend Property Features Debug:');
-        console.log('📋 Property ID:', data.property.id);
-        console.log('📋 has_garden:', data.property.has_garden);
-        console.log('📋 parking_spaces:', data.property.parking_spaces);
-        console.log('📋 pets_allowed:', data.property.pets_allowed);
-        console.log('📋 student_housing:', data.property.student_housing);
-        console.log('📋 furnished:', data.property.furnished);
-        console.log('📋 has_garage:', data.property.has_garage);
-        console.log('📋 has_pool:', data.property.has_pool);
-        console.log('📋 key_features RAW:', data.property.key_features);
-        console.log('📋 key_features TYPE:', Object.prototype.toString.call(data.property.key_features));
-        console.log('📋 key_features JSON:', JSON.stringify(data.property.key_features, null, 2));
+        console.log('📋 Property ID:', propertyData.id);
+        console.log('📋 property_type RAW:', data.property.property_type, 'TYPE:', typeof data.property.property_type);
+        console.log('📋 property_type CLEANED:', propertyData.property_type);
+        console.log('📋 has_residential_accommodation:', propertyData.has_residential_accommodation);
+        console.log('📋 has_garden:', propertyData.has_garden);
+        console.log('📋 parking_spaces:', propertyData.parking_spaces);
+        console.log('📋 pets_allowed:', propertyData.pets_allowed);
+        console.log('📋 student_housing:', propertyData.student_housing);
+        console.log('📋 furnished:', propertyData.furnished);
+        console.log('📋 has_garage:', propertyData.has_garage);
+        console.log('📋 has_pool:', propertyData.has_pool);
+        console.log('📋 key_features RAW:', propertyData.key_features);
+        console.log('📋 key_features TYPE:', Object.prototype.toString.call(propertyData.key_features));
+        console.log('📋 key_features JSON:', JSON.stringify(propertyData.key_features, null, 2));
         console.log('🔍 Property Consultant Debug:');
-        console.log('📋 property_consultant:', data.property.property_consultant);
-        console.log('📋 contact_name:', data.property.contact_name);
-        console.log('📋 contact_email:', data.property.contact_email);
-        console.log('📋 contact_phone:', data.property.contact_phone);
+        console.log('📋 property_consultant:', propertyData.property_consultant);
+        console.log('📋 contact_name:', propertyData.contact_name);
+        console.log('📋 contact_email:', propertyData.contact_email);
+        console.log('📋 contact_phone:', propertyData.contact_phone);
         console.log('🔍 PropertyAdvisorCard Props Debug:');
-        console.log('📋 propertyConsultantData being passed:', data.property.property_consultant ? {
-          fullName: data.property.property_consultant,
+        console.log('📋 propertyConsultantData being passed:', propertyData.property_consultant ? {
+          fullName: propertyData.property_consultant,
           jobTitle: 'Property Consultant',
-          contactEmail: data.property.contact_email,
-          contactPhone: data.property.contact_phone
+          contactEmail: propertyData.contact_email,
+          contactPhone: propertyData.contact_phone
         } : null);
         console.log('🔍 PropertyAdvisorCard fallbackContact Debug:');
         console.log('📋 fallbackContact being passed:', {
-          name: data.property.contact_name,
-          firstName: data.property.first_name,
-          lastName: data.property.last_name,
-          email: data.property.contact_email,
-          phone: data.property.contact_phone
+          name: propertyData.contact_name,
+          firstName: propertyData.first_name,
+          lastName: propertyData.last_name,
+          email: propertyData.contact_email,
+          phone: propertyData.contact_phone
         });
       } else {
         setError(data.message || 'Property not found');
@@ -554,7 +570,20 @@ const PropertyView = () => {
                 </span>
                 <span className="property-details-dash" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}> - </span>
                 <span className="property-details-type" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-                  {(property.property_type || property.propertyType || 'Property').replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
+                  {(() => {
+                    // Extract property type safely
+                    let propType = property.property_type || property.propertyType || 'Property';
+                    
+                    // Handle if it's an array or object (shouldn't happen but defensive)
+                    if (Array.isArray(propType)) {
+                      propType = propType[0] || 'Property';
+                    } else if (typeof propType === 'object' && propType !== null) {
+                      propType = Object.values(propType)[0] || 'Property';
+                    }
+                    
+                    // Convert to string and format
+                    return String(propType).replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+                  })()}
                 </span>
               </div>
               <div className="property-details-location-prices" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 8 }}>
@@ -591,19 +620,41 @@ const PropertyView = () => {
                   })()}
                 </div>
                 <div className="property-details-prices" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: 20 }}>
-                  {property.monthly_rent || property.monthlyRent ? (
+                  {/* Sale Property - Asking Price */}
+                  {property.category === 'sale' && property.price ? (
+                    <>
+                      <span className="property-details-price" style={{ fontWeight: 'bold', fontSize: '1.3rem', marginBottom: 4, fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: '#059669' }}>
+                        £{Number(property.price).toLocaleString()}
+                      </span>
+                      {property.price_type && (
+                        <span className="property-details-price-type" style={{ fontSize: '0.9rem', marginBottom: 4, fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: '#6b7280', fontWeight: '500' }}>
+                          {property.price_type.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
+                        </span>
+                      )}
+                    </>
+                  ) : null}
+                  
+                  {/* Rent Property - Monthly & Weekly Rent */}
+                  {property.category === 'rent' && (property.monthly_rent || property.monthlyRent) ? (
                     <span className="property-details-price" style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: 4, fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
                       £{Number(property.monthly_rent || property.monthlyRent).toLocaleString()}/month
                     </span>
                   ) : null}
-                  {property.weekly_rent || property.weeklyRent ? (
+                  {property.category === 'rent' && (property.weekly_rent || property.weeklyRent) ? (
                     <span className="property-details-price" style={{ fontSize: '1rem', marginBottom: 4, fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
                       £{Number(property.weekly_rent || property.weeklyRent).toLocaleString()}/week
                     </span>
                   ) : null}
-                  {property.deposit_amount || property.depositAmount ? (
+                  {property.category === 'rent' && (property.deposit_amount || property.depositAmount) ? (
                     <span className="property-details-price" style={{ fontSize: '0.9rem', color: '#059669', fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
                       £{Number(property.deposit_amount || property.depositAmount).toLocaleString()} deposit
+                    </span>
+                  ) : null}
+                  
+                  {/* Lease Property - Monthly Rent */}
+                  {property.category === 'lease' && (property.monthly_rent || property.monthlyRent) ? (
+                    <span className="property-details-price" style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: 4, fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                      £{Number(property.monthly_rent || property.monthlyRent).toLocaleString()}/month
                     </span>
                   ) : null}
                 </div>
@@ -614,35 +665,57 @@ const PropertyView = () => {
             <div style={{ borderTop: '2px solid #333', margin: '20px 0', width: '100%' }}></div>
 
             {/* NEW: Property Type, Bedrooms, Bathrooms, and Furnished Status */}
-            <div className="view-property-features" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-              {property.property_type && (
-                <div className="view-feature">
-                  <i className="fas fa-home"></i>
-                  <span>{property.property_type.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}</span>
-                </div>
-              )}
-              {property.bedrooms && (
-                <div className="view-feature">
-                  <i className="fas fa-bed"></i>
-                  <span>{property.bedrooms} Bedroom{property.bedrooms !== 1 ? 's' : ''}</span>
-                </div>
-              )}
-              {property.bathrooms && (
-                <div className="view-feature">
-                  <i className="fas fa-bath"></i>
-                  <span>{Math.floor(property.bathrooms)} Bathroom{Math.floor(property.bathrooms) !== 1 ? 's' : ''}</span>
-                </div>
-              )}
-              {property.furnished !== undefined && property.furnished !== null && (
-                <div className="view-feature">
-                  <i className="fas fa-couch"></i>
-                  <span>{property.furnished ? 'Furnished' : 'Unfurnished'}</span>
-                </div>
-              )}
-            </div>
+            {(() => {
+              // Check if this is a commercial property (warehouse, retail, office, commercial)
+              const isCommercial = ['warehouse', 'commercial', 'office', 'retail'].includes(property.property_type);
+              const hasResidential = property.has_residential_accommodation || property.hasResidentialAccommodation;
+              
+              // For commercial properties WITHOUT residential accommodation, hide this entire section
+              if (isCommercial && !hasResidential) {
+                return null; // Don't show view-property-features section at all
+              }
+              
+              // For all other cases (residential properties, commercial WITH residential, rent, lease), show the section
+              return (
+                <>
+                  <div className="view-property-features" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                    {property.property_type && (
+                      <div className="view-feature">
+                        <i className="fas fa-home"></i>
+                        <span>{property.property_type.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}</span>
+                      </div>
+                    )}
+                    {property.bedrooms && Number(property.bedrooms) > 0 && (
+                      <div className="view-feature">
+                        <i className="fas fa-bed"></i>
+                        <span>{property.bedrooms} Bedroom{property.bedrooms !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {property.bathrooms && Number(property.bathrooms) > 0 && (
+                      <div className="view-feature">
+                        <i className="fas fa-bath"></i>
+                        <span>{Math.floor(property.bathrooms)} Bathroom{Math.floor(property.bathrooms) !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {!property.property_type === 'land' && property.reception_rooms && Number(property.reception_rooms) > 0 && (
+                      <div className="view-feature">
+                        <i className="fas fa-door-open"></i>
+                        <span>{property.reception_rooms} Reception Room{property.reception_rooms !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {property.category === 'rent' && property.furnished !== undefined && property.furnished !== null && (
+                      <div className="view-feature">
+                        <i className="fas fa-couch"></i>
+                        <span>{property.furnished ? 'Furnished' : 'Unfurnished'}</span>
+                      </div>
+                    )}
+                  </div>
 
-            {/* Border line after features */}
-            <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
+                  {/* Border line after features */}
+                  <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
+                </>
+              );
+            })()}
 
             <div className="view-property-description" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
               <h3>Description</h3>
@@ -657,90 +730,223 @@ const PropertyView = () => {
             <div className="property-view-info-section" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
               
               <div className="property-view-info-grid">
-                {/* Row 1 */}
+                {/* Row 1: Basic Property Info */}
                 <div className="property-view-info-row">
-                  {property.availability_date && (
+                  {(property.floor_area || property.square_feet) && (
                     <div className="property-view-info-item">
                       <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
                       </svg>
                       <div className="property-view-info-content">
-                        <span className="property-view-info-label">Available From</span>
+                        <span className="property-view-info-label">{property.property_type === 'land' ? 'Land Size' : 'Floor Area'}</span>
                         <span className="property-view-info-value">
-                          {new Date(property.availability_date).toLocaleDateString('en-GB', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })}
+                          {property.floor_area || property.square_feet} {property.floor_area_unit === 'sq_ft' || property.square_feet ? 'sq ft' : 'sq m'}
                         </span>
                       </div>
                     </div>
                   )}
                   
-                  {property.lease_term && (
+                  {property.tenure && (
+                    <div className="property-view-info-item">
+                      <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                      <div className="property-view-info-content">
+                        <span className="property-view-info-label">Tenure</span>
+                        <span className="property-view-info-value">
+                          {property.tenure.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Row 2: Financial Info (Sale/Rent specific) */}
+                {property.category === 'sale' && (
+                  <>
+                    {property.price_type && (
+                      <div className="property-view-info-row">
+                        <div className="property-view-info-item">
+                          <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                          </svg>
+                          <div className="property-view-info-content">
+                            <span className="property-view-info-label">Price Type</span>
+                            <span className="property-view-info-value">
+                              {property.price_type.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {(property.service_charges || property.serviceCharges) && (
+                          <div className="property-view-info-item">
+                            <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                            </svg>
+                            <div className="property-view-info-content">
+                              <span className="property-view-info-label">Service Charges</span>
+                              <span className="property-view-info-value">
+                                £{Number(property.service_charges || property.serviceCharges).toLocaleString()}/month
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {(property.ground_rent || property.groundRent) && (
+                      <div className="property-view-info-row">
+                        <div className="property-view-info-item">
+                          <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                          </svg>
+                          <div className="property-view-info-content">
+                            <span className="property-view-info-label">Ground Rent</span>
+                            <span className="property-view-info-value">
+                              £{Number(property.ground_rent || property.groundRent).toLocaleString()}/year
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {/* Row 3: Rent-specific fields */}
+                {property.category === 'rent' && (
+                  <>
+                    {property.availability_date && (
+                      <div className="property-view-info-row">
+                        <div className="property-view-info-item">
+                          <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                          </svg>
+                          <div className="property-view-info-content">
+                            <span className="property-view-info-label">Available From</span>
+                            <span className="property-view-info-value">
+                              {new Date(property.availability_date).toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {property.lease_term && (
+                          <div className="property-view-info-item">
+                            <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                            <div className="property-view-info-content">
+                              <span className="property-view-info-label">Tenancy Length</span>
+                              <span className="property-view-info-value">
+                                {property.lease_term === 'flexible' ? 'Flexible' : `${property.lease_term} months minimum`}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Row 4: Council Tax & EPC */}
+                <div className="property-view-info-row">
+                  {(property.council_tax_band || property.councilTaxBand) && (
+                    <div className="property-view-info-item">
+                      <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                      <div className="property-view-info-content">
+                        <span className="property-view-info-label">Council Tax Band</span>
+                        <span className="property-view-info-value">
+                          Band {property.council_tax_band || property.councilTaxBand}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {property.category === 'rent' && property.council_tax_status && (
                     <div className="property-view-info-item">
                       <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                       </svg>
                       <div className="property-view-info-content">
-                        <span className="property-view-info-label">Tenancy Length</span>
+                        <span className="property-view-info-label">Council Tax Status</span>
                         <span className="property-view-info-value">
-                          {property.lease_term === 'flexible' ? 'Flexible' : `${property.lease_term} months minimum`}
+                          {(() => {
+                            const status = property.council_tax_status || property.councilTaxStatus;
+                            return status === 'included' ? 'Included in rent' :
+                                   status === 'exempt' ? 'Exempt' :
+                                   status === 'tenant_pays' ? 'Tenant pays' :
+                                   status === 'landlord_pays' ? 'Landlord pays' :
+                                   status;
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {(property.epc_rating || property.epcRating) && (
+                    <div className="property-view-info-item">
+                      <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                      <div className="property-view-info-content">
+                        <span className="property-view-info-label">EPC Rating</span>
+                        <span className="property-view-info-value">
+                          {property.epc_rating || property.epcRating}
                         </span>
                       </div>
                     </div>
                   )}
                 </div>
-
-                {/* Row 2 */}
-                <div className="property-view-info-row">
-                  <div className="property-view-info-item">
-                    <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    <div className="property-view-info-content">
-                      <span className="property-view-info-label">Council Tax Band</span>
-                      <span className="property-view-info-value">
-                        {property.council_tax_band || property.councilTaxBand ? `Band ${property.council_tax_band || property.councilTaxBand}` : 'Not specified'}
-                      </span>
-                    </div>
+                
+                {/* Row 5: Additional Details */}
+                {(property.year_built || property.heating_type || property.broadband_availability) && (
+                  <div className="property-view-info-row">
+                    {property.year_built && (
+                      <div className="property-view-info-item">
+                        <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                        </svg>
+                        <div className="property-view-info-content">
+                          <span className="property-view-info-label">Year Built</span>
+                          <span className="property-view-info-value">{property.year_built}</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {property.heating_type && (
+                      <div className="property-view-info-item">
+                        <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        <div className="property-view-info-content">
+                          <span className="property-view-info-label">Heating</span>
+                          <span className="property-view-info-value">
+                            {property.heating_type.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {property.broadband_availability && (
+                      <div className="property-view-info-item">
+                        <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        <div className="property-view-info-content">
+                          <span className="property-view-info-label">Broadband</span>
+                          <span className="property-view-info-value">
+                            {property.broadband_availability.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  
-                  <div className="property-view-info-item">
-                    <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                    <div className="property-view-info-content">
-                      <span className="property-view-info-label">Council Tax Status</span>
-                      <span className="property-view-info-value">
-                        {(() => {
-                          const status = property.council_tax_status || property.councilTaxStatus;
-                          if (!status) return 'Not specified';
-                          return status === 'included' ? 'Included in rent' :
-                                 status === 'exempt' ? 'Exempt' :
-                                 status === 'tenant_pays' ? 'Tenant pays' :
-                                 status === 'landlord_pays' ? 'Landlord pays' :
-                                 status;
-                        })()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Row 3 */}
-                <div className="property-view-info-row">
-                  <div className="property-view-info-item">
-                    <svg className="property-view-info-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    <div className="property-view-info-content">
-                      <span className="property-view-info-label">EPC Rating</span>
-                      <span className="property-view-info-value">
-                        {property.epc_rating || property.epcRating || 'Not specified'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 

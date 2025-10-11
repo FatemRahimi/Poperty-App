@@ -1583,4 +1583,21 @@
   .contact-details {
     grid-template-columns: 1fr;
   }
+}
+
+/* Custom Features List - 2 Columns Layout */
+.custom-features-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem 2rem;
+  column-gap: 2rem;
+  row-gap: 0.5rem;
+}
+
+/* Mobile responsive - 1 column on small screens */
+@media (max-width: 768px) {
+  .custom-features-list {
+    grid-template-columns: 1fr !important;
+    column-gap: 0;
+  }
 } 

@@ -1117,8 +1117,28 @@ router.get('/public', async (req, res) => {
     const result = await pool.query(query, queryParams);
     console.log('📊 Total properties returned:', result.rows.length);
 
-    // Auto-correct coordinates for all properties before returning
-    let properties = result.rows.map(property => correctPropertyCoordinates(property));
+    // Normalize property_type for all properties (fix {"retail","retail"} bug)
+    const normalizePropertyTypeValue = (val) => {
+      if (!val) return '';
+      if (Array.isArray(val)) return (val.find(Boolean) || '').toString();
+      if (typeof val === 'string') {
+        // Handle postgres array literal formatted as string: {"Terraced","Terraced"}
+        if (/^\{.*\}$/.test(val)) {
+          const inner = val.slice(1, -1);
+          const parts = inner.split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+          return (parts.find(Boolean) || '').toString();
+        }
+        return val.trim();
+      }
+      if (typeof val === 'object') return (val.value || val.label || '').toString();
+      return String(val).trim();
+    };
+
+    // Auto-correct coordinates AND normalize property_type for all properties
+    let properties = result.rows.map(property => ({
+      ...correctPropertyCoordinates(property),
+      property_type: normalizePropertyTypeValue(property.property_type)
+    }));
 
     res.json({
       success: true,
@@ -1182,9 +1202,35 @@ router.get('/property/:slug', async (req, res) => {
 
     const property = result.rows[0];
     
+    // Store original for debugging
+    const originalPropertyType = property.property_type;
+    
+    // Normalize property_type using the same function as getUserProperties
+    const normalizePropertyTypeValue = (val) => {
+      if (!val) return '';
+      if (Array.isArray(val)) return (val.find(Boolean) || '').toString();
+      if (typeof val === 'string') {
+        // Handle postgres array literal formatted as string: {"Semi Detached","Semi-Detached"}
+        if (/^\{.*\}$/.test(val)) {
+          const inner = val.slice(1, -1);
+          const parts = inner.split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+          return (parts.find(Boolean) || '').toString();
+        }
+        return val.trim();
+      }
+      if (typeof val === 'object') return (val.value || val.label || '').toString();
+      return String(val).trim();
+    };
+    
+    // Apply normalization
+    property.property_type = normalizePropertyTypeValue(property.property_type);
+    
     // Debug: Log property features
     console.log('🔍 Property Features Debug:');
     console.log('📋 Property ID:', property.id);
+    console.log('📋 property_type RAW from DB:', originalPropertyType, 'TYPE:', typeof originalPropertyType);
+    console.log('📋 property_type CLEANED:', property.property_type, 'TYPE:', typeof property.property_type);
+    console.log('📋 has_residential_accommodation:', property.has_residential_accommodation);
     console.log('📋 has_garden:', property.has_garden);
     console.log('📋 parking_spaces:', property.parking_spaces);
     console.log('📋 pets_allowed:', property.pets_allowed);

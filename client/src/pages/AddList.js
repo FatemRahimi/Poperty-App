@@ -851,7 +851,7 @@ const AddList = () => {
             marginBottom: '1rem' 
           }}>
             <i className="fas fa-info-circle"></i>
-            <span>Land properties: Only relevant fields are shown. Use "Floor Area" for land size.</span>
+            <span>Land properties: Only relevant fields are shown.</span>
           </div>
         )}
         
@@ -889,27 +889,6 @@ const AddList = () => {
             />
           </div>
         )}
-        
-        {/* Floor Area and Tenure */}
-        <div className="form-row">
-          <TextInput
-            label={isLandProperty(formData.propertyType) ? "Land Size" : "Floor Area"}
-            name="floorArea"
-            type="number"
-            value={formData.floorArea}
-            onChange={handleChange}
-            
-            placeholder={isLandProperty(formData.propertyType) ? "Enter land size" : "Enter floor area"}
-          />
-          
-          <SelectInput
-            label={isLandProperty(formData.propertyType) ? "Land Size Unit" : "Floor Area Unit"}
-            name="floorAreaUnit"
-            value={formData.floorAreaUnit}
-            onChange={handleChange}
-            options={floorAreaUnitOptions}
-          />
-        </div>
         
         {/* Tenure and EPC Rating */}
         <div className="form-row">
