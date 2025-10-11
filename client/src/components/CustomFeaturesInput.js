@@ -9,15 +9,35 @@ const CustomFeaturesInput = ({
   maxFeatures = 10 
 }) => {
   const [newFeature, setNewFeature] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const maxCharacters = 70;
 
   const handleAddFeature = () => {
     const trimmedFeature = newFeature.trim();
     
     // Validation checks
-    if (trimmedFeature === "") return;
-    if (customFeatures.length >= maxFeatures) return;
-    if (customFeatures.includes(trimmedFeature)) return; // Prevent duplicates
+    if (trimmedFeature === "") {
+      setErrorMessage("Feature cannot be empty");
+      return;
+    }
     
+    if (trimmedFeature.length > maxCharacters) {
+      setErrorMessage(`Feature must not exceed ${maxCharacters} characters`);
+      return;
+    }
+    
+    if (customFeatures.length >= maxFeatures) {
+      setErrorMessage(`Maximum ${maxFeatures} features allowed`);
+      return;
+    }
+    
+    if (customFeatures.includes(trimmedFeature)) {
+      setErrorMessage("This feature already exists");
+      return;
+    }
+    
+    // Clear error and add feature
+    setErrorMessage("");
     setCustomFeatures([...customFeatures, trimmedFeature]);
     setNewFeature(""); // Clear input
   };
@@ -42,7 +62,10 @@ const CustomFeaturesInput = ({
           type="text"
           className="custom-features-input-field"
           value={newFeature}
-          onChange={(e) => setNewFeature(e.target.value)}
+          onChange={(e) => {
+            setNewFeature(e.target.value);
+            setErrorMessage(""); // Clear error when typing
+          }}
           onKeyPress={handleKeyPress}
           placeholder={placeholder}
           maxLength={100}
@@ -51,15 +74,21 @@ const CustomFeaturesInput = ({
           type="button" 
           className="custom-features-add-btn"
           onClick={handleAddFeature}
-          disabled={!newFeature.trim() || customFeatures.length >= maxFeatures}
+          disabled={customFeatures.length >= maxFeatures}
         >
           Add Feature
         </button>
       </div>
 
-      {customFeatures.length >= maxFeatures && (
-        <div className="custom-features-limit-warning">
-          Maximum {maxFeatures} custom features allowed
+      {/* Caption below input */}
+      <div className="custom-features-caption">
+        Each feature should not exceed {maxCharacters} characters
+      </div>
+
+      {/* Error message */}
+      {errorMessage && (
+        <div className="custom-features-error-message">
+          {errorMessage}
         </div>
       )}
 

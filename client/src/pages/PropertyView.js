@@ -791,10 +791,543 @@ const PropertyView = () => {
               return null; // Don't show section if no custom features
             })()}
 
+            {/* Border line after Additional Features */}
+            <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
+
+            {/* Property Layout Section */}
+            {(property.layout_file_url || property.layout_file_name || property.layoutFileUrl || property.layoutFileName) && (
+              <div className="property-layout-section">
+                <h3 className="property-layout-title">Property Layout</h3>
+                
+                <div className="property-layout-content">
+                  {(property.layout_file_url || property.layoutFileUrl) ? (
+                    <div className="layout-display-container">
+                      {/* Area Display - ABOVE PICTURE */}
+                      {property.apartment_size && (
+                        <div className="layout-area-info" style={{
+                          marginBottom: '0.5rem',
+                          padding: '0.5rem',
+                          backgroundColor: '#f8fafc',
+                          borderRadius: '8px',
+                          textAlign: 'center'
+                        }}>
+                          <span className="layout-area-value" style={{
+                            display: 'block',
+                            fontSize: '1.25rem',
+                            color: '#1f2937',
+                            fontWeight: '700'
+                          }}>{property.apartment_size} sq m</span>
+                        </div>
+                      )}
+                      
+                      {/* Layout Image Display with Zoom */}
+                      <div className="layout-image-container">
+                        <img 
+                          src={property.layout_file_url || property.layoutFileUrl} 
+                          alt="Property Layout" 
+                          className="layout-image"
+                          onError={(e) => {
+                            console.error('Layout image load error:', property.layout_file_url || property.layoutFileUrl, e);
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                          onClick={(e) => {
+                            // Toggle zoom functionality
+                            const img = e.target;
+                            if (img.classList.contains('layout-image--zoomed')) {
+                              img.classList.remove('layout-image--zoomed');
+                            } else {
+                              img.classList.add('layout-image--zoomed');
+                            }
+                          }}
+                        />
+                        {/* Fallback for non-image files */}
+                        <div className="layout-file-fallback" style={{ display: 'none' }}>
+                          <svg className="layout-file-icon" width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                            <polyline points="14,2 14,8 20,8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10,9 9,9 8,9"/>
+                          </svg>
+                          <span>PDF Document</span>
+                        </div>
+                      </div>
+                      
+                      {/* Floor Display - BELOW PICTURE */}
+                      {property.floor_number && (
+                        <div className="layout-floor-info" style={{
+                          marginTop: '0.5rem',
+                          padding: '0.3rem',
+                          backgroundColor: '#f8fafc',
+                          borderRadius: '8px',
+                          textAlign: 'center'
+                        }}>
+                          <span className="layout-floor-value" style={{
+                            display: 'block',
+                            fontSize: '1.25rem',
+                            color: '#1f2937',
+                            fontWeight: '700'
+                          }}>
+                            {(() => {
+                              const floorNum = parseInt(property.floor_number);
+                              if (isNaN(floorNum)) {
+                                return property.floor_number; // Return as-is if not a number
+                              }
+                              
+                              // Convert number to ordinal word
+                              const ordinalWords = [
+                                'Ground', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 
+                                'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth',
+                                'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth',
+                                'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth',
+                                'Twenty-First', 'Twenty-Second', 'Twenty-Third', 'Twenty-Fourth', 'Twenty-Fifth',
+                                'Twenty-Sixth', 'Twenty-Seventh', 'Twenty-Eighth', 'Twenty-Ninth', 'Thirtieth',
+                                'Thirty-First', 'Thirty-Second', 'Thirty-Third', 'Thirty-Fourth', 'Thirty-Fifth',
+                                'Thirty-Sixth', 'Thirty-Seventh', 'Thirty-Eighth', 'Thirty-Ninth', 'Fortieth',
+                                'Forty-First', 'Forty-Second', 'Forty-Third', 'Forty-Fourth', 'Forty-Fifth',
+                                'Forty-Sixth', 'Forty-Seventh', 'Forty-Eighth', 'Forty-Ninth', 'Fiftieth'
+                              ];
+                              
+                              if (floorNum === 0) {
+                                return 'Ground Floor';
+                              } else if (floorNum >= 1 && floorNum <= 50) {
+                                return ordinalWords[floorNum] + ' Floor';
+                              } else {
+                                // For numbers beyond 50, use the original number
+                                return floorNum + 'th Floor';
+                              }
+                            })()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="layout-file-placeholder">
+                      <svg className="layout-file-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                      </svg>
+                      <span>No layout file uploaded</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* =================================================================
+                SALE CATEGORY ONLY: PROPERTY FEATURES SECTION
+            ================================================================= */}
+            {property.category === 'sale' && (
+              <>
+                {/* Border line before Property Features */}
+                <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
+                
+                <div className="sale-property-features-section" style={{ 
+                  fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                  marginBottom: '2rem'
+                }}>
+                  <h3 style={{ 
+                    fontSize: '1rem', 
+                    fontWeight: '600', 
+                    color: '#1f2937',
+                    marginBottom: '1rem',
+                    textTransform: 'none'
+                  }}>Property Features</h3>
+
+                  {/* Key Features Subsection */}
+                  <div style={{ marginBottom: '2rem' }}>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem'
+                    }}>Key Features</h4>
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '1rem',
+                      padding: '0.5rem 0'
+                    }}>
+                      {/* Tenure */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Tenure:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: property.tenure ? '#059669' : '#3b82f6',
+                          fontSize: '1rem' 
+                        }}>
+                          {property.tenure ? property.tenure.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* EPC Rating */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>EPC Rating:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.epc_rating || property.epcRating) ? '#059669' : '#3b82f6',
+                          fontSize: '1rem' 
+                        }}>
+                          {property.epc_rating || property.epcRating || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Local Authority */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Local Authority:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.local_authority || property.localAuthority) ? '#059669' : '#3b82f6' 
+                        }}>
+                          {property.local_authority || property.localAuthority || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Nearest Transport Link */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Nearest Transport Link:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.nearest_transport_links || property.nearestTransportLinks) ? '#059669' : '#3b82f6' 
+                        }}>
+                          {property.nearest_transport_links || property.nearestTransportLinks || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Service Charges */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Service Charges:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.service_charges || property.serviceCharges) ? '#059669' : '#3b82f6' 
+                        }}>
+                          {(property.service_charges || property.serviceCharges) 
+                            ? `£${Number(property.service_charges || property.serviceCharges).toLocaleString()}/month` 
+                            : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Ground Rent */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Ground Rent:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.ground_rent || property.groundRent) ? '#059669' : '#3b82f6' 
+                        }}>
+                          {(property.ground_rent || property.groundRent) 
+                            ? `£${Number(property.ground_rent || property.groundRent).toLocaleString()}/year` 
+                            : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Council Tax Band */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Council Tax Band:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.council_tax_band || property.councilTaxBand) ? '#059669' : '#3b82f6' 
+                        }}>
+                          {(property.council_tax_band || property.councilTaxBand) 
+                            ? `Band ${property.council_tax_band || property.councilTaxBand}` 
+                            : 'Contact Us'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Basic Features Subsection */}
+                  <div style={{ marginBottom: '2rem' }}>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem'
+                    }}>Basic Features</h4>
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '1rem',
+                      padding: '0.5rem 0'
+                    }}>
+                      {/* Garden */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Garden:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: property.has_garden || property.hasGarden ? '#059669' : '#3b82f6' 
+                        }}>
+                          {property.has_garden || property.hasGarden ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Parking */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Parking:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: property.has_parking || property.hasParking ? '#059669' : '#3b82f6' 
+                        }}>
+                          {property.has_parking || property.hasParking ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Balcony */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Balcony:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: property.has_balcony_terrace || property.hasBalconyTerrace ? '#059669' : '#3b82f6' 
+                        }}>
+                          {property.has_balcony_terrace || property.hasBalconyTerrace ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* New Build */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>New Build:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: property.is_new_build || property.isNewBuild ? '#059669' : '#3b82f6' 
+                        }}>
+                          {property.is_new_build || property.isNewBuild ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Chain Free */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Chain Free:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: property.is_chain_free || property.isChainFree ? '#059669' : '#3b82f6' 
+                        }}>
+                          {property.is_chain_free || property.isChainFree ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Recently Renovated */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Recently Renovated:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.is_recently_renovated || property.isRecentlyRenovated) ? '#059669' : '#3b82f6',
+                          fontSize: '1rem' 
+                        }}>
+                          {(property.is_recently_renovated || property.isRecentlyRenovated) ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* More Vision Subsection */}
+                  <div style={{ marginBottom: '1rem' }}>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem'
+                    }}>More Vision</h4>
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '1rem',
+                      padding: '0.5rem 0'
+                    }}>
+                      {/* Recently Renovated */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Recently Renovated:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.is_recently_renovated || property.isRecentlyRenovated) ? '#059669' : '#3b82f6' 
+                        }}>
+                          {(property.is_recently_renovated || property.isRecentlyRenovated) ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Accessible/Step-Free Access */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Accessible/Step-Free:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.has_accessible_access || property.hasAccessibleAccess) ? '#059669' : '#3b82f6' 
+                        }}>
+                          {(property.has_accessible_access || property.hasAccessibleAccess) ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Year Built */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Year Built:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.year_built || property.yearBuilt) ? '#059669' : '#3b82f6' 
+                        }}>
+                          {property.year_built || property.yearBuilt || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Heating Type */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Heating Type:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.heating_type || property.heatingType) ? '#059669' : '#3b82f6' 
+                        }}>
+                          {(property.heating_type || property.heatingType) 
+                            ? (property.heating_type || property.heatingType).replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) 
+                            : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Broadband Availability */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Broadband:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.broadband_availability || property.broadbandAvailability) ? '#059669' : '#3b82f6' 
+                        }}>
+                          {(property.broadband_availability || property.broadbandAvailability) 
+                            ? (property.broadband_availability || property.broadbandAvailability).replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) 
+                            : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Accessibility Features */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '1rem' }}>Accessibility Features:</span>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: (property.accessibility_features || property.accessibilityFeatures) ? '#059669' : '#3b82f6' 
+                        }}>
+                          {property.accessibility_features || property.accessibilityFeatures || 'Contact Us'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* Border line before Property Details */}
             <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
 
-            {/* NEW: Property Information Section */}
+            {/* =================================================================
+                PROPERTY DETAILS SECTION - CATEGORY SPECIFIC RENDERING
+                - isSaleProperty: property.category === 'sale'
+                - isRentProperty: property.category === 'rent' 
+                - isLeaseProperty: property.category === 'lease'
+                Use these filters for category-specific layouts
+            ================================================================= */}
+            
+            {(() => {
+              const isSaleProperty = property.category === 'sale';
+              const isRentProperty = property.category === 'rent';
+              const isLeaseProperty = property.category === 'lease';
+              
+              /* 
+                EXAMPLE USAGE FOR CATEGORY-SPECIFIC RENDERING:
+                
+                {isSaleProperty && (
+                  <div>This only shows for SALE properties</div>
+                )}
+                
+                {(isRentProperty || isLeaseProperty) && (
+                  <div>This shows for RENT or LEASE properties</div>
+                )}
+                
+                {!isSaleProperty && (
+                  <div>This shows for everything EXCEPT SALE</div>
+                )}
+              */
+              
+              return (
+                <>
+                  {/* Property Information Section */}
             <h3 className="property-view-info-title">Property Details</h3>
             <div className="property-view-info-section" style={{ fontFamily: "Effra, sans-serif" }}>
               
@@ -1018,109 +1551,9 @@ const PropertyView = () => {
                 )}
               </div>
             </div>
-
-            {/* NEW: Layout Upload Section */}
-            {(property.layout_file_url || property.layout_file_name || property.layoutFileUrl || property.layoutFileName) && (
-              <div className="property-layout-section">
-                <h3 className="property-layout-title">Property Layout</h3>
-                
-                <div className="property-layout-content">
-                  {(property.layout_file_url || property.layoutFileUrl) ? (
-                    <div className="layout-display-container">
-                      {/* Approximate Area Display */}
-                      {property.apartment_size && (
-                        <div className="layout-area-info">
-                          <span className="layout-area-label">Approximate Area</span>
-                          <span className="layout-area-value">{property.apartment_size} sq m</span>
-                        </div>
-                      )}
-                      
-                      {/* Layout Image Display with Zoom */}
-                      <div className="layout-image-container">
-                        <img 
-                          src={property.layout_file_url || property.layoutFileUrl} 
-                          alt="Property Layout" 
-                          className="layout-image"
-                          onError={(e) => {
-                            console.error('Layout image load error:', property.layout_file_url || property.layoutFileUrl, e);
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                          onClick={(e) => {
-                            // Toggle zoom functionality
-                            const img = e.target;
-                            if (img.classList.contains('layout-image--zoomed')) {
-                              img.classList.remove('layout-image--zoomed');
-                            } else {
-                              img.classList.add('layout-image--zoomed');
-                            }
-                          }}
-                        />
-                        {/* Fallback for non-image files */}
-                        <div className="layout-file-fallback" style={{ display: 'none' }}>
-                          <svg className="layout-file-icon" width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
-                            <polyline points="14,2 14,8 20,8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10,9 9,9 8,9"/>
-                          </svg>
-                          <span>PDF Document</span>
-                        </div>
-                      </div>
-                      
-                      {/* Floor Number Display */}
-                      {property.floor_number && (
-                        <div className="layout-floor-info">
-                          <span className="layout-floor-value">
-                            {(() => {
-                              const floorNum = parseInt(property.floor_number);
-                              if (isNaN(floorNum)) {
-                                return property.floor_number; // Return as-is if not a number
-                              }
-                              
-                              // Convert number to ordinal word
-                              const ordinalWords = [
-                                'Ground', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 
-                                'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth',
-                                'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth',
-                                'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth',
-                                'Twenty-First', 'Twenty-Second', 'Twenty-Third', 'Twenty-Fourth', 'Twenty-Fifth',
-                                'Twenty-Sixth', 'Twenty-Seventh', 'Twenty-Eighth', 'Twenty-Ninth', 'Thirtieth',
-                                'Thirty-First', 'Thirty-Second', 'Thirty-Third', 'Thirty-Fourth', 'Thirty-Fifth',
-                                'Thirty-Sixth', 'Thirty-Seventh', 'Thirty-Eighth', 'Thirty-Ninth', 'Fortieth',
-                                'Forty-First', 'Forty-Second', 'Forty-Third', 'Forty-Fourth', 'Forty-Fifth',
-                                'Forty-Sixth', 'Forty-Seventh', 'Forty-Eighth', 'Forty-Ninth', 'Fiftieth'
-                              ];
-                              
-                              if (floorNum === 0) {
-                                return 'Ground Floor';
-                              } else if (floorNum >= 1 && floorNum <= 50) {
-                                return ordinalWords[floorNum] + ' Floor';
-                              } else {
-                                // For numbers beyond 50, use the original number
-                                return floorNum + 'th Floor';
-                              }
+                </>
+              );
                             })()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="layout-file-placeholder">
-                      <svg className="layout-file-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
-                        <polyline points="14,2 14,8 20,8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                        <polyline points="10,9 9,9 8,9"/>
-                      </svg>
-                      <span>No layout file uploaded</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* Border line after property information */}
             <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
