@@ -718,11 +718,80 @@ const PropertyView = () => {
             })()}
 
             <div className="view-property-description" style={{ fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-              <h3>Description</h3>
+              <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: '#1f2937', textTransform: 'none' }}>Description</h3>
               <p>{property.description || 'No description available.'}</p>
             </div>
 
-            {/* Border line after description */}
+            {/* Custom Features Section - From AddList Form "Add Your Extra Features" */}
+            {(() => {
+              // Parse custom_features from database
+              let customFeatures = [];
+              
+              if (property.custom_features) {
+                if (Array.isArray(property.custom_features)) {
+                  customFeatures = property.custom_features;
+                } else if (typeof property.custom_features === 'string') {
+                  try {
+                    customFeatures = JSON.parse(property.custom_features);
+                  } catch (e) {
+                    console.error('Error parsing custom_features:', e);
+                  }
+                }
+              }
+              
+              // Only show section if there are custom features
+              if (customFeatures && customFeatures.length > 0) {
+                // Limit to first 20 features (10 rows × 2 columns)
+                const displayFeatures = customFeatures.slice(0, 20);
+                
+                return (
+                  <>
+                    {/* Border line before custom features */}
+                    <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
+                    
+                    <div className="view-property-custom-features" style={{ 
+                      fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                      marginBottom: '1.5rem'
+                    }}>
+                      <h3 style={{ 
+                        fontSize: '1rem', 
+                        fontWeight: '600', 
+                        marginBottom: '1rem',
+                        color: '#1f2937',
+                        textTransform: 'none'
+                      }}>
+                        Additional Features
+                      </h3>
+                      <ul className="custom-features-list" style={{ 
+                        listStyleType: 'disc',
+                        paddingLeft: '1.5rem',
+                        margin: 0,
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '0.5rem 2rem',
+                        columnGap: '2rem',
+                        rowGap: '0.5rem'
+                      }}>
+                        {displayFeatures.map((feature, index) => (
+                          <li key={index} style={{ 
+                            fontSize: '1rem',
+                            color: '#374151',
+                            lineHeight: '1.8',
+                            marginBottom: '0.25rem'
+                          }}>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                );
+              }
+              
+              return null; // Don't show section if no custom features
+            })()}
+
+            {/* Border line before Property Details */}
             <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
 
             {/* NEW: Property Information Section */}
