@@ -565,11 +565,11 @@ const PropertyView = () => {
             {/* Heading with property for rent/sale/lease - property type - address - prices */}
             <div className="property-details-heading" style={{ fontFamily: "Effra, sans-serif" }}>
               <div className="property-details-main-row">
-                <span className="property-details-category" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "Effra, sans-serif" }}>
+                <span className="property-details-category" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "Effra-Medium, Tahoma, sans-serif" }}>
                   Property for {property.category ? property.category.charAt(0).toUpperCase() + property.category.slice(1) : ''}
                 </span>
-                <span className="property-details-dash" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "Effra, sans-serif" }}> - </span>
-                <span className="property-details-type" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "Effra, sans-serif" }}>
+                <span className="property-details-dash" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "Effra-Medium, Tahoma, sans-serif" }}> - </span>
+                <span className="property-details-type" style={{ fontWeight: 'bold', fontSize: '1.3rem', fontFamily: "Effra-Medium, Tahoma, sans-serif" }}>
                   {(() => {
                     // Extract property type safely
                     let propType = property.property_type || property.propertyType || 'Property';
@@ -627,7 +627,7 @@ const PropertyView = () => {
                         £{Number(property.price).toLocaleString()}
                       </span>
                       {property.price_type && (
-                        <span className="property-details-price-type" style={{ fontSize: '0.9rem', marginBottom: 4, fontFamily: "Effra, sans-serif", color: '#5b7ba8', fontWeight: '500' }}>
+                        <span className="property-details-price-type" style={{ fontSize: '0.9rem', marginBottom: 4, fontFamily: "Effra, sans-serif", color: '#5b7ba8', fontWeight: '600' }}>
                           {property.price_type.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
                         </span>
                       )}
@@ -1316,8 +1316,106 @@ const PropertyView = () => {
               </>
             )}
 
-            {/* Border line before Property Details */}
-            <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
+            {/* =================================================================
+                SALE CATEGORY ONLY: EPC DOCUMENTS SECTION (COLLAPSIBLE)
+            ================================================================= */}
+            {property.category === 'sale' && (property.epc_document_url || property.epc_url || property.epcDocumentUrl || property.epcUrl) && (
+              <>
+                {/* Border line before EPC Documents */}
+                <div style={{ borderTop: '1px solid #c0c0c0', margin: '50px 0 30px 0', width: '100%' }}></div>
+                
+                <div className="property-epc-section" style={{ marginTop: '1.5rem' }}>
+                  {/* Collapsible Header */}
+                  <h3 
+                    className="property-layout-title" 
+                    style={{ 
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif",
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      userSelect: 'none',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onClick={() => {
+                      const content = document.getElementById('epc-content');
+                      const arrow = document.getElementById('epc-arrow');
+                      if (content && arrow) {
+                        if (content.style.display === 'none') {
+                          content.style.display = 'block';
+                          arrow.style.transform = 'rotate(180deg)';
+                        } else {
+                          content.style.display = 'none';
+                          arrow.style.transform = 'rotate(0deg)';
+                        }
+                      }
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#3b82f6';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#2d3748';
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <i className="fas fa-bolt" style={{ color: '#f59e0b', fontSize: '1.1rem' }}></i>
+                      Energy Performance Certificate
+                    </span>
+                    <i 
+                      id="epc-arrow"
+                      className="fas fa-chevron-down" 
+                      style={{ 
+                        transition: 'transform 0.3s ease',
+                        fontSize: '1rem',
+                        color: '#3b82f6',
+                        fontWeight: 'bold'
+                      }}
+                    ></i>
+                  </h3>
+                  
+                  {/* Collapsible Content - Hidden by default */}
+                  <div id="epc-content" style={{ display: 'none' }}>
+                    <div className="property-layout-content">
+                      <div className="layout-display-container">
+                        {/* EPC Image Display with Zoom */}
+                        <div className="layout-image-container">
+                          <img 
+                            src={property.epc_document_url || property.epc_url || property.epcDocumentUrl || property.epcUrl} 
+                            alt="EPC Document" 
+                            className="layout-image"
+                            onError={(e) => {
+                              console.error('EPC image load error:', e);
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                            onClick={(e) => {
+                              // Toggle zoom functionality
+                              const img = e.target;
+                              if (img.classList.contains('layout-image--zoomed')) {
+                                img.classList.remove('layout-image--zoomed');
+                              } else {
+                                img.classList.add('layout-image--zoomed');
+                              }
+                            }}
+                          />
+                          {/* Fallback for non-image files */}
+                          <div className="layout-file-fallback" style={{ display: 'none' }}>
+                            <svg className="layout-file-icon" width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                              <polyline points="14,2 14,8 20,8"/>
+                              <line x1="16" y1="13" x2="8" y2="13"/>
+                              <line x1="16" y1="17" x2="8" y2="17"/>
+                              <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                            <span>PDF Document</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* =================================================================
                 PROPERTY DETAILS SECTION - CATEGORY SPECIFIC RENDERING
@@ -1350,7 +1448,9 @@ const PropertyView = () => {
               
               return (
                 <>
-                  {/* Property Information Section */}
+                  {/* Property Information Section - ONLY FOR RENT/LEASE */}
+                  {!isSaleProperty && (
+                    <>
             <h3 className="property-view-info-title">Property Details</h3>
             <div className="property-view-info-section" style={{ fontFamily: "Effra, sans-serif" }}>
               
@@ -1574,12 +1674,14 @@ const PropertyView = () => {
                 )}
               </div>
             </div>
+
+                      {/* Border line after property information */}
+                      <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
+                    </>
+                  )}
                 </>
               );
                             })()}
-
-            {/* Border line after property information */}
-            <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
 
             {/* NEW: Property Features Section - RENT CATEGORY ONLY */}
             {property.category === 'rent' && (

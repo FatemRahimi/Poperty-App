@@ -4,6 +4,7 @@
 /* Override border from UserDashboard.css */
 .property-card-modern {
   border: none; /* Remove border from property cards */
+  font-family: Effra, Arial, sans-serif;
 }
 
 /* Horizontal layout for image and details side by side */
@@ -11,6 +12,7 @@
   display: flex;
   height: 320px; /* Reduced height since we show fewer contact items */
   position: relative;
+  font-family: Effra, Arial, sans-serif;
 }
 
 /* Left Column - Images and Rental Prices */
@@ -164,14 +166,14 @@
   
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: Effra, Arial, sans-serif;
 }
 
 .property-card-content .property-address-modern {
   color: #1f2937;
   font-size: 1rem;
   font-weight: 600;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: Effra, Arial, sans-serif;
   margin: 0 4rem 0.2rem 0; /* Very tight spacing */
   display: flex;
   align-items: center;
@@ -201,7 +203,7 @@
   color: rgb(85, 87, 100);
   font-size: .95rem; /* Increased from 0.90rem */
   font-weight: 400; /* Slightly bolder */
-  font-family:  BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: Effra, Arial, sans-serif;
   line-height: 1.65; /* Slightly increased for better readability */
   letter-spacing: 0.015em; /* Slightly increased for better readability */
   margin: 0.4rem 0 0.6rem 0; /* Better spacing */
@@ -232,7 +234,7 @@
   color: #353232;
   font-size: 0.9rem; /* Smaller, professional text size */
   font-weight: 450; /* Lighter weight */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: Effra, Arial, sans-serif;
 }
 
 .property-card-content .feature-icon {
