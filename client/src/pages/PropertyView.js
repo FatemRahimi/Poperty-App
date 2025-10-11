@@ -2000,8 +2000,38 @@ const PropertyView = () => {
                         <i className="fas fa-map-marker-alt"></i>
                         <span className="property-postcode">{postcode}</span>
                       </div>
-                      <div className="property-map-content">
+                      <div 
+                        className="property-map-content" 
+                        onClick={() => {
+                          const postcode = property.zip_code || property.postcode;
+                          window.open(`https://www.google.com/maps/search/${encodeURIComponent(postcode)}`, '_blank');
+                        }}
+                        style={{ 
+                          cursor: 'pointer',
+                          position: 'relative'
+                        }}
+                      >
                         <div id="map" className="property-map-frame"></div>
+                        <div style={{
+                          position: 'absolute',
+                          top: '10px',
+                          right: '10px',
+                          background: 'rgba(255, 255, 255, 0.95)',
+                          padding: '8px 14px',
+                          borderRadius: '6px',
+                          fontSize: '0.85rem',
+                          fontWeight: '600',
+                          color: '#3b82f6',
+                          boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+                          zIndex: 10,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          pointerEvents: 'none'
+                        }}>
+                          <i className="fas fa-external-link-alt"></i>
+                          View in Google Maps
+                        </div>
                       </div>
                     </div>
                   );
