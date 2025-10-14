@@ -11,6 +11,7 @@ import "./AddRent.css"; // AddRent specific styles
 import useSessionStorage from "../Utils/useSessionStorage";
 import { useAuth } from "../context/AuthContext";
 import ContactInformationSection from "../components/ContactInformationSection";
+import CustomFeaturesInput from "../components/CustomFeaturesInput";
 
 // Property type options
 const propertyTypeOptions = [
@@ -339,6 +340,22 @@ const AddRent = () => {
         apartmentSize: propertyData.apartment_size || "",
         floorNumber: propertyData.floor_number || "",
         
+        // Custom Features
+        customFeatures: propertyData.custom_features ? (() => {
+          try {
+            if (Array.isArray(propertyData.custom_features)) {
+              return propertyData.custom_features;
+            } else if (typeof propertyData.custom_features === 'string') {
+              return JSON.parse(propertyData.custom_features);
+            } else {
+              return [];
+            }
+          } catch (error) {
+            console.warn('Failed to parse custom_features:', error);
+            return [];
+          }
+        })() : [],
+        
         // Description & Media
         description: propertyData.description || "",
         photos: [],
@@ -411,6 +428,9 @@ const AddRent = () => {
       apartmentSize: "",
       floorNumber: "",
       
+      // Custom Features
+      customFeatures: [],
+      
       description: "",
       photos: [],
       contactPhone: user?.phone || "",
@@ -446,6 +466,11 @@ const AddRent = () => {
   const [photoFiles, setPhotoFiles] = useState([]);
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
   const [deletedExistingPhotos, setDeletedExistingPhotos] = useState([]); // Track deleted existing photos
+  
+  // EPC Document states
+  const [epcDocumentFile, setEpcDocumentFile] = useState(null);
+  const [existingEpcUrl, setExistingEpcUrl] = useState("");
+  const [existingEpcName, setExistingEpcName] = useState("");
 
   // Load existing property images if in edit mode
   useEffect(() => {
@@ -485,9 +510,24 @@ const AddRent = () => {
       setPhotoFiles([]);
       setPhotoPreviewUrls([]);
       setDeletedExistingPhotos([]); // Clear deleted photos list
+      setEpcDocumentFile(null);
+      setExistingEpcUrl("");
+      setExistingEpcName("");
       console.log('🆕 NEW PROPERTY MODE - Form cleared');
     }
   }, [editMode]);
+
+  // Load existing EPC document data if in edit mode
+  useEffect(() => {
+    if (editMode && propertyData) {
+      if (propertyData.epc_document_url || propertyData.epcDocumentUrl) {
+        setExistingEpcUrl(propertyData.epc_document_url || propertyData.epcDocumentUrl);
+        if (propertyData.epc_document_name || propertyData.epcDocumentName) {
+          setExistingEpcName(propertyData.epc_document_name || propertyData.epcDocumentName);
+        }
+      }
+    }
+  }, [editMode, propertyData]);
 
   useEffect(() => {
     if (!isAuthenticated && !loading) {
@@ -577,6 +617,18 @@ const AddRent = () => {
         layoutFile: file,
         layoutFileName: file.name
       }));
+    }
+  };
+
+  // Handle EPC document upload
+  const handleEpcDocumentChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 512 * 1024 * 1024) { // 512MB limit
+        alert("EPC document file size must be under 512MB");
+        return;
+      }
+      setEpcDocumentFile(file);
     }
   };
 
@@ -1113,7 +1165,11 @@ const AddRent = () => {
         layoutFileName: formData.layoutFileName,
         layoutFileUrl: formData.layoutFileUrl,
         apartmentSize: formData.apartmentSize,
-        floorNumber: formData.floorNumber
+        floorNumber: formData.floorNumber,
+        
+        // Custom Features
+        custom_features: JSON.stringify(formData.customFeatures || []),
+        customFeatures: JSON.stringify(formData.customFeatures || [])
       };
       
       // Add all mapped fields to FormData
@@ -1149,6 +1205,11 @@ const AddRent = () => {
       photoFiles.forEach((file, index) => {
         submitFormData.append('photos', file);
       });
+      
+      // Add EPC document if uploaded
+      if (epcDocumentFile) {
+        submitFormData.append('epcDocument', epcDocumentFile);
+      }
       
       // In edit mode, handle existing photos (both deleted and kept)
       if (editMode) {
@@ -1866,6 +1927,15 @@ const AddRent = () => {
                 </div>
               </div>
             </div>
+            
+            {/* Custom Features Section */}
+            <CustomFeaturesInput
+              customFeatures={formData.customFeatures}
+              setCustomFeatures={(features) => setFormData({...formData, customFeatures: features})}
+              label="Add Your Extra Features"
+              placeholder="Type additional features (e.g., Sea view, Wine cellar, Smart home system)"
+              maxFeatures={12}
+            />
           </div>
         );
       
@@ -2098,6 +2168,85 @@ const AddRent = () => {
                 />
               </div>
               
+            </div>
+            
+            {/* EPC Document Upload Section */}
+            <h4 className="subsection-title">Upload EPC Document (Mandatory by Law)</h4>
+            
+            <div className="file-upload-section">
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={handleEpcDocumentChange}
+                style={{ display: 'none' }}
+                id="epc-document-upload"
+              />
+              <label htmlFor="epc-document-upload" className="file-upload-label">
+                <div className="file-upload-content">
+                  <div className="file-upload-icon">📋</div>
+                  <div className="file-upload-text">
+                    <span>Click to upload EPC document</span>
+                    <small>PDF, JPG, PNG • Max 512MB • Required by law</small>
+                  </div>
+                </div>
+              </label>
+              
+              {/* Display uploaded EPC file */}
+              {epcDocumentFile && (
+                <div className="uploaded-file">
+                  {/* Show preview if the uploaded EPC is an image */}
+                  {epcDocumentFile.type.startsWith('image/') && (
+                    <div className="layout-preview-container">
+                      <img 
+                        src={URL.createObjectURL(epcDocumentFile)} 
+                        alt="EPC Preview" 
+                        className="layout-preview-image"
+                      />
+                    </div>
+                  )}
+                  <div className="file-info">
+                    <span className="file-name">{epcDocumentFile.name}</span>
+                    <button 
+                      type="button" 
+                      className="remove-file-btn"
+                      onClick={() => setEpcDocumentFile(null)}
+                      title="Remove EPC document"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Display existing EPC file if in edit mode */}
+              {!epcDocumentFile && existingEpcUrl && (
+                <div className="uploaded-file">
+                  {/* If existing EPC is an image, show preview */}
+                  {/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(existingEpcUrl) && (
+                    <div className="layout-preview-container">
+                      <img 
+                        src={existingEpcUrl} 
+                        alt="Existing EPC" 
+                        className="layout-preview-image"
+                      />
+                    </div>
+                  )}
+                  <div className="file-info">
+                    <span className="file-name">{existingEpcName || "EPC Document"}</span>
+                    <button 
+                      type="button" 
+                      className="remove-file-btn"
+                      onClick={() => {
+                        setExistingEpcUrl("");
+                        setExistingEpcName("");
+                      }}
+                      title="Remove EPC document"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             
             <ContactInformationSection 
