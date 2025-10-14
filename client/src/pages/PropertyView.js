@@ -745,9 +745,23 @@ const PropertyView = () => {
               );
             })()}
 
-            <div className="view-property-description" style={{ fontFamily: "Effra, sans-serif" }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: '#1f2937', textTransform: 'none', fontFamily: "Effra-Medium, Tahoma, sans-serif" }}>Description</h3>
-              <p>{property.description || 'No description available.'}</p>
+            <div className="view-property-description" style={{ fontFamily: "Effra, sans-serif", marginBottom: '2rem' }}>
+              <h3 style={{ 
+                fontSize: '1.3rem', 
+                fontWeight: '600', 
+                color: '#1f2937',
+                marginBottom: '1rem',
+                textTransform: 'none',
+                borderBottom: '2px solid #000000',
+                paddingBottom: '0.5rem',
+                fontFamily: "Effra-Medium, Tahoma, sans-serif"
+              }}>Description</h3>
+              <p style={{
+                fontSize: '1rem',
+                lineHeight: '1.8',
+                color: '#374151',
+                fontFamily: "Effra, sans-serif"
+              }}>{property.description || 'No description available.'}</p>
             </div>
 
             {/* Custom Features Section - From AddList Form "Add Your Extra Features" */}
@@ -1387,7 +1401,7 @@ const PropertyView = () => {
                   >
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <i className="fas fa-bolt" style={{ color: '#f59e0b', fontSize: '1.1rem' }}></i>
-                      Energy Performance Certificate
+                      ENERGY PERFORMANCE CERTIFICATE
                     </span>
                     <i 
                       id="epc-arrow"
@@ -2309,7 +2323,7 @@ const PropertyView = () => {
                   >
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <i className="fas fa-bolt" style={{ color: '#f59e0b', fontSize: '1.1rem' }}></i>
-                      Energy Performance Certificate
+                      ENERGY PERFORMANCE CERTIFICATE
                     </span>
                     <i 
                       id="rent-epc-arrow"
