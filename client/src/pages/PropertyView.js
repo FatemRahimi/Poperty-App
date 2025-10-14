@@ -1713,298 +1713,658 @@ const PropertyView = () => {
 
             {/* NEW: Property Features Section - RENT CATEGORY ONLY */}
             {property.category === 'rent' && (
-            <div className="property-view-features-section" style={{ fontFamily: "Effra, sans-serif" }}>
-              <h3 className="property-view-features-title">Property Features</h3>
-              
-              {/* Basic Property Features */}
-              <div className="property-view-features-category">
-                <h4 className="features-category-title">Basic Features</h4>
+              <>
+                {/* Border line before Property Features */}
+                <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
                 
-                <div className="property-view-features-grid">
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="has_garden" 
-                      checked={property.has_garden || false}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="has_garden">Garden</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="parking_spaces" 
-                      checked={(property.parking_spaces && property.parking_spaces > 0) || false}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="parking_spaces">Parking</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="balcony_terrace" 
-                      checked={hasFeature(property.key_features, 'balcony_terrace')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="balcony_terrace">Balcony/Terrace</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="pets_allowed" 
-                      checked={property.pets_allowed || false}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="pets_allowed">Pets Allowed</label>
+                <div className="rent-property-features-section" style={{ 
+                  fontFamily: "Effra, sans-serif",
+                  marginBottom: '2rem'
+                }}>
+                  <h3 style={{ 
+                    fontSize: '1.3rem', 
+                    fontWeight: '600', 
+                    color: '#1f2937',
+                    marginBottom: '1rem',
+                    textTransform: 'none',
+                    borderBottom: '2px solid #000000',
+                    paddingBottom: '0.5rem',
+                    fontFamily: "Effra-Medium, Tahoma, sans-serif"
+                  }}>Property Features</h3>
+
+                  {/* Key Information Subsection */}
+                  <div style={{ marginBottom: '2rem' }}>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem',
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif"
+                    }}>Key Information</h4>
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '0.5rem',
+                      padding: '0.5rem 0'
+                    }}>
+                      {/* EPC Rating */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>EPC Rating:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: (property.epc_rating || property.epcRating) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.epc_rating || property.epcRating || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Council Tax Band */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Council Tax Band:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: (property.council_tax_band || property.councilTaxBand) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {(property.council_tax_band || property.councilTaxBand) 
+                            ? `Band ${property.council_tax_band || property.councilTaxBand}` 
+                            : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Deposit Amount */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Deposit Amount:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.deposit_amount ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.deposit_amount 
+                            ? `£${Number(property.deposit_amount).toLocaleString()}` 
+                            : 'Contact Us'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="student_housing" 
-                      checked={property.student_housing || false}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="student_housing">Suitable for Students</label>
+                  {/* Basic Features Subsection */}
+                  <div style={{ marginBottom: '2rem' }}>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem',
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif"
+                    }}>Basic Features</h4>
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '0.5rem',
+                      padding: '0.5rem 0'
+                    }}>
+                      {/* Garden */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Garden:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.has_garden ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.has_garden ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Parking */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Parking:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: (property.parking_spaces && property.parking_spaces > 0) ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {(property.parking_spaces && property.parking_spaces > 0) ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Balcony/Terrace */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Balcony/Terrace:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'balcony_terrace') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'balcony_terrace') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Pets Allowed */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Pets Allowed:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.pets_allowed ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.pets_allowed ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Suitable for Students */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Suitable for Students:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.student_housing ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.student_housing ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Furnished */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Furnished:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.furnished ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.furnished ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Garage */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Garage:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.has_garage ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.has_garage ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Pool */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Pool:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.has_pool ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.has_pool ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="furnished" 
-                      checked={property.furnished || false}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="furnished">Furnished</label>
+                  {/* Key Features Subsection */}
+                  <div style={{ marginBottom: '2rem' }}>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem',
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif"
+                    }}>Key Features</h4>
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '0.5rem',
+                      padding: '0.5rem 0'
+                    }}>
+                      {/* Kitchen with white goods */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Kitchen with white goods:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'kitchen_white_goods') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'kitchen_white_goods') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Allocated parking */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Allocated parking:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'allocated_parking') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'allocated_parking') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Communal garden */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Communal garden:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'communal_garden') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'communal_garden') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Storage space */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Storage space:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'storage_space') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'storage_space') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Lift access */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Lift access:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'lift_access') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'lift_access') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Intercom entry system */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Intercom entry system:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'intercom_entry') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'intercom_entry') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="has_garage" 
-                      checked={property.has_garage || false}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="has_garage">Garage</label>
+                  {/* Utilities & Bills Subsection */}
+                  <div style={{ marginBottom: '2rem' }}>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem',
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif"
+                    }}>Utilities & Bills</h4>
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '0.5rem',
+                      padding: '0.5rem 0'
+                    }}>
+                      {/* Bills included */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Bills included:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'bills_included') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'bills_included') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Council tax included */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Council tax included:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'council_tax_included') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'council_tax_included') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Water included */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Water included:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'water_included') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'water_included') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Electricity included */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Electricity included:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'electricity_included') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'electricity_included') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Gas included */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Gas included:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'gas_included') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'gas_included') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Internet included */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Internet included:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'internet_included') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'internet_included') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="has_pool" 
-                      checked={property.has_pool || false}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="has_pool">Pool</label>
+                  {/* Financial Options Subsection */}
+                  <div style={{ marginBottom: '1rem' }}>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem',
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif"
+                    }}>Financial Options</h4>
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '0.5rem',
+                      padding: '0.5rem 0'
+                    }}>
+                      {/* Zero deposit option */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Zero deposit option:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'zero_deposit') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'zero_deposit') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Guarantor accepted */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Guarantor accepted:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'guarantor_accepted') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'guarantor_accepted') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* DSS/LHA accepted */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>DSS/LHA accepted:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'dss_lha_accepted') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'dss_lha_accepted') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Short-term lets available */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Short-term lets available:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: hasFeature(property.key_features, 'short_term_lets') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {hasFeature(property.key_features, 'short_term_lets') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </>
+            )}
 
-              {/* Key Property Features */}
-              <div className="property-view-features-category">
-                <h4 className="features-category-title">Key Features</h4>
-                <div className="property-view-features-grid">
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="kitchen_white_goods" 
-                      checked={hasFeature(property.key_features, 'kitchen_white_goods')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="kitchen_white_goods">Kitchen with white goods</label>
-                  </div>
+            {/* =================================================================
+                RENT CATEGORY ONLY: EPC DOCUMENTS SECTION (COLLAPSIBLE)
+            ================================================================= */}
+            {property.category === 'rent' && (property.epc_document_url || property.epc_url || property.epcDocumentUrl || property.epcUrl) && (
+              <>
+                {/* Border line before EPC Documents */}
+                <div style={{ borderTop: '1px solid #c0c0c0', margin: '50px 0 30px 0', width: '100%' }}></div>
+                
+                <div className="property-epc-section" style={{ marginTop: '1.5rem' }}>
+                  {/* Collapsible Header */}
+                  <h3 
+                    className="property-layout-title" 
+                    style={{ 
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif",
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      userSelect: 'none',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onClick={() => {
+                      const content = document.getElementById('rent-epc-content');
+                      const arrow = document.getElementById('rent-epc-arrow');
+                      if (content && arrow) {
+                        if (content.style.display === 'none') {
+                          content.style.display = 'block';
+                          arrow.style.transform = 'rotate(180deg)';
+                        } else {
+                          content.style.display = 'none';
+                          arrow.style.transform = 'rotate(0deg)';
+                        }
+                      }
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#3b82f6';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#2d3748';
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <i className="fas fa-bolt" style={{ color: '#f59e0b', fontSize: '1.1rem' }}></i>
+                      Energy Performance Certificate
+                    </span>
+                    <i 
+                      id="rent-epc-arrow"
+                      className="fas fa-chevron-down" 
+                      style={{ 
+                        transition: 'transform 0.3s ease',
+                        fontSize: '1rem',
+                        color: '#3b82f6',
+                        fontWeight: 'bold'
+                      }}
+                    ></i>
+                  </h3>
                   
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="allocated_parking" 
-                      checked={hasFeature(property.key_features, 'allocated_parking')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="allocated_parking">Allocated parking</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="communal_garden" 
-                      checked={hasFeature(property.key_features, 'communal_garden')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="communal_garden">Communal garden</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="storage_space" 
-                      checked={hasFeature(property.key_features, 'storage_space')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="storage_space">Storage space</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="lift_access" 
-                      checked={hasFeature(property.key_features, 'lift_access')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="lift_access">Lift access</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="intercom_entry" 
-                      checked={hasFeature(property.key_features, 'intercom_entry')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="intercom_entry">Intercom entry system</label>
+                  {/* Collapsible Content - Hidden by default */}
+                  <div id="rent-epc-content" style={{ display: 'none' }}>
+                    <div className="property-layout-content">
+                      <div className="layout-display-container">
+                        {/* EPC Image Display with Zoom */}
+                        <div className="layout-image-container">
+                          <img 
+                            src={property.epc_document_url || property.epc_url || property.epcDocumentUrl || property.epcUrl} 
+                            alt="EPC Document" 
+                            className="layout-image"
+                            onError={(e) => {
+                              console.error('EPC image load error:', e);
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                            onClick={(e) => {
+                              // Toggle zoom functionality
+                              const img = e.target;
+                              if (img.classList.contains('layout-image--zoomed')) {
+                                img.classList.remove('layout-image--zoomed');
+                              } else {
+                                img.classList.add('layout-image--zoomed');
+                              }
+                            }}
+                          />
+                          {/* Fallback for non-image files */}
+                          <div className="layout-file-fallback" style={{ display: 'none' }}>
+                            <svg className="layout-file-icon" width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                              <polyline points="14,2 14,8 20,8"/>
+                              <line x1="16" y1="13" x2="8" y2="13"/>
+                              <line x1="16" y1="17" x2="8" y2="17"/>
+                              <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                            <span>PDF Document</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Utilities & Bills */}
-              <div className="property-view-features-category">
-                <h4 className="features-category-title">Utilities & Bills</h4>
-                <div className="property-view-features-grid">
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="bills_included" 
-                      checked={hasFeature(property.key_features, 'bills_included')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="bills_included">Bills included</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="council_tax_included" 
-                      checked={hasFeature(property.key_features, 'council_tax_included')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="council_tax_included">Council tax included</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="water_included" 
-                      checked={hasFeature(property.key_features, 'water_included')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="water_included">Water included</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="electricity_included" 
-                      checked={hasFeature(property.key_features, 'electricity_included')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="electricity_included">Electricity included</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="gas_included" 
-                      checked={hasFeature(property.key_features, 'gas_included')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="gas_included">Gas included</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="internet_included" 
-                      checked={hasFeature(property.key_features, 'internet_included')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="internet_included">Internet included</label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Financial Options */}
-              <div className="property-view-features-category">
-                <h4 className="features-category-title">Financial Options</h4>
-                <div className="property-view-features-grid">
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="zero_deposit" 
-                      checked={hasFeature(property.key_features, 'zero_deposit')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="zero_deposit">Zero deposit option</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="guarantor_accepted" 
-                      checked={hasFeature(property.key_features, 'guarantor_accepted')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="guarantor_accepted">Guarantor accepted</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="dss_lha_accepted" 
-                      checked={hasFeature(property.key_features, 'dss_lha_accepted')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="dss_lha_accepted">DSS/LHA accepted</label>
-                  </div>
-                  
-                  <div className="property-view-feature-item">
-                    <input 
-                      type="checkbox" 
-                      id="short_term_lets" 
-                      checked={hasFeature(property.key_features, 'short_term_lets')}
-                      disabled
-                      className="property-view-feature-checkbox"
-                    />
-                    <label htmlFor="short_term_lets">Short-term lets available</label>
-                  </div>
-                </div>
-              </div>
-            </div>
+              </>
             )}
 
             {/* Border line after property features */}
