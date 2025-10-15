@@ -1428,8 +1428,8 @@ const AddRent = () => {
           <div className="form-section">
             <h3 className="section-title">Property Details</h3>
             
-            {/* Title and Type Row */}
-            <div className="form-row">
+            {/* Row 1: Property Title, Property Type, Bedrooms */}
+            <div className="form-row three-cols">
               <TextInput
                 label="Property Title"
                 name="propertyTitle"
@@ -1446,10 +1446,7 @@ const AddRent = () => {
                 options={propertyTypeOptions}
                 required
               />
-            </div>
-            
-            {/* Bedrooms, Bathrooms, and Furnished Status */}
-            <div className="form-row three-cols">
+              
               <SelectInput
                 label="Bedrooms"
                 name="bedrooms"
@@ -1458,7 +1455,10 @@ const AddRent = () => {
                 options={bedroomOptions}
                 required
               />
-              
+            </div>
+            
+            {/* Row 2: Bathrooms, Furnished Status, Weekly Rent */}
+            <div className="form-row three-cols">
               <SelectInput
                 label="Bathrooms"
                 name="bathrooms"
@@ -1476,10 +1476,7 @@ const AddRent = () => {
                 options={furnishedOptions}
                 required
               />
-            </div>
-            
-            {/* Rent and Deposit Row */}
-            <div className="form-row three-cols">
+              
               <TextInput
                 label="Weekly Rent (£)"
                 name="weeklyRent"
@@ -1492,7 +1489,10 @@ const AddRent = () => {
                 className="muted-placeholder"
                 required
               />
-              
+            </div>
+            
+            {/* Row 3: Monthly Rent, Deposit Amount, Available From */}
+            <div className="form-row three-cols">
               <TextInput
                 label="Monthly Rent (£)"
                 name="monthlyRent"
@@ -1518,10 +1518,7 @@ const AddRent = () => {
                 required
                 className="muted-placeholder"
               />
-            </div>
-            
-            {/* Availability and Tenancy Row */}
-            <div className="form-row">
+              
               <DateInput
                 label="Available From"
                 name="availableFrom"
@@ -1530,7 +1527,10 @@ const AddRent = () => {
                 placeholder="DD/MM/YYYY"
                 required
               />
-              
+            </div>
+            
+            {/* Row 4: Tenancy Length, Council Tax Band, Council Tax Status */}
+            <div className="form-row three-cols">
               <SelectInput
                 label="Tenancy Length"
                 name="tenancyLength"
@@ -1539,10 +1539,7 @@ const AddRent = () => {
                 options={tenancyLengthOptions}
                 required
               />
-            </div>
-            
-            {/* Council Tax Row */}
-            <div className="form-row">
+              
               <SelectInput
                 label="Council Tax Band"
                 name="councilTaxBand"
@@ -1562,8 +1559,8 @@ const AddRent = () => {
               />
             </div>
             
-            {/* EPC Rating Row */}
-            <div className="form-row">
+            {/* Row 5: EPC Rating (single field) */}
+            <div className="form-row single-col">
               <SelectInput 
                 label="EPC Rating"
                 name="epcRating"
@@ -2268,7 +2265,7 @@ const AddRent = () => {
   };
 
   return (
-    <div className="form-sale-container">
+    <div className="form-sale-container addrent-page">
       {/* Title Section */}
       <div className="form-title">
         <div className="form-title-brand">
