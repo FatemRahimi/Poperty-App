@@ -11,9 +11,9 @@ import { useAuth } from "../context/AuthContext";
 import ContactInformationSection from "../components/ContactInformationSection";
 
 const leaseTypeOptions = [
-  { value: "full-service", label: "Full-Service" },
-  { value: "net-lease", label: "Net Lease" },
-  { value: "modified-gross", label: "Modified Gross" },
+  { value: "FRI", label: "FRI (Full Repairing & Insuring)" },
+  { value: "IRL", label: "IRL (Internal Repairing Lease)" },
+  { value: "Inclusive", label: "Inclusive (All costs included)" },
 ];
 
 const spaceTypeOptions = [
@@ -44,9 +44,10 @@ const toiletKitchenOptions = [
 ];
 
 const useClassOptions = [
-  { value: "B1", label: "B1" },
-  { value: "B2", label: "B2" },
-  { value: "E", label: "E" },
+  { value: "E", label: "Class E (Commercial / Business / Service)" },
+  { value: "B2", label: "Class B2 (Industrial Processes)" },
+  { value: "B8", label: "Class B8 (Storage / Distribution)" },
+  { value: "Sui Generis", label: "Sui Generis (Unique Use – e.g., Pub, Takeaway, Gym)" },
 ];
 
 const AddLease = () => {
@@ -57,6 +58,7 @@ const AddLease = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [currentSection, setCurrentSection] = useState(1);
+  const [showAddress, setShowAddress] = useState(false);
   const [approvedPropertyNotification, setApprovedPropertyNotification] = useState(""); // Notification for approved property edits
   
   // Check if we're in edit mode
@@ -173,19 +175,79 @@ const AddLease = () => {
         depositAmount: propertyData.deposit_amount ? propertyData.deposit_amount.toString() : "",
         availableFrom: formatDateForInput(propertyData.availability_date),
         leaseTerm: propertyData.lease_term?.toString() || "",
+        breakClause: propertyData.break_clause || false,
+        depositRequired: propertyData.deposit_required || false,
+        leaseType: propertyData.lease_type || "",
+        useClass: propertyData.use_class || "",
+        
+        // Building Details
+        spaceSubtypes: propertyData.space_subtypes || "",
+        minDivisible: propertyData.min_divisible || "",
+        vacantSQFT: propertyData.vacant_sqft || "",
+        landAcres: propertyData.land_acres || "",
+        lotSizeUnit: propertyData.lot_size_unit || "",
+        taxesPerSQFT: propertyData.taxes_per_sqft || "",
+        parkingSpaces: propertyData.parking_spaces || "",
+        power: propertyData.power || "",
+        zoning: propertyData.zoning || "",
+        serviceCharge: propertyData.service_charge || "",
+        businessRates: propertyData.business_rates || "",
+        floorLoadCapacity: propertyData.floor_load_capacity || "",
+        heatingCooling: propertyData.heating_cooling || "",
+        toiletKitchen: propertyData.toilet_kitchen || "",
+        openingHours: propertyData.opening_hours || "",
+        isMultipleTenancy: propertyData.is_multiple_tenancy || false,
+        signageAllowed: propertyData.signage_allowed || false,
+        disabilityAccess: propertyData.disability_access || false,
         
         // Space Features
         parking: propertyData.parking_spaces > 0 || propertyData.has_garage || false,
-        loadingDock: false, // This data might not be in existing properties
-        securitySystem: false, // This data might not be in existing properties
-        airConditioning: false, // This data might not be in existing properties
+        loadingDock: propertyData.loading_dock || false,
+        securitySystem: propertyData.security_system || false,
+        airConditioning: propertyData.air_conditioning || false,
         furnished: propertyData.furnished || false,
-        utilityAccess: false, // This data might not be in existing properties
+        utilityAccess: propertyData.utility_access || false,
         
         // Media
         photos: [],
         contactPhone: propertyData.contact_phone || "",
         propertyConsultant: propertyData.property_consultant || "",
+        
+        // UK-specific fields
+        epcRating: propertyData.epc_rating || "",
+        vatOnRent: propertyData.vat_on_rent || "",
+        repairingObligation: propertyData.repairing_obligation || "",
+        insuranceResponsibility: propertyData.insurance_responsibility || "",
+        rentReviewFrequency: propertyData.rent_review_frequency || "",
+        
+        // Parse utilities and security from JSON if they exist
+        utilities: propertyData.utilities ? (() => {
+          try {
+            if (typeof propertyData.utilities === 'string') {
+              return JSON.parse(propertyData.utilities);
+            } else if (typeof propertyData.utilities === 'object') {
+              return propertyData.utilities;
+            }
+            return { water: false, gas: false, internet: false, electricity: false };
+          } catch (e) {
+            console.warn('Failed to parse utilities:', e);
+            return { water: false, gas: false, internet: false, electricity: false };
+          }
+        })() : { water: false, gas: false, internet: false, electricity: false },
+        
+        security: propertyData.security ? (() => {
+          try {
+            if (typeof propertyData.security === 'string') {
+              return JSON.parse(propertyData.security);
+            } else if (typeof propertyData.security === 'object') {
+              return propertyData.security;
+            }
+            return { cctv: false, keyFob: false, secureAccess: false };
+          } catch (e) {
+            console.warn('Failed to parse security:', e);
+            return { cctv: false, keyFob: false, secureAccess: false };
+          }
+        })() : { cctv: false, keyFob: false, secureAccess: false }
       };
     }
     
@@ -200,11 +262,37 @@ const AddLease = () => {
       streetName: "",
       city: "",
       region: "",
-      country: "",
+      country: "United Kingdom",
       monthlyRent: "",
       depositAmount: "",
       availableFrom: "",
       leaseTerm: "",
+      breakClause: false,
+      depositRequired: false,
+      leaseType: "",
+      useClass: "",
+      
+      // Building Details
+      spaceSubtypes: "",
+      minDivisible: "",
+      vacantSQFT: "",
+      landAcres: "",
+      lotSizeUnit: "",
+      taxesPerSQFT: "",
+      parkingSpaces: "",
+      power: "",
+      zoning: "",
+      serviceCharge: "",
+      businessRates: "",
+      floorLoadCapacity: "",
+      heatingCooling: "",
+      toiletKitchen: "",
+      openingHours: "",
+      isMultipleTenancy: false,
+      signageAllowed: false,
+      disabilityAccess: false,
+      
+      // Space Features
       parking: false,
       loadingDock: false,
       securitySystem: false,
@@ -212,8 +300,27 @@ const AddLease = () => {
       furnished: false,
       utilityAccess: false,
       photos: [],
-            contactPhone: user?.phone || "", // Auto-populate with user's profile phone
+      contactPhone: user?.phone || "", // Auto-populate with user's profile phone
       propertyConsultant: "",
+      
+      // UK-specific fields
+      epcRating: "",
+      vatOnRent: "",
+      repairingObligation: "",
+      insuranceResponsibility: "",
+      rentReviewFrequency: "",
+      
+      utilities: {
+        water: false,
+        gas: false,
+        internet: false,
+        electricity: false
+      },
+      security: {
+        cctv: false,
+        keyFob: false,
+        secureAccess: false
+      }
     };
   };
 
@@ -505,7 +612,19 @@ const AddLease = () => {
         
         // JSON fields
         utilities: JSON.stringify(formData.utilities),
-        security: JSON.stringify(formData.security)
+        security: JSON.stringify(formData.security),
+        
+        // UK-specific fields
+        epc_rating: formData.epcRating,
+        epcRating: formData.epcRating,
+        vat_on_rent: formData.vatOnRent,
+        vatOnRent: formData.vatOnRent,
+        repairing_obligation: formData.repairingObligation,
+        repairingObligation: formData.repairingObligation,
+        insurance_responsibility: formData.insuranceResponsibility,
+        insuranceResponsibility: formData.insuranceResponsibility,
+        rent_review_frequency: formData.rentReviewFrequency,
+        rentReviewFrequency: formData.rentReviewFrequency
       };
       
       // Debug logging
@@ -615,14 +734,32 @@ const AddLease = () => {
 
       <div className="form-row">
         <SelectInput label="Space Type*" name="spaceType" value={formData.spaceType} onChange={handleChange} options={spaceTypeOptions} />
-        <TextInput label="Space Subtypes*" name="spaceSubtypes" value={formData.spaceSubtypes} onChange={handleChange} />
+        <TextInput label="Space Subtypes" name="spaceSubtypes" value={formData.spaceSubtypes} onChange={handleChange} />
       </div>
 
       <TextInput label="Space Name*" name="spaceName" value={formData.spaceName} onChange={handleChange} />
 
-      <CheckboxInput label="Multiple Tenancy" name="isMultipleTenancy" checked={formData.isMultipleTenancy} onChange={handleChange} />
+      <div style={{ 
+        marginBottom: '1.5rem', 
+        padding: '10px 12px',
+        backgroundColor: '#f3f4f6',
+        borderRadius: '6px',
+        width: 'fit-content'
+      }}>
+        <CheckboxInput label="Multiple Tenancy" name="isMultipleTenancy" checked={formData.isMultipleTenancy} onChange={handleChange} />
+      </div>
 
-      <button type="button" className="form-sale-address" onClick={() => setShowAddress(!showAddress)}>
+      <button 
+        type="button" 
+        className="form-sale-address" 
+        onClick={() => setShowAddress(!showAddress)}
+        style={{
+          padding: '8px 16px',
+          fontSize: '0.9rem',
+          width: 'auto',
+          maxWidth: '200px'
+        }}
+      >
         {showAddress ? "Hide Address" : "Add Address"}
       </button>
 
@@ -701,23 +838,139 @@ const AddLease = () => {
       <h3 className="section-title">Lease Terms</h3>
 
       <div className="form-row">
-        <TextInput type="number" label="Lease Length (years)*" name="leaseTerm" value={formData.leaseTerm} onChange={handleChange} />
-        <TextInput type="number" label="Rent per Month (£)*" name="monthlyRent" value={formData.monthlyRent} onChange={handleChange} />
-        <TextInput type="number" label="Service Charge (£)" name="serviceCharge" value={formData.serviceCharge} onChange={handleChange} />
+        <TextInput
+          type="number"
+          label="Lease Length (years)*"
+          name="leaseTerm"
+          value={formData.leaseTerm}
+          onChange={handleChange}
+        />
+        <TextInput
+          type="number"
+          label="Rent per Month (£)*"
+          name="monthlyRent"
+          value={formData.monthlyRent}
+          onChange={handleChange}
+        />
+        <TextInput
+          type="number"
+          label="Service Charge (£)"
+          name="serviceCharge"
+          value={formData.serviceCharge}
+          onChange={handleChange}
+        />
       </div>
 
       <div className="form-row">
-        <CheckboxInput label="Break Clause" name="breakClause" checked={formData.breakClause} onChange={handleChange} />
-        <CheckboxInput label="Deposit Required" name="depositRequired" checked={formData.depositRequired} onChange={handleChange} />
+        <CheckboxInput
+          label="Break Clause"
+          name="breakClause"
+          checked={formData.breakClause}
+          onChange={handleChange}
+        />
+        <CheckboxInput
+          label="Deposit Required"
+          name="depositRequired"
+          checked={formData.depositRequired}
+          onChange={handleChange}
+        />
       </div>
 
       {formData.depositRequired && (
-        <TextInput type="number" label="Deposit Amount (£)" name="depositAmount" value={formData.depositAmount} onChange={handleChange} />
+        <TextInput
+          type="number"
+          label="Deposit Amount (£)"
+          name="depositAmount"
+          value={formData.depositAmount}
+          onChange={handleChange}
+        />
       )}
 
       <div className="form-row">
-        <TextInput type="number" label="Business Rates (£)" name="businessRates" value={formData.businessRates} onChange={handleChange} />
-        <TextInput type="number" label="Floor Loading Capacity" name="floorLoadCapacity" value={formData.floorLoadCapacity} onChange={handleChange} />
+        <TextInput
+          type="number"
+          label="Business Rates (£)"
+          name="businessRates"
+          value={formData.businessRates}
+          onChange={handleChange}
+        />
+        <TextInput
+          type="number"
+          label="Floor Loading Capacity"
+          name="floorLoadCapacity"
+          value={formData.floorLoadCapacity}
+          onChange={handleChange}
+        />
+      </div>
+
+      {/* ---------- NEW UK FIELDS BELOW ---------- */}
+
+      <h3 className="section-title">Financial Details</h3>
+      <div className="form-row">
+        <SelectInput
+          label="VAT on Rent"
+          name="vatOnRent"
+          value={formData.vatOnRent}
+          onChange={handleChange}
+          options={[
+            { value: "included", label: "Included in Rent" },
+            { value: "excluded", label: "Excludes VAT" },
+            { value: "not-applicable", label: "Not Applicable" },
+          ]}
+        />
+
+        <TextInput
+          label="Rent Review Frequency (Years)"
+          name="rentReviewFrequency"
+          value={formData.rentReviewFrequency}
+          onChange={handleChange}
+          type="number"
+        />
+      </div>
+
+      <div className="form-row">
+        <SelectInput
+          label="Repairing Obligations"
+          name="repairingObligation"
+          value={formData.repairingObligation}
+          onChange={handleChange}
+          options={[
+            { value: "full-repairing", label: "Full Repairing (Tenant Responsible)" },
+            { value: "internal-only", label: "Internal Repairs Only" },
+            { value: "landlord", label: "Landlord Responsible" },
+          ]}
+        />
+
+        <SelectInput
+          label="Insurance Responsibility"
+          name="insuranceResponsibility"
+          value={formData.insuranceResponsibility}
+          onChange={handleChange}
+          options={[
+            { value: "landlord", label: "Landlord Insures Building" },
+            { value: "tenant", label: "Tenant Insures" },
+            { value: "shared", label: "Shared Responsibility" },
+          ]}
+        />
+      </div>
+
+      <h3 className="section-title">Compliance & Certification</h3>
+      <div className="form-row">
+        <SelectInput
+          label="EPC Rating*"
+          name="epcRating"
+          value={formData.epcRating}
+          onChange={handleChange}
+          options={[
+            { value: "A", label: "A (Most Efficient)" },
+            { value: "B", label: "B" },
+            { value: "C", label: "C" },
+            { value: "D", label: "D" },
+            { value: "E", label: "E" },
+            { value: "F", label: "F" },
+            { value: "G", label: "G (Least Efficient)" },
+          ]}
+        />
       </div>
 
       <h3 className="section-title">Features & Utilities</h3>
@@ -734,8 +987,20 @@ const AddLease = () => {
       </div>
 
       <div className="form-row">
-        <SelectInput label="Heating/Cooling" name="heatingCooling" value={formData.heatingCooling} onChange={handleChange} options={heatingCoolingOptions} />
-        <SelectInput label="Toilets/Kitchen" name="toiletKitchen" value={formData.toiletKitchen} onChange={handleChange} options={toiletKitchenOptions} />
+        <SelectInput
+          label="Heating/Cooling"
+          name="heatingCooling"
+          value={formData.heatingCooling}
+          onChange={handleChange}
+          options={heatingCoolingOptions}
+        />
+        <SelectInput
+          label="Toilets/Kitchen"
+          name="toiletKitchen"
+          value={formData.toiletKitchen}
+          onChange={handleChange}
+          options={toiletKitchenOptions}
+        />
       </div>
 
       <h3 className="section-title">Security & Access</h3>
@@ -749,14 +1014,44 @@ const AddLease = () => {
             onChange={handleChange}
           />
         ))}
-        <CheckboxInput label="Parking Available" name="parking" checked={formData.parking} onChange={handleChange} />
-        <CheckboxInput label="Disability Access" name="disabilityAccess" checked={formData.disabilityAccess} onChange={handleChange} />
+        <CheckboxInput
+          label="Parking Available"
+          name="parking"
+          checked={formData.parking}
+          onChange={handleChange}
+        />
+        <CheckboxInput
+          label="Disability Access"
+          name="disabilityAccess"
+          checked={formData.disabilityAccess}
+          onChange={handleChange}
+        />
       </div>
 
       <h3 className="section-title">Use and Regulations</h3>
-      <SelectInput label="Permitted Use (Use Class)*" name="useClass" value={formData.useClass} onChange={handleChange} options={useClassOptions} />
-      <TextInput label="Opening Hours Allowed" name="openingHours" value={formData.openingHours} onChange={handleChange} />
-      <CheckboxInput label="Signage Allowed" name="signageAllowed" checked={formData.signageAllowed} onChange={handleChange} />
+      <SelectInput
+        label="Permitted Use (Use Class)*"
+        name="useClass"
+        value={formData.useClass}
+        onChange={handleChange}
+        options={useClassOptions}
+      />
+      <p className="help-text" style={{ fontSize: "0.85em", color: "#555", marginTop: "-8px" }}>
+        <em>Use Class defines permitted business activity — e.g., Class E for offices/shops, B2 for manufacturing, B8 for warehousing.</em>
+      </p>
+
+      <TextInput
+        label="Opening Hours Allowed"
+        name="openingHours"
+        value={formData.openingHours}
+        onChange={handleChange}
+      />
+      <CheckboxInput
+        label="Signage Allowed"
+        name="signageAllowed"
+        checked={formData.signageAllowed}
+        onChange={handleChange}
+      />
     </>
   );
 

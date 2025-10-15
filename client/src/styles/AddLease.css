@@ -33,7 +33,7 @@
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 60px;
+    padding: 30px 40px;
     background-color: var(--card-background);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -67,8 +67,8 @@
     border-radius: var(--border-radius) var(--border-radius) 0 0;
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
     margin-bottom: 0;
-    margin-top: 30px;
-    gap: 60px;
+    margin-top: 20px;
+    gap: 30px;
     position: relative;
     box-shadow: var(--shadow-sm);
     backdrop-filter: blur(10px);
@@ -140,8 +140,8 @@
     font-size: 20px;
     font-weight: 700;
     color: var(--text-primary);
-    margin: 32px 0 20px 0;
-    padding-bottom: 12px;
+    margin: 20px 0 12px 0;
+    padding-bottom: 8px;
     border-bottom: 2px solid var(--border-color);
     font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
     letter-spacing: -0.02em;
@@ -192,7 +192,10 @@ input[type="checkbox"] + label {
     width: 20px;
     height: 20px;
     cursor: pointer;
-    accent-color: var(--primary-color);
+    accent-color: #3b82f6;
+    -webkit-appearance: checkbox;
+    -moz-appearance: checkbox;
+    appearance: checkbox;
 }
 
 input[type="text"],
@@ -218,21 +221,72 @@ select:focus {
     transform: translateY(-1px);
 }
 
+/* Form Row - Shorter gap for AddLease */
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.form-row .form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* Reduce vertical spacing for all form elements */
+.addleasing-form .form-group {
+  margin-bottom: 8px;
+}
+
+.addleasing-form .section-title {
+  margin-top: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.4rem;
+}
+
+.addleasing-form .subsection-title {
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Compact input fields */
+.addleasing-form input[type="text"],
+.addleasing-form input[type="number"],
+.addleasing-form select,
+.addleasing-form textarea {
+  padding: 8px 12px;
+  margin-bottom: 0;
+}
+
+.addleasing-form label {
+  margin-bottom: 4px;
+  display: block;
+}
+
+/* Compact textareas */
+.addleasing-form textarea {
+  padding: 10px 12px;
+}
+
 /* Checkbox Styling - Improved Layout */
 .checkbox-only {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   min-height: 24px;
 }
 
 .checkbox-only input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   margin: 0;
   cursor: pointer;
   flex-shrink: 0;
+  accent-color: #3b82f6;
+  -webkit-appearance: checkbox;
+  -moz-appearance: checkbox;
+  appearance: checkbox;
 }
 
 .checkbox-only label {
@@ -262,9 +316,9 @@ select:focus {
 .checkbox-group {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-  margin: 15px 0;
-  padding: 10px 0;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 6px 0;
 }
 
 .checkbox-group > div {
@@ -275,11 +329,15 @@ select:focus {
 }
 
 .checkbox-group input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   margin: 0;
   cursor: pointer;
   flex-shrink: 0;
+  accent-color: #3b82f6;
+  -webkit-appearance: checkbox;
+  -moz-appearance: checkbox;
+  appearance: checkbox;
 }
 
 .checkbox-group label {
