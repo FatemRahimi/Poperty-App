@@ -300,42 +300,45 @@ input[name="postcode"] {
 /* Enhanced Form Rows - Space Efficient */
 .form-row {
   display: grid;
-  gap: 24px;
-  margin-bottom: var(--spacing-xl);
+  gap: 32px;
+  margin-bottom: 48px;
   grid-template-columns: 1fr 1fr;
 }
 
 .form-row.three-cols {
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 24px;
+  gap: 32px;
+  margin-bottom: 48px;
 }
 
 .form-row.single-col {
   grid-template-columns: 1fr;
+  margin-bottom: 48px;
 }
 
 /* Form Group - Compact and Modern */
 .form-group {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: 24px;
   display: flex;
   flex-direction: column;
   max-width: 100%;
 }
 
 .form-row .form-group {
-  max-width: 95%;
+  max-width: 92%;
+  margin-bottom: 0;
 }
 
-/* Labels - Professional Typography */
+/* Labels - Professional Typography - Match AddLease */
 .form-label,
 label {
   display: block;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 4px;
   font-weight: 500;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  font-family: var(--font-family-primary);
-  letter-spacing: 0.01em;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 /* Override form-input-base for specific styling while maintaining functionality */
@@ -2290,4 +2293,58 @@ textarea.form-input-base:hover {
   text-align: left;
   font-family: 'arial';
   opacity: 0.9;
-} 
+}
+
+/* ========================================
+   ADDRENT FORM SPECIFIC OVERRIDES - ONLY AFFECTS ADDRENT
+   High specificity to ensure changes apply ONLY to AddRent page
+   ======================================== */
+
+/* Force row spacing and gaps - ADDRENT ONLY */
+body .addrent-page .form-row,
+body .addrent-page.form-sale-container .form-row {
+  display: grid !important;
+  gap: 8px !important;
+  margin-bottom: 12px !important;
+  grid-template-columns: 1fr 1fr !important;
+}
+
+body .addrent-page .form-row.three-cols,
+body .addrent-page.form-sale-container .form-row.three-cols {
+  grid-template-columns: 1fr 1fr 1fr !important;
+  gap: 8px !important;
+  margin-bottom: 12px !important;
+}
+
+body .addrent-page .form-row.single-col,
+body .addrent-page.form-sale-container .form-row.single-col {
+  grid-template-columns: 1fr !important;
+  margin-bottom: 12px !important;
+}
+
+/* Force form-group widths - ADDRENT ONLY */
+body .addrent-page .form-row .form-group,
+body .addrent-page.form-sale-container .form-row .form-group {
+  max-width: 92% !important;
+  margin-bottom: 0 !important;
+}
+
+body .addrent-page .form-group,
+body .addrent-page.form-sale-container .form-group {
+  margin-bottom: 24px !important;
+}
+
+/* Force label styling to match AddLease - ADDRENT ONLY */
+body .addrent-page label,
+body .addrent-page .form-label,
+body .addrent-page.form-sale-container label,
+body .addrent-page.form-sale-container .form-label {
+  display: block !important;
+  margin-bottom: 4px !important;
+  margin-top: 0 !important;
+  font-weight: 500 !important;
+  color: #1e293b !important;
+  font-size: 14px !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  letter-spacing: -0.01em !important;
+}
