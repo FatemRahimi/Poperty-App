@@ -33,7 +33,7 @@
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 30px 40px;
+    padding: 20px 30px;
     background-color: var(--card-background);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -43,14 +43,14 @@
 
 .addleasing-wrapper:hover {
     box-shadow: var(--shadow-lg);
-    transform: translateY(-3px);
+    transform: translateY(-2px);
 }
 
 .addleasing-form {
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    padding: 40px;
+    gap: 12px;
+    padding: 24px;
     border: 1px solid var(--border-color);
     border-radius: 0 0 var(--border-radius) var(--border-radius);
     background-color: var(--card-background);
@@ -135,26 +135,28 @@
     box-shadow: var(--shadow-md);
 }
 
-/* Modern Section Titles */
-.section-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 20px 0 12px 0;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--border-color);
-    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-    letter-spacing: -0.02em;
+/* Modern Section Titles - AddLease ONLY */
+.form-sale-container .section-title,
+.property-form .section-title {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    margin: 16px 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--border-color);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    letter-spacing: -0.01em;
     position: relative;
 }
 
-.section-title::after {
+.form-sale-container .section-title::after,
+.property-form .section-title::after {
     content: '';
     position: absolute;
-    bottom: -2px;
+    bottom: -1.5px;
     left: 0;
-    width: 60px;
-    height: 2px;
+    width: 50px;
+    height: 1.5px;
     background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
     border-radius: 1px;
 }
@@ -172,25 +174,30 @@
     min-width: 250px;
 }
 
-/* Modern Form Groups */
-.form-group label {
-    margin-bottom: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-primary);
-    display: block;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    letter-spacing: -0.01em;
+/* Modern Form Groups - AddLease ONLY */
+.form-sale-container .form-group label,
+.form-sale-container .form-label,
+.property-form .form-group label,
+.property-form .form-label {
+    margin-bottom: 3px !important;
+    margin-top: 0 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: var(--text-primary) !important;
+    display: block !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    letter-spacing: -0.01em !important;
 }
 
 input[type="checkbox"] + label {
-    margin-left: 12px;
+    margin-left: 10px;
     font-weight: 500;
+    font-size: 14px;
 }
 
 .addleasing-form input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
     accent-color: #3b82f6;
     -webkit-appearance: checkbox;
@@ -198,88 +205,160 @@ input[type="checkbox"] + label {
     appearance: checkbox;
 }
 
-input[type="text"],
-input[type="number"],
-input[type="date"],
-select {
-    width: 100%;
-    padding: 12px 16px;
-    font-size: 16px;
-    border: 2px solid var(--border-color);
-    border-radius: 10px;
-    background-color: #ffffff;
-    font-family: 'Inter', sans-serif;
-    color: var(--text-primary);
-    transition: all 0.2s ease;
+/* Input styling - AddLease ONLY */
+.form-sale-container input[type="text"],
+.form-sale-container input[type="number"],
+.form-sale-container input[type="date"],
+.form-sale-container input[type="tel"],
+.form-sale-container input[type="email"],
+.form-sale-container select,
+.form-sale-container .form-input-base,
+.property-form input[type="text"],
+.property-form input[type="number"],
+.property-form input[type="date"],
+.property-form input[type="tel"],
+.property-form input[type="email"],
+.property-form select,
+.property-form .form-input-base {
+    width: 100% !important;
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+    border: 2px solid #cbd5e0 !important;
+    border-radius: 6px !important;
+    background-color: #ffffff !important;
+    font-family: 'Inter', sans-serif !important;
+    color: var(--text-primary) !important;
+    transition: all 0.2s ease !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    box-sizing: border-box !important;
 }
 
-input:focus,
-select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-    transform: translateY(-1px);
+.form-sale-container input:focus,
+.form-sale-container select:focus,
+.form-sale-container .form-input-base:focus,
+.property-form input:focus,
+.property-form select:focus,
+.property-form .form-input-base:focus {
+    outline: none !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1) !important;
+    transform: translateY(-1px) !important;
 }
 
-/* Form Row - Shorter gap for AddLease */
-.form-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 6px;
+/* Form Row - Compact spacing for AddLease ONLY */
+.form-sale-container .form-row,
+.property-form .form-row {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 10px;
+  margin-bottom: 2px !important;
 }
 
-.form-row .form-group {
-  flex: 1;
-  margin-bottom: 0;
+.form-sale-container .form-row .form-group,
+.property-form .form-row .form-group {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  margin-bottom: 0 !important;
+  max-width: none !important;
 }
 
-/* Reduce vertical spacing for all form elements */
+/* Reduce vertical spacing for all form elements in AddLease ONLY */
+.form-sale-container .form-group,
+.property-form .form-group,
 .addleasing-form .form-group {
-  margin-bottom: 8px;
+  margin-bottom: 2px !important;
 }
 
+.form-sale-container .section-title,
+.property-form .section-title,
 .addleasing-form .section-title {
-  margin-top: 1rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.4rem;
+  margin-top: 20px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
 }
 
+.form-sale-container .section-title:first-of-type,
+.property-form .section-title:first-of-type,
+.addleasing-form .section-title:first-of-type {
+  margin-top: 0;
+}
+
+.form-sale-container .subsection-title,
+.property-form .subsection-title,
 .addleasing-form .subsection-title {
-  margin-top: 0.75rem;
-  margin-bottom: 0.5rem;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
-/* Compact input fields */
+/* Compact input fields - AddLease ONLY */
+.form-sale-container input[type="text"],
+.form-sale-container input[type="number"],
+.form-sale-container select,
+.form-sale-container textarea,
+.property-form input[type="text"],
+.property-form input[type="number"],
+.property-form select,
+.property-form textarea,
 .addleasing-form input[type="text"],
 .addleasing-form input[type="number"],
 .addleasing-form select,
 .addleasing-form textarea {
   padding: 8px 12px;
-  margin-bottom: 0;
+  margin-bottom: 0 !important;
+  margin-top: 0 !important;
+  font-size: 14px;
 }
 
+.form-sale-container label,
+.property-form label,
 .addleasing-form label {
-  margin-bottom: 4px;
+  margin-bottom: 3px !important;
+  margin-top: 0 !important;
   display: block;
+  font-size: 14px;
 }
 
-/* Compact textareas */
-.addleasing-form textarea {
-  padding: 10px 12px;
+/* Compact textareas - AddLease ONLY */
+.form-sale-container textarea,
+.form-sale-container .form-textarea,
+.property-form textarea,
+.property-form .form-textarea,
+.addleasing-form textarea,
+.addleasing-form .form-textarea {
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  border: 2px solid #cbd5e0 !important;
+  border-radius: 6px !important;
+  min-height: 80px !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.form-sale-container .form-textarea:focus,
+.property-form .form-textarea:focus,
+.addleasing-form .form-textarea:focus {
+  outline: none !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1) !important;
 }
 
 /* Checkbox Styling - Improved Layout */
 .checkbox-only {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 0;
-  min-height: 24px;
+  min-height: 20px;
 }
 
 .checkbox-only input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   margin: 0;
   cursor: pointer;
   flex-shrink: 0;
@@ -292,7 +371,7 @@ select:focus {
 .checkbox-only label {
   margin: 0;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   color: #333;
   line-height: 1.4;
@@ -303,8 +382,8 @@ select:focus {
 .checkbox-row {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 12px;
+  margin-bottom: 10px;
   flex-wrap: wrap;
 }
 
@@ -315,22 +394,22 @@ select:focus {
 /* Modern Checkbox Groups */
 .checkbox-group {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 8px;
-  margin: 8px 0;
-  padding: 6px 0;
+  margin: 6px 0;
+  padding: 4px 0;
 }
 
 .checkbox-group > div {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 24px;
+  gap: 6px;
+  min-height: 20px;
 }
 
 .checkbox-group input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   margin: 0;
   cursor: pointer;
   flex-shrink: 0;
@@ -343,7 +422,7 @@ select:focus {
 .checkbox-group label {
   margin: 0;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   color: #333;
   line-height: 1.4;
@@ -378,16 +457,16 @@ select:focus {
 .security-access-group {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-top: 12px;
-    padding: 20px;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 12px 16px;
     background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-    border-radius: 10px;
+    border-radius: 6px;
     border: 1px solid var(--border-color);
 }
 
 .security-access-group label {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 500;
     color: var(--text-primary);
     width: auto;
@@ -395,7 +474,7 @@ select:focus {
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 /* Responsive Design - Media Queries */
@@ -487,7 +566,7 @@ select:focus {
   }
   
   .section-title {
-    font-size: 20px;
+    font-size: 13px;
   }
   
   input, select {
@@ -625,7 +704,7 @@ select:focus {
   }
   
   .section-title {
-    font-size: 18px;
+    font-size: 13px;
     margin: 20px 0 15px;
   }
   
@@ -694,7 +773,7 @@ select:focus {
   }
   
   .section-title {
-    font-size: 16px;
+    font-size: 13px;
     margin: 15px 0 12px;
   }
   

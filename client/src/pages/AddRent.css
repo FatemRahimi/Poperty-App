@@ -300,13 +300,14 @@ input[name="postcode"] {
 /* Enhanced Form Rows - Space Efficient */
 .form-row {
   display: grid;
-  gap: var(--spacing-xl);
+  gap: 24px;
   margin-bottom: var(--spacing-xl);
   grid-template-columns: 1fr 1fr;
 }
 
 .form-row.three-cols {
   grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
 }
 
 .form-row.single-col {
@@ -318,6 +319,11 @@ input[name="postcode"] {
   margin-bottom: var(--spacing-xl);
   display: flex;
   flex-direction: column;
+  max-width: 100%;
+}
+
+.form-row .form-group {
+  max-width: 95%;
 }
 
 /* Labels - Professional Typography */
