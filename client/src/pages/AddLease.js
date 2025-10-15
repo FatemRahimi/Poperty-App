@@ -330,6 +330,8 @@ const AddLease = () => {
   
   const [photoFiles, setPhotoFiles] = useState([]);
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
+  const [floorPlanFile, setFloorPlanFile] = useState(null);
+  const [epcDocumentFile, setEpcDocumentFile] = useState(null);
 
   // Load existing property images if in edit mode
   useEffect(() => {
@@ -449,6 +451,32 @@ const AddLease = () => {
     
     setPhotoFiles(newPhotoFiles);
     setPhotoPreviewUrls(newPhotoPreviewUrls);
+  };
+
+  // Floor plan handler
+  const handleFloorPlanChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const maxSize = 512 * 1024 * 1024; // 512MB
+      if (file.size > maxSize) {
+        alert('File is too large. Maximum size is 512MB.');
+        return;
+      }
+      setFloorPlanFile(file);
+    }
+  };
+
+  // EPC document handler
+  const handleEpcDocumentChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const maxSize = 512 * 1024 * 1024; // 512MB
+      if (file.size > maxSize) {
+        alert('File is too large. Maximum size is 512MB.');
+        return;
+      }
+      setEpcDocumentFile(file);
+    }
   };
 
   // Validation functions for each step
@@ -660,6 +688,16 @@ const AddLease = () => {
         submitFormData.append('photos', file);
       });
       
+      // Add floor plan if any
+      if (floorPlanFile) {
+        submitFormData.append('floorPlan', floorPlanFile);
+      }
+      
+      // Add EPC document if any
+      if (epcDocumentFile) {
+        submitFormData.append('epcDocument', epcDocumentFile);
+      }
+      
       console.log('Submitting lease property data...');
       
       // Debug logging
@@ -735,9 +773,8 @@ const AddLease = () => {
       <div className="form-row">
         <SelectInput label="Space Type*" name="spaceType" value={formData.spaceType} onChange={handleChange} options={spaceTypeOptions} />
         <TextInput label="Space Subtypes" name="spaceSubtypes" value={formData.spaceSubtypes} onChange={handleChange} />
+        <TextInput label="Space Name*" name="spaceName" value={formData.spaceName} onChange={handleChange} />
       </div>
-
-      <TextInput label="Space Name*" name="spaceName" value={formData.spaceName} onChange={handleChange} />
 
       <div style={{ 
         marginBottom: '1.5rem', 
@@ -827,9 +864,8 @@ const AddLease = () => {
       <h3 className="section-title">Location Info</h3>
       <div className="form-row">
         <TextInput label="Zoning (Use Class)" name="zoning" value={formData.zoning} onChange={handleChange} />
+        <SelectInput label="Lease Type*" name="leaseType" value={formData.leaseType} onChange={handleChange} options={leaseTypeOptions} />
       </div>
-
-      <SelectInput label="Lease Type*" name="leaseType" value={formData.leaseType} onChange={handleChange} options={leaseTypeOptions} />
     </>
   );
 
@@ -861,7 +897,7 @@ const AddLease = () => {
         />
       </div>
 
-      <div className="form-row">
+      <div className="form-row" style={{ marginTop: '12px' }}>
         <CheckboxInput
           label="Break Clause"
           name="breakClause"
@@ -1028,24 +1064,26 @@ const AddLease = () => {
         />
       </div>
 
-      <h3 className="section-title">Use and Regulations</h3>
-      <SelectInput
-        label="Permitted Use (Use Class)*"
-        name="useClass"
-        value={formData.useClass}
-        onChange={handleChange}
-        options={useClassOptions}
-      />
-      <p className="help-text" style={{ fontSize: "0.85em", color: "#555", marginTop: "-8px" }}>
+      <h3 className="section-title" style={{ marginTop: '12px' }}>Use and Regulations</h3>
+      <div className="form-row">
+        <SelectInput
+          label="Permitted Use (Use Class)*"
+          name="useClass"
+          value={formData.useClass}
+          onChange={handleChange}
+          options={useClassOptions}
+        />
+        <TextInput
+          label="Opening Hours Allowed"
+          name="openingHours"
+          value={formData.openingHours}
+          onChange={handleChange}
+        />
+      </div>
+      <p className="help-text" style={{ fontSize: "12px", color: "#10b981", marginTop: "4px", marginBottom: "8px" }}>
         <em>Use Class defines permitted business activity — e.g., Class E for offices/shops, B2 for manufacturing, B8 for warehousing.</em>
       </p>
 
-      <TextInput
-        label="Opening Hours Allowed"
-        name="openingHours"
-        value={formData.openingHours}
-        onChange={handleChange}
-      />
       <CheckboxInput
         label="Signage Allowed"
         name="signageAllowed"
@@ -1147,6 +1185,116 @@ const AddLease = () => {
               </span>
             </div>
           </>
+        )}
+      </div>
+
+      {/* Layout of Property Section */}
+      <h4 className="subsection-title">Layout of Property</h4>
+      
+      <div className="layout-section">
+        <div className="form-group">
+          <label htmlFor="layoutFile">Floor Plan (PDF, JPG, PNG)</label>
+          <p style={{ fontSize: "12px", color: "#10b981", marginTop: "4px", marginBottom: "8px" }}>
+            <em>Upload floor plan to help tenants visualize the space</em>
+          </p>
+          <div className="file-upload-area">
+            <label htmlFor="layoutFileUpload" className="file-upload-label">
+              <div className="file-upload-content">
+                <div className="file-upload-icon">📄</div>
+                <div className="file-upload-text">
+                  <span>Click to upload floor plan</span>
+                  <small>PDF, JPG, PNG • Max 512MB</small>
+                </div>
+              </div>
+            </label>
+            <input
+              type="file"
+              id="layoutFileUpload"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={handleFloorPlanChange}
+              style={{ display: 'none' }}
+            />
+          </div>
+          
+          {/* File Display Section */}
+          {floorPlanFile && (
+            <div className="uploaded-file" style={{ marginTop: '1rem' }}>
+              {floorPlanFile.type.startsWith('image/') && (
+                <div className="layout-preview-container">
+                  <img 
+                    src={URL.createObjectURL(floorPlanFile)} 
+                    alt="Layout Preview" 
+                    className="layout-preview-image"
+                    style={{ maxWidth: '100%', height: 'auto', borderRadius: '6px' }}
+                  />
+                </div>
+              )}
+              <div className="file-info">
+                <span className="file-name">{floorPlanFile.name}</span>
+                <button 
+                  type="button" 
+                  className="remove-file-btn"
+                  onClick={() => setFloorPlanFile(null)}
+                  style={{ marginLeft: '10px', cursor: 'pointer' }}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* EPC Document Section */}
+      <h4 className="subsection-title">Upload EPC Document</h4>
+      
+      <p style={{ fontSize: "12px", color: "#10b981", marginTop: "4px", marginBottom: "8px" }}>
+        <em>EPC (Energy Performance Certificate) is required by law for commercial leases</em>
+      </p>
+      
+      <div className="file-upload-section">
+        <input
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          onChange={handleEpcDocumentChange}
+          style={{ display: 'none' }}
+          id="epc-document-upload"
+        />
+        <label htmlFor="epc-document-upload" className="file-upload-label">
+          <div className="file-upload-content">
+            <div className="file-upload-icon">📋</div>
+            <div className="file-upload-text">
+              <span>Click to upload EPC document</span>
+              <small>PDF, JPG, PNG • Max 512MB • Required by law</small>
+            </div>
+          </div>
+        </label>
+        
+        {epcDocumentFile && (
+          <div className="uploaded-file" style={{ marginTop: '1rem' }}>
+            {epcDocumentFile.type.startsWith('image/') && (
+              <div className="layout-preview-container">
+                <img 
+                  src={URL.createObjectURL(epcDocumentFile)} 
+                  alt="EPC Preview" 
+                  className="layout-preview-image"
+                  style={{ maxWidth: '100%', height: 'auto', borderRadius: '6px' }}
+                />
+              </div>
+            )}
+            <div className="file-info">
+              <span className="file-name">{epcDocumentFile.name}</span>
+              <button 
+                type="button" 
+                className="remove-file-btn"
+                onClick={() => setEpcDocumentFile(null)}
+                title="Remove EPC document"
+                style={{ marginLeft: '10px', cursor: 'pointer' }}
+              >
+                ×
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
