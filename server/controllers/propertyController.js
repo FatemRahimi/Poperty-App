@@ -215,7 +215,17 @@ const submitProperty = async (req, res) => {
       custom_features,
       customFeatures, // Alternative field name from frontend
       has_residential_accommodation,
-      hasResidentialAccommodation // Alternative field name from frontend
+      hasResidentialAccommodation, // Alternative field name from frontend
+      
+      // UK-specific lease fields
+      vat_on_rent,
+      vatOnRent,
+      repairing_obligation,
+      repairingObligation,
+      insurance_responsibility,
+      insuranceResponsibility,
+      rent_review_frequency,
+      rentReviewFrequency
     } = req.body;
 
     // Map frontend field names to backend field names
@@ -306,6 +316,12 @@ const submitProperty = async (req, res) => {
     const accessibility_features_mapped = accessibility_features || accessibilityFeatures || '';
     const custom_features_mapped = custom_features || customFeatures || '[]';
     const has_residential_accommodation_mapped = (has_residential_accommodation === 'true' || has_residential_accommodation === true || hasResidentialAccommodation === 'true' || hasResidentialAccommodation === true) ? true : false;
+    
+    // UK-specific lease field mappings
+    const vat_on_rent_mapped = vat_on_rent || vatOnRent || '';
+    const repairing_obligation_mapped = repairing_obligation || repairingObligation || '';
+    const insurance_responsibility_mapped = insurance_responsibility || insuranceResponsibility || '';
+    const rent_review_frequency_mapped = rent_review_frequency || rentReviewFrequency || null;
 
     // Data conversion for numeric fields
     const convertBathrooms = (bathrooms) => {
@@ -455,7 +471,9 @@ const submitProperty = async (req, res) => {
       // EPC Document fields (initially empty, will be updated if file is uploaded)
       '', '', // epc_document_name, epc_document_url
       // Additional information fields
-      heating_type_mapped, broadband_availability_mapped, accessibility_features_mapped, custom_features_mapped, has_residential_accommodation_mapped
+      heating_type_mapped, broadband_availability_mapped, accessibility_features_mapped, custom_features_mapped, has_residential_accommodation_mapped,
+      // UK-specific lease fields
+      vat_on_rent_mapped, repairing_obligation_mapped, insurance_responsibility_mapped, rent_review_frequency_mapped
     ];
     
     console.log('Values array position 21 (lease_term):', valuesArray[20]);
@@ -475,11 +493,13 @@ const submitProperty = async (req, res) => {
         council_tax_band, council_tax_status,
         reception_rooms, house_number, street_name, local_authority, nearest_transport_links, short_description, virtual_tour_link,
         epc_document_name, epc_document_url,
-        heating_type, broadband_availability, accessibility_features, custom_features, has_residential_accommodation
+        heating_type, broadband_availability, accessibility_features, custom_features, has_residential_accommodation,
+        vat_on_rent, repairing_obligation, insurance_responsibility, rent_review_frequency
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36,
-        $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59
+        $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59,
+        $60, $61, $62, $63
       ) RETURNING *`,
       valuesArray
     );
@@ -1420,7 +1440,17 @@ const updateProperty = async (req, res) => {
       virtual_tour_link,
       virtualTourLink, // Alternative field name from frontend
       has_residential_accommodation,
-      hasResidentialAccommodation // Alternative field name from frontend
+      hasResidentialAccommodation, // Alternative field name from frontend
+      
+      // UK-specific lease fields
+      vat_on_rent,
+      vatOnRent,
+      repairing_obligation,
+      repairingObligation,
+      insurance_responsibility,
+      insuranceResponsibility,
+      rent_review_frequency,
+      rentReviewFrequency
     } = req.body;
 
     // Map frontend field names to backend field names
@@ -1656,6 +1686,7 @@ const updateProperty = async (req, res) => {
       latitude, longitude,
       council_tax_band_mapped, council_tax_status_mapped,
       reception_rooms_mapped, house_number_mapped, street_name_mapped, local_authority_mapped, nearest_transport_links_mapped, short_description_mapped, virtual_tour_link_mapped, has_residential_accommodation_mapped,
+      vat_on_rent_mapped, repairing_obligation_mapped, insurance_responsibility_mapped, rent_review_frequency_mapped,
       parseInt(id), parseInt(user_id)
     ];
 
@@ -1684,8 +1715,9 @@ const updateProperty = async (req, res) => {
         updated_at = CURRENT_TIMESTAMP, status = 'pending',
         latitude = $57, longitude = $58,
         council_tax_band = $59, council_tax_status = $60,
-        reception_rooms = $61, house_number = $62, street_name = $63, local_authority = $64, nearest_transport_links = $65, short_description = $66, virtual_tour_link = $67, has_residential_accommodation = $68
-       WHERE id = $69 AND user_id = $70
+        reception_rooms = $61, house_number = $62, street_name = $63, local_authority = $64, nearest_transport_links = $65, short_description = $66, virtual_tour_link = $67, has_residential_accommodation = $68,
+        vat_on_rent = $69, repairing_obligation = $70, insurance_responsibility = $71, rent_review_frequency = $72
+       WHERE id = $73 AND user_id = $74
        RETURNING *`,
       params
     );
