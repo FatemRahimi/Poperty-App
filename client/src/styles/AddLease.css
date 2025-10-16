@@ -234,6 +234,16 @@ input[type="checkbox"] + label {
     box-sizing: border-box !important;
 }
 
+/* Placeholder styling - Default gray color */
+.form-sale-container input::placeholder,
+.form-sale-container textarea::placeholder,
+.property-form input::placeholder,
+.property-form textarea::placeholder {
+    color: #9ca3af !important;
+    opacity: 1 !important;
+    font-style: normal !important;
+}
+
 .form-sale-container input:focus,
 .form-sale-container select:focus,
 .form-sale-container .form-input-base:focus,
