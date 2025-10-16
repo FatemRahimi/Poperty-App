@@ -154,6 +154,13 @@ const AddLease = () => {
     if (editMode && propertyData) {
       const addressParts = parseAddress(propertyData.address_line1);
       
+      // Debug individual checkbox fields
+      console.log('🔍 DEBUG - is_multiple_tenancy raw:', propertyData.is_multiple_tenancy, typeof propertyData.is_multiple_tenancy);
+      console.log('🔍 DEBUG - break_clause raw:', propertyData.break_clause, typeof propertyData.break_clause);
+      console.log('🔍 DEBUG - deposit_required raw:', propertyData.deposit_required, typeof propertyData.deposit_required);
+      console.log('🔍 DEBUG - signage_allowed raw:', propertyData.signage_allowed, typeof propertyData.signage_allowed);
+      console.log('🔍 DEBUG - disability_access raw:', propertyData.disability_access, typeof propertyData.disability_access);
+      
       return {
         // Space Details
         spaceName: propertyData.title || "",
@@ -174,8 +181,16 @@ const AddLease = () => {
         depositAmount: propertyData.deposit_amount ? propertyData.deposit_amount.toString() : "",
         availableFrom: formatDateForInput(propertyData.availability_date),
         leaseTerm: propertyData.lease_term?.toString() || "",
-        breakClause: propertyData.break_clause === true || propertyData.break_clause === 'true' || false,
-        depositRequired: propertyData.deposit_required === true || propertyData.deposit_required === 'true' || false,
+        breakClause: (() => {
+          const result = propertyData.break_clause === true || propertyData.break_clause === 'true' || false;
+          console.log('🔍 DEBUG - breakClause final value:', result);
+          return result;
+        })(),
+        depositRequired: (() => {
+          const result = propertyData.deposit_required === true || propertyData.deposit_required === 'true' || false;
+          console.log('🔍 DEBUG - depositRequired final value:', result);
+          return result;
+        })(),
         leaseType: propertyData.lease_type || "",
         useClass: propertyData.use_class || "",
         
@@ -195,9 +210,21 @@ const AddLease = () => {
         heatingCooling: propertyData.heating_cooling || "",
         toiletKitchen: propertyData.toilet_kitchen || "",
         openingHours: propertyData.opening_hours || "",
-        isMultipleTenancy: propertyData.is_multiple_tenancy === true || propertyData.is_multiple_tenancy === 'true' || false,
-        signageAllowed: propertyData.signage_allowed === true || propertyData.signage_allowed === 'true' || false,
-        disabilityAccess: propertyData.disability_access === true || propertyData.disability_access === 'true' || false,
+        isMultipleTenancy: (() => {
+          const result = propertyData.is_multiple_tenancy === true || propertyData.is_multiple_tenancy === 'true' || false;
+          console.log('🔍 DEBUG - isMultipleTenancy final value:', result);
+          return result;
+        })(),
+        signageAllowed: (() => {
+          const result = propertyData.signage_allowed === true || propertyData.signage_allowed === 'true' || false;
+          console.log('🔍 DEBUG - signageAllowed final value:', result);
+          return result;
+        })(),
+        disabilityAccess: (() => {
+          const result = propertyData.disability_access === true || propertyData.disability_access === 'true' || false;
+          console.log('🔍 DEBUG - disabilityAccess final value:', result);
+          return result;
+        })(),
         
         // Space Features
         parking: propertyData.parking_spaces > 0 || propertyData.has_garage || false,
@@ -222,9 +249,13 @@ const AddLease = () => {
         // Parse utilities and security from JSON if they exist
         utilities: propertyData.utilities ? (() => {
           try {
+            console.log('🔍 DEBUG - Raw utilities data:', propertyData.utilities, typeof propertyData.utilities);
             if (typeof propertyData.utilities === 'string') {
-              return JSON.parse(propertyData.utilities);
+              const parsed = JSON.parse(propertyData.utilities);
+              console.log('🔍 DEBUG - Parsed utilities:', parsed);
+              return parsed;
             } else if (typeof propertyData.utilities === 'object') {
+              console.log('🔍 DEBUG - Utilities already object:', propertyData.utilities);
               return propertyData.utilities;
             }
             return { water: false, gas: false, internet: false, electricity: false };
@@ -236,9 +267,13 @@ const AddLease = () => {
         
         security: propertyData.security ? (() => {
           try {
+            console.log('🔍 DEBUG - Raw security data:', propertyData.security, typeof propertyData.security);
             if (typeof propertyData.security === 'string') {
-              return JSON.parse(propertyData.security);
+              const parsed = JSON.parse(propertyData.security);
+              console.log('🔍 DEBUG - Parsed security:', parsed);
+              return parsed;
             } else if (typeof propertyData.security === 'object') {
+              console.log('🔍 DEBUG - Security already object:', propertyData.security);
               return propertyData.security;
             }
             return { cctv: false, keyFob: false, secureAccess: false };
@@ -378,7 +413,10 @@ const AddLease = () => {
   // Update form data when in edit mode
   useEffect(() => {
     if (editMode && propertyData) {
-      setFormData(getInitialFormData());
+      const initialData = getInitialFormData();
+      console.log('🔍 DEBUG - Initial form data utilities:', initialData.utilities);
+      console.log('🔍 DEBUG - Initial form data security:', initialData.security);
+      setFormData(initialData);
     }
   }, [editMode, propertyData]);
 
@@ -419,11 +457,13 @@ const AddLease = () => {
     const isSecurity = ["cctv", "keyFob", "secureAccess"].includes(name);
 
     if (isUtility) {
+      console.log('🔍 DEBUG - Utility checkbox changed:', name, checked);
       setFormData((prev) => ({
         ...prev,
         utilities: { ...prev.utilities, [name]: checked },
       }));
     } else if (isSecurity) {
+      console.log('🔍 DEBUG - Security checkbox changed:', name, checked);
       setFormData((prev) => ({
         ...prev,
         security: { ...prev.security, [name]: checked },
@@ -786,6 +826,12 @@ const AddLease = () => {
         submitFormData.append('epcDocument', epcDocumentFile);
       }
       
+      // Debug utilities and security data
+      console.log('🔍 DEBUG - Utilities data:', formData.utilities);
+      console.log('🔍 DEBUG - Security data:', formData.security);
+      console.log('🔍 DEBUG - Utilities JSON:', JSON.stringify(formData.utilities));
+      console.log('🔍 DEBUG - Security JSON:', JSON.stringify(formData.security));
+      
       console.log('Submitting lease property data...');
       
       // Debug logging
@@ -871,7 +917,15 @@ const AddLease = () => {
         borderRadius: '6px',
         width: 'fit-content'
       }}>
-        <CheckboxInput label="Multiple Tenancy" name="isMultipleTenancy" checked={formData.isMultipleTenancy} onChange={handleChange} />
+        <CheckboxInput 
+          label="Multiple Tenancy" 
+          name="isMultipleTenancy" 
+          checked={(() => {
+            console.log('🔍 DEBUG - Rendering Multiple Tenancy:', formData.isMultipleTenancy);
+            return formData.isMultipleTenancy;
+          })()} 
+          onChange={handleChange} 
+        />
       </div>
 
       {/* City and Postcode are REQUIRED - always visible */}
@@ -964,13 +1018,19 @@ const AddLease = () => {
         <CheckboxInput
           label="Break Clause"
           name="breakClause"
-          checked={formData.breakClause}
+          checked={(() => {
+            console.log('🔍 DEBUG - Rendering Break Clause:', formData.breakClause);
+            return formData.breakClause;
+          })()}
           onChange={handleChange}
         />
         <CheckboxInput
           label="Deposit Required"
           name="depositRequired"
-          checked={formData.depositRequired}
+          checked={(() => {
+            console.log('🔍 DEBUG - Rendering Deposit Required:', formData.depositRequired);
+            return formData.depositRequired;
+          })()}
           onChange={handleChange}
         />
       </div>
@@ -1074,15 +1134,18 @@ const AddLease = () => {
 
       <h3 className="section-title">Features & Utilities</h3>
       <div className="checkbox-group">
-        {Object.keys(formData.utilities).map((util) => (
-          <CheckboxInput
-            key={util}
-            label={`Includes ${util.charAt(0).toUpperCase() + util.slice(1)}`}
-            name={util}
-            checked={formData.utilities[util]}
-            onChange={handleChange}
-          />
-        ))}
+        {Object.keys(formData.utilities).map((util) => {
+          console.log(`🔍 DEBUG - Rendering utility ${util}:`, formData.utilities[util]);
+          return (
+            <CheckboxInput
+              key={util}
+              label={`Includes ${util.charAt(0).toUpperCase() + util.slice(1)}`}
+              name={util}
+              checked={formData.utilities[util]}
+              onChange={handleChange}
+            />
+          );
+        })}
       </div>
 
       <div className="form-row">
@@ -1104,15 +1167,18 @@ const AddLease = () => {
 
       <h3 className="section-title">Security & Access</h3>
       <div className="checkbox-group">
-        {Object.keys(formData.security).map((sec) => (
-          <CheckboxInput
-            key={sec}
-            label={sec === "keyFob" ? "Key Fob Access" : sec.charAt(0).toUpperCase() + sec.slice(1)}
-            name={sec}
-            checked={formData.security[sec]}
-            onChange={handleChange}
-          />
-        ))}
+        {Object.keys(formData.security).map((sec) => {
+          console.log(`🔍 DEBUG - Rendering security ${sec}:`, formData.security[sec]);
+          return (
+            <CheckboxInput
+              key={sec}
+              label={sec === "keyFob" ? "Key Fob Access" : sec.charAt(0).toUpperCase() + sec.slice(1)}
+              name={sec}
+              checked={formData.security[sec]}
+              onChange={handleChange}
+            />
+          );
+        })}
         <CheckboxInput
           label="Parking Available"
           name="parking"
@@ -1122,7 +1188,10 @@ const AddLease = () => {
         <CheckboxInput
           label="Disability Access"
           name="disabilityAccess"
-          checked={formData.disabilityAccess}
+          checked={(() => {
+            console.log('🔍 DEBUG - Rendering Disability Access:', formData.disabilityAccess);
+            return formData.disabilityAccess;
+          })()}
           onChange={handleChange}
         />
       </div>
@@ -1150,7 +1219,10 @@ const AddLease = () => {
       <CheckboxInput
         label="Signage Allowed"
         name="signageAllowed"
-        checked={formData.signageAllowed}
+        checked={(() => {
+          console.log('🔍 DEBUG - Rendering Signage Allowed:', formData.signageAllowed);
+          return formData.signageAllowed;
+        })()}
         onChange={handleChange}
       />
     </>
@@ -1260,6 +1332,11 @@ const AddLease = () => {
           <p style={{ fontSize: "12px", color: "#10b981", marginTop: "4px", marginBottom: "8px" }}>
             <em>Upload floor plan to help tenants visualize the space</em>
           </p>
+          {floorPlanFile && floorPlanFile.type.startsWith('image/') && (
+            <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px", marginBottom: "8px" }}>
+              <em>💡 Click on the preview below to view full size</em>
+            </p>
+          )}
           <div className="file-upload-area">
             <label htmlFor="layoutFileUpload" className="file-upload-label">
               <div className="file-upload-content">
@@ -1286,24 +1363,32 @@ const AddLease = () => {
                 <div className="layout-preview-container" style={{ 
                   display: 'flex', 
                   justifyContent: 'center', 
-                  padding: '1rem',
+                  padding: '0.5rem',
                   backgroundColor: '#f8f9fa',
                   borderRadius: '8px',
-                  marginBottom: '0.5rem'
+                  marginBottom: '0.5rem',
+                  border: '2px solid #e5e7eb'
                 }}>
                   <img 
                     src={floorPlanFile.isExisting ? floorPlanFile.url : URL.createObjectURL(floorPlanFile)} 
                     alt="Layout Preview" 
                     className="layout-preview-image"
                     style={{ 
-                      maxWidth: '400px',
-                      maxHeight: '300px',
+                      maxWidth: '250px',
+                      maxHeight: '200px',
                       width: 'auto',
                       height: 'auto',
                       objectFit: 'contain',
                       borderRadius: '6px',
-                      border: '1px solid #dee2e6'
+                      border: '1px solid #d1d5db',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      cursor: 'pointer'
                     }}
+                    onClick={() => {
+                      // Open image in new tab for full view
+                      window.open(floorPlanFile.isExisting ? floorPlanFile.url : URL.createObjectURL(floorPlanFile), '_blank');
+                    }}
+                    title="Click to view full size"
                   />
                 </div>
               )}
@@ -1348,6 +1433,11 @@ const AddLease = () => {
       <p style={{ fontSize: "12px", color: "#10b981", marginTop: "4px", marginBottom: "8px" }}>
         <em>EPC (Energy Performance Certificate) is required by law for commercial leases</em>
       </p>
+      {epcDocumentFile && epcDocumentFile.type.startsWith('image/') && (
+        <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px", marginBottom: "8px" }}>
+          <em>💡 Click on the preview below to view full size</em>
+        </p>
+      )}
       
       <div className="file-upload-section">
         <input
@@ -1373,24 +1463,32 @@ const AddLease = () => {
               <div className="layout-preview-container" style={{ 
                 display: 'flex', 
                 justifyContent: 'center', 
-                padding: '1rem',
+                padding: '0.5rem',
                 backgroundColor: '#f8f9fa',
                 borderRadius: '8px',
-                marginBottom: '0.5rem'
+                marginBottom: '0.5rem',
+                border: '2px solid #e5e7eb'
               }}>
                 <img 
                   src={epcDocumentFile.isExisting ? epcDocumentFile.url : URL.createObjectURL(epcDocumentFile)} 
                   alt="EPC Preview" 
                   className="layout-preview-image"
                   style={{ 
-                    maxWidth: '400px',
-                    maxHeight: '300px',
+                    maxWidth: '250px',
+                    maxHeight: '200px',
                     width: 'auto',
                     height: 'auto',
                     objectFit: 'contain',
                     borderRadius: '6px',
-                    border: '1px solid #dee2e6'
+                    border: '1px solid #d1d5db',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    cursor: 'pointer'
                   }}
+                  onClick={() => {
+                    // Open image in new tab for full view
+                    window.open(epcDocumentFile.isExisting ? epcDocumentFile.url : URL.createObjectURL(epcDocumentFile), '_blank');
+                  }}
+                  title="Click to view full size"
                 />
               </div>
             )}
