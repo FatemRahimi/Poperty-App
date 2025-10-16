@@ -679,9 +679,15 @@ const PropertyView = () => {
                     </span>
                   ) : null}
                   
+                  {/* Lease Property - Deposit Amount */}
+                  {property.category === 'lease' && (property.deposit_amount || property.depositAmount) ? (
+                    <span className="property-details-price lease-deposit-amount">
+                      £{Number(property.deposit_amount || property.depositAmount).toLocaleString()} deposit
+                    </span>
+                  ) : null}
                   {/* Lease Property - Monthly Rent */}
                   {property.category === 'lease' && (property.monthly_rent || property.monthlyRent) ? (
-                    <span className="property-details-price" style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: 4, fontFamily: "Effra, sans-serif" }}>
+                    <span className="property-details-price lease-monthly-rent">
                       £{Number(property.monthly_rent || property.monthlyRent).toLocaleString()}/month
                     </span>
                   ) : null}
@@ -2419,13 +2425,19 @@ const PropertyView = () => {
                             alignItems: 'center',
                             gap: '0.5rem'
                           }}>
-                            <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>{feature}:</span>
                             <span style={{ 
-                              fontWeight: '400', 
-                              color: '#059669',
+                              color: '#374151', 
+                              fontSize: '1.2rem',
+                              marginRight: '0.5rem'
+                            }}>•</span>
+                            <span style={{ 
+                              fontWeight: '500', 
+                              color: '#374151', 
                               fontSize: '0.9rem' 
                             }}>
-                              Yes
+                              {feature.split(' ').map(word => 
+                                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                              ).join(' ')}
                             </span>
                           </div>
                         ))}
