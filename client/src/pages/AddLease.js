@@ -58,7 +58,6 @@ const AddLease = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [currentSection, setCurrentSection] = useState(1);
-  const [showAddress, setShowAddress] = useState(false);
   const [approvedPropertyNotification, setApprovedPropertyNotification] = useState(""); // Notification for approved property edits
   
   // Check if we're in edit mode
@@ -481,11 +480,24 @@ const AddLease = () => {
 
   // Validation functions for each step
   const validateStep1 = () => {
-    const requiredFields = ["spaceType", "spaceName", "city", "postcode", "totalArea"];
-    const missingFields = requiredFields.filter(field => !formData[field]);
+    const requiredFields = ["spaceType", "spaceName", "city", "postcode", "houseNumber", "streetName", "country", "totalArea"];
+    const missingFields = requiredFields.filter(field => !formData[field] || formData[field].toString().trim() === '');
     
     if (missingFields.length > 0) {
-      alert(`❌ Please complete the following required fields: ${missingFields.join(', ')}`);
+      const fieldNames = missingFields.map(f => {
+        switch(f) {
+          case 'spaceType': return 'Space Type';
+          case 'spaceName': return 'Space Name';
+          case 'city': return 'City';
+          case 'postcode': return 'Postal Code';
+          case 'houseNumber': return 'House Number / Unit';
+          case 'streetName': return 'Street Name';
+          case 'country': return 'Country';
+          case 'totalArea': return 'Building Size';
+          default: return f;
+        }
+      });
+      alert(`❌ Please complete the following required fields:\n${fieldNames.join('\n')}`);
       return false;
     }
     return true;
@@ -507,16 +519,22 @@ const AddLease = () => {
   };
 
   const validateStep3 = () => {
-    if (!formData.description.trim()) {
+    if (!formData.description || !formData.description.trim()) {
       alert("❌ Please provide a property description");
       return false;
     }
     
     // Check photos/videos (mandatory for new properties, optional for edits if existing photos)
-    const hasExistingPhotos = editMode && photoPreviewUrls.some(url => url.isExisting);
-    const hasNewPhotos = photoFiles.length > 0;
+    const hasExistingPhotos = editMode && photoPreviewUrls && photoPreviewUrls.some(url => url.isExisting);
+    const hasNewPhotos = photoFiles && photoFiles.length > 0;
     
-    if (!hasExistingPhotos && !hasNewPhotos) {
+    if (!editMode && !hasNewPhotos) {
+      alert("❌ Please upload at least one photo or video");
+      return false;
+    }
+    
+    // In edit mode, allow submission even without new photos if existing photos exist
+    if (editMode && !hasExistingPhotos && !hasNewPhotos) {
       alert("❌ Please upload at least one photo or video");
       return false;
     }
@@ -525,7 +543,14 @@ const AddLease = () => {
   };
 
   // Navigation functions
-  const goToNextStep = () => {
+  const goToNextStep = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    console.log('📍 goToNextStep called from section:', currentSection);
+    
     let isValid = false;
     
     switch(currentSection) {
@@ -543,19 +568,43 @@ const AddLease = () => {
     }
     
     if (isValid) {
-      setCurrentSection(prev => prev + 1);
+      const nextSection = currentSection + 1;
+      console.log('✅ Validation passed, moving to section:', nextSection);
+      setCurrentSection(nextSection);
       window.scrollTo(0, 0);
+    } else {
+      console.log('❌ Validation failed, staying on section:', currentSection);
     }
+    
+    return false; // Prevent any form submission
   };
 
-  const goToPrevStep = () => {
+  const goToPrevStep = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    console.log('◀️ Going back from section:', currentSection);
     setCurrentSection(prev => prev - 1);
     window.scrollTo(0, 0);
+    
+    return false; // Prevent any form submission
   };
 
   // Final form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // CRITICAL: Prevent premature submission - only allow on Step 3
+    if (currentSection < 3) {
+      console.error('❌ SUBMISSION BLOCKED - Current section:', currentSection, '(Must be on section 3)');
+      alert('⚠️ Please complete all steps before submitting.\n\nCurrent Step: ' + currentSection + '\nRequired Step: 3');
+      return false;
+    }
+    
+    console.log('✅ Submission allowed - on Step 3');
     
     if (!validateStep3()) {
       return;
@@ -600,8 +649,8 @@ const AddLease = () => {
         
         // Building details
         square_feet: formData.totalArea,
-        lot_size: formData.leaseTerm,
-        parking_spaces: formData.parking ? 1 : 0,
+        lot_size: '', // Not used for commercial lease properties
+        parking_spaces: formData.parkingSpaces || (formData.parking ? 1 : 0),
         
         // Contact information
         contact_phone: formData.contactPhone,
@@ -683,10 +732,20 @@ const AddLease = () => {
         console.log('🔄 Approved property being edited - Status changed to pending for admin review');
       }
       
-      // Add photos if any
-      photoFiles.forEach((file, index) => {
-        submitFormData.append('photos', file);
-      });
+      // Add photos if any (NEW photos only)
+      if (photoFiles && photoFiles.length > 0) {
+        photoFiles.forEach((file, index) => {
+          submitFormData.append('photos', file);
+        });
+      }
+      
+      // In edit mode, also send list of existing photos to keep
+      if (editMode) {
+        const existingPhotos = photoPreviewUrls.filter(p => p.isExisting).map(p => p.url);
+        if (existingPhotos.length > 0) {
+          submitFormData.append('keptPhotos', JSON.stringify(existingPhotos));
+        }
+      }
       
       // Add floor plan if any
       if (floorPlanFile) {
@@ -786,50 +845,32 @@ const AddLease = () => {
         <CheckboxInput label="Multiple Tenancy" name="isMultipleTenancy" checked={formData.isMultipleTenancy} onChange={handleChange} />
       </div>
 
-      <button 
-        type="button" 
-        className="form-sale-address" 
-        onClick={() => setShowAddress(!showAddress)}
-        style={{
-          padding: '8px 16px',
-          fontSize: '0.9rem',
-          width: 'auto',
-          maxWidth: '200px'
-        }}
-      >
-        {showAddress ? "Hide Address" : "Add Address"}
-      </button>
+      {/* City and Postcode are REQUIRED - always visible */}
+      <div className="form-row">
+        <TextInput label="City*" name="city" value={formData.city} onChange={handleChange} placeholder="e.g., London" />
+        <TextInput label="Postal Code*" name="postcode" value={formData.postcode} onChange={handleChange} placeholder="e.g., SW1A 1AA" />
+      </div>
 
-      {showAddress && (
-        <>
-          <div className="form-row">
-            <TextInput 
-              label="House Number / Unit" 
-              name="houseNumber" 
-              value={formData.houseNumber} 
-              onChange={handleChange} 
-              placeholder="123 or Unit 2A, 67" 
-              required 
-            />
-            <TextInput 
-              label="Street Name" 
-              name="streetName" 
-              value={formData.streetName} 
-              onChange={handleChange} 
-              placeholder="Industrial Estate" 
-              required 
-            />
-          </div>
-          
-          <div className="form-row">
-            <TextInput label="City" name="city" value={formData.city} onChange={handleChange} />
-            <TextInput label="Postal Code" name="postcode" value={formData.postcode} onChange={handleChange} />
-          </div>
-          <div className="form-row">
-            <TextInput label="Country" name="country" value={formData.country} onChange={handleChange} placeholder="e.g., United Kingdom" />
-          </div>
-        </>
-      )}
+      <div className="form-row">
+        <TextInput 
+          label="House Number / Unit*" 
+          name="houseNumber" 
+          value={formData.houseNumber} 
+          onChange={handleChange} 
+          placeholder="123 or Unit 2A, 67" 
+        />
+        <TextInput 
+          label="Street Name*" 
+          name="streetName" 
+          value={formData.streetName} 
+          onChange={handleChange} 
+          placeholder="Industrial Estate" 
+        />
+      </div>
+      
+      <div className="form-row">
+        <TextInput label="Country*" name="country" value={formData.country} onChange={handleChange} placeholder="e.g., United Kingdom" />
+      </div>
 
       <h3 className="section-title">Building Details</h3>
       <div className="form-row">
@@ -1213,22 +1254,53 @@ const AddLease = () => {
           {floorPlanFile && (
             <div className="uploaded-file" style={{ marginTop: '1rem' }}>
               {floorPlanFile.type.startsWith('image/') && (
-                <div className="layout-preview-container">
+                <div className="layout-preview-container" style={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  padding: '1rem',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '8px',
+                  marginBottom: '0.5rem'
+                }}>
                   <img 
                     src={URL.createObjectURL(floorPlanFile)} 
                     alt="Layout Preview" 
                     className="layout-preview-image"
-                    style={{ maxWidth: '100%', height: 'auto', borderRadius: '6px' }}
+                    style={{ 
+                      maxWidth: '400px',
+                      maxHeight: '300px',
+                      width: 'auto',
+                      height: 'auto',
+                      objectFit: 'contain',
+                      borderRadius: '6px',
+                      border: '1px solid #dee2e6'
+                    }}
                   />
                 </div>
               )}
-              <div className="file-info">
-                <span className="file-name">{floorPlanFile.name}</span>
+              <div className="file-info" style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0.5rem',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '6px'
+              }}>
+                <span className="file-name" style={{ flex: 1 }}>{floorPlanFile.name}</span>
                 <button 
                   type="button" 
                   className="remove-file-btn"
                   onClick={() => setFloorPlanFile(null)}
-                  style={{ marginLeft: '10px', cursor: 'pointer' }}
+                  style={{ 
+                    marginLeft: '10px',
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    fontSize: '16px',
+                    fontWeight: 'bold'
+                  }}
                 >
                   ×
                 </button>
@@ -1266,23 +1338,54 @@ const AddLease = () => {
         {epcDocumentFile && (
           <div className="uploaded-file" style={{ marginTop: '1rem' }}>
             {epcDocumentFile.type.startsWith('image/') && (
-              <div className="layout-preview-container">
+              <div className="layout-preview-container" style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                padding: '1rem',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+                marginBottom: '0.5rem'
+              }}>
                 <img 
                   src={URL.createObjectURL(epcDocumentFile)} 
                   alt="EPC Preview" 
                   className="layout-preview-image"
-                  style={{ maxWidth: '100%', height: 'auto', borderRadius: '6px' }}
+                  style={{ 
+                    maxWidth: '400px',
+                    maxHeight: '300px',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
+                    borderRadius: '6px',
+                    border: '1px solid #dee2e6'
+                  }}
                 />
               </div>
             )}
-            <div className="file-info">
-              <span className="file-name">{epcDocumentFile.name}</span>
+            <div className="file-info" style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.5rem',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '6px'
+            }}>
+              <span className="file-name" style={{ flex: 1 }}>{epcDocumentFile.name}</span>
               <button 
                 type="button" 
                 className="remove-file-btn"
                 onClick={() => setEpcDocumentFile(null)}
                 title="Remove EPC document"
-                style={{ marginLeft: '10px', cursor: 'pointer' }}
+                style={{ 
+                  marginLeft: '10px',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  backgroundColor: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '16px',
+                  fontWeight: 'bold'
+                }}
               >
                 ×
               </button>
@@ -1342,7 +1445,28 @@ const AddLease = () => {
         {success && <div className="alert alert-success">{success}</div>}
         {approvedPropertyNotification && <div className="alert alert-warning">{approvedPropertyNotification}</div>}
         
-        <form onSubmit={handleSubmit} className="property-form">
+        <form 
+          onSubmit={handleSubmit} 
+          className="property-form" 
+          autoComplete="off"
+          onKeyPress={(e) => {
+            // Prevent Enter key from submitting form on Steps 1 and 2
+            if (e.key === 'Enter' && currentSection < 3 && e.target.tagName !== 'TEXTAREA') {
+              e.preventDefault();
+              console.log('⚠️ Enter key prevented on step', currentSection);
+              return false;
+            }
+          }}
+          onKeyDown={(e) => {
+            // Additional Enter key prevention
+            if (e.key === 'Enter' && currentSection < 3 && e.target.tagName !== 'TEXTAREA') {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('⚠️ Enter key blocked - use Continue button');
+              return false;
+            }
+          }}
+        >
           {renderCurrentStep()}
 
           {/* Navigation Buttons */}

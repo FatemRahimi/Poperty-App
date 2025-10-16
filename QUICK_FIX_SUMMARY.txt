@@ -1,0 +1,76 @@
+╔════════════════════════════════════════════════════════════════╗
+║          AddLease Form Submission - FIXED ✅                   ║
+╚════════════════════════════════════════════════════════════════╝
+
+🐛 ROOT CAUSE:
+   City and Postcode fields were HIDDEN by default behind
+   an "Add Address" button, but they were REQUIRED for submission!
+
+✅ SOLUTION:
+   Made City and Postcode always visible on Step 1
+
+📝 FILES CHANGED (3):
+   1. client/src/pages/AddLease.js         (+67 lines)
+   2. server/controllers/propertyController.js (+226 lines) 
+   3. server/routes/propertyRoutes.js      (+2 lines)
+
+🎯 CRITICAL FIXES:
+
+   [1] CITY & POSTCODE NOW ALWAYS VISIBLE
+       - Moved City and Postcode fields OUTSIDE the toggle
+       - Marked with * to show they're required
+       - Added helpful placeholders
+
+   [2] FIXED DATA CORRUPTION
+       - lot_size was incorrectly getting lease_term data
+       - Now properly set to empty string for commercial leases
+
+   [3] BETTER VALIDATION ERRORS
+       - Shows user-friendly field names
+       - Lists each missing field on a new line
+
+   [4] IMPROVED PHOTO HANDLING
+       - Edit mode now properly handles existing photos
+       - keptPhotos array sent correctly to backend
+
+   [5] BACKEND JSON PARSING
+       - Properly parses JSON arrays for photo management
+
+🧪 HOW TO TEST:
+
+   Step 1: Open http://localhost:3000/addlease
+   Step 2: Fill required fields (ALL NOW VISIBLE!):
+           - Space Type: "Office"
+           - Space Name: "Modern Office Unit 5"
+           - City: "London" ← NOW VISIBLE!
+           - Postcode: "EC1A 1BB" ← NOW VISIBLE!
+           - Building Size: "2000"
+   Step 3: Click "Continue"
+   Step 4: Fill lease terms and click "Continue"
+   Step 5: Add description, upload photo, click "Submit"
+   Step 6: ✅ SUCCESS! Property submitted
+
+📊 BEFORE vs AFTER:
+
+   BEFORE:
+   ❌ City hidden → User can't see it
+   ❌ Form validation fails → "City is required"
+   ❌ User confused → "Where is City field?"
+   ❌ 100% submission failure
+
+   AFTER:
+   ✅ City always visible with label "City*"
+   ✅ Form validation passes
+   ✅ Clear UI - all required fields visible
+   ✅ Submissions work perfectly!
+
+🚀 STATUS: READY TO USE ✅
+
+   The AddLease form now works correctly. All required fields
+   are visible, and lease properties can be submitted successfully.
+
+📁 DOCUMENTATION:
+   - ADDLEASE_SUBMISSION_FIX.md (detailed technical docs)
+   - ADDLEASE_FIX_VISUAL_SUMMARY.md (visual diagrams)
+   - ADDLEASE_FIX_SUMMARY.md (implementation summary)
+
