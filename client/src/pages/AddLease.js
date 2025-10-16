@@ -174,8 +174,8 @@ const AddLease = () => {
         depositAmount: propertyData.deposit_amount ? propertyData.deposit_amount.toString() : "",
         availableFrom: formatDateForInput(propertyData.availability_date),
         leaseTerm: propertyData.lease_term?.toString() || "",
-        breakClause: propertyData.break_clause || false,
-        depositRequired: propertyData.deposit_required || false,
+        breakClause: propertyData.break_clause === true || propertyData.break_clause === 'true' || false,
+        depositRequired: propertyData.deposit_required === true || propertyData.deposit_required === 'true' || false,
         leaseType: propertyData.lease_type || "",
         useClass: propertyData.use_class || "",
         
@@ -195,9 +195,9 @@ const AddLease = () => {
         heatingCooling: propertyData.heating_cooling || "",
         toiletKitchen: propertyData.toilet_kitchen || "",
         openingHours: propertyData.opening_hours || "",
-        isMultipleTenancy: propertyData.is_multiple_tenancy || false,
-        signageAllowed: propertyData.signage_allowed || false,
-        disabilityAccess: propertyData.disability_access || false,
+        isMultipleTenancy: propertyData.is_multiple_tenancy === true || propertyData.is_multiple_tenancy === 'true' || false,
+        signageAllowed: propertyData.signage_allowed === true || propertyData.signage_allowed === 'true' || false,
+        disabilityAccess: propertyData.disability_access === true || propertyData.disability_access === 'true' || false,
         
         // Space Features
         parking: propertyData.parking_spaces > 0 || propertyData.has_garage || false,
@@ -343,6 +343,35 @@ const AddLease = () => {
         isExisting: true // Flag to identify existing images
       }));
       setPhotoPreviewUrls(imageUrls);
+    }
+  }, [editMode, propertyData]);
+
+  // Load existing layout and EPC document files if in edit mode
+  useEffect(() => {
+    if (editMode && propertyData) {
+      // Load existing layout file if it exists
+      if (propertyData.layout_file_name && propertyData.layout_file_url) {
+        // Create a mock file object for existing layout file
+        const existingLayoutFile = {
+          name: propertyData.layout_file_name,
+          url: propertyData.layout_file_url,
+          type: propertyData.layout_file_name.toLowerCase().includes('.pdf') ? 'application/pdf' : 'image/jpeg',
+          isExisting: true
+        };
+        setFloorPlanFile(existingLayoutFile);
+      }
+
+      // Load existing EPC document if it exists
+      if (propertyData.epc_document_name && propertyData.epc_document_url) {
+        // Create a mock file object for existing EPC document
+        const existingEpcFile = {
+          name: propertyData.epc_document_name,
+          url: propertyData.epc_document_url,
+          type: propertyData.epc_document_name.toLowerCase().includes('.pdf') ? 'application/pdf' : 'image/jpeg',
+          isExisting: true
+        };
+        setEpcDocumentFile(existingEpcFile);
+      }
     }
   }, [editMode, propertyData]);
 
@@ -1263,7 +1292,7 @@ const AddLease = () => {
                   marginBottom: '0.5rem'
                 }}>
                   <img 
-                    src={URL.createObjectURL(floorPlanFile)} 
+                    src={floorPlanFile.isExisting ? floorPlanFile.url : URL.createObjectURL(floorPlanFile)} 
                     alt="Layout Preview" 
                     className="layout-preview-image"
                     style={{ 
@@ -1285,7 +1314,10 @@ const AddLease = () => {
                 backgroundColor: '#f8f9fa',
                 borderRadius: '6px'
               }}>
-                <span className="file-name" style={{ flex: 1 }}>{floorPlanFile.name}</span>
+                <span className="file-name" style={{ flex: 1 }}>
+                  {floorPlanFile.name}
+                  {floorPlanFile.isExisting && <span style={{ color: '#6c757d', fontSize: '0.8em', marginLeft: '8px' }}>(existing)</span>}
+                </span>
                 <button 
                   type="button" 
                   className="remove-file-btn"
@@ -1347,7 +1379,7 @@ const AddLease = () => {
                 marginBottom: '0.5rem'
               }}>
                 <img 
-                  src={URL.createObjectURL(epcDocumentFile)} 
+                  src={epcDocumentFile.isExisting ? epcDocumentFile.url : URL.createObjectURL(epcDocumentFile)} 
                   alt="EPC Preview" 
                   className="layout-preview-image"
                   style={{ 
@@ -1369,7 +1401,10 @@ const AddLease = () => {
               backgroundColor: '#f8f9fa',
               borderRadius: '6px'
             }}>
-              <span className="file-name" style={{ flex: 1 }}>{epcDocumentFile.name}</span>
+              <span className="file-name" style={{ flex: 1 }}>
+                {epcDocumentFile.name}
+                {epcDocumentFile.isExisting && <span style={{ color: '#6c757d', fontSize: '0.8em', marginLeft: '8px' }}>(existing)</span>}
+              </span>
               <button 
                 type="button" 
                 className="remove-file-btn"
