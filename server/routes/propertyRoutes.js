@@ -127,6 +127,7 @@ const requireAdmin = (req, res, next) => {
 router.post('/submit', authenticateJWT, upload.fields([
   { name: 'photos', maxCount: 15 },
   { name: 'layoutFile', maxCount: 1 },
+  { name: 'floorPlan', maxCount: 1 },
   { name: 'epcDocument', maxCount: 1 }
 ]), handleMulterError, submitProperty);
 
@@ -139,6 +140,7 @@ router.post('/sale/submit', authenticateJWT, upload.fields([
 router.put('/update/:id', authenticateJWT, upload.fields([
   { name: 'photos', maxCount: 15 },
   { name: 'layoutFile', maxCount: 1 },
+  { name: 'floorPlan', maxCount: 1 },
   { name: 'epcDocument', maxCount: 1 }
 ]), handleMulterError, updateProperty);
 

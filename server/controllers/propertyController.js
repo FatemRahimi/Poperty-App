@@ -225,7 +225,53 @@ const submitProperty = async (req, res) => {
       insurance_responsibility,
       insuranceResponsibility,
       rent_review_frequency,
-      rentReviewFrequency
+      rentReviewFrequency,
+      
+      // Commercial lease-specific fields
+      spaceSubtypes,
+      space_subtypes,
+      leaseType,
+      lease_type,
+      useClass,
+      use_class,
+      minDivisible,
+      min_divisible,
+      vacantSQFT,
+      vacant_sqft,
+      landAcres,
+      land_acres,
+      lotSizeUnit,
+      lot_size_unit,
+      taxesPerSQFT,
+      taxes_per_sqft,
+      power,
+      zoning,
+      serviceCharge,
+      service_charge,
+      businessRates,
+      business_rates,
+      floorLoadCapacity,
+      floor_load_capacity,
+      heatingCooling,
+      heating_cooling,
+      toiletKitchen,
+      toilet_kitchen,
+      openingHours,
+      opening_hours,
+      isMultipleTenancy,
+      is_multiple_tenancy,
+      breakClause,
+      break_clause,
+      depositRequired,
+      deposit_required,
+      parkingAvailable,
+      parking_available,
+      disabilityAccess,
+      disability_access,
+      signageAllowed,
+      signage_allowed,
+      utilities,
+      security
     } = req.body;
 
     // Map frontend field names to backend field names
@@ -322,6 +368,33 @@ const submitProperty = async (req, res) => {
     const repairing_obligation_mapped = repairing_obligation || repairingObligation || '';
     const insurance_responsibility_mapped = insurance_responsibility || insuranceResponsibility || '';
     const rent_review_frequency_mapped = rent_review_frequency || rentReviewFrequency || null;
+    
+    // Commercial lease field mappings
+    const space_subtypes_mapped = space_subtypes || spaceSubtypes || '';
+    const lease_type_mapped = lease_type || leaseType || '';
+    const use_class_mapped = use_class || useClass || '';
+    const min_divisible_mapped = min_divisible || minDivisible || null;
+    const vacant_sqft_mapped = vacant_sqft || vacantSQFT || null;
+    const land_acres_mapped = land_acres || landAcres || null;
+    const lot_size_unit_mapped = lot_size_unit || lotSizeUnit || '';
+    const taxes_per_sqft_mapped = taxes_per_sqft || taxesPerSQFT || null;
+    const power_mapped = power || '';
+    const zoning_mapped = zoning || '';
+    const service_charge_mapped = service_charge || serviceCharge || null;
+    const business_rates_mapped = business_rates || businessRates || null;
+    const floor_load_capacity_mapped = floor_load_capacity || floorLoadCapacity || '';
+    const heating_cooling_mapped = heating_cooling || heatingCooling || '';
+    const toilet_kitchen_mapped = toilet_kitchen || toiletKitchen || '';
+    const opening_hours_mapped = opening_hours || openingHours || '';
+    const is_multiple_tenancy_mapped = is_multiple_tenancy === true || is_multiple_tenancy === 'true' || isMultipleTenancy === true || isMultipleTenancy === 'true' || false;
+    const break_clause_mapped = break_clause === true || break_clause === 'true' || breakClause === true || breakClause === 'true' || false;
+    const deposit_required_mapped = deposit_required === true || deposit_required === 'true' || depositRequired === true || depositRequired === 'true' || false;
+    const disability_access_mapped = disability_access === true || disability_access === 'true' || disabilityAccess === true || disabilityAccess === 'true' || false;
+    const signage_allowed_mapped = signage_allowed === true || signage_allowed === 'true' || signageAllowed === true || signageAllowed === 'true' || false;
+    
+    // Parse JSON fields
+    const utilities_mapped = utilities || '{}';
+    const security_mapped = security || '{}';
 
     // Data conversion for numeric fields
     const convertBathrooms = (bathrooms) => {
@@ -473,7 +546,13 @@ const submitProperty = async (req, res) => {
       // Additional information fields
       heating_type_mapped, broadband_availability_mapped, accessibility_features_mapped, custom_features_mapped, has_residential_accommodation_mapped,
       // UK-specific lease fields
-      vat_on_rent_mapped, repairing_obligation_mapped, insurance_responsibility_mapped, rent_review_frequency_mapped
+      vat_on_rent_mapped, repairing_obligation_mapped, insurance_responsibility_mapped, rent_review_frequency_mapped,
+      // Commercial lease-specific fields
+      space_subtypes_mapped, lease_type_mapped, use_class_mapped, min_divisible_mapped, vacant_sqft_mapped,
+      land_acres_mapped, lot_size_unit_mapped, taxes_per_sqft_mapped, power_mapped, zoning_mapped,
+      service_charge_mapped, business_rates_mapped, floor_load_capacity_mapped, heating_cooling_mapped, toilet_kitchen_mapped,
+      opening_hours_mapped, is_multiple_tenancy_mapped, break_clause_mapped, deposit_required_mapped,
+      disability_access_mapped, signage_allowed_mapped, utilities_mapped, security_mapped
     ];
     
     console.log('Values array position 21 (lease_term):', valuesArray[20]);
@@ -494,12 +573,17 @@ const submitProperty = async (req, res) => {
         reception_rooms, house_number, street_name, local_authority, nearest_transport_links, short_description, virtual_tour_link,
         epc_document_name, epc_document_url,
         heating_type, broadband_availability, accessibility_features, custom_features, has_residential_accommodation,
-        vat_on_rent, repairing_obligation, insurance_responsibility, rent_review_frequency
+        vat_on_rent, repairing_obligation, insurance_responsibility, rent_review_frequency,
+        space_subtypes, lease_type, use_class, min_divisible, vacant_sqft,
+        land_acres, lot_size_unit, taxes_per_sqft, power, zoning,
+        service_charge, business_rates, floor_load_capacity, heating_cooling, toilet_kitchen,
+        opening_hours, is_multiple_tenancy, break_clause, deposit_required,
+        disability_access, signage_allowed, utilities, security
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36,
         $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59,
-        $60, $61, $62, $63
+        $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74, $75, $76, $77, $78, $79, $80, $81, $82, $83, $84, $85, $86
       ) RETURNING *`,
       valuesArray
     );
@@ -543,9 +627,10 @@ const submitProperty = async (req, res) => {
         }
       }
 
-      // Handle layout file
-      if (req.files.layoutFile && req.files.layoutFile.length > 0) {
-        const layoutFile = req.files.layoutFile[0];
+      // Handle layout file (support both layoutFile and floorPlan field names)
+      const layoutFileArray = req.files.layoutFile || req.files.floorPlan;
+      if (layoutFileArray && layoutFileArray.length > 0) {
+        const layoutFile = layoutFileArray[0];
         
         // Create unique filename for layout file
         const layoutFilename = `${property.id}_layout_${layoutFile.originalname}`;
@@ -554,7 +639,7 @@ const submitProperty = async (req, res) => {
         // Save layout file to disk
         try {
           fs.writeFileSync(layoutFilepath, layoutFile.buffer);
-          console.log(`📄 Layout file saved: ${layoutFilename}`);
+          console.log(`📄 Layout/Floor Plan file saved: ${layoutFilename}`);
           
           // Update property with layout file information
           const layoutUrl = `/uploads/${layoutFilename}`;
@@ -563,9 +648,9 @@ const submitProperty = async (req, res) => {
             [layoutFile.originalname, layoutUrl, property.id]
           );
           
-          console.log(`✅ Layout file updated in database: ${layoutFile.originalname}`);
+          console.log(`✅ Layout/Floor Plan file updated in database: ${layoutFile.originalname}`);
         } catch (fileError) {
-          console.error(`❌ Error saving layout file ${layoutFilename}:`, fileError);
+          console.error(`❌ Error saving layout/floor plan file ${layoutFilename}:`, fileError);
         }
       }
 
@@ -1450,7 +1535,53 @@ const updateProperty = async (req, res) => {
       insurance_responsibility,
       insuranceResponsibility,
       rent_review_frequency,
-      rentReviewFrequency
+      rentReviewFrequency,
+      
+      // Commercial lease-specific fields
+      spaceSubtypes,
+      space_subtypes,
+      leaseType,
+      lease_type,
+      useClass,
+      use_class,
+      minDivisible,
+      min_divisible,
+      vacantSQFT,
+      vacant_sqft,
+      landAcres,
+      land_acres,
+      lotSizeUnit,
+      lot_size_unit,
+      taxesPerSQFT,
+      taxes_per_sqft,
+      power,
+      zoning,
+      serviceCharge,
+      service_charge,
+      businessRates,
+      business_rates,
+      floorLoadCapacity,
+      floor_load_capacity,
+      heatingCooling,
+      heating_cooling,
+      toiletKitchen,
+      toilet_kitchen,
+      openingHours,
+      opening_hours,
+      isMultipleTenancy,
+      is_multiple_tenancy,
+      breakClause,
+      break_clause,
+      depositRequired,
+      deposit_required,
+      parkingAvailable,
+      parking_available,
+      disabilityAccess,
+      disability_access,
+      signageAllowed,
+      signage_allowed,
+      utilities,
+      security
     } = req.body;
 
     // Map frontend field names to backend field names
@@ -1538,12 +1669,36 @@ const updateProperty = async (req, res) => {
     const virtual_tour_link_mapped = virtual_tour_link || virtualTourLink || existingProperty.virtual_tour_link || "";
     const is_furnished_mapped = req.body.is_furnished !== undefined ? (req.body.is_furnished === "true" || req.body.is_furnished === true) : (req.body.isFurnished === true || existingProperty.is_furnished);
     
+    // Commercial lease field mappings for updateProperty
+    const space_subtypes_mapped = space_subtypes || spaceSubtypes || existingProperty.space_subtypes || '';
+    const lease_type_mapped_update = lease_type || leaseType || existingProperty.lease_type || '';
+    const use_class_mapped = use_class || useClass || existingProperty.use_class || '';
+    const min_divisible_mapped = min_divisible || minDivisible || existingProperty.min_divisible || null;
+    const vacant_sqft_mapped = vacant_sqft || vacantSQFT || existingProperty.vacant_sqft || null;
+    const land_acres_mapped = land_acres || landAcres || existingProperty.land_acres || null;
+    const lot_size_unit_mapped = lot_size_unit || lotSizeUnit || existingProperty.lot_size_unit || '';
+    const taxes_per_sqft_mapped = taxes_per_sqft || taxesPerSQFT || existingProperty.taxes_per_sqft || null;
+    const power_mapped = power || existingProperty.power || '';
+    const zoning_mapped = zoning || existingProperty.zoning || '';
+    const service_charge_mapped_update = service_charge || serviceCharge || existingProperty.service_charge || null;
+    const business_rates_mapped = business_rates || businessRates || existingProperty.business_rates || null;
+    const floor_load_capacity_mapped = floor_load_capacity || floorLoadCapacity || existingProperty.floor_load_capacity || '';
+    const heating_cooling_mapped = heating_cooling || heatingCooling || existingProperty.heating_cooling || '';
+    const toilet_kitchen_mapped = toilet_kitchen || toiletKitchen || existingProperty.toilet_kitchen || '';
+    const opening_hours_mapped = opening_hours || openingHours || existingProperty.opening_hours || '';
+    const is_multiple_tenancy_mapped = is_multiple_tenancy !== undefined ? (is_multiple_tenancy === true || is_multiple_tenancy === 'true' || isMultipleTenancy === true || isMultipleTenancy === 'true') : (existingProperty.is_multiple_tenancy || false);
+    const break_clause_mapped = break_clause !== undefined ? (break_clause === true || break_clause === 'true' || breakClause === true || breakClause === 'true') : (existingProperty.break_clause || false);
+    const deposit_required_mapped = deposit_required !== undefined ? (deposit_required === true || deposit_required === 'true' || depositRequired === true || depositRequired === 'true') : (existingProperty.deposit_required || false);
+    const disability_access_mapped = disability_access !== undefined ? (disability_access === true || disability_access === 'true' || disabilityAccess === true || disabilityAccess === 'true') : (existingProperty.disability_access || false);
+    const signage_allowed_mapped = signage_allowed !== undefined ? (signage_allowed === true || signage_allowed === 'true' || signageAllowed === true || signageAllowed === 'true') : (existingProperty.signage_allowed || false);
+    const utilities_mapped_update = utilities || existingProperty.utilities || '{}';
+    const security_mapped_update = security || existingProperty.security || '{}';
     
-    
-    
-    
-    
-    
+    // UK-specific lease field mappings for updateProperty
+    const vat_on_rent_mapped = vat_on_rent || vatOnRent || existingProperty.vat_on_rent || '';
+    const repairing_obligation_mapped = repairing_obligation || repairingObligation || existingProperty.repairing_obligation || '';
+    const insurance_responsibility_mapped = insurance_responsibility || insuranceResponsibility || existingProperty.insurance_responsibility || '';
+    const rent_review_frequency_mapped = rent_review_frequency || rentReviewFrequency || existingProperty.rent_review_frequency || null;
 
     // NEW: Floor area mapping - compute square_feet from floorArea + unit if provided
     const rawFloorArea = req.body.square_feet || req.body.squareFeet || req.body.floor_area || req.body.floorArea;
@@ -1687,6 +1842,11 @@ const updateProperty = async (req, res) => {
       council_tax_band_mapped, council_tax_status_mapped,
       reception_rooms_mapped, house_number_mapped, street_name_mapped, local_authority_mapped, nearest_transport_links_mapped, short_description_mapped, virtual_tour_link_mapped, has_residential_accommodation_mapped,
       vat_on_rent_mapped, repairing_obligation_mapped, insurance_responsibility_mapped, rent_review_frequency_mapped,
+      space_subtypes_mapped, lease_type_mapped_update, use_class_mapped, min_divisible_mapped, vacant_sqft_mapped,
+      land_acres_mapped, lot_size_unit_mapped, taxes_per_sqft_mapped, power_mapped, zoning_mapped,
+      service_charge_mapped_update, business_rates_mapped, floor_load_capacity_mapped, heating_cooling_mapped, toilet_kitchen_mapped,
+      opening_hours_mapped, is_multiple_tenancy_mapped, break_clause_mapped, deposit_required_mapped,
+      disability_access_mapped, signage_allowed_mapped, utilities_mapped_update, security_mapped_update,
       parseInt(id), parseInt(user_id)
     ];
 
@@ -1716,8 +1876,13 @@ const updateProperty = async (req, res) => {
         latitude = $57, longitude = $58,
         council_tax_band = $59, council_tax_status = $60,
         reception_rooms = $61, house_number = $62, street_name = $63, local_authority = $64, nearest_transport_links = $65, short_description = $66, virtual_tour_link = $67, has_residential_accommodation = $68,
-        vat_on_rent = $69, repairing_obligation = $70, insurance_responsibility = $71, rent_review_frequency = $72
-       WHERE id = $73 AND user_id = $74
+        vat_on_rent = $69, repairing_obligation = $70, insurance_responsibility = $71, rent_review_frequency = $72,
+        space_subtypes = $73, lease_type = $74, use_class = $75, min_divisible = $76, vacant_sqft = $77,
+        land_acres = $78, lot_size_unit = $79, taxes_per_sqft = $80, power = $81, zoning = $82,
+        service_charge = $83, business_rates = $84, floor_load_capacity = $85, heating_cooling = $86, toilet_kitchen = $87,
+        opening_hours = $88, is_multiple_tenancy = $89, break_clause = $90, deposit_required = $91,
+        disability_access = $92, signage_allowed = $93, utilities = $94, security = $95
+       WHERE id = $96 AND user_id = $97
        RETURNING *`,
       params
     );
@@ -1734,13 +1899,25 @@ const updateProperty = async (req, res) => {
     
     // CRITICAL FIX: Ensure deletedPhotos and keptPhotos are arrays, not strings
     if (typeof deletedPhotos === 'string') {
-      deletedPhotos = [deletedPhotos]; // Convert single string to array
+      try {
+        // Try to parse as JSON first (e.g., from JSON.stringify)
+        deletedPhotos = JSON.parse(deletedPhotos);
+      } catch (e) {
+        // If not JSON, treat as single string URL
+        deletedPhotos = [deletedPhotos];
+      }
     } else if (!Array.isArray(deletedPhotos)) {
       deletedPhotos = []; // Default to empty array if not string or array
     }
     
     if (typeof keptPhotos === 'string') {
-      keptPhotos = [keptPhotos]; // Convert single string to array
+      try {
+        // Try to parse as JSON first (e.g., from JSON.stringify)
+        keptPhotos = JSON.parse(keptPhotos);
+      } catch (e) {
+        // If not JSON, treat as single string URL
+        keptPhotos = [keptPhotos];
+      }
     } else if (!Array.isArray(keptPhotos)) {
       keptPhotos = []; // Default to empty array if not string or array
     }
@@ -1867,11 +2044,12 @@ const updateProperty = async (req, res) => {
         }
       }
 
-      // Handle layout file
-      if (req.files.layoutFile && req.files.layoutFile.length > 0) {
-        console.log('📄 Processing layout file upload...');
+      // Handle layout file (support both layoutFile and floorPlan)
+      const updateLayoutFileArray = req.files.layoutFile || req.files.floorPlan;
+      if (updateLayoutFileArray && updateLayoutFileArray.length > 0) {
+        console.log('📄 Processing layout/floor plan file upload...');
         
-        const layoutFile = req.files.layoutFile[0];
+        const layoutFile = updateLayoutFileArray[0];
         
         // Create unique filename for layout file
         const layoutFilename = `${property.id}_layout_${Date.now()}_${layoutFile.originalname}`;
