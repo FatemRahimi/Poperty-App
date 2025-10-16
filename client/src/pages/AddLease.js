@@ -772,8 +772,8 @@ const AddLease = () => {
 
       <div className="form-row">
         <SelectInput label="Space Type*" name="spaceType" value={formData.spaceType} onChange={handleChange} options={spaceTypeOptions} />
-        <TextInput label="Space Subtypes" name="spaceSubtypes" value={formData.spaceSubtypes} onChange={handleChange} />
-        <TextInput label="Space Name*" name="spaceName" value={formData.spaceName} onChange={handleChange} />
+        <TextInput label="Space Subtypes" name="spaceSubtypes" value={formData.spaceSubtypes} onChange={handleChange} placeholder="e.g., Warehouse, Showroom" />
+        <TextInput label="Space Name*" name="spaceName" value={formData.spaceName} onChange={handleChange} placeholder="e.g., Unit 5A Business Park" />
       </div>
 
       <div style={{ 
@@ -821,49 +821,39 @@ const AddLease = () => {
             />
           </div>
           
-          <div className="address-help-text" style={{ 
-            fontSize: '0.85em', 
-            color: '#666', 
-            marginTop: '-10px', 
-            marginBottom: '15px',
-            fontStyle: 'italic'
-          }}>
-            <strong>Tip:</strong> For units, enter the full unit reference (e.g., "Unit 2A, 67") in the first field and just the street name in the second field.
-          </div>
-          
           <div className="form-row">
             <TextInput label="City" name="city" value={formData.city} onChange={handleChange} />
             <TextInput label="Postal Code" name="postcode" value={formData.postcode} onChange={handleChange} />
           </div>
           <div className="form-row">
-            <TextInput label="Country" name="country" value={formData.country} onChange={handleChange} disabled />
+            <TextInput label="Country" name="country" value={formData.country} onChange={handleChange} placeholder="e.g., United Kingdom" />
           </div>
         </>
       )}
 
       <h3 className="section-title">Building Details</h3>
       <div className="form-row">
-        <TextInput label="Building Size (sqft)*" name="totalArea" value={formData.totalArea} onChange={handleChange} type="number" />
-        <TextInput label="Min Divisible (sqft)" name="minDivisible" value={formData.minDivisible} onChange={handleChange} type="number" />
-        <TextInput label="Vacant SQFT*" name="vacantSQFT" value={formData.vacantSQFT} onChange={handleChange} type="number" />
+        <TextInput label="Building Size (sqft)*" name="totalArea" value={formData.totalArea} onChange={handleChange} type="number" placeholder="e.g., 5000" />
+        <TextInput label="Min Divisible (sqft)" name="minDivisible" value={formData.minDivisible} onChange={handleChange} type="number" placeholder="e.g., 1000" />
+        <TextInput label="Vacant SQFT*" name="vacantSQFT" value={formData.vacantSQFT} onChange={handleChange} type="number" placeholder="e.g., 3000" />
       </div>
 
       <div className="form-row">
-        <TextInput label="Land Acres" name="landAcres" value={formData.landAcres} onChange={handleChange} type="number" />
-        <TextInput label="Lot Size" name="leaseTerm" value={formData.leaseTerm} onChange={handleChange} type="number" />
+        <TextInput label="Land Acres" name="landAcres" value={formData.landAcres} onChange={handleChange} type="number" placeholder="e.g., 2.5" />
+        <TextInput label="Lot Size" name="leaseTerm" value={formData.leaseTerm} onChange={handleChange} type="number" placeholder="e.g., 10000" />
         <SelectInput label="Lot Size Unit" name="lotSizeUnit" value={formData.lotSizeUnit} onChange={handleChange} options={lotSizeUnitOptions} />
       </div>
 
       <h3 className="section-title">Building Specs</h3>
       <div className="form-row">
-        <TextInput label="Taxes (per sqft)" name="taxesPerSQFT" value={formData.taxesPerSQFT} onChange={handleChange} type="number" />
-        <TextInput label="Parking Spaces" name="parkingSpaces" value={formData.parkingSpaces} onChange={handleChange} type="number" />
-        <TextInput label="Power" name="power" value={formData.power} onChange={handleChange} />
+        <TextInput label="Taxes (per sqft)" name="taxesPerSQFT" value={formData.taxesPerSQFT} onChange={handleChange} type="number" placeholder="e.g., 2.50" />
+        <TextInput label="Parking Spaces" name="parkingSpaces" value={formData.parkingSpaces} onChange={handleChange} type="number" placeholder="e.g., 10" />
+        <TextInput label="Power" name="power" value={formData.power} onChange={handleChange} placeholder="e.g., 3-phase, 100 amp" />
       </div>
 
       <h3 className="section-title">Location Info</h3>
       <div className="form-row">
-        <TextInput label="Zoning (Use Class)" name="zoning" value={formData.zoning} onChange={handleChange} />
+        <TextInput label="Zoning (Use Class)" name="zoning" value={formData.zoning} onChange={handleChange} placeholder="e.g., B2, B8, Class E" />
         <SelectInput label="Lease Type*" name="leaseType" value={formData.leaseType} onChange={handleChange} options={leaseTypeOptions} />
       </div>
     </>
@@ -880,6 +870,7 @@ const AddLease = () => {
           name="leaseTerm"
           value={formData.leaseTerm}
           onChange={handleChange}
+          placeholder="e.g., 5"
         />
         <TextInput
           type="number"
@@ -887,6 +878,7 @@ const AddLease = () => {
           name="monthlyRent"
           value={formData.monthlyRent}
           onChange={handleChange}
+          placeholder="e.g., 2500"
         />
         <TextInput
           type="number"
@@ -894,6 +886,7 @@ const AddLease = () => {
           name="serviceCharge"
           value={formData.serviceCharge}
           onChange={handleChange}
+          placeholder="e.g., 150"
         />
       </div>
 
