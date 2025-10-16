@@ -703,7 +703,12 @@ const PropertyView = () => {
                 return null; // Don't show view-property-features section at all
               }
               
-              // For all other cases (residential properties, commercial WITH residential, rent, lease), show the section
+              // For lease category, hide this entire section
+              if (property.category === 'lease') {
+                return null; // Don't show view-property-features section for lease
+              }
+              
+              // For all other cases (residential properties, commercial WITH residential, rent), show the section
               return (
                 <>
                   <div className="view-property-features" style={{ fontFamily: "Effra, sans-serif" }}>
@@ -764,8 +769,8 @@ const PropertyView = () => {
               }}>{property.description || 'No description available.'}</p>
             </div>
 
-            {/* Custom Features Section - From AddList Form "Add Your Extra Features" */}
-            {(() => {
+            {/* Custom Features Section - From AddList Form "Add Your Extra Features" - NOT FOR LEASE */}
+            {property.category !== 'lease' && (() => {
               // Parse custom_features from database
               let customFeatures = [];
               
@@ -837,8 +842,8 @@ const PropertyView = () => {
             {/* Border line after Additional Features */}
             <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
 
-            {/* Property Layout Section */}
-            {(property.layout_file_url || property.layout_file_name || property.layoutFileUrl || property.layoutFileName) && (
+            {/* Property Layout Section - NOT FOR LEASE */}
+            {(property.layout_file_url || property.layout_file_name || property.layoutFileUrl || property.layoutFileName) && property.category !== 'lease' && (
               <div className="property-layout-section">
                 <h3 className="property-layout-title">Property Layout</h3>
                 
@@ -1490,8 +1495,8 @@ const PropertyView = () => {
               
               return (
                 <>
-                  {/* Property Information Section - ONLY FOR RENT/LEASE */}
-                  {!isSaleProperty && (
+                  {/* Property Information Section - ONLY FOR RENT */}
+                  {!isSaleProperty && property.category !== 'lease' && (
                     <>
             <h3 className="property-view-info-title">Property Details</h3>
             <div className="property-view-info-section" style={{ fontFamily: "Effra, sans-serif" }}>
@@ -2378,6 +2383,835 @@ const PropertyView = () => {
                     </div>
                   </div>
                 </div>
+              </>
+            )}
+
+            {/* =================================================================
+                LEASE CATEGORY ONLY: COMPREHENSIVE PROPERTY FEATURES SECTION
+            ================================================================= */}
+            {property.category === 'lease' && (
+              <>
+                <div className="lease-property-features-section" style={{ 
+                  fontFamily: "Effra, sans-serif",
+                  marginBottom: '2rem'
+                }}>
+                  {/* Additional Features Subsection */}
+                  {property.custom_features && JSON.parse(property.custom_features).length > 0 && (
+                    <div style={{ marginBottom: '2rem' }}>
+                      <h4 style={{ 
+                        fontSize: '1rem', 
+                        fontWeight: '600', 
+                        color: '#1f2937',
+                        marginBottom: '1rem',
+                        borderBottom: '2px solid #e5e7eb',
+                        paddingBottom: '0.5rem',
+                        fontFamily: "Effra-Medium, Tahoma, sans-serif"
+                      }}>Additional Features</h4>
+                      <div style={{ 
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: '0.5rem',
+                        padding: '0.5rem 0'
+                      }}>
+                        {JSON.parse(property.custom_features).map((feature, index) => (
+                          <div key={index} style={{ 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}>
+                            <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>{feature}:</span>
+                            <span style={{ 
+                              fontWeight: '400', 
+                              color: '#059669',
+                              fontSize: '0.9rem' 
+                            }}>
+                              Yes
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Border line after Additional Features */}
+                  <div style={{ borderTop: '1px solid #c0c0c0', margin: '20px 0', width: '100%' }}></div>
+
+                  {/* Property Layout Subsection */}
+                  {(property.layout_file_url || property.layout_file_name) && (
+                    <div className="property-layout-section">
+                      <h3 className="property-layout-title">Property Layout</h3>
+                      
+                      <div className="property-layout-content">
+                        <div className="layout-display-container">
+                          {/* Layout Image Display with Zoom */}
+                          <div className="layout-image-container">
+                            <img 
+                              src={property.layout_file_url || property.layout_file_name} 
+                              alt="Property Layout" 
+                              className="layout-image"
+                              onError={(e) => {
+                                console.error('Layout image load error:', property.layout_file_url || property.layout_file_name, e);
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                              onClick={(e) => {
+                                // Toggle zoom functionality
+                                const img = e.target;
+                                if (img.classList.contains('layout-image--zoomed')) {
+                                  img.classList.remove('layout-image--zoomed');
+                                } else {
+                                  img.classList.add('layout-image--zoomed');
+                                }
+                              }}
+                            />
+                            {/* Fallback for non-image files */}
+                            <div className="layout-file-fallback" style={{ display: 'none' }}>
+                              <svg className="layout-file-icon" width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                              </svg>
+                              <span>Layout Document</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Property Features Title */}
+                  <h3 style={{ 
+                    fontSize: '1.3rem', 
+                    fontWeight: '600', 
+                    color: '#1f2937',
+                    marginBottom: '1rem',
+                    textTransform: 'none',
+                    borderBottom: '2px solid #000000',
+                    paddingBottom: '0.5rem',
+                    fontFamily: "Effra-Medium, Tahoma, sans-serif"
+                  }}>Property Features</h3>
+
+                  {/* Property Info Subsection */}
+                  <div style={{ marginBottom: '2rem' }}>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem',
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif"
+                    }}>Property Info</h4>
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '0.5rem',
+                      padding: '0.5rem 0'
+                    }}>
+                      {/* Space Type */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Space Type:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.space_type ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.space_type || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Space Subtypes */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Space Subtypes:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.space_subtypes ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.space_subtypes || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Space Name */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Space Name:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.space_name ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.space_name || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Multiple Tenancy */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Multiple Tenancy:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: (property.is_multiple_tenancy === true || property.is_multiple_tenancy === 'true') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {(property.is_multiple_tenancy === true || property.is_multiple_tenancy === 'true') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Building Size */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Building Size:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.building_size ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.building_size ? `${property.building_size} sq ft` : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Min Divisible */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Min Divisible:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.min_divisible ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.min_divisible ? `${property.min_divisible} sq ft` : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Vacant Sqft */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Vacant Sqft:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.vacant_sqft ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.vacant_sqft ? `${property.vacant_sqft} sq ft` : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Land Acres */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Land Acres:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.land_acres ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.land_acres ? `${property.land_acres} acres` : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Lot Size */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Lot Size:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.lot_size ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.lot_size ? `${property.lot_size} ${property.lot_size_unit || 'sq ft'}` : 'Contact Us'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Location Info Subsection */}
+                  <div style={{ marginBottom: '2rem' }}>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem',
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif"
+                    }}>Location Info</h4>
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '0.5rem',
+                      padding: '0.5rem 0'
+                    }}>
+                      {/* Taxes */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Taxes:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.taxes ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.taxes || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Parking Spaces */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Parking Spaces:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.parking_spaces ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.parking_spaces || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Power */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Power:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.power ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.power || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Zoning */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Zoning:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.zoning ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.zoning || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Lease Type */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Lease Type:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.lease_type ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.lease_type || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Lease Length */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Lease Length:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.lease_term ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.lease_term ? `${property.lease_term} months` : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Rent Per Month */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Rent Per Month:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.monthly_rent ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.monthly_rent ? `£${Number(property.monthly_rent).toLocaleString()}` : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Service Charge */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Service Charge:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.service_charges ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.service_charges ? `£${Number(property.service_charges).toLocaleString()}` : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Break Clause */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Break Clause:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: (property.break_clause === true || property.break_clause === 'true') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {(property.break_clause === true || property.break_clause === 'true') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Deposit Required */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Deposit Required:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: (property.deposit_required === true || property.deposit_required === 'true') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {(property.deposit_required === true || property.deposit_required === 'true') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Deposit Amount */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Deposit Amount:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.deposit_amount ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.deposit_amount ? `£${Number(property.deposit_amount).toLocaleString()}` : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Business Rate */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Business Rate:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.business_rate ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.business_rate || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Floor Loading Capacity */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Floor Loading Capacity:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.floor_loading_capacity ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.floor_loading_capacity || 'Contact Us'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Financial Utilities Subsection */}
+                  <div style={{ marginBottom: '2rem' }}>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem',
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif"
+                    }}>Financial Utilities</h4>
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '0.5rem',
+                      padding: '0.5rem 0'
+                    }}>
+                      {/* VAT on Rent */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>VAT on Rent:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.vat_on_rent ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.vat_on_rent || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Rent Review Frequency */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Rent Review Frequency:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.rent_review_frequency ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.rent_review_frequency ? `${property.rent_review_frequency} years` : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Repairing Obligations */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Repairing Obligations:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.repairing_obligation ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.repairing_obligation || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Insurance Responsibility */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Insurance Responsibility:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.insurance_responsibility ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.insurance_responsibility || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* EPC Rating */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>EPC Rating:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.epc_rating ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.epc_rating || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Heating/Cooling */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Heating/Cooling:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.heating_type ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.heating_type || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Toilet/Kitchen */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Toilet/Kitchen:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.toilet_kitchen ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.toilet_kitchen || 'Contact Us'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Security & Access Subsection */}
+                  <div style={{ marginBottom: '2rem' }}>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginBottom: '1rem',
+                      borderBottom: '2px solid #e5e7eb',
+                      paddingBottom: '0.5rem',
+                      fontFamily: "Effra-Medium, Tahoma, sans-serif"
+                    }}>Security & Access</h4>
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '0.5rem',
+                      padding: '0.5rem 0'
+                    }}>
+                      {/* Parking Availability */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Parking Availability:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.parking_availability ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.parking_availability || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Disability Access */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Disability Access:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: (property.disability_access === true || property.disability_access === 'true') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {(property.disability_access === true || property.disability_access === 'true') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Permitted Use */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Permitted Use:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.permitted_use ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.permitted_use || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Opening Hours Allowed */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Opening Hours Allowed:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: property.opening_hours_allowed ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {property.opening_hours_allowed || 'Contact Us'}
+                        </span>
+                      </div>
+
+                      {/* Signage Allowed */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.9rem' }}>Signage Allowed:</span>
+                        <span style={{ 
+                          fontWeight: '400', 
+                          color: (property.signage_allowed === true || property.signage_allowed === 'true') ? '#059669' : '#5b7ba8',
+                          fontSize: '0.9rem' 
+                        }}>
+                          {(property.signage_allowed === true || property.signage_allowed === 'true') ? 'Yes' : 'Contact Us'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* EPC Section with Dropdown */}
+                {(property.epc_document_url || property.epc_url || property.epcDocumentUrl || property.epcUrl) && (
+                  <>
+                    {/* Border line before EPC Documents */}
+                    <div style={{ borderTop: '1px solid #c0c0c0', margin: '50px 0 30px 0', width: '100%' }}></div>
+                    
+                    <div className="property-epc-section" style={{ marginTop: '1.5rem' }}>
+                      {/* Collapsible Header */}
+                      <h3 
+                        className="property-layout-title" 
+                        style={{ 
+                          fontFamily: "Effra-Medium, Tahoma, sans-serif",
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          userSelect: 'none',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onClick={() => {
+                          const content = document.getElementById('lease-epc-content');
+                          const arrow = document.getElementById('lease-epc-arrow');
+                          if (content && arrow) {
+                            if (content.style.display === 'none') {
+                              content.style.display = 'block';
+                              arrow.style.transform = 'rotate(180deg)';
+                            } else {
+                              content.style.display = 'none';
+                              arrow.style.transform = 'rotate(0deg)';
+                            }
+                          }
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#3b82f6';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#2d3748';
+                        }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <i className="fas fa-bolt" style={{ color: '#f59e0b', fontSize: '1.1rem' }}></i>
+                          ENERGY PERFORMANCE CERTIFICATE
+                        </span>
+                        <i 
+                          id="lease-epc-arrow"
+                          className="fas fa-chevron-down" 
+                          style={{ 
+                            transition: 'transform 0.3s ease',
+                            fontSize: '1rem',
+                            color: '#3b82f6',
+                            fontWeight: 'bold'
+                          }}
+                        ></i>
+                      </h3>
+
+                      {/* Collapsible Content - Hidden by default */}
+                      <div id="lease-epc-content" style={{ display: 'none' }}>
+                        <div className="property-layout-content">
+                          <div className="layout-display-container">
+                            {/* EPC Image Display with Zoom */}
+                            <div className="layout-image-container">
+                              <img 
+                                src={property.epc_document_url || property.epc_url || property.epcDocumentUrl || property.epcUrl} 
+                                alt="EPC Document" 
+                                className="layout-image"
+                                onError={(e) => {
+                                  console.error('EPC image load error:', e);
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                                onClick={(e) => {
+                                  // Toggle zoom functionality
+                                  const img = e.target;
+                                  if (img.classList.contains('layout-image--zoomed')) {
+                                    img.classList.remove('layout-image--zoomed');
+                                  } else {
+                                    img.classList.add('layout-image--zoomed');
+                                  }
+                                }}
+                              />
+                              {/* Fallback for non-image files */}
+                              <div className="layout-file-fallback" style={{ display: 'none' }}>
+                                <svg className="layout-file-icon" width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                                  <polyline points="14,2 14,8 20,8"/>
+                                  <line x1="16" y1="13" x2="8" y2="13"/>
+                                  <line x1="16" y1="17" x2="8" y2="17"/>
+                                  <polyline points="10,9 9,9 8,9"/>
+                                </svg>
+                                <span>PDF Document</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </>
             )}
 

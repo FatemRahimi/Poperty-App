@@ -9,6 +9,7 @@ import "../styles/AddLease.css";
 import useSessionStorage from "../Utils/useSessionStorage";
 import { useAuth } from "../context/AuthContext";
 import ContactInformationSection from "../components/ContactInformationSection";
+import CustomFeaturesInput from "../components/CustomFeaturesInput";
 
 const leaseTypeOptions = [
   { value: "FRI", label: "FRI (Full Repairing & Insuring)" },
@@ -281,7 +282,22 @@ const AddLease = () => {
             console.warn('Failed to parse security:', e);
             return { cctv: false, keyFob: false, secureAccess: false };
           }
-        })() : { cctv: false, keyFob: false, secureAccess: false }
+        })() : { cctv: false, keyFob: false, secureAccess: false },
+        
+        // Custom Features
+        customFeatures: propertyData.custom_features ? (() => {
+          try {
+            if (typeof propertyData.custom_features === 'string') {
+              return JSON.parse(propertyData.custom_features);
+            } else if (Array.isArray(propertyData.custom_features)) {
+              return propertyData.custom_features;
+            }
+            return [];
+          } catch (e) {
+            console.warn('Failed to parse custom features:', e);
+            return [];
+          }
+        })() : []
       };
     }
     
@@ -354,7 +370,10 @@ const AddLease = () => {
         cctv: false,
         keyFob: false,
         secureAccess: false
-      }
+      },
+      
+      // Custom Features
+      customFeatures: []
     };
   };
 
@@ -759,6 +778,8 @@ const AddLease = () => {
         // JSON fields
         utilities: JSON.stringify(formData.utilities),
         security: JSON.stringify(formData.security),
+        custom_features: JSON.stringify(formData.customFeatures),
+        customFeatures: JSON.stringify(formData.customFeatures),
         
         // UK-specific fields
         epc_rating: formData.epcRating,
@@ -1230,6 +1251,15 @@ const AddLease = () => {
 
   const renderStep3 = () => (
     <>
+      {/* Custom Features Section */}
+      <CustomFeaturesInput
+        customFeatures={formData.customFeatures}
+        setCustomFeatures={(features) => setFormData({...formData, customFeatures: features})}
+        label="Add Your Extra Features"
+        placeholder="Type additional features (e.g., High ceilings, Loading bay, Security system, etc.)"
+        maxFeatures={12}
+      />
+      
       <h3 className="section-title">Property Description</h3>
       <div className="form-group">
         <label htmlFor="description" className="form-label">Property Description*</label>
