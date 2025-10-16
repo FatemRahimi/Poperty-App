@@ -812,10 +812,6 @@ const AddList = () => {
         {/* Commercial/Warehouse Residential Toggle */}
         {isCommercialProperty(formData.propertyType) && (
           <div style={{ 
-            padding: '1rem', 
-            background: '#f0f9ff', 
-            borderRadius: '8px', 
-            border: '1px solid #bae6fd',
             marginBottom: '1rem'
           }}>
             <div style={{
@@ -922,7 +918,7 @@ const AddList = () => {
       <>
         <h3 className="section-title">Location Information</h3>
         
-        {/* Address Line 1 */}
+        {/* Row 1: House Number & Address */}
         <div className="form-row">
           <TextInput
             label="House Number"
@@ -930,7 +926,6 @@ const AddList = () => {
             value={formData.houseNumber || ""}
             onChange={handleChange}
             placeholder="123, Flat 2A"
-            
           />
           
           <TextInput
@@ -939,19 +934,17 @@ const AddList = () => {
             value={formData.fullAddress}
             onChange={handleChange}
             placeholder="e.g. Westminster, Main Street, Oak Avenue"
-            
           />
         </div>
         
-        {/* City, Country, Region Row */}
-        <div className="form-row three-cols">
+        {/* Row 2: City/Town & Country */}
+        <div className="form-row">
           <TextInput
             label="City/Town"
             name="city"
             value={formData.city || ""}
             onChange={handleChange}
             placeholder="London"
-            
             className="muted-placeholder"
           />
           
@@ -961,10 +954,12 @@ const AddList = () => {
             value={formData.country || "United Kingdom"}
             onChange={handleChange}
             placeholder="United Kingdom"
-            
             className="muted-placeholder"
           />
-          
+        </div>
+        
+        {/* Row 3: Region & Postcode */}
+        <div className="form-row">
           <TextInput
             label="Region"
             name="region"
@@ -973,21 +968,17 @@ const AddList = () => {
             placeholder="Greater London"
             className="muted-placeholder"
           />
-        </div>
-        
-        {/* Postcode Row */}
-        <div className="form-row single-col" style={{maxWidth: '300px'}}>
+          
           <TextInput
             label="Postcode"
             name="postcode"
             value={formData.postcode}
             onChange={handleChange}
             placeholder="SW1A 1AA"
-            
           />
         </div>
         
-        {/* Local Authority and Transport Links */}
+        {/* Row 4: Local Authority & Transport Links */}
         <div className="form-row">
           <TextInput
             label="Local Authority"

@@ -2738,48 +2738,56 @@ select:focus {
   font-weight: 600;
 }
 
-/* Commercial/Warehouse Residential Accommodation Checkbox - Special Styling */
-#hasResidentialAccommodation {
-  width: 20px;
-  height: 20px;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  border: 2.5px solid #0369a1;
-  border-radius: 4px;
-  background-color: white;
-  position: relative;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-right: 0.75rem;
-  flex-shrink: 0;
+/* Commercial/Warehouse Residential Accommodation Checkbox - Independent Small Styling */
+input#hasResidentialAccommodation[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  border: 1px solid #0369a1 !important;
+  border-radius: 2px !important;
+  background-color: white !important;
+  position: relative !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  margin: 0 !important;
+  margin-right: 0.4rem !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  outline: none !important;
 }
 
-#hasResidentialAccommodation:hover {
-  border-color: #0284c7;
-  background-color: #f0f9ff;
+input#hasResidentialAccommodation[type="checkbox"]:hover {
+  border-color: #0284c7 !important;
+  background-color: #f0f9ff !important;
 }
 
-#hasResidentialAccommodation:checked {
-  background-color: #0369a1;
-  border-color: #0369a1;
-  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.2);
+input#hasResidentialAccommodation[type="checkbox"]:checked {
+  background-color: #0369a1 !important;
+  border-color: #0369a1 !important;
+  box-shadow: 0 0 0 1px rgba(3, 105, 161, 0.2) !important;
 }
 
-#hasResidentialAccommodation:checked::after {
-  content: '✓';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-  line-height: 1;
+input#hasResidentialAccommodation[type="checkbox"]:checked::after {
+  content: '✓' !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: white !important;
+  font-size: 10px !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
 }
 
-#hasResidentialAccommodation:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.3);
+input#hasResidentialAccommodation[type="checkbox"]:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 1px rgba(3, 105, 161, 0.3) !important;
 }
   
