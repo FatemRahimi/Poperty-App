@@ -11,6 +11,33 @@ const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 
+// Startup configuration validation (non-blocking warnings)
+(() => {
+  const requiredEnv = [
+    'CLIENT_URL',
+    'PORT',
+    'GOOGLE_CLIENT_ID',
+    'GOOGLE_CLIENT_SECRET',
+    // Prefer GOOGLE_CALLBACK_URL but fall back exists in config
+    'JWT_SECRET',
+    // SESSION_SECRET can reuse JWT_SECRET via config, but warn if absent
+  ];
+
+  const missing = requiredEnv.filter((k) => !process.env[k]);
+  if (missing.length > 0) {
+    console.warn('⚠️  Missing environment variables:', missing.join(', '));
+  }
+
+  if (!process.env.GOOGLE_CALLBACK_URL) {
+    const inferred = `http://localhost:${process.env.PORT || 5050}/api/auth/google/callback`;
+    console.warn('ℹ️  GOOGLE_CALLBACK_URL not set. Using default:', inferred);
+  }
+
+  if (!process.env.SESSION_SECRET && !process.env.JWT_SECRET) {
+    console.warn('⚠️  Neither SESSION_SECRET nor JWT_SECRET is set. Sessions/JWT may be insecure.');
+  }
+})();
+
 // CORS configuration
 app.use(cors({
   origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
