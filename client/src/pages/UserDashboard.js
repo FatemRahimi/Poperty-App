@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { socket } from '../services/socket';
 import SearchFilterHeader from '../components/dashboard/SearchFilterHeader';
+import SearchFilterHeaderSale from '../components/dashboard/SearchFilterHeaderSale';
+import SearchFilterHeaderLease from '../components/dashboard/SearchFilterHeaderLease';
 import DashboardTabs from '../components/dashboard/DashboardTabs';
 import OverviewStats from '../components/dashboard/OverviewStats';
 import PropertiesSection from '../components/dashboard/PropertiesSection';
@@ -1885,7 +1887,7 @@ const UserDashboard = () => {
         />
       </div>
 
-      {/* Professional Search/Filter Bar - Show ONLY when properties tab is active AND "For Rent" is selected */}
+      {/* Search/Filter Bars per category */}
       {activeTab === 'properties' && searchFilters.propertyType === 'rent' && (
         <SearchFilterHeader
           searchFilters={searchFilters}
@@ -1905,6 +1907,43 @@ const UserDashboard = () => {
           isSearching={isSearching}
           searchResults={searchResults}
           searchAnalytics={searchAnalytics}
+        />
+      )}
+
+      {activeTab === 'properties' && searchFilters.propertyType === 'sale' && (
+        <SearchFilterHeaderSale
+          searchFilters={searchFilters}
+          setSearchFilters={setSearchFilters}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          moreFilters={moreFilters}
+          setMoreFilters={setMoreFilters}
+          showMoreFilters={showMoreFilters}
+          setShowMoreFilters={setShowMoreFilters}
+          priceOptions={priceOptions}
+          bedroomOptions={bedroomOptions}
+          propertyBuildingTypeOptions={propertyBuildingTypeOptions}
+          bathroomOptions={bathroomOptions}
+          onProfessionalSearch={handleProfessionalSearch}
+          isSearching={isSearching}
+        />
+      )}
+
+      {activeTab === 'properties' && searchFilters.propertyType === 'lease' && (
+        <SearchFilterHeaderLease
+          searchFilters={searchFilters}
+          setSearchFilters={setSearchFilters}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          moreFilters={moreFilters}
+          setMoreFilters={setMoreFilters}
+          showMoreFilters={showMoreFilters}
+          setShowMoreFilters={setShowMoreFilters}
+          priceOptions={priceOptions}
+          squareFeetOptions={squareFeetOptions}
+          propertyBuildingTypeOptions={propertyBuildingTypeOptions}
+          onProfessionalSearch={handleProfessionalSearch}
+          isSearching={isSearching}
         />
       )}
 
