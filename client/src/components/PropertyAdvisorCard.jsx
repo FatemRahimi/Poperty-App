@@ -454,41 +454,12 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
     );
   }
 
-  // SCENARIO 3: NO ADVISOR PROFILE (Only AddRent form data)
-  if (hasOnlyAddRentData) {
-    return (
-      <div className="property-advisor-card-wrapper">
-        <div className="pac-addrent-card">
-          <div className="pac-addrent-header">
-            <h3 className="pac-addrent-title">Contact Information</h3>
-          </div>
-          <div className="pac-addrent-content">
-            <div className="pac-addrent-info">
-              <h4 className="pac-addrent-name">
-                {(propertyConsultantData?.fullName ||
-                 userData?.fullName || 
-                 `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() ||
-                 'Property Owner').toUpperCase()}
-              </h4>
-              <p className="pac-addrent-role">
-                Property Owner
-              </p>
-              {(userData?.email || propertyConsultantData?.contactEmail) && (
-                <p className="pac-addrent-email">
-                  <i className="fas fa-envelope" style={{ marginRight: '8px', color: '#6b7280' }}></i>
-                  {userData?.email || propertyConsultantData?.contactEmail}
-                </p>
-              )}
-              {(userData?.phone || propertyConsultantData?.contactPhone) && (
-                <p className="pac-addrent-phone">
-                  📞 {userData?.phone || propertyConsultantData?.contactPhone}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  // SCENARIO 3: NO ADVISOR PROFILE
+  // If user hasn't submitted an advisor profile, don't show the card at all
+  // Only show PropertyAdvisorCard if the user has completed their advisor profile
+  if (!hasAdvisorProfile) {
+    console.log('🔍 PropertyAdvisorCard: No advisor profile submitted - hiding card');
+    return null;
   }
 
   // No data at all

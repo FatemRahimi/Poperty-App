@@ -114,9 +114,22 @@ router.get('/:userId/advisor-profile/edit', authenticateJWT, getAdvisorProfileFo
 // Save advisor profile
 router.post('/:userId/advisor-profile', authenticateJWT, upload.fields([
   { name: 'companyLogo', maxCount: 1 },
-  { name: 'profilePhoto', maxCount: 1 }
+  { name: 'profilePhoto', maxCount: 1 },
+  { name: 'expertPhoto_0', maxCount: 1 },
+  { name: 'expertPhoto_1', maxCount: 1 },
+  { name: 'expertPhoto_2', maxCount: 1 },
+  { name: 'expertPhoto_3', maxCount: 1 },
+  { name: 'expertPhoto_4', maxCount: 1 }
 ]), saveAdvisorProfile);
 router.put('/:userId/advisor-profile', authenticateJWT, upload.fields([
+  { name: 'companyLogo', maxCount: 1 },
+  { name: 'profilePhoto', maxCount: 1 },
+  { name: 'expertPhoto_0', maxCount: 1 },
+  { name: 'expertPhoto_1', maxCount: 1 },
+  { name: 'expertPhoto_2', maxCount: 1 },
+  { name: 'expertPhoto_3', maxCount: 1 },
+  { name: 'expertPhoto_4', maxCount: 1 }
+]), upload.fields([
   { name: 'companyLogo', maxCount: 1 },
   { name: 'profilePhoto', maxCount: 1 }
 ]), saveAdvisorProfile);

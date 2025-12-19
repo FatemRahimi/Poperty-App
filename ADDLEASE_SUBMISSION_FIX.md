@@ -71,7 +71,7 @@ const fieldNames = missingFields.map(f => {
     default: return f;
   }
 });
-alert(`❌ Please complete the following required fields:\n${fieldNames.join('\n')}`);
+alert(`❌  the following required fields:\n${fieldNames.join('\n')}`);
 ```
 
 ### Fix #3: Fixed lot_size Field Mapping (From Previous Analysis)

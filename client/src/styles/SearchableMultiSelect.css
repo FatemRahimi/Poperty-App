@@ -50,6 +50,7 @@
   .dropdown-options {
     max-height: 200px;
     overflow-y: auto;
+    overscroll-behavior-y: contain; /* Prevent scroll capture on Windows */
     padding: 8px 10px;
   }
   

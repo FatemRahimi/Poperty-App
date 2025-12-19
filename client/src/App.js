@@ -72,37 +72,49 @@ function Layout() {
                 
                 <Route path="/addlist" element={
                     <ProtectedRoute>
-                        <AddList />
+                        <AdvisorProfileCheck>
+                            <AddList />
+                        </AdvisorProfileCheck>
                     </ProtectedRoute>
                 } />
                 
                 <Route path="/addlistnext" element={
                     <ProtectedRoute>
-                        <AddListNext />
+                        <AdvisorProfileCheck>
+                            <AddListNext />
+                        </AdvisorProfileCheck>
                     </ProtectedRoute>
                 } />
                 
                 <Route path="/addlease" element={
                     <ProtectedRoute>
-                        <AddLease />
+                        <AdvisorProfileCheck>
+                            <AddLease />
+                        </AdvisorProfileCheck>
                     </ProtectedRoute>
                 } />
                 
                 <Route path="/addleasenext" element={
                     <ProtectedRoute>
-                        <AddLeaseNext />
+                        <AdvisorProfileCheck>
+                            <AddLeaseNext />
+                        </AdvisorProfileCheck>
                     </ProtectedRoute>
                 } />
                 
                 <Route path="/additional-listing/:type" element={
                     <ProtectedRoute>
-                        <AdditionalListing />
+                        <AdvisorProfileCheck>
+                            <AdditionalListing />
+                        </AdvisorProfileCheck>
                     </ProtectedRoute>
                 } />
                 
                 <Route path="/addrent" element={
                     <ProtectedRoute>
-                        <AddRent />
+                        <AdvisorProfileCheck>
+                            <AddRent />
+                        </AdvisorProfileCheck>
                     </ProtectedRoute>
                 } />
                 

@@ -159,6 +159,36 @@ const saveAdvisorProfile = async (req, res) => {
         advisorData.profilePhotoUrl = `/uploads/${fileName}`;
         console.log('✅ Profile photo saved:', fileName);
       }
+
+      // Handle expert photo uploads
+      const expertPhotoUrls = {};
+      for (let i = 0; i < 5; i++) {
+        const fieldName = `expertPhoto_${i}`;
+        if (req.files[fieldName] && req.files[fieldName][0]) {
+          const file = req.files[fieldName][0];
+          const fileName = `expert_photo_${userId}_${i}_${Date.now()}${path.extname(file.originalname)}`;
+          const filePath = path.join(uploadsDir, fileName);
+          
+          fs.writeFileSync(filePath, file.buffer);
+          expertPhotoUrls[i] = `/uploads/${fileName}`;
+          console.log(`✅ Expert photo ${i} saved:`, fileName);
+        }
+      }
+
+      // Parse expert team data and add photo URLs
+      if (advisorData.expertTeam) {
+        try {
+          const expertTeam = JSON.parse(advisorData.expertTeam);
+          const updatedExpertTeam = expertTeam.map((expert, index) => ({
+            ...expert,
+            profilePhotoUrl: expertPhotoUrls[index] || expert.profilePhotoUrl || ''
+          }));
+          advisorData.expertTeam = JSON.stringify(updatedExpertTeam);
+          console.log('✅ Expert team data updated with photo URLs');
+        } catch (error) {
+          console.error('❌ Error parsing expert team data:', error);
+        }
+      }
     }
     
     // Save advisor profile

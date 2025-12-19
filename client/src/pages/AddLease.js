@@ -949,12 +949,6 @@ const AddLease = () => {
         />
       </div>
 
-      {/* City and Postcode are REQUIRED - always visible */}
-      <div className="form-row">
-        <TextInput label="City*" name="city" value={formData.city} onChange={handleChange} placeholder="e.g., London" />
-        <TextInput label="Postal Code*" name="postcode" value={formData.postcode} onChange={handleChange} placeholder="e.g., SW1A 1AA" />
-      </div>
-
       <div className="form-row">
         <TextInput 
           label="House Number / Unit*" 
@@ -970,6 +964,12 @@ const AddLease = () => {
           onChange={handleChange} 
           placeholder="Industrial Estate" 
         />
+      </div>
+      
+      {/* City and Postcode are REQUIRED - always visible */}
+      <div className="form-row">
+        <TextInput label="City*" name="city" value={formData.city} onChange={handleChange} placeholder="e.g., London" />
+        <TextInput label="Postcode*" name="postcode" value={formData.postcode} onChange={handleChange} placeholder="e.g., SW1A 1AA" />
       </div>
       
       <div className="form-row">

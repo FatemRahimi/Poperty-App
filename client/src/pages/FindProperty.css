@@ -1042,6 +1042,7 @@ h1, h2, h3, h4 {
     .filter-tabs {
         flex-wrap: nowrap;
         overflow-x: auto;
+        overscroll-behavior-x: contain; /* Prevent scroll capture on Windows */
         padding-bottom: 1rem;
         justify-content: flex-start;
     }

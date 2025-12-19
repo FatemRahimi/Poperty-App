@@ -1984,6 +1984,7 @@ textarea.form-input-base:hover {
   resize: none;
   line-height: 1.4;
   overflow-y: auto;
+  overscroll-behavior-y: contain; /* Prevent scroll capture on Windows */
 }
 
 /* Ensure proper side-by-side layout */

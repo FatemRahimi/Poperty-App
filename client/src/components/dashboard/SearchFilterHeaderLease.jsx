@@ -23,6 +23,7 @@ const SearchFilterHeaderLease = memo(({
   const [isUserDeleting, setIsUserDeleting] = useState(false);
   const [lastInputLength, setLastInputLength] = useState(0);
   const searchInputRef = useRef(null);
+  const isInitialRadiusChange = useRef(true);
 
   const triggerSearch = () => {
     if (!searchQuery.trim() || searchQuery === lastSearchQuery) return;
@@ -64,6 +65,19 @@ const SearchFilterHeaderLease = memo(({
       if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout);
     };
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (isInitialRadiusChange.current) {
+      isInitialRadiusChange.current = false;
+      return;
+    }
+
+    if (!searchQuery.trim()) return;
+    if (onProfessionalSearch) {
+      onProfessionalSearch(searchQuery, { ...searchFilters });
+      setLastSearchQuery(searchQuery);
+    }
+  }, [searchFilters.radius, searchQuery, onProfessionalSearch]);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
