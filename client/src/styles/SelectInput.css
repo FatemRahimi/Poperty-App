@@ -110,6 +110,7 @@
     z-index: 99999; /* Extremely high z-index to appear above everything */
     max-height: 200px;
     overflow-y: auto;
+    overscroll-behavior-y: contain; /* Prevent scroll capture on Windows */
   
     /* Ensure it's above all other elements */
     isolation: isolate;

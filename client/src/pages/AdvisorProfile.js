@@ -115,11 +115,11 @@ const AdvisorProfile = () => {
     
     // Settings
     isAdvisor: false,
-    advisorType: "person",
+    advisorType: "",  // Empty by default - user must select
   });
 
   const [expertTeam, setExpertTeam] = useState([]);
-  const [advisorType, setAdvisorType] = useState('');
+  const [advisorType, setAdvisorType] = useState('');  // Controls which form displays
   const [showAdvisorSection, setShowAdvisorSection] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -284,7 +284,7 @@ const AdvisorProfile = () => {
         setExpertTeam(prev => 
           prev.map(expert => 
             expert.id === expertId 
-              ? { ...expert, profilePhotoUrl: e.target.result }
+              ? { ...expert, profilePhotoUrl: e.target.result, profilePhotoFile: file }
               : expert
           )
         );
@@ -318,7 +318,7 @@ const AdvisorProfile = () => {
       setExpertTeam([]);
       setFormData(prev => ({
         ...prev,
-        advisorType: "person"
+        advisorType: ""
       }));
     } else if (showAdvisorSection) {
       // If we're in advisor type selection, go back to initial benefits
@@ -343,7 +343,7 @@ const AdvisorProfile = () => {
       setExpertTeam([]);
       setFormData(prev => ({
         ...prev,
-        advisorType: "person"
+        advisorType: ""
       }));
     } else if (showAdvisorSection) {
       // If we're in advisor type selection, go back to initial benefits
@@ -360,6 +360,12 @@ const AdvisorProfile = () => {
     console.log('🔴 Submit button clicked - starting submission');
     console.log('👤 User data:', user);
     console.log('🔑 Token exists:', !!token);
+    console.log('📋 advisorType state:', advisorType);
+    console.log('📋 formData.advisorType:', formData.advisorType);
+    
+    // Get the correct advisor type (use state variable, fallback to formData)
+    const currentType = advisorType || formData.advisorType;
+    console.log('📋 Using advisorType:', currentType);
     
     // Check if we have valid user data and token
     if (!user.id || !token) {
@@ -368,15 +374,50 @@ const AdvisorProfile = () => {
       return;
     }
 
-    // Validate that at least one expert team member has "Property Consultant" job title
-    if (formData.advisorType === 'company' && expertTeam.length > 0) {
-      const hasPropertyConsultant = expertTeam.some(expert => 
-        expert.jobTitle === 'Property Consultant'
-      );
+    // Validate advisor type is selected
+    if (!currentType) {
+      setError('Please select advisor type (Company or Person).');
+      return;
+    }
+
+    // Validate required fields based on advisor type
+    if (currentType === 'person') {
+      console.log('👤 Validating person fields...');
+      console.log('  - fullName:', formData.fullName);
+      console.log('  - jobTitle:', formData.jobTitle);
       
-      if (!hasPropertyConsultant) {
-        setError('For having an advisor card, at least one expert team member must have "Property Consultant" job title.');
+      if (!formData.fullName || !formData.fullName.trim()) {
+        setError('Please enter your full name.');
         return;
+      }
+      if (!formData.jobTitle || !formData.jobTitle.trim() || formData.jobTitle === 'Select Job Title') {
+        setError('Please select your job title.');
+        return;
+      }
+    } else if (currentType === 'company') {
+      console.log('🏢 Validating company fields...');
+      console.log('  - companyName:', formData.companyName);
+      console.log('  - directorName:', formData.directorName);
+      
+      if (!formData.companyName || !formData.companyName.trim()) {
+        setError('Please enter company name.');
+        return;
+      }
+      if (!formData.directorName || !formData.directorName.trim()) {
+        setError('Please enter director name.');
+        return;
+      }
+      
+      // Validate that at least one expert team member has "Property Consultant" job title
+      if (expertTeam.length > 0) {
+        const hasPropertyConsultant = expertTeam.some(expert => 
+          expert.jobTitle === 'Property Consultant'
+        );
+        
+        if (!hasPropertyConsultant) {
+          setError('For having an advisor card, at least one expert team member must have "Property Consultant" job title.');
+          return;
+        }
       }
     }
     
@@ -391,11 +432,12 @@ const AdvisorProfile = () => {
       // Create FormData for file uploads
       const submitData = new FormData();
       
-      // Add form data
+      // Add form data - use currentType for advisorType field
       Object.keys(formData).forEach(key => {
         if (key !== 'companyLogo' && key !== 'profilePhoto') {
-          submitData.append(key, formData[key]);
-          console.log(`📋 Added ${key}:`, formData[key]);
+          const value = key === 'advisorType' ? currentType : formData[key];
+          submitData.append(key, value);
+          console.log(`📋 Added ${key}:`, value);
         }
       });
 
@@ -409,8 +451,24 @@ const AdvisorProfile = () => {
         console.log('📁 Added profile photo');
       }
 
-      // Add expert team data
-      submitData.append('expertTeam', JSON.stringify(expertTeam));
+      // Add expert photo files
+      expertTeam.forEach((expert, index) => {
+        if (expert.profilePhotoFile) {
+          submitData.append(`expertPhoto_${index}`, expert.profilePhotoFile);
+          console.log(`📁 Added expert photo for ${expert.fullName || `expert ${index}`}`);
+        }
+      });
+
+      // Add expert team data (without file objects, backend will add photo URLs)
+      const expertTeamData = expertTeam.map(expert => ({
+        id: expert.id,
+        fullName: expert.fullName,
+        jobTitle: expert.jobTitle,
+        phone: expert.phone,
+        email: expert.email,
+        hasPhoto: !!expert.profilePhotoFile || !!expert.profilePhotoUrl
+      }));
+      submitData.append('expertTeam', JSON.stringify(expertTeamData));
       submitData.append('contactEmail', formData.contactEmail);
 
       console.log('📡 Making API call to save advisor profile...');

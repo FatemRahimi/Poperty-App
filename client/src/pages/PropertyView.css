@@ -481,6 +481,7 @@
   gap: 8px;
   max-height: 600px;
   overflow-y: auto;
+  overscroll-behavior-y: contain; /* Prevent scroll capture on Windows */
   padding-right: 4px;
 }
 
@@ -539,6 +540,7 @@
   gap: 8px;
   padding: 16px;
   overflow-x: auto;
+  overscroll-behavior-x: contain; /* Prevent scroll capture on Windows */
   background: #f8fafc;
   margin-top: 12px;
   max-height: 120px;

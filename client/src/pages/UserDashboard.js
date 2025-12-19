@@ -89,6 +89,7 @@ const UserDashboard = () => {
   const [isLoadingAdvisorProfile, setIsLoadingAdvisorProfile] = useState(false);
   const [isEditingAdvisor, setIsEditingAdvisor] = useState(false);
   const [isSavingAdvisor, setIsSavingAdvisor] = useState(false);
+  const [hasCompletedAdvisorProfile, setHasCompletedAdvisorProfile] = useState(false);
   const [advisorFormData, setAdvisorFormData] = useState({
     advisorType: '',
     companyName: '',
@@ -128,6 +129,45 @@ const UserDashboard = () => {
   const navRef = useRef(null);
   const [lastStableCount, setLastStableCount] = useState(0);
   const prevIsSearching = useRef(false);
+
+  // Check if user has completed advisor profile
+  const checkAdvisorProfileStatus = useCallback(async () => {
+    if (!user || !user.id) return;
+    
+    try {
+      console.log('🔍 Checking advisor profile status for user:', user.id);
+      const response = await fetch(`/api/users/${user.id}/advisor-profile`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Advisor profile check result:', data);
+        setHasCompletedAdvisorProfile(data.hasCompletedAdvisorProfile || false);
+      } else {
+        console.log('❌ Failed to check advisor profile status');
+        setHasCompletedAdvisorProfile(false);
+      }
+    } catch (error) {
+      console.error('Error checking advisor profile:', error);
+      setHasCompletedAdvisorProfile(false);
+    }
+  }, [user]);
+
+  // Handle navigation to add listing forms (with advisor profile check)
+  const handleAddListingNavigation = useCallback((path, label) => {
+    if (!hasCompletedAdvisorProfile) {
+      navigate('/advisor-profile');
+      setShowAddListingDropdown(false);
+      return;
+    }
+    
+    const currentPath = `/dashboard?tab=${activeTab}`;
+    navigate(path, { state: { returnPath: currentPath } });
+    setShowAddListingDropdown(false);
+  }, [hasCompletedAdvisorProfile, activeTab, navigate]);
 
   // 🔍 CRITICAL FIX: Immediate admin redirect check
   useEffect(() => {
@@ -224,6 +264,7 @@ const UserDashboard = () => {
     
     console.log('🏠 UserDashboard: User is regular user, loading dashboard data');
     loadDashboardData();
+    checkAdvisorProfileStatus(); // Check if user has completed advisor profile
     setProfileData({
       first_name: user?.first_name || '',
       last_name: user?.last_name || '',
@@ -231,7 +272,7 @@ const UserDashboard = () => {
       phone: user?.phone || '',
       created_at: user?.created_at || ''
     });
-  }, [user, navigate]);
+  }, [user, navigate, checkAdvisorProfileStatus]);
 
   // 🔧 SOCKET.IO: Real-time updates for property approval
   useEffect(() => {
@@ -1805,33 +1846,21 @@ const UserDashboard = () => {
                   <div className="add-listing-dropdown-menu">
                     <button 
                       className="dropdown-item-btn"
-                      onClick={() => {
-                        const currentPath = `/dashboard?tab=${activeTab}`;
-                        navigate('/addlist', { state: { returnPath: currentPath } });
-                        setShowAddListingDropdown(false);
-                      }}
+                      onClick={() => handleAddListingNavigation('/addlist', 'For Sale')}
                     >
                       <i className="fas fa-home" style={{marginRight: '0.5rem'}}></i>
                       For Sale
                     </button>
                     <button 
                       className="dropdown-item-btn"
-                      onClick={() => {
-                        const currentPath = `/dashboard?tab=${activeTab}`;
-                        navigate('/addrent', { state: { returnPath: currentPath } });
-                        setShowAddListingDropdown(false);
-                      }}
+                      onClick={() => handleAddListingNavigation('/addrent', 'For Rent')}
                     >
                       <i className="fas fa-key" style={{marginRight: '0.5rem'}}></i>
                       For Rent
                     </button>
                     <button 
                       className="dropdown-item-btn"
-                      onClick={() => {
-                        const currentPath = `/dashboard?tab=${activeTab}`;
-                        navigate('/addlease', { state: { returnPath: currentPath } });
-                        setShowAddListingDropdown(false);
-                      }}
+                      onClick={() => handleAddListingNavigation('/addlease', 'For Lease')}
                     >
                       <i className="fas fa-file-contract" style={{marginRight: '0.5rem'}}></i>
                       For Lease

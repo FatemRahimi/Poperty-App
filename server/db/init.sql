@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS properties (
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   description TEXT,
+  short_description TEXT,
   category VARCHAR(50) NOT NULL, -- 'rent', 'sale', 'lease' - Property category
   property_type VARCHAR(50), -- 'flat', 'house', 'studio', 'bungalow', 'maisonette', 'duplex', 'detached', 'semi-detached', 'terraced', etc.
   property_category VARCHAR(50), -- 'residential', 'commercial', 'land'
@@ -188,12 +189,13 @@ CREATE INDEX IF NOT EXISTS idx_properties_monthly_rent ON properties(monthly_ren
 CREATE INDEX IF NOT EXISTS idx_properties_bedrooms ON properties(bedrooms);
 CREATE INDEX IF NOT EXISTS idx_properties_bathrooms ON properties(bathrooms);
 
+-- Enable PostgreSQL trigram extension for fuzzy text search (if not already enabled)
+-- IMPORTANT: This must come BEFORE any indexes that use gin_trgm_ops
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- Full-text search indexes for title and description
 CREATE INDEX IF NOT EXISTS idx_properties_title_trgm ON properties USING gin(title gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_properties_description_trgm ON properties USING gin(description gin_trgm_ops);
-
--- Enable PostgreSQL trigram extension for fuzzy text search (if not already enabled)
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Create initial super admin using ENV variables
 -- This will be handled by the setup script

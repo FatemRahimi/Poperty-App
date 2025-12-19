@@ -201,6 +201,7 @@
   border: none;
   overflow-x: auto;
   overflow-y: visible;
+  overscroll-behavior-x: contain; /* Prevent scroll capture on Windows */
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -1002,6 +1003,7 @@
   z-index: 999999 !important; /* Very high z-index */
   max-height: 300px !important;
   overflow-y: auto !important;
+  overscroll-behavior-y: contain; /* Prevent scroll capture on Windows */
   margin-top: 2px !important; /* Small gap for visibility */
 }
 
@@ -1567,6 +1569,7 @@
   z-index: 2147483646;
   max-height: 250px;
   overflow-y: auto;
+  overscroll-behavior-y: contain; /* Prevent scroll capture on Windows */
   animation: searchDropdownSlideDown 0.2s ease-out;
   /* Ensure it appears above other elements */
   isolation: isolate;
@@ -1697,6 +1700,7 @@
   max-height: 700px;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior-y: contain; /* Prevent scroll capture on Windows */
   animation: dashboardMoreFiltersSlideDown 0.3s ease-out;
   isolation: isolate;
   transform: none;
@@ -2857,6 +2861,7 @@
     gap: 0.5rem;
     width: 100%;
     overflow-x: auto;
+    overscroll-behavior-x: contain; /* Prevent scroll capture on Windows */
     padding-bottom: 0.5rem;
   }
 
@@ -3368,6 +3373,7 @@
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden; /* Prevent horizontal scrollbar */
+  overscroll-behavior-y: contain; /* Prevent scroll capture on Windows */
   margin: 20px; /* Add margin from content */
 }
 
@@ -3753,6 +3759,7 @@
   top: 80px;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
+  overscroll-behavior-y: contain; /* Prevent scroll capture on Windows */
 }
 
 /* Sidebar Sections */

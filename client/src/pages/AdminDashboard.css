@@ -747,6 +747,7 @@
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
+  overscroll-behavior-y: contain; /* Prevent scroll capture on Windows */
   box-shadow: 0 20px 40px rgba(0,0,0,0.3);
   animation: modalSlideIn 0.3s ease;
 }

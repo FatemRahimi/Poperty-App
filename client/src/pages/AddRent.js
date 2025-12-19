@@ -315,23 +315,7 @@ const AddRent = () => {
         epcRating: propertyData.epc_rating || "",
         
         // NEW FIELDS: Key Features (Checkboxes)
-        keyFeatures: propertyData.key_features ? (() => {
-          try {
-            // Handle different data types
-            if (typeof propertyData.key_features === 'string') {
-              return JSON.parse(propertyData.key_features);
-            } else if (Array.isArray(propertyData.key_features)) {
-              return propertyData.key_features;
-            } else if (propertyData.key_features && typeof propertyData.key_features === 'object') {
-              return propertyData.key_features;
-            } else {
-              return [];
-            }
-          } catch (error) {
-            console.warn('Failed to parse key_features:', error);
-            return [];
-          }
-        })() : [],
+        keyFeatures: parsedKeyFeatures,
         
         // NEW FIELDS: Layout of Property
         layoutFile: null,
@@ -1158,7 +1142,34 @@ const AddRent = () => {
         epcRating: formData.epcRating,
 
         // NEW FIELDS: Key Features (Checkboxes)
-        keyFeatures: JSON.stringify(formData.keyFeatures),
+        // Merge balconyTerrace into keyFeatures before stringifying
+        keyFeatures: JSON.stringify((() => {
+          // Convert keyFeatures to array format
+          let keyFeaturesArray = [];
+          if (Array.isArray(formData.keyFeatures)) {
+            keyFeaturesArray = [...formData.keyFeatures];
+          } else if (formData.keyFeatures && typeof formData.keyFeatures === 'object') {
+            // Convert object to array (e.g., {balcony_terrace: true} -> ['balcony_terrace'])
+            keyFeaturesArray = Object.keys(formData.keyFeatures).filter(k => {
+              const value = formData.keyFeatures[k];
+              return value === true || value === 'true' || value === 1;
+            });
+          }
+          
+          // Add or remove balcony_terrace based on balconyTerrace checkbox
+          if (formData.balconyTerrace) {
+            if (!keyFeaturesArray.includes('balcony_terrace')) {
+              keyFeaturesArray.push('balcony_terrace');
+            }
+          } else {
+            const index = keyFeaturesArray.indexOf('balcony_terrace');
+            if (index > -1) {
+              keyFeaturesArray.splice(index, 1);
+            }
+          }
+          
+          return keyFeaturesArray;
+        })()),
 
         // NEW FIELDS: Layout of Property
         layoutFile: formData.layoutFile,
