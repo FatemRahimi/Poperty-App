@@ -716,15 +716,26 @@ class User {
         }
         
         if (expertTeamArray.length > 0) {
-          experts = expertTeamArray.map(expert => ({
-            id: expert.id,
-            full_name: expert.fullName || expert.full_name || '',
-            job_title: expert.jobTitle || expert.job_title || '',
-            profile_photo_url: expert.profilePhotoUrl || expert.profile_photo_url || '',
-            phone: expert.phone || '',
-            email: expert.email || ''
-          }));
-          console.log(`👥 Parsed ${experts.length} experts from expert_team JSONB field`);
+          experts = expertTeamArray.map(expert => {
+            // Strip out base64 data URLs to prevent form timeout
+            let photoUrl = expert.profilePhotoUrl || expert.profile_photo_url || '';
+            
+            // If it's a base64 data URL, set to empty string
+            if (photoUrl && photoUrl.startsWith('data:')) {
+              console.log('⚠️ Stripping base64 data URL for expert:', expert.fullName || expert.full_name);
+              photoUrl = '';
+            }
+            
+            return {
+              id: expert.id,
+              full_name: expert.fullName || expert.full_name || '',
+              job_title: expert.jobTitle || expert.job_title || '',
+              profile_photo_url: photoUrl,
+              phone: expert.phone || '',
+              email: expert.email || ''
+            };
+          });
+          console.log(`👥 Parsed ${experts.length} experts from expert_team JSONB field (base64 stripped)`);
         } else {
           console.log('👥 No experts found in expert_team field (empty array)');
         }

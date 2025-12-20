@@ -23,76 +23,74 @@ const SearchFilterHeaderLease = memo(({
   const [isUserDeleting, setIsUserDeleting] = useState(false);
   const [lastInputLength, setLastInputLength] = useState(0);
   const searchInputRef = useRef(null);
-  const isInitialRadiusChange = useRef(true);
 
-  const triggerSearch = () => {
+  // Trigger search - only called on Enter or dropdown selection
+  const triggerProfessionalSearch = () => {
     if (!searchQuery.trim() || searchQuery === lastSearchQuery) return;
-    if (isUserTyping || isUserDeleting) return;
+    
     setLastSearchQuery(searchQuery);
-    if (onProfessionalSearch) onProfessionalSearch(searchQuery, searchFilters);
+    
+    if (onProfessionalSearch) {
+      onProfessionalSearch(searchQuery, searchFilters);
+    }
   };
 
+  // Track typing state for dropdown display (no automatic search)
   useEffect(() => {
-    if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout);
     const currentLength = searchQuery.length;
-    const typing = currentLength > lastInputLength;
-    const deleting = currentLength < lastInputLength;
-    setIsUserTyping(typing && currentLength > 0);
-    setIsUserDeleting(deleting);
+    const isTypingMore = currentLength > lastInputLength;
+    const isDeletingMore = currentLength < lastInputLength;
+    
+    setIsUserTyping(isTypingMore && currentLength > 0);
+    setIsUserDeleting(isDeletingMore);
     setLastInputLength(currentLength);
 
-    const getDelay = () => {
-      if (!searchQuery.trim()) return 0;
-      if (deleting) return 1200;
-      return 800;
-    };
-
-    const delay = getDelay();
-    if (searchQuery.trim() && searchQuery !== lastSearchQuery) {
-      const t = setTimeout(() => {
-        setIsUserTyping(false);
-        setIsUserDeleting(false);
-        triggerSearch();
-      }, delay);
-      setSearchDebounceTimeout(t);
-    } else if (!searchQuery.trim()) {
-      setIsUserTyping(false);
-      setIsUserDeleting(false);
-      if (lastSearchQuery) setLastSearchQuery('');
+    // Clear search if query is empty
+    if (!searchQuery.trim() && lastSearchQuery) {
+      setLastSearchQuery('');
     }
-
-    return () => {
-      if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout);
-    };
   }, [searchQuery]);
 
+  // 🔥 NEW: Radius change triggers search if query exists
   useEffect(() => {
-    if (isInitialRadiusChange.current) {
-      isInitialRadiusChange.current = false;
-      return;
-    }
-
     if (!searchQuery.trim()) return;
-    if (onProfessionalSearch) {
-      onProfessionalSearch(searchQuery, { ...searchFilters });
-      setLastSearchQuery(searchQuery);
+    
+    // Trigger search when radius changes
+    if (lastSearchQuery && searchQuery === lastSearchQuery) {
+      if (onProfessionalSearch) {
+        onProfessionalSearch(searchQuery, searchFilters);
+      }
     }
-  }, [searchFilters.radius, searchQuery, onProfessionalSearch]);
+  }, [searchFilters.radius]);
 
+  // Enhanced key press handling
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout);
       setIsUserTyping(false);
       setIsUserDeleting(false);
-      triggerSearch();
+      triggerProfessionalSearch();
     }
   };
 
-  const handleSuggestionSelect = () => {
+  // Handle suggestion selection from LocationSearch
+  const handleSuggestionSelect = (suggestion) => {
+    // Auto-set appropriate radius based on suggestion type
+    if (suggestion.radius && suggestion.radius !== searchFilters.radius) {
+      setSearchFilters({
+        ...searchFilters,
+        radius: suggestion.radius.toString()
+      });
+    }
+    
+    // Clear typing states since user selected a suggestion
     setIsUserTyping(false);
     setIsUserDeleting(false);
-    setTimeout(() => triggerSearch(), 100);
+    
+    // Trigger search immediately for suggestion selections
+    setTimeout(() => {
+      triggerProfessionalSearch();
+    }, 100);
   };
 
   return (
@@ -103,7 +101,7 @@ const SearchFilterHeaderLease = memo(({
           onSearchQueryChange={setSearchQuery}
           radius={searchFilters.radius}
           onRadiusChange={(value) => setSearchFilters({...searchFilters, radius: value})}
-          placeholder="Enter Location (postcode or city)"
+          placeholder="Enter Location(e.g. 'M1 4DY',  'London', 'Ealing')"
           isSearching={isSearching}
           onKeyPress={handleKeyPress}
           onSuggestionSelect={handleSuggestionSelect}
