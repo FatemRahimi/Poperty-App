@@ -19,7 +19,9 @@ const upload = multer({
   storage: storage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit per file
-    files: 5 // Maximum 5 files
+    files: 7, // Maximum 7 files (company logo + profile photo + 5 experts)
+    fields: 50, // Increase field limit
+    fieldSize: 5 * 1024 * 1024 // 5MB per field
   },
   fileFilter: (req, file, cb) => {
     // Accept images only
@@ -112,6 +114,27 @@ router.post('/:userId/advisor-profile', authenticateJWT, upload.fields([
   { name: 'expertPhoto_3', maxCount: 1 },
   { name: 'expertPhoto_4', maxCount: 1 }
 ]), saveAdvisorProfile);
+
+// Add error handling middleware for multer errors
+router.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    console.error('❌ Multer error:', error);
+    return res.status(400).json({
+      success: false,
+      message: `File upload error: ${error.message}`,
+      error: error.code
+    });
+  } else if (error) {
+    console.error('❌ Upload error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Upload failed',
+      error: error.toString()
+    });
+  }
+  next();
+});
+
 router.put('/:userId/advisor-profile', authenticateJWT, upload.fields([
   { name: 'companyLogo', maxCount: 1 },
   { name: 'profilePhoto', maxCount: 1 },
@@ -120,10 +143,11 @@ router.put('/:userId/advisor-profile', authenticateJWT, upload.fields([
   { name: 'expertPhoto_2', maxCount: 1 },
   { name: 'expertPhoto_3', maxCount: 1 },
   { name: 'expertPhoto_4', maxCount: 1 }
-]), upload.fields([
-  { name: 'companyLogo', maxCount: 1 },
-  { name: 'profilePhoto', maxCount: 1 }
 ]), saveAdvisorProfile);
+
+// Text-only update endpoint (no file uploads) - for edit mode without new photos
+router.patch('/:userId/advisor-profile/text-only', authenticateJWT, saveAdvisorProfile);
+
 router.post('/:userId/advisor-profile/skip', authenticateJWT, skipAdvisorProfile);
 
 module.exports = router; 
