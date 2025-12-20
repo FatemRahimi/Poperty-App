@@ -135,19 +135,22 @@ const UserDashboard = () => {
     if (!user || !user.id) return;
     
     try {
-      console.log('🔍 Checking advisor profile status for user:', user.id);
+      // Fix: Handle string "null" token
+      const token = localStorage.getItem('token');
+      const validToken = token && token !== 'null' ? token : null;
+      
+      if (!validToken) return;
+      
       const response = await fetch(`/api/users/${user.id}/advisor-profile`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${validToken}`
         }
       });
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Advisor profile check result:', data);
         setHasCompletedAdvisorProfile(data.hasCompletedAdvisorProfile || false);
       } else {
-        console.log('❌ Failed to check advisor profile status');
         setHasCompletedAdvisorProfile(false);
       }
     } catch (error) {
@@ -206,7 +209,11 @@ const UserDashboard = () => {
   useEffect(() => {
     const refreshInterval = setInterval(() => {
       // Only refresh if user is on the dashboard and not actively searching
-      if (!isSearching && activeTab === 'properties') {
+      // AND has a valid token
+      const token = localStorage.getItem('token');
+      const validToken = token && token !== 'null';
+      
+      if (!isSearching && activeTab === 'properties' && validToken) {
         loadDashboardData();
       }
     }, 30000); // Refresh every 30 seconds
@@ -241,28 +248,21 @@ const UserDashboard = () => {
 
   // Redirect if not authenticated
   useEffect(() => {
-    console.log('🏠 UserDashboard: Component loaded');
-    console.log('🏠 UserDashboard: User data:', user);
-    console.log('🏠 UserDashboard: User authenticated:', !!user);
-    console.log('🏠 UserDashboard: User role:', user?.role);
-    console.log('🏠 UserDashboard: Current URL:', window.location.pathname);
-    
     if (!user) {
-      console.log('🏠 UserDashboard: No user found, redirecting to login');
-      navigate('/login');
+      const token = localStorage.getItem('token');
+      if (token === 'null' || !token) {
+        navigate('/login');
+        return;
+      }
       return;
     }
     
     // 🔍 CRITICAL FIX: Check if user is trying to access admin dashboard
     if (user.role && ['admin', 'super_admin'].includes(user.role)) {
-      console.log('🏠 UserDashboard: User is admin, redirecting to admin dashboard');
-      console.log('🏠 UserDashboard: Admin role detected:', user.role);
-      console.log('🏠 UserDashboard: Redirecting to /admin/dashboard');
       navigate('/admin/dashboard', { replace: true });
       return;
     }
     
-    console.log('🏠 UserDashboard: User is regular user, loading dashboard data');
     loadDashboardData();
     checkAdvisorProfileStatus(); // Check if user has completed advisor profile
     setProfileData({
@@ -280,12 +280,8 @@ const UserDashboard = () => {
 
     // Listen for property approval notifications
     socket.on('propertyApproved', (property) => {
-      console.log('🎉 Property approved notification received:', property);
-      
       // Only update if this property belongs to the current user
       if (property.ownerId === user.id || property.user_id === user.id) {
-        console.log('✅ Updating user dashboard with approved property');
-        
         // Update the property status in the local state
         setProperties(prevProperties => 
           prevProperties.map(prop => 
@@ -306,8 +302,6 @@ const UserDashboard = () => {
 
     // Listen for property rejection notifications
     socket.on('propertyRejected', (property) => {
-      console.log('❌ Property rejected notification received:', property);
-      
       if (property.ownerId === user.id || property.user_id === user.id) {
         setProperties(prevProperties => 
           prevProperties.map(prop => 
@@ -501,59 +495,29 @@ const UserDashboard = () => {
     try {
       setLoading(true);
       
-      // 🔍 CRITICAL DEBUG: Log authentication details
+      // Fix: Handle string "null" token
       const token = localStorage.getItem('token');
-      console.log('🔍 FRONTEND AUTH DEBUG:');
-      console.log('📋 Token exists:', !!token);
-      console.log('📋 Token value:', token ? token.substring(0, 50) + '...' : 'NO TOKEN');
-      console.log('📋 User object:', user);
-      console.log('📋 User ID:', user?.id);
-      console.log('📋 User role:', user?.role);
-      console.log('📋 LocalStorage token age:', token ? Math.round((Date.now() - parseInt(localStorage.getItem('loginTime') || '0')) / 60000) + ' minutes' : 'N/A');
-      console.log('📋 Login time:', localStorage.getItem('loginTime'));
-      console.log('📋 All localStorage keys:', Object.keys(localStorage));
+      const validToken = token && token !== 'null' ? token : null;
+      
+      if (!validToken) {
+        // Clear invalid data and redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('loginTime');
+        navigate('/login');
+        return;
+      }
       
       const propertiesResponse = await fetch('/api/properties/my-properties', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${validToken}`
         }
       });
-      
-      // 🔍 CRITICAL DEBUG: Log response details
-      console.log('🔍 API RESPONSE DEBUG:');
-      console.log('📋 Response status:', propertiesResponse.status);
-      console.log('📋 Response ok:', propertiesResponse.ok);
-      console.log('📋 Response headers:', Object.fromEntries(propertiesResponse.headers.entries()));
       
       if (propertiesResponse.ok) {
         const propertiesData = await propertiesResponse.json();
         
-        // Debug logging
-        console.log('🔍 Frontend UserDashboard - API Response Debug:');
-        console.log('📊 Total properties received:', propertiesData.properties?.length || 0);
-        console.log('🗂️ Full API response structure:', propertiesData);
-        
         if (propertiesData.properties && propertiesData.properties.length > 0) {
-          const firstProperty = propertiesData.properties[0];
-          console.log('🏠 First property detailed debug:', {
-            id: firstProperty.id,
-            title: firstProperty.title,
-            hasDescription: !!firstProperty.description,
-            descriptionLength: firstProperty.description?.length || 0,
-            descriptionValue: firstProperty.description || 'NO DESCRIPTION',
-            descriptionPreview: firstProperty.description?.substring(0, 100) || 'NO DESCRIPTION',
-            allPropertyFields: Object.keys(firstProperty),
-            fullPropertyObject: firstProperty
-          });
-          
-          // Check latest property for description
-          console.log('📋 Latest property (should have description):', {
-            id: propertiesData.properties[0].id,
-            title: propertiesData.properties[0].title,
-            description: propertiesData.properties[0].description,
-            hasDescription: !!propertiesData.properties[0].description
-          });
-          
           // ✅ CRITICAL FIX: Only update properties if we have valid data
           setProperties(propertiesData.properties);
         } else if (properties.length === 0) {
@@ -565,18 +529,8 @@ const UserDashboard = () => {
         
         const userStats = calculateStats(propertiesData.properties || []);
         setStats(userStats);
-        
-        // 🔍 DEBUG: Track property loading
-        console.log('🔍 PROPERTY LOADING DEBUG:', {
-          totalProperties: propertiesData.properties?.length || 0,
-          propertiesWithStatus: propertiesData.properties?.map(p => ({ id: p.id, title: p.title, status: p.status })) || [],
-          firstPropertyStatus: propertiesData.properties?.[0]?.status || 'N/A'
-        });
       } else {
-        console.error('Failed to load dashboard data:', propertiesResponse.status);
         if (propertiesResponse.status === 401) {
-          console.log('🔍 401 Unauthorized - user needs to re-login');
-          console.log('🔍 Clearing localStorage and redirecting to login');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           localStorage.removeItem('loginTime');
@@ -590,7 +544,6 @@ const UserDashboard = () => {
       // Set a timeout to retry loading after 5 seconds
       setTimeout(() => {
         if (activeTab === 'properties') {
-          console.log('🔄 Retrying dashboard data load after error');
           loadDashboardData();
         }
       }, 5000);

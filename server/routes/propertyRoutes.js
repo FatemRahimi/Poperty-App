@@ -83,30 +83,10 @@ const authenticateJWT = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, config.auth.jwt.secret);
-    
-    // 🔍 CRITICAL DEBUG: Log the decoded token information
-    console.log('🔍 JWT AUTHENTICATION DEBUG:');
-    console.log('📋 Decoded token:', decoded);
-    console.log('📋 User ID from token:', decoded.id);
-    console.log('📋 User role from token:', decoded.role);
-    console.log('📋 Admin table flag:', decoded.adminTable);
-    console.log('📋 Request URL:', req.url);
-    console.log('📋 Request method:', req.method);
-    console.log('📋 JWT Secret used:', config.auth.jwt.secret ? 'Present' : 'Missing');
-    console.log('📋 Token expiration:', new Date(decoded.exp * 1000).toISOString());
-    console.log('📋 Current time:', new Date().toISOString());
-    console.log('📋 Token issued at:', new Date(decoded.iat * 1000).toISOString());
-    console.log('📋 Token age (minutes):', Math.round((Date.now() - decoded.iat * 1000) / 60000));
-    console.log('📋 Request headers:', Object.keys(req.headers));
-    console.log('📋 Authorization header present:', !!req.headers.authorization);
-    
     req.user = decoded;
     next();
   } catch (error) {
     console.error('❌ JWT verification failed:', error.message);
-    console.error('❌ JWT Secret available:', !!config.auth.jwt.secret);
-    console.error('❌ Token length:', token.length);
-    console.error('❌ Token preview:', token.substring(0, 50) + '...');
     return res.status(401).json({ success: false, message: 'Invalid or expired token' });
   }
 };
@@ -180,42 +160,43 @@ router.get('/search', async (req, res) => {
       user_id = null // For dashboard context
     } = req.query;
 
-    console.log(`🔍 Professional Search: "${query}" within ${radius} miles`);
-    console.log('📍 Radius value:', radius, 'Type:', typeof radius);
-    console.log('🏷️ Category filter:', category);
-    console.log('👤 Context:', show_all_statuses === 'true' ? 'User Dashboard' : 'Public Search');
-    
     const offset = (page - 1) * limit;
     
-    // CONTEXT-AWARE STATUS FILTERING
+    // CONTEXT-AWARE STATUS FILTERING WITH SECURITY
     let whereClause;
-    if (show_all_statuses === 'true') {
-      // User Dashboard: Show all user's properties regardless of status
-      whereClause = user_id ? `WHERE p.user_id = ${user_id}` : "WHERE 1=1";
-      console.log('🏠 Dashboard mode: Showing all user properties');
-      } else {
+    let queryParams = [];
+    let paramCount = 0;
+    
+    if (show_all_statuses === 'true' && user_id) {
+      // 🔒 SECURITY: User Dashboard - Show ONLY this user's properties
+      paramCount++;
+      whereClause = `WHERE p.user_id = $${paramCount}`;
+      queryParams.push(parseInt(user_id));
+      console.log(`🔒 Dashboard mode: Filtering to user ID ${user_id} only`);
+    } else if (show_all_statuses === 'true' && !user_id) {
+      // Error case: Dashboard mode without user_id should not happen
+      return res.status(400).json({ 
+        error: 'User ID required for dashboard search',
+        properties: [],
+        totalCount: 0 
+      });
+    } else {
       // Public Search: Only approved properties
       whereClause = "WHERE p.status = 'approved'";
       console.log('🌐 Public mode: Showing only approved properties');
     }
-    
-    let queryParams = [];
-    let paramCount = 0;
 
     // 🌍 PROFESSIONAL MIXED SEARCH STRATEGY - Database + Geocoding
     if (query && radius && radius.trim() !== '') {
-      console.log('🌍 Professional mixed search mode. Radius:', radius, 'Query:', query);
-      
       const radiusFloat = parseFloat(radius);
-      console.log('📏 Parsed radius:', radiusFloat);
       
       if (radiusFloat >= 0) {
         // Check if this is a city search first (KEEP UNCHANGED)
         const { isCityPattern } = require('../utils/smartSearch');
         
         if (isCityPattern(query)) {
-          console.log(`🏙️ City search detected for "${query}" - using direct database query (NO GEOCODING)`);
           paramCount++;
+          // 🔒 SECURITY FIX: Wrap city search in parentheses to maintain user_id filter
           const citySearchCondition = ` AND (
             LOWER(p.city) = LOWER($${paramCount}) OR 
             p.city ILIKE $${paramCount + 1} OR
@@ -225,15 +206,12 @@ router.get('/search', async (req, res) => {
           whereClause += citySearchCondition;
           queryParams.push(query.trim(), `%${query.trim()}%`);
           paramCount++; // Increment for the second parameter
-          console.log('🏙️ Added DIRECT CITY search condition:', citySearchCondition);
-          console.log('📊 Query params:', queryParams);
         } else {
           // PROFESSIONAL MIXED STRATEGY for postcodes and street names
-          console.log(`🔍 Professional mixed strategy for "${query}" - Database search + Geocoding`);
-          
           // STEP 1: DATABASE SEARCH (Exact Matches)
           paramCount++;
-          const databaseSearchCondition = ` AND (
+          // 🔒 SECURITY FIX: Open parenthesis for combined (database OR radius) search
+          const databaseSearchCondition = ` AND ((
             p.title ILIKE $${paramCount} OR 
             p.description ILIKE $${paramCount} OR 
             p.address_line1 ILIKE $${paramCount} OR 
@@ -241,28 +219,21 @@ router.get('/search', async (req, res) => {
             p.city ILIKE $${paramCount} OR 
             p.zip_code ILIKE $${paramCount} OR
             p.property_type ILIKE $${paramCount}
-          )`;
+          `;
           whereClause += databaseSearchCondition;
           queryParams.push(`%${query}%`);
-          console.log('📊 Added DATABASE SEARCH condition for exact matches');
           
           // STEP 2: GEOCODING + RADIUS SEARCH (Nearby Properties)
           const { geocodeLocationEnhanced, parseLocationInput } = require('../utils/smartSearch');
           
           const geocodeLocation = async (searchTerm) => {
-            console.log(`🌍 Enhanced Geocoding "${searchTerm}" for radius search...`);
-            
             const parsedInput = parseLocationInput(searchTerm);
-            console.log(`🔍 Input Analysis: ${JSON.stringify(parsedInput)}`);
-            
             const result = await geocodeLocationEnhanced(searchTerm, parsedInput);
             
             if (result) {
-              console.log(`✅ Enhanced geocoding success: ${result.display_name} (${result.lat}, ${result.lng}) - Source: ${result.source}`);
               return { lat: result.lat, lng: result.lng, success: true };
             }
             
-            console.log(`⚠️ No coordinates found for "${searchTerm}"`);
             return { success: false };
           };
           
@@ -271,11 +242,11 @@ router.get('/search', async (req, res) => {
           if (coords.success) {
             const searchLat = coords.lat;
             const searchLng = coords.lng;
-            console.log(`📍 Using coordinates for radius search: ${searchLat}, ${searchLng}`);
             
             // Add radius condition for nearby properties
             paramCount += 3;
-            const radiusCondition = ` OR (
+            // 🔒 SECURITY FIX: Use OR within the parenthesis, then close it
+            const radiusCondition = `) OR (
               p.latitude IS NOT NULL AND p.longitude IS NOT NULL AND
               (6371 * acos(
                 cos(radians($${paramCount - 2})) 
@@ -284,19 +255,17 @@ router.get('/search', async (req, res) => {
                 + sin(radians($${paramCount - 2})) 
                 * sin(radians(p.latitude))
               )) <= $${paramCount}
-            )`;
+            ))`;
             whereClause += radiusCondition;
             queryParams.push(searchLat, searchLng, radiusFloat);
-            console.log('🎯 Added RADIUS SEARCH condition for nearby properties');
-            console.log('📊 Query params:', queryParams);
           } else {
-            console.log('⚠️ Geocoding failed, using database search only');
+            // 🔒 SECURITY FIX: Close parenthesis if no radius search
+            whereClause += `)`;
           }
         }
       }
     } else if (query) {
       // 📝 TEXT SEARCH MODE - When no radius specified or radius is empty
-      console.log('📝 Text-based search mode (Any distance). Query:', query);
       
       // Build smart postcode patterns for UK postcodes
       let postcodeSearchTerms = [`%${query.trim()}%`];
@@ -366,7 +335,6 @@ router.get('/search', async (req, res) => {
       paramCount++;
       whereClause += ` AND p.category = $${paramCount}`;
       queryParams.push(category);
-      console.log(`🏷️ Added category filter: ${category}`);
     }
 
     // 🏠 PROPERTY TYPE FILTER (flat/house/studio etc.)
@@ -374,7 +342,6 @@ router.get('/search', async (req, res) => {
       paramCount++;
       whereClause += ` AND p.property_type = $${paramCount}`;
       queryParams.push(property_type);
-      console.log(`🏠 Added property type filter: ${property_type}`);
     }
 
     // 🌆 CITY FILTER
@@ -382,7 +349,6 @@ router.get('/search', async (req, res) => {
       paramCount++;
       whereClause += ` AND p.city ILIKE $${paramCount}`;
       queryParams.push(`%${city}%`);
-      console.log(`🌆 Added city filter: ${city}`);
     }
 
     // 💰 PRICE FILTERS
@@ -390,14 +356,12 @@ router.get('/search', async (req, res) => {
       paramCount++;
       whereClause += ` AND (p.price >= $${paramCount} OR p.monthly_rent >= $${paramCount})`;
       queryParams.push(min_price);
-      console.log(`💰 Added min price filter: ${min_price}`);
     }
 
     if (max_price) {
       paramCount++;
       whereClause += ` AND (p.price <= $${paramCount} OR p.monthly_rent <= $${paramCount})`;
       queryParams.push(max_price);
-      console.log(`💰 Added max price filter: ${max_price}`);
     }
 
     // 🛏️ BEDROOMS FILTER
@@ -405,7 +369,6 @@ router.get('/search', async (req, res) => {
       paramCount++;
       whereClause += ` AND p.bedrooms >= $${paramCount}`;
       queryParams.push(bedrooms);
-      console.log(`🛏️ Added bedrooms filter: ${bedrooms}`);
     }
 
     const searchQuery = `
@@ -425,11 +388,8 @@ router.get('/search', async (req, res) => {
     `;
 
     queryParams.push(limit, offset);
-    console.log('🔍 Final search query WHERE clause:', whereClause);
-    console.log('📊 Final query params:', queryParams);
     
     const result = await pool.query(searchQuery, queryParams);
-    console.log('📊 Total properties returned:', result.rows.length);
 
     let properties = result.rows;
     let coordinates = null;
@@ -442,10 +402,7 @@ router.get('/search', async (req, res) => {
         const parsedInput = parseLocationInput(query);
         if (parsedInput.success && parsedInput.lat && parsedInput.lng) {
           coordinates = { lat: parsedInput.lat, lng: parsedInput.lng };
-          console.log(`📍 Using geographic search with coordinates: ${coordinates.lat}, ${coordinates.lng}`);
           properties = filterPropertiesByRadius(properties, coordinates.lat, coordinates.lng, radiusFloat);
-        } else {
-          console.log(`📝 Using text-based search (no coordinates found)`);
         }
       }
     }

@@ -817,14 +817,6 @@ const getUserProperties = async (req, res) => {
     const { page = 1, limit = 100, status, type } = req.query;
     const offset = (page - 1) * limit;
 
-    // 🔍 CRITICAL DEBUG: Log user authentication details
-    console.log('🔍 AUTHENTICATION DEBUG:');
-    console.log('📋 User ID from req.user:', user_id);
-    console.log('📋 User role:', user_role);
-    console.log('📋 User object:', req.user);
-    console.log('📋 Request headers:', req.headers.authorization ? 'Authorization header present' : 'No authorization header');
-    console.log('📋 Request user agent:', req.headers['user-agent']);
-
     // 🎯 SECURITY FIX: Ensure users only see their own properties, admins see all
     let whereClause;
     let queryParams = [];
@@ -836,13 +828,11 @@ const getUserProperties = async (req, res) => {
     if ((user_role === 'admin' || user_role === 'super_admin') && isAdminRequest) {
       // Admin dashboard request - show ALL properties for management
       whereClause = 'WHERE 1=1';
-      console.log('👑 Admin dashboard: Showing ALL properties for management');
     } else {
       // Regular user request - show ONLY their own properties
       paramCount++;
       whereClause = 'WHERE p.user_id = $1';
       queryParams.push(user_id);
-      console.log(`👤 User mode: Showing only properties for user ID ${user_id}`);
     }
 
     if (status) {
@@ -881,16 +871,6 @@ const getUserProperties = async (req, res) => {
       query += ` LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
       queryParams.push(limit, offset);
     }
-
-    // 🔍 DEBUG: Log the query and parameters
-    console.log('🔍 getUserProperties DEBUG:');
-    console.log('📋 User ID:', user_id);
-    console.log('📋 User Role:', user_role);
-    console.log('📋 Is Admin Request:', isAdminRequest);
-    console.log('📋 Request Path:', req.path);
-    console.log('📋 Query params:', queryParams);
-    console.log('📋 Where clause:', whereClause);
-    console.log('📋 Full query:', query);
 
     const result = await pool.query(query, queryParams);
 

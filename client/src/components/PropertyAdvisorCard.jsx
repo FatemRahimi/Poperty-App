@@ -27,23 +27,17 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
   // Fetch user data when no advisor profile exists
   const fetchUserData = async (userId) => {
     try {
-      console.log('🔍 PropertyAdvisorCard: Fetching user data for userId:', userId);
       const response = await fetch(`/api/users/${userId}?t=${Date.now()}`);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('🔍 PropertyAdvisorCard: User data response:', data);
         
         if (data.success && data.user) {
           setUserData(data.user);
-        } else {
-          console.log('🔍 PropertyAdvisorCard: No user data found');
         }
-      } else {
-        console.log('🔍 PropertyAdvisorCard: Failed to fetch user data:', response.status);
       }
     } catch (err) {
-      console.error('🔍 PropertyAdvisorCard: Error fetching user data:', err);
+      console.error('PropertyAdvisorCard: Error fetching user data:', err);
     }
   };
 
@@ -57,30 +51,14 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
 
       try {
         setLoading(true);
-        console.log('🔍 PropertyAdvisorCard: Fetching advisor profile for userId:', userId);
         const response = await fetch(`/api/users/${userId}/advisor-profile/details?t=${Date.now()}`);
         
         if (response.ok) {
           const data = await response.json();
-          console.log('🔍 PropertyAdvisorCard: API Response:', data);
           
           if (data.success && data.advisorProfile) {
-            console.log('🔍 PropertyAdvisorCard: Advisor profile data:', data.advisorProfile);
-            console.log('🔍 PropertyAdvisorCard: Expert team:', data.advisorProfile.experts);
-            console.log('🔍 PropertyAdvisorCard: Expert team type:', typeof data.advisorProfile.experts);
-            console.log('🔍 PropertyAdvisorCard: Expert team length:', data.advisorProfile.experts ? data.advisorProfile.experts.length : 'N/A');
-            console.log('🔍 PropertyAdvisorCard: Profile photo URL:', data.advisorProfile.profile_photo_url);
-            console.log('🔍 PropertyAdvisorCard: Company logo URL:', data.advisorProfile.company_logo_url);
-            console.log('🔍 PropertyAdvisorCard: Advisor type:', data.advisorProfile.advisor_type);
-            console.log('🔍 PropertyAdvisorCard: Is advisor:', data.advisorProfile.is_advisor);
-            console.log('🔍 PropertyAdvisorCard: Contact email:', data.advisorProfile.contact_email);
-            console.log('🔍 PropertyAdvisorCard: ContactEmail:', data.advisorProfile.contactEmail);
-            console.log('🔍 PropertyAdvisorCard: Email:', data.advisorProfile.email);
-            console.log('🔍 PropertyAdvisorCard: Company email:', data.advisorProfile.company_email);
-            console.log('🔍 PropertyAdvisorCard: Account email:', data.advisorProfile.account_email);
             setAdvisorData(data.advisorProfile);
           } else {
-            console.log('🔍 PropertyAdvisorCard: No advisor profile found or success is false');
             setError('No advisor profile found');
             // If no advisor profile, try to fetch user data for fallback
             if (userId) {
@@ -88,11 +66,10 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
             }
           }
         } else {
-          console.log('🔍 PropertyAdvisorCard: API request failed with status:', response.status);
           setError('Failed to fetch advisor profile');
         }
       } catch (err) {
-        console.error('🔍 PropertyAdvisorCard: Error fetching advisor profile:', err);
+        console.error('PropertyAdvisorCard: Error fetching advisor profile:', err);
         setError('Network error');
       } finally {
         setLoading(false);
@@ -105,26 +82,20 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
   // Helper function to find property consultant from expert team
   const findPropertyConsultant = (experts) => {
     if (!experts || !Array.isArray(experts)) {
-      console.log('🔍 PropertyAdvisorCard: No experts array found:', experts);
       return null;
     }
-    
-    console.log('🔍 PropertyAdvisorCard: Searching through experts:', experts);
     
     // First, try to find someone with "property consultant" in their job title
     let propertyConsultant = experts.find(expert => {
       const jobTitle = (expert.job_title || expert.jobTitle || '').toLowerCase();
-      console.log('🔍 PropertyAdvisorCard: Checking expert job title:', jobTitle);
       return jobTitle.includes('property consultant') || jobTitle.includes('property') || jobTitle.includes('consultant');
     });
     
     // If no property consultant found, use the first expert
     if (!propertyConsultant && experts.length > 0) {
       propertyConsultant = experts[0];
-      console.log('🔍 PropertyAdvisorCard: No property consultant found, using first expert:', propertyConsultant);
     }
     
-    console.log('🔍 PropertyAdvisorCard: Final property consultant:', propertyConsultant);
     return propertyConsultant;
   };
 
@@ -145,16 +116,6 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
   const isCompany = hasAdvisorProfile && advisorData.advisor_type === 'company';
   const isPerson = hasAdvisorProfile && advisorData.advisor_type === 'person';
   const hasOnlyAddRentData = !hasAdvisorProfile && (fallbackContact || propertyConsultantData);
-  
-  console.log('🔍 PropertyAdvisorCard: Layout determination:');
-  console.log('  - hasAdvisorProfile:', hasAdvisorProfile);
-  console.log('  - isCompany:', isCompany);
-  console.log('  - isPerson:', isPerson);
-  console.log('  - hasOnlyAddRentData:', hasOnlyAddRentData);
-  console.log('  - advisorData?.is_advisor:', advisorData?.is_advisor);
-  console.log('  - advisorData?.advisor_type:', advisorData?.advisor_type);
-  console.log('  - propertyConsultantData:', propertyConsultantData);
-  console.log('  - fallbackContact:', fallbackContact);
 
   // SCENARIO 1: COMPANY ADVISOR (AdvisorProfile + AddRent forms)
   if (isCompany) {
@@ -196,7 +157,6 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
           job_title: selectedExpert.job_title || selectedExpert.jobTitle || 'Property Consultant',
           jobTitle: selectedExpert.job_title || selectedExpert.jobTitle || 'Property Consultant'
         };
-        console.log('🔍 PropertyAdvisorCard: Found matching expert from advisor profile:', propertyConsultant);
       } else {
         // If no matching expert found, create basic consultant info from form data
         propertyConsultant = {
@@ -211,19 +171,12 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
           job_title: 'Property Consultant',
           jobTitle: 'Property Consultant'
         };
-        console.log('🔍 PropertyAdvisorCard: Using form data (no matching expert found):', propertyConsultant);
       }
     }
     // If no selected expert from form, fall back to advisor profile experts
     else {
       propertyConsultant = findPropertyConsultant(advisorData.experts);
-      console.log('🔍 PropertyAdvisorCard: Using default expert from advisor profile:', propertyConsultant);
     }
-    
-    console.log('🔍 PropertyAdvisorCard: Company advisor - Final property consultant:', propertyConsultant);
-    console.log('🔍 PropertyAdvisorCard: Company advisor - From fallbackContact (AddRent form):', fallbackContact);
-    console.log('🔍 PropertyAdvisorCard: Company advisor - From experts (advisor profile):', findPropertyConsultant(advisorData.experts));
-    console.log('🔍 PropertyAdvisorCard: Company advisor - All available experts:', advisorData.experts);
     
     return (
       <div className="property-advisor-card-wrapper">
@@ -233,13 +186,10 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
             <div className="pac-company-main">
               {(advisorData.company_logo_url || advisorData.companyLogoUrl) && (
                 <div className="pac-company-logo">
-                  {console.log('🔍 PropertyAdvisorCard: Rendering company logo:', advisorData.company_logo_url || advisorData.companyLogoUrl)}
                   <img 
                     src={advisorData.company_logo_url || advisorData.companyLogoUrl} 
                     alt={`${advisorData.company_name} logo`}
                     className="pac-logo-image"
-                    onError={(e) => console.error('🔍 PropertyAdvisorCard: Company logo failed to load:', advisorData.company_logo_url || advisorData.companyLogoUrl, e)}
-                    onLoad={() => console.log('🔍 PropertyAdvisorCard: Company logo loaded successfully:', advisorData.company_logo_url || advisorData.companyLogoUrl)}
                   />
                 </div>
               )}
@@ -275,15 +225,11 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
               <h3 className="pac-section-title">Property Consultant</h3>
               <div className="pac-consultant-card">
                 <div className="pac-consultant-photo pac-consultant-photo-rectangle">
-                  {console.log('🔍 PropertyAdvisorCard: Property consultant data:', propertyConsultant)}
-                  {console.log('🔍 PropertyAdvisorCard: Property consultant photo URL:', propertyConsultant.profile_photo_url || propertyConsultant.profilePhotoUrl)}
                   {(propertyConsultant.profile_photo_url || propertyConsultant.profilePhotoUrl) ? (
                     <img 
                       src={propertyConsultant.profile_photo_url || propertyConsultant.profilePhotoUrl} 
                       alt={propertyConsultant.full_name || propertyConsultant.fullName}
                       className="pac-consultant-image pac-consultant-image-rectangle"
-                      onError={(e) => console.error('🔍 PropertyAdvisorCard: Property consultant photo failed to load:', propertyConsultant.profile_photo_url || propertyConsultant.profilePhotoUrl, e)}
-                      onLoad={() => console.log('🔍 PropertyAdvisorCard: Property consultant photo loaded successfully:', propertyConsultant.profile_photo_url || propertyConsultant.profilePhotoUrl)}
                     />
                   ) : (
                     <div className="pac-consultant-placeholder pac-consultant-placeholder-rectangle">
@@ -399,8 +345,6 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
                   src={advisorData.profile_photo_url || advisorData.profilePhotoUrl} 
                   alt={advisorData.full_name}
                   className="pac-consultant-image"
-                  onError={(e) => console.error('🔍 PropertyAdvisorCard: Person advisor photo failed to load:', advisorData.profile_photo_url || advisorData.profilePhotoUrl, e)}
-                  onLoad={() => console.log('🔍 PropertyAdvisorCard: Person advisor photo loaded successfully:', advisorData.profile_photo_url || advisorData.profilePhotoUrl)}
                 />
               ) : (
                   <div className="pac-consultant-placeholder">
@@ -458,7 +402,6 @@ const PropertyAdvisorCard = ({ userId, fallbackContact, propertyConsultantData }
   // If user hasn't submitted an advisor profile, don't show the card at all
   // Only show PropertyAdvisorCard if the user has completed their advisor profile
   if (!hasAdvisorProfile) {
-    console.log('🔍 PropertyAdvisorCard: No advisor profile submitted - hiding card');
     return null;
   }
 
