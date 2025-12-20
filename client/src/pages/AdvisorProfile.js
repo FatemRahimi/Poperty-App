@@ -480,29 +480,78 @@ const AdvisorProfile = () => {
         // Don't send hasPhoto or profilePhotoUrl to avoid base64 in JSON
       }));
       console.log('👥 Expert team data being sent:', expertTeamData);
+      console.log('📦 Expert team JSON string length:', JSON.stringify(expertTeamData).length);
       submitData.append('expertTeam', JSON.stringify(expertTeamData));
       submitData.append('contactEmail', formData.contactEmail);
 
-      console.log('📡 Making API call to save advisor profile...');
-      const response = await fetch(`/api/users/${user.id}/advisor-profile`, {
-        method: isEditMode ? 'PUT' : 'POST',
-        body: submitData,
-        headers: {
-          'Authorization': `Bearer ${token}`
+      // Log FormData contents for debugging
+      console.log('📋 FormData summary:');
+      for (let [key, value] of submitData.entries()) {
+        if (value instanceof File) {
+          console.log(`  - ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+        } else {
+          console.log(`  - ${key}: ${typeof value === 'string' ? value.substring(0, 50) : value}`);
         }
-      });
+      }
+
+      console.log('📡 Making API call to save advisor profile...');
+      
+      // Check if we have any file uploads
+      const hasFileUploads = formData.companyLogo || formData.profilePhoto || 
+                             expertTeam.some(expert => expert.profilePhotoFile instanceof File);
+      
+      console.log('📤 Has file uploads:', hasFileUploads);
+      
+      let response;
+      
+      if (isEditMode && !hasFileUploads) {
+        // For edit mode without file uploads, use text-only endpoint (no multer)
+        console.log('📝 Using text-only endpoint (PATCH)');
+        
+        // Convert FormData to JSON for text-only update
+        const jsonData = {};
+        for (let [key, value] of submitData.entries()) {
+          jsonData[key] = value;
+        }
+        
+        response = await fetch(`/api/users/${user.id}/advisor-profile/text-only`, {
+          method: 'PATCH',
+          body: JSON.stringify(jsonData),
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      } else {
+        // For create or edit with files, use regular multipart endpoint
+        console.log(`📤 Using multipart endpoint (${isEditMode ? 'PUT' : 'POST'})`);
+        response = await fetch(`/api/users/${user.id}/advisor-profile`, {
+          method: isEditMode ? 'PUT' : 'POST',
+          body: submitData,
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
 
       console.log('📡 Response status:', response.status);
       
       let data;
       try {
-        data = await response.json();
-        console.log('📡 Response data:', data);
+        const responseText = await response.text();
+        console.log('📡 Raw response:', responseText.substring(0, 500)); // First 500 chars
+        
+        if (responseText) {
+          data = JSON.parse(responseText);
+          console.log('📡 Parsed response data:', data);
+        } else {
+          console.log('❌ Empty response body');
+          setError(`Server error: ${response.status} - Empty response`);
+          return;
+        }
       } catch (parseError) {
-        console.log('❌ Failed to parse response as JSON');
-        const textResponse = await response.text();
-        console.log('📡 Text response:', textResponse);
-        setError(`Server error: ${response.status} - ${textResponse}`);
+        console.log('❌ Failed to parse response:', parseError);
+        setError(`Server error: ${response.status} - Invalid response format`);
         return;
       }
 
