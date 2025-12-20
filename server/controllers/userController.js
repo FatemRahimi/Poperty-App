@@ -79,15 +79,10 @@ const updateProfile = async (req, res) => {
 // Check if user has completed advisor profile
 const checkAdvisorProfile = async (req, res) => {
   try {
-    console.log('🔍 Check advisor profile request received');
-    console.log('User ID from params:', req.params.userId);
-    console.log('User ID from JWT:', req.user?.id);
-    
     // Use user ID from URL params if JWT user is not available
     const userId = req.user?.id || req.params.userId;
     
     if (!userId) {
-      console.log('❌ No user ID found, returning false');
       return res.json({
         success: true,
         hasCompletedAdvisorProfile: false,
@@ -96,8 +91,6 @@ const checkAdvisorProfile = async (req, res) => {
     }
     
     const result = await User.checkAdvisorProfile(userId);
-    
-    console.log('✅ Advisor profile check result:', result);
     
     res.json({
       success: true,
