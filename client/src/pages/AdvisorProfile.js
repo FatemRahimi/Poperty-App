@@ -452,22 +452,34 @@ const AdvisorProfile = () => {
       }
 
       // Add expert photo files
+      console.log('👥 Expert team before submission:', expertTeam);
       expertTeam.forEach((expert, index) => {
-        if (expert.profilePhotoFile) {
+        // Only send if we have an actual File object (not base64 data URL from edit mode)
+        if (expert.profilePhotoFile && expert.profilePhotoFile instanceof File) {
           submitData.append(`expertPhoto_${index}`, expert.profilePhotoFile);
-          console.log(`📁 Added expert photo for ${expert.fullName || `expert ${index}`}`);
+          console.log(`📁 Added expert photo ${index}:`, {
+            name: expert.fullName,
+            fileName: expert.profilePhotoFile.name,
+            fileSize: expert.profilePhotoFile.size,
+            fileType: expert.profilePhotoFile.type
+          });
+        } else if (expert.profilePhotoFile) {
+          console.log(`⚠️ Skipping non-File object for expert ${index}: ${expert.fullName}`, typeof expert.profilePhotoFile);
+        } else {
+          console.log(`⚠️ No photo file for expert ${index}: ${expert.fullName}`);
         }
       });
 
-      // Add expert team data (without file objects, backend will add photo URLs)
-      const expertTeamData = expertTeam.map(expert => ({
+      // Add expert team data (without file objects or base64, backend will add photo URLs)
+      const expertTeamData = expertTeam.map((expert, index) => ({
         id: expert.id,
         fullName: expert.fullName,
         jobTitle: expert.jobTitle,
         phone: expert.phone,
         email: expert.email,
-        hasPhoto: !!expert.profilePhotoFile || !!expert.profilePhotoUrl
+        // Don't send hasPhoto or profilePhotoUrl to avoid base64 in JSON
       }));
+      console.log('👥 Expert team data being sent:', expertTeamData);
       submitData.append('expertTeam', JSON.stringify(expertTeamData));
       submitData.append('contactEmail', formData.contactEmail);
 

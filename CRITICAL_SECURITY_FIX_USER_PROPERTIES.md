@@ -262,3 +262,7 @@ GET /api/properties/search?q=test&user_id=1 OR 1=1&show_all_statuses=true
 
 **IMPORTANT:** All users should test their dashboards to ensure they only see their own properties!
 
+
+
+
+

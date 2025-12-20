@@ -127,3 +127,7 @@ Expert team member photos are now:
 **Date:** December 19, 2025
 **Status:** ✅ Fixed and Ready for Testing
 
+
+
+
+

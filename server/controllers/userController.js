@@ -164,23 +164,53 @@ const saveAdvisorProfile = async (req, res) => {
           
           fs.writeFileSync(filePath, file.buffer);
           expertPhotoUrls[i] = `/uploads/${fileName}`;
-          console.log(`✅ Expert photo ${i} saved:`, fileName);
+          console.log(`✅ Expert photo ${i} saved: ${fileName}`);
         }
       }
+
+      console.log('📸 Expert photo URLs generated:', expertPhotoUrls);
 
       // Parse expert team data and add photo URLs
       if (advisorData.expertTeam) {
         try {
           const expertTeam = JSON.parse(advisorData.expertTeam);
-          const updatedExpertTeam = expertTeam.map((expert, index) => ({
-            ...expert,
-            profilePhotoUrl: expertPhotoUrls[index] || expert.profilePhotoUrl || ''
-          }));
+          console.log('👥 Original expert team data received from frontend');
+          
+          const updatedExpertTeam = expertTeam.map((expert, index) => {
+            // Strip out any base64 data URLs (profilePhotoUrl or profilePhotoFile fields)
+            const cleanExpert = {
+              id: expert.id,
+              fullName: expert.fullName || expert.full_name,
+              jobTitle: expert.jobTitle || expert.job_title,
+              phone: expert.phone,
+              email: expert.email
+            };
+            
+            // Add photo URL if uploaded in this request
+            if (expertPhotoUrls[index]) {
+              cleanExpert.profilePhotoUrl = expertPhotoUrls[index];
+              console.log(`✅ Added new photo URL for expert ${index}: ${expertPhotoUrls[index]}`);
+            } else if (expert.profilePhotoUrl && !expert.profilePhotoUrl.startsWith('data:')) {
+              // Keep existing URL if it's not a base64 string
+              cleanExpert.profilePhotoUrl = expert.profilePhotoUrl;
+              console.log(`✅ Kept existing photo URL for expert ${index}`);
+            } else {
+              cleanExpert.profilePhotoUrl = null;
+              console.log(`⚠️ No valid photo URL for expert ${index}`);
+            }
+            
+            return cleanExpert;
+          });
+          
+          console.log('👥 Expert team data cleaned and ready to save');
+          
           advisorData.expertTeam = JSON.stringify(updatedExpertTeam);
           console.log('✅ Expert team data updated with photo URLs');
         } catch (error) {
           console.error('❌ Error parsing expert team data:', error);
         }
+      } else {
+        console.log('⚠️ No expertTeam data found in advisorData');
       }
     }
     
