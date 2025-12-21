@@ -1543,6 +1543,13 @@ const UserDashboard = () => {
         status: 'all' // Always get all statuses, filter on frontend
       });
 
+      // 🏷️ CRITICAL: Add category filter to backend search
+      // This ensures radius filtering is applied only to properties of the selected category
+      if (filters.propertyType && filters.propertyType !== 'all') {
+        searchParams.append('category', filters.propertyType);
+        console.log(`🏷️ Including category filter: ${filters.propertyType}`);
+      }
+
       // Add CRITICAL search-related filters that affect results
       if (filters.radius && filters.radius !== 'any') {
         searchParams.append('radius', filters.radius);
@@ -1628,7 +1635,20 @@ const UserDashboard = () => {
   useEffect(() => {
     if (searchQuery.trim() && hasPerformedSearch && !isSearching) {
       console.log('🔄 Filter changed, re-running search for:', searchQuery);
+      console.log('🔄 With filters:', {
+        radius: searchFilters.radius,
+        propertyType: searchFilters.propertyType,
+        minPrice: searchFilters.minPrice,
+        maxPrice: searchFilters.maxPrice
+      });
       handleProfessionalSearch(searchQuery, searchFilters);
+    } else {
+      console.log('🔄 Filter change ignored:', {
+        hasQuery: searchQuery.trim() !== '',
+        hasPerformedSearch,
+        isSearching,
+        willTrigger: searchQuery.trim() && hasPerformedSearch && !isSearching
+      });
     }
   }, [searchFilters.radius, searchFilters.minPrice, searchFilters.maxPrice, searchFilters.minBeds, searchFilters.maxBeds, searchFilters.propertyBuildingType]);
 

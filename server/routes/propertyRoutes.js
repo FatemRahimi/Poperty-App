@@ -389,6 +389,10 @@ router.get('/search', async (req, res) => {
 
     queryParams.push(limit, offset);
     
+    // 🐛 DEBUG: Log the final SQL query
+    console.log('🔍 Final SQL Query:', searchQuery);
+    console.log('📋 Query Parameters:', queryParams);
+    
     const result = await pool.query(searchQuery, queryParams);
 
     let properties = result.rows;
