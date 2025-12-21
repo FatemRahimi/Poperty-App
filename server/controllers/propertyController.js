@@ -1632,6 +1632,13 @@ const updateProperty = async (req, res) => {
     const broadband_availability_mapped = req.body.broadband_availability || req.body.broadbandAvailability || existingProperty.broadband_availability || null;
     const accessibility_features_mapped = req.body.accessibility_features || req.body.accessibilityFeatures || existingProperty.accessibility_features || null;
     const custom_features_mapped = req.body.custom_features || req.body.customFeatures || existingProperty.custom_features || '[]';
+    
+    // Property feature boolean fields
+    const is_new_build_mapped = req.body.is_new_build !== undefined ? req.body.is_new_build : (req.body.isNewBuild !== undefined ? req.body.isNewBuild : existingProperty.is_new_build);
+    const is_chain_free_mapped = req.body.is_chain_free !== undefined ? req.body.is_chain_free : (req.body.isChainFree !== undefined ? req.body.isChainFree : existingProperty.is_chain_free);
+    const is_recently_renovated_mapped = req.body.is_recently_renovated !== undefined ? req.body.is_recently_renovated : (req.body.isRecentlyRenovated !== undefined ? req.body.isRecentlyRenovated : existingProperty.is_recently_renovated);
+    const has_balcony_terrace_mapped = req.body.has_balcony_terrace !== undefined ? req.body.has_balcony_terrace : (req.body.hasBalconyTerrace !== undefined ? req.body.hasBalconyTerrace : existingProperty.has_balcony_terrace);
+    const has_accessible_access_mapped = req.body.has_accessible_access !== undefined ? req.body.has_accessible_access : (req.body.hasAccessibleAccess !== undefined ? req.body.hasAccessibleAccess : existingProperty.has_accessible_access);
     const has_residential_accommodation_mapped = (req.body.has_residential_accommodation === 'true' || req.body.has_residential_accommodation === true || req.body.hasResidentialAccommodation === 'true' || req.body.hasResidentialAccommodation === true) ? true : (existingProperty.has_residential_accommodation || false);
     const year_built_mapped = year_built || yearBuilt || existingProperty.year_built;
 
@@ -1820,6 +1827,9 @@ const updateProperty = async (req, res) => {
       service_charge_mapped_update, business_rates_mapped, floor_load_capacity_mapped, heating_cooling_mapped, toilet_kitchen_mapped,
       opening_hours_mapped, is_multiple_tenancy_mapped, break_clause_mapped, deposit_required_mapped,
       disability_access_mapped, signage_allowed_mapped, utilities_mapped_update, security_mapped_update,
+      // NEW: Additional fields for Sale properties
+      tenure_mapped, service_charges_mapped, ground_rent_mapped, price_type_mapped, floor_area_unit_mapped,
+      is_new_build_mapped, is_chain_free_mapped, is_recently_renovated_mapped, has_balcony_terrace_mapped, has_accessible_access_mapped,
       parseInt(id), parseInt(user_id)
     ];
 
@@ -1852,8 +1862,10 @@ const updateProperty = async (req, res) => {
         land_acres = $67, lot_size_unit = $68, taxes_per_sqft = $69, power = $70, zoning = $71,
         service_charge = $72, business_rates = $73, floor_load_capacity = $74, heating_cooling = $75, toilet_kitchen = $76,
         opening_hours = $77, is_multiple_tenancy = $78, break_clause = $79, deposit_required = $80,
-        disability_access = $81, signage_allowed = $82, utilities = $83, security = $84
-       WHERE id = $85 AND user_id = $86
+        disability_access = $81, signage_allowed = $82, utilities = $83, security = $84,
+        tenure = $85, service_charges = $86, ground_rent = $87, price_type = $88, floor_area_unit = $89,
+        is_new_build = $90, is_chain_free = $91, is_recently_renovated = $92, has_balcony_terrace = $93, has_accessible_access = $94
+       WHERE id = $95 AND user_id = $96
        RETURNING *`,
       params
     );
