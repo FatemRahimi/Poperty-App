@@ -27,10 +27,18 @@ const SearchFilterHeaderSale = memo(({
   const [lastInputLength, setLastInputLength] = useState(0);
   const searchInputRef = useRef(null);
 
-  // Trigger search - only called on Enter or dropdown selection
+  // Enhanced search triggering with intelligent debouncing
   const triggerProfessionalSearch = () => {
+    // Don't search if query is empty or same as last search
     if (!searchQuery.trim() || searchQuery === lastSearchQuery) return;
     
+    // Don't search while user is actively typing or deleting
+    if (isUserTyping || isUserDeleting) {
+      console.log('🔍 Delaying search - user is still typing/deleting');
+      return;
+    }
+    
+    console.log(`🔍 Professional Dashboard Search (Sale): "${searchQuery}"`);
     setLastSearchQuery(searchQuery);
     
     if (onProfessionalSearch) {
@@ -38,8 +46,14 @@ const SearchFilterHeaderSale = memo(({
     }
   };
 
-  // Track typing state for dropdown display (no automatic search)
+  // Smart typing detection and debouncing
   useEffect(() => {
+    // Clear existing timeout
+    if (searchDebounceTimeout) {
+      clearTimeout(searchDebounceTimeout);
+    }
+
+    // Detect if user is typing or deleting
     const currentLength = searchQuery.length;
     const isTypingMore = currentLength > lastInputLength;
     const isDeletingMore = currentLength < lastInputLength;
@@ -48,28 +62,103 @@ const SearchFilterHeaderSale = memo(({
     setIsUserDeleting(isDeletingMore);
     setLastInputLength(currentLength);
 
-    // Clear search if query is empty
-    if (!searchQuery.trim() && lastSearchQuery) {
-      setLastSearchQuery('');
-    }
-  }, [searchQuery]);
+    // Smart delay based on action type and query characteristics
+    const getSmartDelay = () => {
+      // No delay for empty query (immediate clear)
+      if (!searchQuery.trim()) return 0;
+      
+      // Longer delay if user is deleting to prevent premature searches
+      if (isDeletingMore) return 2000; // 2 seconds for deleting
+      
+      // Analyze query type for appropriate delay
+      const queryAnalysis = analyzeQueryType(searchQuery);
+      
+      switch (queryAnalysis.type) {
+        case 'complete_postcode':
+          return 800; // Shorter delay for complete postcodes
+        case 'partial_postcode':
+          return 1200; // Medium delay for partial postcodes
+        case 'city_name':
+          return 1000; // Medium delay for cities
+        case 'partial_text':
+          return 1500; // Longer delay for partial text
+        default:
+          return 1800; // Longest delay for general text
+      }
+    };
 
-  // 🔥 NEW: Radius change triggers search if query exists
-  useEffect(() => {
-    if (!searchQuery.trim()) return;
+    const delay = getSmartDelay();
     
-    // Trigger search when radius changes
-    if (lastSearchQuery && searchQuery === lastSearchQuery) {
-      if (onProfessionalSearch) {
-        onProfessionalSearch(searchQuery, searchFilters);
+    // Set timeout for search
+    if (searchQuery.trim() && searchQuery !== lastSearchQuery) {
+      const timeout = setTimeout(() => {
+        setIsUserTyping(false);
+        setIsUserDeleting(false);
+        triggerProfessionalSearch();
+      }, delay);
+      
+      setSearchDebounceTimeout(timeout);
+    } else if (!searchQuery.trim()) {
+      // Clear search immediately for empty queries
+      setIsUserTyping(false);
+      setIsUserDeleting(false);
+      if (lastSearchQuery) {
+        setLastSearchQuery('');
+        // Clear search results if needed
       }
     }
-  }, [searchFilters.radius]);
+
+    return () => {
+      if (searchDebounceTimeout) {
+        clearTimeout(searchDebounceTimeout);
+      }
+    };
+  }, [searchQuery]); // Only depend on searchQuery for proper debouncing
+
+  // Analyze query type for smart debouncing
+  const analyzeQueryType = (query) => {
+    if (!query || !query.trim()) return { type: 'empty' };
+    
+    const cleaned = query.trim();
+    
+    // Complete UK postcode pattern
+    if (/^[a-z]{1,2}[0-9][a-z0-9]?\s*[0-9][a-z]{2}$/i.test(cleaned)) {
+      return { type: 'complete_postcode' };
+    }
+    
+    // Partial postcode pattern
+    if (/^[a-z]{1,2}[0-9][a-z0-9]?$/i.test(cleaned)) {
+      return { type: 'partial_postcode' };
+    }
+    
+    // Known UK cities (quick check for major cities)
+    const majorCities = ['london', 'birmingham', 'manchester', 'liverpool', 'leeds', 'sheffield', 'bristol', 'edinburgh', 'glasgow', 'cardiff', 'belfast', 'newcastle', 'nottingham', 'leicester', 'coventry', 'bradford'];
+    if (majorCities.includes(cleaned.toLowerCase())) {
+      return { type: 'city_name' };
+    }
+    
+    // Check if it looks like a partial city name (3+ characters, no numbers)
+    if (cleaned.length >= 3 && !/\d/.test(cleaned) && /^[a-z\s-']+$/i.test(cleaned)) {
+      return { type: 'potential_city' };
+    }
+    
+    // Partial text (less than 3 characters or mixed content)
+    if (cleaned.length < 3) {
+      return { type: 'partial_text' };
+    }
+    
+    return { type: 'general_text' };
+  };
 
   // Enhanced key press handling
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      // Force immediate search on Enter
+      if (searchDebounceTimeout) {
+        clearTimeout(searchDebounceTimeout);
+        setSearchDebounceTimeout(null);
+      }
       setIsUserTyping(false);
       setIsUserDeleting(false);
       triggerProfessionalSearch();
@@ -78,6 +167,8 @@ const SearchFilterHeaderSale = memo(({
 
   // Handle suggestion selection from LocationSearch
   const handleSuggestionSelect = (suggestion) => {
+    console.log('📍 Suggestion selected in SearchFilterHeaderSale:', suggestion);
+    
     // Auto-set appropriate radius based on suggestion type
     if (suggestion.radius && suggestion.radius !== searchFilters.radius) {
       setSearchFilters({
