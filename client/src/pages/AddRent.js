@@ -290,8 +290,8 @@ const AddRent = () => {
         depositAmount: propertyData.deposit_amount ? propertyData.deposit_amount.toString() : "",
         availableFrom: formatDateForInput(propertyData.availability_date),
         tenancyLength: propertyData.lease_term?.toString() || "",
-        councilTaxBand: "", // This data might not be in the existing properties
-        councilTaxStatus: "",
+        councilTaxBand: propertyData.council_tax_band || "",
+        councilTaxStatus: propertyData.council_tax_status || "",
         
         // Location Information
         postcode: propertyData.zip_code || "",
@@ -304,18 +304,32 @@ const AddRent = () => {
         // Property Features
         garden: propertyData.has_garden || false,
         parking: propertyData.parking_spaces > 0 || propertyData.has_garage || false,
-        balconyTerrace: false, // This data might not be in existing properties
+        balconyTerrace: propertyData.has_balcony_terrace || false,
         petsAllowed: propertyData.pets_allowed || false,
         studentHousing: propertyData.student_housing || false,
         hasGarage: propertyData.has_garage || false,
         hasPool: propertyData.has_pool || false,
-        epcRating: "", // This data might not be in existing properties
         
         // NEW FIELDS: EPC Rating
         epcRating: propertyData.epc_rating || "",
         
         // NEW FIELDS: Key Features (Checkboxes)
-        keyFeatures: parsedKeyFeatures,
+        keyFeatures: propertyData.key_features ? (() => {
+          try {
+            if (Array.isArray(propertyData.key_features)) {
+              return propertyData.key_features;
+            } else if (typeof propertyData.key_features === 'string') {
+              return JSON.parse(propertyData.key_features);
+            } else if (typeof propertyData.key_features === 'object' && propertyData.key_features !== null) {
+              return propertyData.key_features;
+            } else {
+              return [];
+            }
+          } catch (error) {
+            console.warn('Failed to parse key_features:', error);
+            return [];
+          }
+        })() : [],
         
         // NEW FIELDS: Layout of Property
         layoutFile: null,
