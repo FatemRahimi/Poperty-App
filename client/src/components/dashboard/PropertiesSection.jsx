@@ -10,9 +10,15 @@ const PropertiesSection = ({
   propertyTypeOptions,
   statusOptions,
   handlePropertyDeleted,
-  isRadiusFiltering
+  isRadiusFiltering,
+  isSearching,
+  totalCount
 }) => {
   const navigate = useNavigate();
+
+  // 🏆 Professional UX: Show stable count while searching
+  const displayCount = isSearching || isRadiusFiltering ? totalCount : filteredProperties.length;
+  const isLoading = isSearching || isRadiusFiltering;
 
   return (
     <div className="properties-section-with-sidebar">
@@ -29,14 +35,14 @@ const PropertiesSection = ({
         <div className="properties-header-modern">
           <div className="properties-title">
             <h2>Result</h2>
-            <span className={`property-count ${isRadiusFiltering ? 'loading' : ''}`}>
-              {isRadiusFiltering ? (
+            <span className={`property-count ${isLoading ? 'loading' : ''}`}>
+              {isLoading ? (
                 <>
                   <i className="fas fa-spinner fa-spin" style={{ marginRight: '0.3rem' }}></i>
-                  <span>Loading</span>
+                  <span>{displayCount}</span>
                 </>
               ) : (
-                filteredProperties.length
+                displayCount
               )}
             </span>
           </div>
