@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 const FindProperty = () => {
     const [searchType, setSearchType] = useState("buy");
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedRadius, setSelectedRadius] = useState("3");
     const [isLoaded, setIsLoaded] = useState(false);
     const [activeFilter, setActiveFilter] = useState("all");
     const [selectedCategory, setSelectedCategory] = useState("residential");
@@ -39,6 +40,18 @@ const FindProperty = () => {
         { id: "residential", label: "Residential" },
         { id: "commercial", label: "Commercial" },
         { id: "land", label: "Land & Farms" }
+    ];
+
+    // Radius options for search
+    const radiusOptions = [
+        { value: "0.5", label: "Within 1/2 mile" },
+        { value: "1", label: "Within 1 mile" },
+        { value: "2", label: "Within 2 miles" },
+        { value: "3", label: "Within 3 miles" },
+        { value: "5", label: "Within 5 miles" },
+        { value: "10", label: "Within 10 miles" },
+        { value: "15", label: "Within 15 miles" },
+        { value: "20", label: "Within 20 miles" }
     ];
 
     const backgroundVideos = [
@@ -217,8 +230,8 @@ const FindProperty = () => {
         switch(category) {
             case "commercial":
                 return [
-                    { value: "lease", label: "Lease" },
-                    { value: "purchase", label: "Purchase" }
+                    { value: "buy", label: "Buy" },
+                    { value: "lease", label: "Lease" }
                 ];
             case "farms":
                 return [
@@ -242,7 +255,7 @@ const FindProperty = () => {
                 setSearchType("buy");
                 break;
             case "commercial":
-                setSearchType("lease");
+                setSearchType("buy");
                 break;
             case "farms":
                 setSearchType("buy");
@@ -360,6 +373,19 @@ const FindProperty = () => {
                                         onChange={handleSearchInput}
                                         ref={inputRef}
                                     />
+                                </div>
+                                <div className="radius-dropdown-wrapper">
+                                    <select
+                                        className="radius-dropdown"
+                                        value={selectedRadius}
+                                        onChange={(e) => setSelectedRadius(e.target.value)}
+                                    >
+                                        {radiusOptions.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                                 <button 
                                     type="button"
