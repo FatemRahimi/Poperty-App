@@ -218,20 +218,17 @@ const FindProperty = () => {
             case "commercial":
                 return [
                     { value: "lease", label: "Lease" },
-                    { value: "purchase", label: "Purchase" },
-                    { value: "invest", label: "Invest" }
+                    { value: "purchase", label: "Purchase" }
                 ];
             case "farms":
                 return [
                     { value: "buy", label: "Buy" },
-                    { value: "lease", label: "Lease" },
-                    { value: "invest", label: "Invest" }
+                    { value: "lease", label: "Lease" }
                 ];
-            default: // residential
+            default: // residential - Only Buy and Rent (no Lease)
                 return [
                     { value: "buy", label: "Buy" },
-                    { value: "rent", label: "Rent" },
-                    { value: "invest", label: "Invest" }
+                    { value: "rent", label: "Rent" }
                 ];
         }
     };
@@ -245,10 +242,10 @@ const FindProperty = () => {
                 setSearchType("buy");
                 break;
             case "commercial":
-                setSearchType("purchase");
+                setSearchType("lease");
                 break;
             case "farms":
-                setSearchType("invest");
+                setSearchType("buy");
                 break;
             default:
                 setSearchType("buy");
