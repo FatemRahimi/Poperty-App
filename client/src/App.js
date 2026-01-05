@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import Navbar from "./components/Navbar.js";
 import Search from "./pages/Search.js";
 import FindProperty from "./pages/FindProperty";
+import SearchResults from "./pages/SearchResults";
 import Login from "./pages/Login.js";
 import PasswordReset from "./pages/PasswordReset";
 import Signup from "./pages/Signup.js";
@@ -41,6 +42,7 @@ function Layout() {
                 <Route path="/" element={<Home />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/find" element={<FindProperty />} />
+                <Route path="/search-results" element={<SearchResults />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/auth/callback" element={<OAuthCallback />} />
                 <Route path="/signup" element={<Signup/>}/>
