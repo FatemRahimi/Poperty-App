@@ -916,6 +916,8 @@
 /* Location Search Group */
 .location-group {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
   background: white;
   border-radius: 8px;
@@ -943,6 +945,13 @@
   position: relative;
   flex: 1;
   min-width: 280px;
+}
+
+/* Search Dropdown Container inside location group - must stay inline */
+.location-group .search-dropdown-container {
+  flex: 0 0 180px;
+  min-width: 180px;
+  max-width: 180px;
 }
 
 /* Special styling for radius dropdown inside location group */
@@ -1150,17 +1159,31 @@
 /* Price Filter Group */
 .price-group {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.5rem;
   margin-right: 1rem;
 }
 
+.price-group .search-dropdown-container {
+  flex: 0 0 auto;
+  width: auto;
+}
+
 /* Bedroom Filter Group */
 .bedroom-group {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.5rem;
   margin-right: 1rem;
+}
+
+.bedroom-group .search-dropdown-container {
+  flex: 0 0 auto;
+  width: auto;
 }
 
 /* Property Building Type Group */
