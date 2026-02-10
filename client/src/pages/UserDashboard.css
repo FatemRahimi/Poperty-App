@@ -1188,12 +1188,30 @@
 
 /* Property Building Type Group */
 .property-type-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
   margin-right: 1rem;
+}
+
+.property-type-group .search-dropdown-container {
+  flex: 0 0 auto;
+  width: auto;
 }
 
 /* Property Type Group */
 .type-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
   margin-right: 1rem;
+}
+
+.type-group .search-dropdown-container {
+  flex: 0 0 auto;
+  width: auto;
 }
 
 .type-select {
