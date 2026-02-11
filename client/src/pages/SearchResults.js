@@ -4,6 +4,8 @@ import './SearchResults.css';
 import { FaMapMarkerAlt, FaBed, FaBath, FaRuler, FaHeart, FaRegHeart, FaArrowLeft } from 'react-icons/fa';
 import LocationSearch from '../components/LocationSearch';
 import SearchDropdown from '../components/SearchDropdown';
+import PropertyCard from '../components/PropertyCard';
+import '../pages/UserDashboard.css'; // Import UserDashboard styles for property cards
 
 /**
  * SearchResults Page
@@ -60,12 +62,19 @@ const SearchResults = () => {
     });
 
     try {
-      // Build search params
+      // Build search params - search ALL users' approved properties
       const params = new URLSearchParams({
+        q: searchQuery,
+        category: category, // rent, sale, or lease
+        radius: radius,
+        show_all_statuses: 'false' // Public search - only approved properties from ALL users
+      });
+      
+      console.log('🔍 SearchParams:', {
         q: searchQuery,
         category: category,
         radius: radius,
-        show_all_statuses: 'false' // Public search - only approved properties
+        propertyCategory: propertyCategory // Will filter on frontend
       });
 
       // Add price filters
@@ -83,18 +92,87 @@ const SearchResults = () => {
 
       console.log('📡 API Request:', `/api/properties/search?${params.toString()}`);
 
-      const response = await fetch(`/api/properties/search?${params.toString()}`);
+      const apiUrl = `/api/properties/search?${params.toString()}`;
+      console.log('📡 Full API URL:', apiUrl);
+      
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
-        throw new Error(`Search failed: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ API Error Response:', errorText);
+        throw new Error(`Search failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Search results:', data);
+      console.log('✅ API Response:', {
+        success: data.success,
+        propertiesCount: data.properties?.length || 0,
+        total: data.total,
+        hasProperties: !!data.properties
+      });
 
-      setProperties(data.properties || []);
-      setFilteredProperties(data.properties || []);
-      setTotalCount(data.totalCount || 0);
+      // Handle both response formats: {success: true, properties: []} or {properties: []}
+      let results = data.properties || [];
+      
+      console.log(`📦 Raw API results: ${results.length} properties`);
+      
+      // Debug: Log property_category values in results
+      if (results.length > 0) {
+        const categoryCounts = {};
+        const sampleProperties = results.slice(0, 5).map(prop => ({
+          id: prop.id,
+          title: prop.title,
+          category: prop.category,
+          property_category: prop.property_category,
+          property_type: prop.property_type,
+          city: prop.city,
+          zip_code: prop.zip_code
+        }));
+        results.forEach(prop => {
+          const cat = prop.property_category || 'null';
+          categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+        });
+        console.log('📊 Property categories in results:', categoryCounts);
+        console.log('📋 Sample properties:', sampleProperties);
+      } else {
+        console.log('⚠️ No properties returned from API');
+        console.log('🔍 API Response:', data);
+        console.log('🔍 Full API Response:', JSON.stringify(data, null, 2));
+      }
+      
+      // Filter by property_category on frontend (residential/commercial/land)
+      // Make it case-insensitive and handle null/undefined values
+      if (propertyCategory && propertyCategory !== 'all' && results.length > 0) {
+        const beforeCount = results.length;
+        const filteredResults = results.filter(property => {
+          const propCategory = (property.property_category || '').toLowerCase().trim();
+          const expectedCategory = propertyCategory.toLowerCase().trim();
+          const matches = propCategory === expectedCategory;
+          
+          if (!matches && property.property_category) {
+            console.log(`❌ Property ${property.id} "${property.title}" has category "${property.property_category}", expected "${propertyCategory}"`);
+          } else if (!property.property_category) {
+            console.log(`⚠️ Property ${property.id} "${property.title}" has no property_category set`);
+          }
+          return matches;
+        });
+        
+        console.log(`🏘️ Filtered by property_category: ${propertyCategory}, ${beforeCount} → ${filteredResults.length} properties`);
+        
+        // Only apply filter if we have results, otherwise show all
+        if (filteredResults.length > 0) {
+          results = filteredResults;
+        } else if (beforeCount > 0) {
+          console.warn(`⚠️ No properties match property_category "${propertyCategory}". Showing all ${beforeCount} results instead.`);
+          // Keep all results - don't filter
+        }
+      }
+      
+      setProperties(results);
+      setFilteredProperties(results);
+      setTotalCount(results.length);
+      
+      console.log(`📊 Final results: ${results.length} properties for "${searchQuery}" (${category}, ${propertyCategory})`);
 
     } catch (error) {
       console.error('❌ Search error:', error);
@@ -186,16 +264,34 @@ const SearchResults = () => {
     <div className="search-results-page">
       <div className="search-results-container">
         
-        {/* Header */}
-        <div className="search-results-header">
-          <button className="back-button" onClick={handleBackClick}>
+        {/* Header - Same style as UserDashboard */}
+        <div className="properties-header-modern">
+          <button className="back-button" onClick={handleBackClick} style={{ 
+            marginBottom: '1rem', 
+            padding: '0.5rem 1rem', 
+            background: '#f1f5f9', 
+            border: '1px solid #e2e8f0',
+            borderRadius: '0.5rem',
+            cursor: 'pointer',
+            fontSize: '0.9rem'
+          }}>
             <FaArrowLeft /> Back to Search
           </button>
-          <h1 className="search-results-title">
-            Search Results
-          </h1>
-          <p className="search-results-subtitle">
-            Showing {isSearching ? '...' : totalCount} properties for "{searchQuery}" 
+          <div className="properties-title">
+            <h2>Search Results</h2>
+            <span className={`property-count ${isSearching ? 'loading' : ''}`}>
+              {isSearching ? (
+                <>
+                  <i className="fas fa-spinner fa-spin" style={{ marginRight: '0.3rem' }}></i>
+                  <span>{totalCount}</span>
+                </>
+              ) : (
+                totalCount
+              )}
+            </span>
+          </div>
+          <p style={{ color: '#64748b', marginTop: '0.5rem', fontSize: '0.9rem' }}>
+            Properties for "{searchQuery}" 
             {` • ${searchType.charAt(0).toUpperCase() + searchType.slice(1)}`}
             {` • ${propertyCategory.charAt(0).toUpperCase() + propertyCategory.slice(1)}`}
           </p>
@@ -304,85 +400,47 @@ const SearchResults = () => {
           </div>
         </div>
 
-        {/* Results Grid */}
-        <div className="search-results-grid">
-          {isSearching ? (
-            <div className="loading-state">
-              <i className="fas fa-spinner fa-spin fa-3x"></i>
+        {/* Results Grid - Same as UserDashboard */}
+        {isSearching ? (
+          <div className="properties-grid-modern">
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+              <i className="fas fa-spinner fa-spin fa-3x" style={{ marginBottom: '1rem', color: '#667eea' }}></i>
               <p>Searching properties...</p>
             </div>
-          ) : filteredProperties.length === 0 ? (
-            <div className="no-results-state">
-              <h3>No properties found</h3>
+          </div>
+        ) : filteredProperties.length === 0 ? (
+          <div className="properties-grid-modern">
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+              <h3 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>No properties found</h3>
               <p>Try adjusting your search criteria or filters</p>
             </div>
-          ) : (
-            filteredProperties.map((property) => (
-              <div
-                key={property.id}
-                className="property-card"
-                onClick={() => handlePropertyClick(property.id)}
-              >
-                {/* Property Image */}
-                <div className="property-image-container">
-                  <img
-                    src={property.images?.[0] || '/assets/placeholder-property.jpg'}
-                    alt={property.title}
-                    className="property-image"
-                  />
-                  <button
-                    className="favorite-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFavoriteClick(property.id);
-                    }}
-                  >
-                    {favorites.includes(property.id) ? (
-                      <FaHeart className="favorite-icon filled" />
-                    ) : (
-                      <FaRegHeart className="favorite-icon" />
-                    )}
-                  </button>
-                  <span className="property-category-badge">{category}</span>
-                </div>
-
-                {/* Property Details */}
-                <div className="property-details">
-                  <h3 className="property-title">{property.title}</h3>
-                  <p className="property-location">
-                    <FaMapMarkerAlt /> {property.city}, {property.zip_code}
-                  </p>
-                  <p className="property-price">
-                    £{property.price?.toLocaleString() || 'POA'}
-                    {category === 'rent' && ' pcm'}
-                  </p>
-
-                  {/* Property Features */}
-                  <div className="property-features">
-                    {property.bedrooms && (
-                      <span>
-                        <FaBed /> {property.bedrooms} bed
-                      </span>
-                    )}
-                    {property.bathrooms && (
-                      <span>
-                        <FaBath /> {property.bathrooms} bath
-                      </span>
-                    )}
-                    {property.floor_area && (
-                      <span>
-                        <FaRuler /> {property.floor_area} sqft
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Property Type */}
-                  <p className="property-type">{property.property_building_type || property.property_type}</p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="properties-grid-modern">
+            {filteredProperties.map(property => (
+              <PropertyCard 
+                key={property.id} 
+                property={property}
+                showActions={false}
+                sourcePage="/search-results"
+                userId={property.user_id}
+                fallbackContact={{
+                  name: property.contact_name,
+                  firstName: property.first_name,
+                  lastName: property.last_name,
+                  email: property.contact_email,
+                  phone: property.contact_phone
+                }}
+                propertyConsultantData={property.property_consultant ? {
+                  fullName: property.property_consultant,
+                  jobTitle: 'Property Consultant',
+                  contactEmail: property.contact_email,
+                  contactPhone: property.contact_phone
+                } : null}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
