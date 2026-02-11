@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./FindProperty.css";
 import { FaSearch, FaHome, FaBuilding, FaTree, FaMapMarkerAlt, FaRegBuilding, FaChevronLeft, FaChevronRight, FaBath } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+import LocationSearch from "../components/LocationSearch";
 
 const FindProperty = () => {
     const [searchType, setSearchType] = useState("buy");
@@ -19,6 +20,7 @@ const FindProperty = () => {
     const [favorites, setFavorites] = useState([]);
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
+    
 
     // Debug mount and state changes
     useEffect(() => {
@@ -42,17 +44,6 @@ const FindProperty = () => {
         { id: "land", label: "Land & Farms" }
     ];
 
-    // Radius options for search
-    const radiusOptions = [
-        { value: "0.5", label: "Within 1/2 mile" },
-        { value: "1", label: "Within 1 mile" },
-        { value: "2", label: "Within 2 miles" },
-        { value: "3", label: "Within 3 miles" },
-        { value: "5", label: "Within 5 miles" },
-        { value: "10", label: "Within 10 miles" },
-        { value: "15", label: "Within 15 miles" },
-        { value: "20", label: "Within 20 miles" }
-    ];
 
     const backgroundVideos = [
         "/videos/background.mp4",
@@ -201,7 +192,7 @@ const FindProperty = () => {
         }
     ];
 
-    const filteredProperties = activeFilter === 'all' 
+    const filteredFeaturedProperties = activeFilter === 'all' 
         ? featuredProperties 
         : featuredProperties.filter(property => property.type === activeFilter);
 
@@ -217,12 +208,48 @@ const FindProperty = () => {
         setSearchType(type);
     };
 
-    const handleSearchInput = (e) => {
-        setSearchQuery(e.target.value);
+    // Map search type (buy/rent/lease) to database category (sale/rent/lease)
+    const mapSearchTypeToCategory = (type) => {
+        const mapping = {
+            'buy': 'sale',
+            'purchase': 'sale',
+            'rent': 'rent',
+            'lease': 'lease'
+        };
+        return mapping[type] || 'sale';
     };
 
+    // Map selected category to property_category (residential/commercial/land)
+    const mapCategoryToPropertyCategory = (category) => {
+        const mapping = {
+            'residential': 'residential',
+            'commercial': 'commercial',
+            'farms': 'land'
+        };
+        return mapping[category] || 'residential';
+    };
+
+    // Search handler - navigate to SearchResults page
     const handleSearch = () => {
-        console.log('Search:', searchQuery, searchType);
+        if (!searchQuery || searchQuery.trim().length < 3) {
+            alert('Please enter at least 3 characters for location search');
+            return;
+        }
+
+        // Map search type and category
+        const category = mapSearchTypeToCategory(searchType);
+        const propertyCategory = mapCategoryToPropertyCategory(selectedCategory);
+
+        // Navigate to SearchResults with query parameters
+        const searchParams = new URLSearchParams({
+            q: searchQuery.trim(),
+            category: category,
+            propertyCategory: propertyCategory,
+            radius: selectedRadius,
+            searchType: searchType
+        });
+
+        navigate(`/search-results?${searchParams.toString()}`);
     };
 
     // Category-specific search options
@@ -364,33 +391,28 @@ const FindProperty = () => {
                             
                             <div className="search-input-container">
                                 <div className="search-input-wrapper">
-                                    <FaMapMarkerAlt className="search-icon" />
-                                    <input
-                                        type="text"
-                                        className="search-input"
+                                    <LocationSearch
+                                        searchQuery={searchQuery}
+                                        onSearchQueryChange={setSearchQuery}
+                                        radius={selectedRadius}
+                                        onRadiusChange={setSelectedRadius}
                                         placeholder={`Search ${selectedCategory} properties by location or postcode...`}
-                                        value={searchQuery}
-                                        onChange={handleSearchInput}
-                                        ref={inputRef}
+                                        disabled={false}
+                                        isSearching={false}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter' && searchQuery.trim().length >= 3) {
+                                                handleSearch();
+                                            }
+                                        }}
+                                        inputRef={inputRef}
+                                        className="find-property-location-search"
                                     />
-                                </div>
-                                <div className="radius-dropdown-wrapper">
-                                    <select
-                                        className="radius-dropdown"
-                                        value={selectedRadius}
-                                        onChange={(e) => setSelectedRadius(e.target.value)}
-                                    >
-                                        {radiusOptions.map((option) => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
                                 </div>
                                 <button 
                                     type="button"
                                     className="search-button"
                                     onClick={handleSearch}
+                                    disabled={!searchQuery || searchQuery.trim().length < 3}
                                 >
                                     <FaSearch className="btn-icon" /> Search
                                 </button>
