@@ -5,6 +5,9 @@ import { FaMapMarkerAlt, FaBed, FaBath, FaRuler, FaHeart, FaRegHeart, FaArrowLef
 import LocationSearch from '../components/LocationSearch';
 import SearchDropdown from '../components/SearchDropdown';
 import PropertyCard from '../components/PropertyCard';
+import SearchFilterHeader from '../components/dashboard/SearchFilterHeader';
+import SearchFilterHeaderSale from '../components/dashboard/SearchFilterHeaderSale';
+import SearchFilterHeaderLease from '../components/dashboard/SearchFilterHeaderLease';
 import '../pages/UserDashboard.css'; // Import UserDashboard styles for property cards
 
 /**
@@ -35,175 +38,284 @@ const SearchResults = () => {
   const [favorites, setFavorites] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
 
-  // Filters
-  const [filters, setFilters] = useState({
-    minPrice: '',
-    maxPrice: '',
-    minBeds: '',
-    maxBeds: '',
-    propertyType: 'all'
+  // Professional Search Filters (same as UserDashboard)
+  const [searchFilters, setSearchFilters] = useState({
+    propertyType: category, // rent, sale, or lease
+    radius: radius,
+    minPrice: 'any',
+    maxPrice: 'any',
+    minBeds: 'any',
+    maxBeds: 'any',
+    propertyBuildingType: 'all'
   });
 
-  /**
-   * Perform search using the public API
-   */
-  const performSearch = useCallback(async () => {
-    if (!searchQuery || searchQuery.length < 3) {
+  // More Filters (same as UserDashboard)
+  const [moreFilters, setMoreFilters] = useState({
+    minBathrooms: 'any',
+    maxBathrooms: 'any',
+    typeOfLet: 'any',
+    dateAdded: 'anytime',
+    moveInDate: '',
+    letAgreed: false,
+    hasGarden: false,
+    hasParking: false,
+    houseShare: false,
+    retirementHome: false,
+    studentAccommodation: false
+  });
+
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
+
+  // Filter options (same as UserDashboard)
+  const priceOptions = {
+    min: [
+      { value: 'any', label: 'Min Price' },
+      { value: '500', label: '£500' },
+      { value: '1000', label: '£1,000' },
+      { value: '1500', label: '£1,500' },
+      { value: '2000', label: '£2,000' },
+      { value: '2500', label: '£2,500' },
+      { value: '3000', label: '£3,000' },
+      { value: '4000', label: '£4,000' },
+      { value: '5000', label: '£5,000' },
+      { value: '7500', label: '£7,500' },
+      { value: '10000', label: '£10,000' },
+      { value: '15000', label: '£15,000' },
+      { value: '20000', label: '£20,000' },
+      { value: '25000', label: '£25,000' },
+      { value: '30000', label: '£30,000' },
+      { value: '40000', label: '£40,000' },
+      { value: '50000', label: '£50,000' },
+      { value: '75000', label: '£75,000' },
+      { value: '100000', label: '£100,000' },
+      { value: '150000', label: '£150,000' },
+      { value: '200000', label: '£200,000' },
+      { value: '250000', label: '£250,000' },
+      { value: '300000', label: '£300,000' },
+      { value: '400000', label: '£400,000' },
+      { value: '500000', label: '£500,000' },
+      { value: '750000', label: '£750,000' },
+      { value: '1000000', label: '£1,000,000' },
+      { value: '1500000', label: '£1,500,000' },
+      { value: '2000000', label: '£2,000,000' },
+      { value: '3000000', label: '£3,000,000' },
+      { value: '5000000', label: '£5,000,000' }
+    ],
+    max: [
+      { value: 'any', label: 'Max Price' },
+      { value: '500', label: '£500' },
+      { value: '1000', label: '£1,000' },
+      { value: '1500', label: '£1,500' },
+      { value: '2000', label: '£2,000' },
+      { value: '2500', label: '£2,500' },
+      { value: '3000', label: '£3,000' },
+      { value: '4000', label: '£4,000' },
+      { value: '5000', label: '£5,000' },
+      { value: '7500', label: '£7,500' },
+      { value: '10000', label: '£10,000' },
+      { value: '15000', label: '£15,000' },
+      { value: '20000', label: '£20,000' },
+      { value: '25000', label: '£25,000' },
+      { value: '30000', label: '£30,000' },
+      { value: '40000', label: '£40,000' },
+      { value: '50000', label: '£50,000' },
+      { value: '75000', label: '£75,000' },
+      { value: '100000', label: '£100,000' },
+      { value: '150000', label: '£150,000' },
+      { value: '200000', label: '£200,000' },
+      { value: '250000', label: '£250,000' },
+      { value: '300000', label: '£300,000' },
+      { value: '400000', label: '£400,000' },
+      { value: '500000', label: '£500,000' },
+      { value: '750000', label: '£750,000' },
+      { value: '1000000', label: '£1,000,000' },
+      { value: '1500000', label: '£1,500,000' },
+      { value: '2000000', label: '£2,000,000' },
+      { value: '3000000', label: '£3,000,000' },
+      { value: '5000000', label: '£5,000,000' }
+    ]
+  };
+
+  const bedroomOptions = {
+    min: [
+      { value: 'any', label: 'Min Beds' },
+      { value: '0', label: 'Studio' },
+      { value: '1', label: '1' },
+      { value: '2', label: '2' },
+      { value: '3', label: '3' },
+      { value: '4', label: '4' },
+      { value: '5', label: '5' },
+      { value: '6', label: '6' },
+      { value: '7', label: '7' },
+      { value: '8', label: '8' },
+      { value: '9', label: '9' },
+      { value: '10', label: '10' }
+    ],
+    max: [
+      { value: 'any', label: 'Max Beds' },
+      { value: '0', label: 'Studio' },
+      { value: '1', label: '1' },
+      { value: '2', label: '2' },
+      { value: '3', label: '3' },
+      { value: '4', label: '4' },
+      { value: '5', label: '5' },
+      { value: '6', label: '6' },
+      { value: '7', label: '7' },
+      { value: '8', label: '8' },
+      { value: '9', label: '9' },
+      { value: '10', label: '10' }
+    ]
+  };
+
+  const propertyBuildingTypeOptions = [
+    { value: 'all', label: 'Property Types' },
+    { value: 'detached', label: 'Detached' },
+    { value: 'semi-detached', label: 'Semi-Detached' },
+    { value: 'terraced', label: 'Terraced' },
+    { value: 'flat', label: 'Flat' },
+    { value: 'apartment', label: 'Apartment' },
+    { value: 'studio', label: 'Studio' },
+    { value: 'duplex', label: 'Duplex' },
+    { value: 'maisonette', label: 'Maisonette' },
+    { value: 'bungalow', label: 'Bungalow' },
+    { value: 'cottage', label: 'Cottage' },
+    { value: 'townhouse', label: 'Townhouse' },
+    { value: 'penthouse', label: 'Penthouse' },
+    { value: 'land', label: 'Land' },
+    { value: 'commercial', label: 'Commercial Property' },
+    { value: 'office', label: 'Office Space' },
+    { value: 'retail', label: 'Retail Space' },
+    { value: 'warehouse', label: 'Warehouse' }
+  ];
+
+  const bathroomOptions = {
+    min: [
+      { value: 'any', label: 'Min Bath' },
+      { value: '1', label: '1' },
+      { value: '2', label: '2' },
+      { value: '3', label: '3' },
+      { value: '4', label: '4' },
+      { value: '5', label: '5' }
+    ],
+    max: [
+      { value: 'any', label: 'Max Bath' },
+      { value: '1', label: '1' },
+      { value: '2', label: '2' },
+      { value: '3', label: '3' },
+      { value: '4', label: '4' },
+      { value: '5', label: '5' }
+    ]
+  };
+
+  // Professional search handler for ALL users (public search)
+  const handleProfessionalSearch = useCallback(async (query, filters) => {
+    if (!query || !query.trim()) {
       return;
     }
 
     setIsSearching(true);
-    console.log('🔍 SearchResults: Performing public search', {
-      searchQuery,
-      category,
-      radius,
-      propertyCategory,
-      filters
-    });
 
     try {
-      // Build search params - search ALL users' approved properties
-      const params = new URLSearchParams({
-        q: searchQuery,
-        category: category, // rent, sale, or lease
-        radius: radius,
-        show_all_statuses: 'false' // Public search - only approved properties from ALL users
-      });
-      
-      console.log('🔍 SearchParams:', {
-        q: searchQuery,
+      const searchParams = new URLSearchParams({
+        q: query.trim(),
         category: category,
-        radius: radius,
-        propertyCategory: propertyCategory // Will filter on frontend
+        radius: filters.radius || radius,
+        show_all_statuses: 'false', // Public search - ALL users' approved properties (no user_id filter)
+        limit: '100', // Increased limit to show more results
+        page: '1'
       });
 
-      // Add price filters
-      if (filters.minPrice) params.append('min_price', filters.minPrice);
-      if (filters.maxPrice) params.append('max_price', filters.maxPrice);
+      // IMPORTANT: We do NOT pass user_id - this ensures we search ALL users' properties
+      console.log('🌐 Public Search (FindProperty):', {
+        query: query.trim(),
+        category: category,
+        radius: filters.radius || radius,
+        show_all_statuses: 'false', // This means: show only approved properties from ALL users
+        no_user_id: true, // No user_id = search all users
+        limit: '100'
+      });
 
-      // Add bedroom filters  
-      if (filters.minBeds) params.append('min_bedrooms', filters.minBeds);
-      if (filters.maxBeds) params.append('max_bedrooms', filters.maxBeds);
-
-      // Add property type filter
-      if (filters.propertyType && filters.propertyType !== 'all') {
-        params.append('property_type', filters.propertyType);
+      // Add filters
+      if (filters.minPrice && filters.minPrice !== 'any') {
+        searchParams.append('min_price', filters.minPrice);
+      }
+      if (filters.maxPrice && filters.maxPrice !== 'any') {
+        searchParams.append('max_price', filters.maxPrice);
+      }
+      if (filters.minBeds && filters.minBeds !== 'any') {
+        searchParams.append('bedrooms_min', filters.minBeds);
+      }
+      if (filters.maxBeds && filters.maxBeds !== 'any') {
+        searchParams.append('bedrooms_max', filters.maxBeds);
+      }
+      if (filters.propertyBuildingType && filters.propertyBuildingType !== 'all') {
+        searchParams.append('property_type', filters.propertyBuildingType);
       }
 
-      console.log('📡 API Request:', `/api/properties/search?${params.toString()}`);
-
-      const apiUrl = `/api/properties/search?${params.toString()}`;
-      console.log('📡 Full API URL:', apiUrl);
-      
-      const response = await fetch(apiUrl);
+      const response = await fetch(`/api/properties/search?${searchParams.toString()}`);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ API Error Response:', errorText);
-        throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+        throw new Error(`Search failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('✅ API Response:', {
-        success: data.success,
-        propertiesCount: data.properties?.length || 0,
-        total: data.total,
-        hasProperties: !!data.properties
-      });
-
-      // Handle both response formats: {success: true, properties: []} or {properties: []}
       let results = data.properties || [];
-      
-      console.log(`📦 Raw API results: ${results.length} properties`);
-      
-      // Debug: Log property_category values in results
-      if (results.length > 0) {
-        const categoryCounts = {};
-        const sampleProperties = results.slice(0, 5).map(prop => ({
-          id: prop.id,
-          title: prop.title,
-          category: prop.category,
-          property_category: prop.property_category,
-          property_type: prop.property_type,
-          city: prop.city,
-          zip_code: prop.zip_code
-        }));
-        results.forEach(prop => {
-          const cat = prop.property_category || 'null';
-          categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-        });
-        console.log('📊 Property categories in results:', categoryCounts);
-        console.log('📋 Sample properties:', sampleProperties);
-      } else {
-        console.log('⚠️ No properties returned from API');
-        console.log('🔍 API Response:', data);
-        console.log('🔍 Full API Response:', JSON.stringify(data, null, 2));
-      }
-      
-      // Filter by property_category on frontend (residential/commercial/land)
-      // Make it case-insensitive and handle null/undefined values
-      if (propertyCategory && propertyCategory !== 'all' && results.length > 0) {
+
+      // Filter by property_category on frontend
+      if (propertyCategory && propertyCategory !== 'all') {
         const beforeCount = results.length;
         const filteredResults = results.filter(property => {
-          const propCategory = (property.property_category || '').toLowerCase().trim();
-          const expectedCategory = propertyCategory.toLowerCase().trim();
-          const matches = propCategory === expectedCategory;
-          
-          if (!matches && property.property_category) {
-            console.log(`❌ Property ${property.id} "${property.title}" has category "${property.property_category}", expected "${propertyCategory}"`);
-          } else if (!property.property_category) {
-            console.log(`⚠️ Property ${property.id} "${property.title}" has no property_category set`);
-          }
-          return matches;
+          return (property.property_category || '').toLowerCase().trim() === propertyCategory.toLowerCase().trim();
         });
         
-        console.log(`🏘️ Filtered by property_category: ${propertyCategory}, ${beforeCount} → ${filteredResults.length} properties`);
-        
-        // Only apply filter if we have results, otherwise show all
         if (filteredResults.length > 0) {
           results = filteredResults;
         } else if (beforeCount > 0) {
           console.warn(`⚠️ No properties match property_category "${propertyCategory}". Showing all ${beforeCount} results instead.`);
-          // Keep all results - don't filter
         }
       }
-      
+
       setProperties(results);
       setFilteredProperties(results);
       setTotalCount(results.length);
       
-      console.log(`📊 Final results: ${results.length} properties for "${searchQuery}" (${category}, ${propertyCategory})`);
+      console.log(`📊 Final results: ${results.length} properties for "${query}" (${category}, ${propertyCategory})`);
 
     } catch (error) {
-      console.error('❌ Search error:', error);
-      alert('Search failed. Please try again.');
+      console.error('Search error:', error);
       setProperties([]);
       setFilteredProperties([]);
       setTotalCount(0);
     } finally {
       setIsSearching(false);
     }
-  }, [searchQuery, category, radius, propertyCategory, filters]);
+  }, [category, radius, propertyCategory]);
+
+  // Update searchFilters when category or radius changes
+  useEffect(() => {
+    setSearchFilters(prev => ({
+      ...prev,
+      propertyType: category,
+      radius: radius
+    }));
+  }, [category, radius]);
+
+  // Auto-trigger search when filters change (but only if we have a search query)
+  useEffect(() => {
+    if (searchQuery.trim() && searchQuery.length >= 3 && !isSearching) {
+      handleProfessionalSearch(searchQuery, searchFilters);
+    }
+  }, [searchFilters.minPrice, searchFilters.maxPrice, searchFilters.minBeds, searchFilters.maxBeds, searchFilters.propertyBuildingType, searchFilters.radius]);
+
 
   /**
-   * Initial search on page load
+   * Initial search on page load using professional search
    */
   useEffect(() => {
     if (searchQuery && searchQuery.length >= 3) {
-      performSearch();
+      handleProfessionalSearch(searchQuery, searchFilters);
     }
   }, []); // Run only once on mount
-
-  /**
-   * Handle search button click
-   */
-  const handleSearch = () => {
-    if (searchQuery.length < 3) {
-      alert('Please enter at least 3 characters for location search');
-      return;
-    }
-    performSearch();
-  };
 
   /**
    * Handle filter changes
@@ -297,108 +409,64 @@ const SearchResults = () => {
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="search-results-search-bar">
-          <LocationSearch
+        {/* Professional Search Bar - Same as UserDashboard */}
+        {category === 'rent' && (
+          <SearchFilterHeader
+            searchFilters={searchFilters}
+            setSearchFilters={setSearchFilters}
             searchQuery={searchQuery}
-            onSearchQueryChange={setSearchQuery}
-            radius={radius}
-            onRadiusChange={setRadius}
-            placeholder="Enter location (e.g. 'London', 'B46 2PQ', 'Oxford Street')..."
-            disabled={isSearching}
+            setSearchQuery={setSearchQuery}
+            moreFilters={moreFilters}
+            setMoreFilters={setMoreFilters}
+            showMoreFilters={showMoreFilters}
+            setShowMoreFilters={setShowMoreFilters}
+            priceOptions={priceOptions}
+            bedroomOptions={bedroomOptions}
+            propertyBuildingTypeOptions={propertyBuildingTypeOptions}
+            bathroomOptions={bathroomOptions}
+            onProfessionalSearch={handleProfessionalSearch}
             isSearching={isSearching}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && searchQuery.length >= 3) {
-                handleSearch();
-              }
-            }}
+            searchResults={properties}
+            searchAnalytics={null}
           />
-          <button 
-            className="search-button" 
-            onClick={handleSearch}
-            disabled={isSearching || searchQuery.length < 3}
-          >
-            {isSearching ? (
-              <>
-                <i className="fas fa-spinner fa-spin"></i> Searching...
-              </>
-            ) : (
-              'Search'
-            )}
-          </button>
-        </div>
+        )}
 
-        {/* Filters */}
-        <div className="search-results-filters">
-          <div className="filter-row">
-            <div className="filter-group">
-              <label>Min Price</label>
-              <input
-                type="number"
-                placeholder="Min"
-                value={filters.minPrice}
-                onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-              />
-            </div>
+        {category === 'sale' && (
+          <SearchFilterHeaderSale
+            searchFilters={searchFilters}
+            setSearchFilters={setSearchFilters}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            moreFilters={moreFilters}
+            setMoreFilters={setMoreFilters}
+            showMoreFilters={showMoreFilters}
+            setShowMoreFilters={setShowMoreFilters}
+            priceOptions={priceOptions}
+            bedroomOptions={bedroomOptions}
+            propertyBuildingTypeOptions={propertyBuildingTypeOptions}
+            bathroomOptions={bathroomOptions}
+            onProfessionalSearch={handleProfessionalSearch}
+            isSearching={isSearching}
+          />
+        )}
 
-            <div className="filter-group">
-              <label>Max Price</label>
-              <input
-                type="number"
-                placeholder="Max"
-                value={filters.maxPrice}
-                onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-              />
-            </div>
-
-            <div className="filter-group">
-              <label>Min Bedrooms</label>
-              <input
-                type="number"
-                placeholder="Min"
-                value={filters.minBeds}
-                onChange={(e) => handleFilterChange('minBeds', e.target.value)}
-              />
-            </div>
-
-            <div className="filter-group">
-              <label>Max Bedrooms</label>
-              <input
-                type="number"
-                placeholder="Max"
-                value={filters.maxBeds}
-                onChange={(e) => handleFilterChange('maxBeds', e.target.value)}
-              />
-            </div>
-
-            <div className="filter-group">
-              <label>Property Type</label>
-              <select
-                value={filters.propertyType}
-                onChange={(e) => handleFilterChange('propertyType', e.target.value)}
-              >
-                <option value="all">All Types</option>
-                <option value="flat">Flat</option>
-                <option value="house">House</option>
-                <option value="bungalow">Bungalow</option>
-                <option value="studio">Studio</option>
-                <option value="office">Office</option>
-                <option value="warehouse">Warehouse</option>
-                <option value="retail">Retail</option>
-                <option value="land">Land</option>
-              </select>
-            </div>
-
-            <div className="filter-actions">
-              <button className="apply-filters-btn" onClick={handleApplyFilters}>
-                Apply Filters
-              </button>
-              <button className="reset-filters-btn" onClick={handleResetFilters}>
-                Reset
-              </button>
-            </div>
-          </div>
-        </div>
+        {category === 'lease' && (
+          <SearchFilterHeaderLease
+            searchFilters={searchFilters}
+            setSearchFilters={setSearchFilters}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            moreFilters={moreFilters}
+            setMoreFilters={setMoreFilters}
+            showMoreFilters={showMoreFilters}
+            setShowMoreFilters={setShowMoreFilters}
+            priceOptions={priceOptions}
+            squareFeetOptions={bedroomOptions} // Using bedroomOptions as squareFeetOptions
+            propertyBuildingTypeOptions={propertyBuildingTypeOptions}
+            onProfessionalSearch={handleProfessionalSearch}
+            isSearching={isSearching}
+          />
+        )}
 
         {/* Results Grid - Same as UserDashboard */}
         {isSearching ? (

@@ -332,7 +332,7 @@ const FindProperty = () => {
         <div className="find-property-page">
             {/* Hero Section with Video Background */}
             <section className="hero-section">
-                <div className="hero-content container">
+                <div className="hero-background" aria-hidden="true">
                     <video 
                         ref={videoRef}
                         autoPlay 
@@ -345,7 +345,9 @@ const FindProperty = () => {
                         Your browser does not support the video tag.
                     </video>
                     <div className="video-overlay"></div>
+                </div>
 
+                <div className="hero-content container">
                     <div className="text-content">
                         <h1 className="hero-title">
                             Find Your <span className="accent-text">Perfect</span> Property

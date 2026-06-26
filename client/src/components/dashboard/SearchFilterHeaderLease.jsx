@@ -243,18 +243,6 @@ const SearchFilterHeaderLease = memo(({
           />
         </div>
 
-        <div className="filter-group property-type-group">
-          <SearchDropdown
-            value={searchFilters.propertyBuildingType}
-            onChange={(value) => setSearchFilters({...searchFilters, propertyBuildingType: value})}
-            options={propertyBuildingTypeOptions}
-            placeholder="Space Type"
-            className="search-dropdown-property-building-type"
-            style={{minWidth: '150px'}}
-            theme="dark"
-          />
-        </div>
-
         <div className="filter-group dashboard-more-filters-container">
           <div 
             className={`dashboard-more-filters-button ${showMoreFilters ? 'open' : ''}`}
@@ -267,6 +255,28 @@ const SearchFilterHeaderLease = memo(({
           {showMoreFilters && (
             <div className="dashboard-more-filters-dropdown dashboard-more-filters-dropdown--expanded">
               <div className="dashboard-more-filters-content">
+                <div className="dashboard-filter-section">
+                  <h4 className="dashboard-filter-section-title">
+                    <i className="fas fa-building"></i>
+                    Space Type
+                  </h4>
+                  <div className="dashboard-filter-row">
+                    <div className="filter-field">
+                      <SearchDropdown
+                        value={searchFilters.propertyBuildingType}
+                        onChange={(value) => setSearchFilters({...searchFilters, propertyBuildingType: value})}
+                        options={propertyBuildingTypeOptions}
+                        placeholder="Space Type"
+                        className="dashboard-more-filter-dropdown"
+                        style={{minWidth: '280px'}}
+                        theme="light"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="dashboard-filter-divider"></div>
+
                 <div className="dashboard-filter-section">
                   <h4 className="dashboard-filter-section-title">
                     <i className="fas fa-briefcase"></i>

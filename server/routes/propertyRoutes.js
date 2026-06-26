@@ -181,9 +181,10 @@ router.get('/search', async (req, res) => {
         totalCount: 0 
       });
     } else {
-      // Public Search: Only approved properties
+      // Public Search: Only approved properties from ALL users (no user_id filter)
       whereClause = "WHERE p.status = 'approved'";
-      console.log('🌐 Public mode: Showing only approved properties');
+      console.log('🌐 Public mode: Showing only approved properties from ALL users');
+      console.log('🌐 No user_id filter - searching across all users in database');
     }
 
     // 🌍 PROFESSIONAL MIXED SEARCH STRATEGY - Database + Geocoding
@@ -414,6 +415,20 @@ router.get('/search', async (req, res) => {
     // Auto-correct coordinates for all properties before returning
     properties = properties.map(property => correctPropertyCoordinates(property));
 
+    // Log search results for debugging
+    console.log(`✅ Search Results: Found ${properties.length} properties`);
+    if (properties.length > 0) {
+      const userCounts = {};
+      properties.forEach(p => {
+        const userId = p.user_id || 'unknown';
+        userCounts[userId] = (userCounts[userId] || 0) + 1;
+      });
+      console.log(`📊 Properties from ${Object.keys(userCounts).length} different users:`, userCounts);
+      console.log(`📋 Sample property titles:`, properties.slice(0, 5).map(p => p.title || p.address_line1 || 'No title'));
+    } else {
+      console.log('⚠️ No properties found. Check if properties exist with status="approved" and match the search criteria.');
+    }
+
     res.json({
       success: true,
       properties,
@@ -421,7 +436,8 @@ router.get('/search', async (req, res) => {
       searchQuery: query,
       coordinates: coordinates || null,
       radius: radius,
-      searchMode: coordinates ? 'geographic' : 'text'
+      searchMode: coordinates ? 'geographic' : 'text',
+      searchContext: show_all_statuses === 'false' ? 'public_all_users' : 'dashboard_single_user'
     });
 
   } catch (error) {

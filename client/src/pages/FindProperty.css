@@ -191,7 +191,7 @@ h1, h2, h3, h4 {
     opacity: 1;
     visibility: visible;
     gap: .1rem;
-   
+    overflow: visible;
 }
 
 .hero-content.loaded {
@@ -231,6 +231,9 @@ h1, h2, h3, h4 {
     margin: 0 auto;
     margin-bottom: .1rem;
     margin-top: 0; /* Removed top margin */
+    position: relative;
+    z-index: 100;
+    overflow: visible;
 }
 
 .search-container.animate-fade-in {
@@ -257,10 +260,20 @@ h1, h2, h3, h4 {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    overflow: hidden;
+    overflow: visible;
     padding: 0;
     width: 100%;
     background-color: #0f0d0d;
+    z-index: 2;
+}
+
+/* Clip video only — keep dropdowns able to extend below the hero */
+.hero-background {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
 }
 
 .hero-title {
@@ -391,8 +404,9 @@ h1, h2, h3, h4 {
     max-width: 1200px;
     margin: 0 auto;
     position: relative;
-    z-index: 3;
+    z-index: 100;
     border: 2px solid rgba(52, 152, 219, 0.3);
+    overflow: visible;
 }
 
 .find-property-page .search-options {
@@ -431,6 +445,8 @@ h1, h2, h3, h4 {
     gap: 0.2rem;
     width: 100%;
     align-items: stretch;
+    overflow: visible;
+    position: relative;
 }
 
 /* Make sure LocationSearch displays horizontally and fills properly */
@@ -442,11 +458,15 @@ h1, h2, h3, h4 {
     gap: 0.75rem;
     flex: 1 1 50%;
     min-width: 0;
+    overflow: visible;
+    position: relative;
 }
 
 .find-property-page .location-input-container {
     flex: 1 1 60%;
     min-width: 0;
+    position: relative;
+    overflow: visible;
 }
 
 .find-property-page .location-input {
@@ -492,7 +512,8 @@ h1, h2, h3, h4 {
     flex: 1 1 45%;
     display: flex;
     align-items: center;
-    z-index: 3;
+    z-index: 100;
+    overflow: visible;
 }
 
 .radius-dropdown-wrapper {
@@ -529,14 +550,95 @@ h1, h2, h3, h4 {
 /* LocationSearch styling for FindProperty */
 .find-property-location-search {
     width: 100%;
+    overflow: visible;
 }
 
-.find-property-location-search .location-group {
+.find-property-page .find-property-location-search .location-group {
     background: white;
     border: 1.5px solid #ddd;
     border-radius: 8px;
     padding: 0;
     margin: 0;
+    overflow: visible;
+    position: relative;
+}
+
+.find-property-page .find-property-location-search .location-input-container {
+    position: relative;
+    overflow: visible;
+}
+
+.find-property-page .find-property-location-search .filter-group.has-open-dropdown,
+.find-property-page .find-property-location-search .filter-group:has(.dropdown-open) {
+    z-index: 2147483646;
+    overflow: visible;
+}
+
+.find-property-page .find-property-location-search .search-dropdown-container {
+    position: relative;
+    overflow: visible;
+}
+
+.find-property-page .find-property-location-search .search-dropdown-container.dropdown-open {
+    z-index: 2147483646;
+}
+
+.find-property-page .find-property-location-search .location-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1.5px solid #3498db;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    z-index: 2147483647;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 2px;
+}
+
+.find-property-page .find-property-location-search .search-dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1.5px solid #3498db;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    z-index: 2147483647;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.find-property-page .find-property-location-search .suggestion-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.find-property-page .find-property-location-search .suggestion-item:hover,
+.find-property-page .find-property-location-search .suggestion-item.selected {
+    background: rgba(52, 152, 219, 0.08);
+    color: #3498db;
+}
+
+.find-property-page .find-property-location-search .search-option {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.find-property-page .find-property-location-search .search-option:hover,
+.find-property-page .find-property-location-search .search-option.selected {
+    background: rgba(52, 152, 219, 0.08);
+    color: #3498db;
 }
 
 .find-property-location-search .location-input {
@@ -1309,6 +1411,8 @@ h1, h2, h3, h4 {
     padding: 3rem 0 2rem 0;
         text-align: center;
     margin: 0 0 1rem 0;
+    position: relative;
+    z-index: 1;
 }
 
 .owner-content {
