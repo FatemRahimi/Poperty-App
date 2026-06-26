@@ -5,6 +5,48 @@ import { FaSearch, FaHome, FaBuilding, FaTree, FaMapMarkerAlt, FaRegBuilding, Fa
 import { useAuth } from "../context/AuthContext";
 import LocationSearch from "../components/LocationSearch";
 
+const BACKGROUND_VIDEOS = [
+    "/videos/background.mp4",
+    "/videos/background-1.mp4",
+    "/videos/background-2.mp4",
+    "/videos/background-3.mp4",
+    "/videos/background-4.mp4",
+    "/videos/background-5.mp4",
+    "/videos/background-6.mp4",
+];
+
+const getNextVideoIndex = (index) => (index + 1) % BACKGROUND_VIDEOS.length;
+
+const HERO_POSTER = "/assets/bg-1.jpg";
+
+// Skip black frames at the start of MP4 files
+const INTRO_SKIP_SEC = 0.15;
+const CLIP_DURATION_MS = 5000;
+const SLIDE_MS = 900;
+
+const waitForVideoFrame = (videoEl) =>
+    new Promise((resolve) => {
+        if (!videoEl) {
+            resolve();
+            return;
+        }
+
+        if (typeof videoEl.requestVideoFrameCallback === "function") {
+            videoEl.requestVideoFrameCallback(() => resolve());
+            return;
+        }
+
+        const onTimeUpdate = () => {
+            if (videoEl.currentTime > INTRO_SKIP_SEC) {
+                videoEl.removeEventListener("timeupdate", onTimeUpdate);
+                resolve();
+            }
+        };
+
+        videoEl.addEventListener("timeupdate", onTimeUpdate);
+        window.setTimeout(resolve, 120);
+    });
+
 const FindProperty = () => {
     const [searchType, setSearchType] = useState("buy");
     const [searchQuery, setSearchQuery] = useState("");
@@ -12,9 +54,12 @@ const FindProperty = () => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [activeFilter, setActiveFilter] = useState("all");
     const [selectedCategory, setSelectedCategory] = useState("residential");
-    const videoRef = useRef(null);
-    const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
-    const [isTransitioning, setIsTransitioning] = useState(false);
+    const videoRefA = useRef(null);
+    const videoRefB = useRef(null);
+    const heroBackgroundRef = useRef(null);
+    const activeLayerRef = useRef("a");
+    const videoIndexRef = useRef(0);
+    const transitioningRef = useRef(false);
     const inputRef = useRef(null);
     const propertiesGridRef = useRef(null);
     const [favorites, setFavorites] = useState([]);
@@ -45,16 +90,118 @@ const FindProperty = () => {
     ];
 
 
-    const backgroundVideos = [
-        "/videos/background.mp4",
-        "/videos/background-1.mp4",
-        "/videos/background-2.mp4",
-        "/videos/background-3.mp4",
-          "/videos/background-4.mp4",
-           "/videos/background-5.mp4",
-            "/videos/background-6.mp4",
+    const getVideoEl = (layer) => (layer === "a" ? videoRefA.current : videoRefB.current);
 
-    ];
+    const setVideoState = useCallback((layer, state) => {
+        const el = getVideoEl(layer);
+        if (!el) return;
+        el.classList.remove(
+            "is-active",
+            "is-offscreen-right",
+            "is-exiting",
+            "is-entering",
+            "is-hidden"
+        );
+        if (state) {
+            el.classList.add(`is-${state}`);
+        }
+    }, []);
+
+    const triggerHorizontalSlide = useCallback((outgoing, incoming) => {
+        outgoing.classList.remove("is-active");
+        incoming.classList.remove("is-offscreen-right");
+
+        return new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    outgoing.classList.add("is-exiting");
+                    incoming.classList.add("is-entering");
+                    window.setTimeout(resolve, SLIDE_MS);
+                });
+            });
+        });
+    }, []);
+
+    const ensureVideoReady = useCallback((videoEl, index) => {
+        if (!videoEl) return Promise.resolve();
+
+        const src = BACKGROUND_VIDEOS[index];
+
+        if (videoEl.dataset.index === String(index) && videoEl.readyState >= 3) {
+            return Promise.resolve(videoEl);
+        }
+
+        return new Promise((resolve, reject) => {
+            const onReady = () => {
+                cleanup();
+                videoEl.dataset.index = String(index);
+                resolve(videoEl);
+            };
+
+            const onError = () => {
+                cleanup();
+                reject(new Error(`Failed to load video ${index}`));
+            };
+
+            const cleanup = () => {
+                videoEl.removeEventListener("canplaythrough", onReady);
+                videoEl.removeEventListener("canplay", onReady);
+                videoEl.removeEventListener("error", onError);
+            };
+
+            videoEl.addEventListener("canplaythrough", onReady);
+            videoEl.addEventListener("canplay", onReady);
+            videoEl.addEventListener("error", onError);
+
+            if (videoEl.dataset.index !== String(index)) {
+                videoEl.src = src;
+                videoEl.load();
+            }
+        });
+    }, []);
+
+    const advanceVideo = useCallback(async () => {
+        if (transitioningRef.current) return;
+
+        const currentLayer = activeLayerRef.current;
+        const incomingLayer = currentLayer === "a" ? "b" : "a";
+        const nextIndex = getNextVideoIndex(videoIndexRef.current);
+        const outgoing = getVideoEl(currentLayer);
+        const incoming = getVideoEl(incomingLayer);
+
+        if (!outgoing || !incoming) return;
+
+        transitioningRef.current = true;
+
+        try {
+            await ensureVideoReady(incoming, nextIndex);
+            incoming.currentTime = INTRO_SKIP_SEC;
+            setVideoState(incomingLayer, "offscreen-right");
+
+            await incoming.play();
+            await waitForVideoFrame(incoming);
+
+            await triggerHorizontalSlide(outgoing, incoming);
+
+            outgoing.classList.remove("is-exiting");
+            incoming.classList.remove("is-entering");
+            setVideoState(currentLayer, "hidden");
+            setVideoState(incomingLayer, "active");
+            outgoing.pause();
+            outgoing.currentTime = 0;
+
+            activeLayerRef.current = incomingLayer;
+            videoIndexRef.current = nextIndex;
+
+            ensureVideoReady(outgoing, getNextVideoIndex(nextIndex)).catch(() => {});
+        } catch (_) {
+            setVideoState(currentLayer, "active");
+            setVideoState(incomingLayer, "hidden");
+            incoming.pause();
+        } finally {
+            transitioningRef.current = false;
+        }
+    }, [ensureVideoReady, setVideoState, triggerHorizontalSlide]);
 
     // Set page as loaded immediately
     useEffect(() => {
@@ -62,34 +209,54 @@ const FindProperty = () => {
         document.querySelector('.hero-content')?.classList.add('loaded');
     }, []);
 
-    // Video slideshow effect with continuous sliding animation
+    // Start hero playback; warm remaining clips after the first is playing
     useEffect(() => {
-        const interval = setInterval(() => {
-            if (!isTransitioning) {
-                setIsTransitioning(true);
-                const video = videoRef.current;
-                if (video) {
-                    // Start sliding out
-                    video.classList.add('slide-out');
-                    
-                    // Immediately start sliding in the next video
-                    setCurrentVideoIndex((prevIndex) => 
-                        (prevIndex + 1) % backgroundVideos.length
-                    );
-                    video.classList.remove('slide-out');
-                    video.classList.add('slide-in');
-                    
-                    // Remove transition classes after animation completes
-                    setTimeout(() => {
-                        video.classList.remove('slide-in');
-                        setIsTransitioning(false);
-                    }, 800);
-                }
-            }
-        }, 3000); // Reduced interval for more frequent transitions
+        let cancelled = false;
+        let clipIntervalId = null;
 
-        return () => clearInterval(interval);
-    }, [isTransitioning, currentVideoIndex]);
+        const warmRemainingVideos = () => {
+            BACKGROUND_VIDEOS.slice(1).forEach((src) => {
+                const cacheVideo = document.createElement("video");
+                cacheVideo.preload = "auto";
+                cacheVideo.muted = true;
+                cacheVideo.src = src;
+                cacheVideo.load();
+            });
+        };
+
+        const startHeroVideo = async () => {
+            const firstVideo = videoRefA.current;
+            if (!firstVideo || cancelled) return;
+
+            setVideoState("a", "active");
+            setVideoState("b", "hidden");
+
+            try {
+                await ensureVideoReady(firstVideo, 0);
+                firstVideo.currentTime = INTRO_SKIP_SEC;
+                await firstVideo.play();
+                await waitForVideoFrame(firstVideo);
+                heroBackgroundRef.current?.classList.add("is-ready");
+                ensureVideoReady(videoRefB.current, getNextVideoIndex(0)).catch(() => {});
+                warmRemainingVideos();
+
+                if (!cancelled) {
+                    clipIntervalId = window.setInterval(advanceVideo, CLIP_DURATION_MS);
+                }
+            } catch (_) {
+                // Ignore autoplay restrictions
+            }
+        };
+
+        startHeroVideo();
+
+        return () => {
+            cancelled = true;
+            if (clipIntervalId) {
+                window.clearInterval(clipIntervalId);
+            }
+        };
+    }, [advanceVideo, ensureVideoReady, setVideoState]);
 
     // Scroll animation handler - moved from CSS
     useEffect(() => {
@@ -195,14 +362,6 @@ const FindProperty = () => {
     const filteredFeaturedProperties = activeFilter === 'all' 
         ? featuredProperties 
         : featuredProperties.filter(property => property.type === activeFilter);
-
-    // Handle manual play of video
-    const handlePlayVideo = () => {
-        const video = videoRef.current;
-        if (video) {
-            video.play();
-        }
-    };
 
     const handleSearchTypeChange = (type) => {
         setSearchType(type);
@@ -331,19 +490,34 @@ const FindProperty = () => {
     return (
         <div className="find-property-page">
             {/* Hero Section with Video Background */}
-            <section className="hero-section">
-                <div className="hero-background" aria-hidden="true">
-                    <video 
-                        ref={videoRef}
-                        autoPlay 
-                        muted 
-                        playsInline 
-                        className="background-video"
-                        key={currentVideoIndex}
-                    >
-                        <source src={backgroundVideos[currentVideoIndex]} type="video/mp4" />
-                        Your browser does not support the video tag.
-                    </video>
+            <section
+                className="hero-section"
+                style={{ backgroundImage: `url(${HERO_POSTER})` }}
+            >
+                <div
+                    className="hero-background"
+                    ref={heroBackgroundRef}
+                    aria-hidden="true"
+                    style={{ backgroundImage: `url(${HERO_POSTER})` }}
+                >
+                    <video
+                        ref={videoRefA}
+                        className="background-video is-active"
+                        src={BACKGROUND_VIDEOS[0]}
+                        poster={HERO_POSTER}
+                        data-index="0"
+                        autoPlay
+                        muted
+                        playsInline
+                        preload="auto"
+                    />
+                    <video
+                        ref={videoRefB}
+                        className="background-video is-hidden"
+                        muted
+                        playsInline
+                        preload="auto"
+                    />
                     <div className="video-overlay"></div>
                 </div>
 
