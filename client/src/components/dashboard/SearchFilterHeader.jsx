@@ -247,18 +247,6 @@ const SearchFilterHeader = memo(({
           />
         </div>
 
-        <div className="filter-group property-type-group">
-          <SearchDropdown
-            value={searchFilters.propertyBuildingType}
-            onChange={(value) => setSearchFilters({...searchFilters, propertyBuildingType: value})}
-            options={propertyBuildingTypeOptions}
-            placeholder="Property Type"
-            className="search-dropdown-property-building-type"
-            style={{minWidth: '140px'}}
-            theme="dark"
-          />
-        </div>
-
         <div className="filter-group dashboard-more-filters-container">
           <div 
             className={`dashboard-more-filters-button ${showMoreFilters ? 'open' : ''}`}
@@ -272,6 +260,28 @@ const SearchFilterHeader = memo(({
             <div className="dashboard-more-filters-dropdown dashboard-more-filters-dropdown--expanded">
               <div className="dashboard-more-filters-content">
                 
+                <div className="dashboard-filter-section">
+                  <h4 className="dashboard-filter-section-title">
+                    <i className="fas fa-building"></i>
+                    Property Type
+                  </h4>
+                  <div className="dashboard-filter-row">
+                    <div className="filter-field">
+                      <SearchDropdown
+                        value={searchFilters.propertyBuildingType}
+                        onChange={(value) => setSearchFilters({...searchFilters, propertyBuildingType: value})}
+                        options={propertyBuildingTypeOptions}
+                        placeholder="Property Type"
+                        className="dashboard-more-filter-dropdown"
+                        style={{minWidth: '280px'}}
+                        theme="light"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="dashboard-filter-divider"></div>
+
                 <div className="dashboard-filter-section">
                   <h4 className="dashboard-filter-section-title">
                     <i className="fas fa-bath"></i>

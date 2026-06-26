@@ -1158,32 +1158,77 @@
 
 /* Price Filter Group */
 .price-group {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 0.5rem;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
   margin-right: 1rem;
+  white-space: nowrap; /* Prevent wrapping */
 }
 
 .price-group .search-dropdown-container {
-  flex: 0 0 auto;
-  width: auto;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 100px !important; /* Ensure minimum width */
+  flex-shrink: 0 !important; /* Prevent shrinking */
+  display: inline-block !important;
+}
+
+.price-group .separator {
+  flex-shrink: 0 !important; /* Prevent separator from shrinking */
+  white-space: nowrap !important;
+  display: inline-block !important;
 }
 
 /* Bedroom Filter Group */
 .bedroom-group {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 0.5rem;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
   margin-right: 1rem;
+  white-space: nowrap; /* Prevent wrapping */
 }
 
 .bedroom-group .search-dropdown-container {
-  flex: 0 0 auto;
-  width: auto;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 95px !important; /* Ensure minimum width */
+  flex-shrink: 0 !important; /* Prevent shrinking */
+  display: inline-block !important;
+}
+
+.bedroom-group .separator {
+  flex-shrink: 0 !important; /* Prevent separator from shrinking */
+  white-space: nowrap !important;
+  display: inline-block !important;
+}
+
+/* Square Feet Filter Group (for Lease) */
+.sqft-group {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  margin-right: 1rem;
+  white-space: nowrap; /* Prevent wrapping */
+}
+
+.sqft-group .search-dropdown-container {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 120px !important; /* Ensure minimum width */
+  flex-shrink: 0 !important; /* Prevent shrinking */
+  display: inline-block !important;
+}
+
+.sqft-group .separator {
+  flex-shrink: 0 !important; /* Prevent separator from shrinking */
+  white-space: nowrap !important;
+  display: inline-block !important;
 }
 
 /* Property Building Type Group */
