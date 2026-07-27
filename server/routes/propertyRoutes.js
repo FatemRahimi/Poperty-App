@@ -22,6 +22,21 @@ const {
   correctPropertyCoordinates
 } = require('../utils/smartSearch');
 
+const normalizePropertyTypeValue = (val) => {
+  if (!val) return '';
+  if (Array.isArray(val)) return (val.find(Boolean) || '').toString();
+  if (typeof val === 'string') {
+    if (/^\{.*\}$/.test(val)) {
+      const inner = val.slice(1, -1);
+      const parts = inner.split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+      return (parts.find(Boolean) || '').toString();
+    }
+    return val.trim();
+  }
+  if (typeof val === 'object') return (val.value || val.label || '').toString();
+  return String(val).trim();
+};
+
 // Configure multer for file uploads
 const storage = multer.memoryStorage(); // Store files in memory for processing
 const upload = multer({ 
@@ -412,8 +427,11 @@ router.get('/search', async (req, res) => {
       }
     }
 
-    // Auto-correct coordinates for all properties before returning
-    properties = properties.map(property => correctPropertyCoordinates(property));
+    // Auto-correct coordinates and normalize property_type before returning
+    properties = properties.map(property => ({
+      ...correctPropertyCoordinates(property),
+      property_type: normalizePropertyTypeValue(property.property_type)
+    }));
 
     // Log search results for debugging
     console.log(`✅ Search Results: Found ${properties.length} properties`);
@@ -1097,23 +1115,6 @@ router.get('/public', async (req, res) => {
     console.log('📊 Total properties returned:', result.rows.length);
 
     // Normalize property_type for all properties (fix {"retail","retail"} bug)
-    const normalizePropertyTypeValue = (val) => {
-      if (!val) return '';
-      if (Array.isArray(val)) return (val.find(Boolean) || '').toString();
-      if (typeof val === 'string') {
-        // Handle postgres array literal formatted as string: {"Terraced","Terraced"}
-        if (/^\{.*\}$/.test(val)) {
-          const inner = val.slice(1, -1);
-          const parts = inner.split(',').map(s => s.trim().replace(/^"|"$/g, ''));
-          return (parts.find(Boolean) || '').toString();
-        }
-        return val.trim();
-      }
-      if (typeof val === 'object') return (val.value || val.label || '').toString();
-      return String(val).trim();
-    };
-
-    // Auto-correct coordinates AND normalize property_type for all properties
     let properties = result.rows.map(property => ({
       ...correctPropertyCoordinates(property),
       property_type: normalizePropertyTypeValue(property.property_type)

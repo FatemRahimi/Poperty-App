@@ -1,6 +1,5 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
-import Home from "./pages/Home";
 import Navbar from "./components/Navbar.js";
 import Search from "./pages/Search.js";
 import FindProperty from "./pages/FindProperty";
@@ -39,7 +38,7 @@ function Layout() {
             <Routes>
                 {/* Public Routes */}
                 <Route path="/password" element={<PasswordReset />} />
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<FindProperty />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/find" element={<FindProperty />} />
                 <Route path="/search-results" element={<SearchResults />} />

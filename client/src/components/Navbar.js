@@ -102,7 +102,7 @@ const Navbar = () => {
     const handleLogout = async () => {
         try {
             await logout();
-            navigate('/find');
+            navigate('/');
         } catch (error) {
             console.error('Logout error:', error);
         }
@@ -127,7 +127,7 @@ const Navbar = () => {
 
                 <ul className={`navbar-links ${menuOpen ? "active" : ""}`}>
                     <li>
-                        <Link to="/find" className={location.pathname === "/find" ? "active" : ""}>
+                        <Link to="/" className={location.pathname === "/" || location.pathname === "/find" ? "active" : ""}>
                             <FaSearchLocation className="nav-icon" />
                             <span>Find Property</span>
                         </Link>

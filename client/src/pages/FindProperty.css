@@ -467,7 +467,7 @@ h1, h2, h3, h4 {
 .find-property-page .search-input-container {
     display: flex;
     padding: 0.5rem 0.75rem;
-    gap: 0.2rem;
+    gap: 0.5rem;
     width: 100%;
     align-items: stretch;
     overflow: visible;
@@ -534,7 +534,9 @@ h1, h2, h3, h4 {
 
 .search-input-wrapper {
     position: relative;
-    flex: 1 1 45%;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
     display: flex;
     align-items: center;
     z-index: 100;
@@ -586,6 +588,17 @@ h1, h2, h3, h4 {
     margin: 0;
     overflow: visible;
     position: relative;
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+}
+
+.find-property-page .find-property-location-search.location-group-wide {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
 }
 
 .find-property-page .find-property-location-search .location-input-container {

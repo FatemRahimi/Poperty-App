@@ -75,12 +75,14 @@
 }
 
 /* Special styling for Find Property link to always look prominent */
+.navbar-links a[href="/"],
 .navbar-links a[href="/find"] {
     color: #3498db;
     font-weight: 600;
     position: relative;
 }
 
+.navbar-links a[href="/"]:after,
 .navbar-links a[href="/find"]:after {
     content: '';
     position: absolute;
