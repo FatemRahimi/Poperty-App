@@ -1,5 +1,5 @@
 /* Professional Navbar Styling */
-.navbar {
+.site-navbar {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -10,52 +10,57 @@
     left: 0;
     right: 0;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    transition: none;
     z-index: 1000;
     height: 70px;
 }
 
-.navbar-scrolled {
+.site-navbar-scrolled {
     padding: 0.5rem 2rem;
     background-color: rgba(255, 255, 255, 0.95);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     height: 60px;
 }
 
-/* Hero overlay navbar — sits inside FindProperty background, style never changes on scroll */
-.navbar.navbar-hero {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 84px;
+/* Hero navbar — absolute inside hero background, transparent */
+.site-navbar.site-navbar-hero {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 84px !important;
+    min-height: 84px !important;
+    max-height: 84px !important;
     padding: 0 3rem;
-    background: linear-gradient(
-        180deg,
-        rgba(0, 0, 0, 0.55) 0%,
-        rgba(0, 0, 0, 0.28) 55%,
-        rgba(0, 0, 0, 0) 100%
-    );
-    box-shadow: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    z-index: 30;
+    margin: 0;
+    transform: none !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-bottom: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transition: none !important;
+    z-index: 10;
+    will-change: auto;
 }
 
-.navbar.navbar-hero .navbar-container {
+.site-navbar.site-navbar-hero .navbar-container {
     max-width: 1320px;
 }
 
-.navbar.navbar-hero .navbar-links {
+.site-navbar.site-navbar-hero .navbar-links {
     gap: 0.35rem;
 }
 
-.navbar.navbar-hero .navbar-links a,
-.navbar.navbar-hero .language-button,
-.navbar.navbar-hero .auth-button .nav-link,
-.navbar.navbar-hero .auth-button button.nav-link {
-    color: rgba(255, 255, 255, 0.92);
+.site-navbar.site-navbar-hero .navbar-links a,
+.site-navbar.site-navbar-hero .language-button,
+.site-navbar.site-navbar-hero .auth-button .nav-link,
+.site-navbar.site-navbar-hero .auth-button button.nav-link {
+    color: rgba(255, 255, 255, 0.95);
     font-family: 'Montserrat', 'Open Sans', sans-serif;
     font-size: 0.95rem;
     font-weight: 500;
@@ -63,72 +68,71 @@
     text-transform: uppercase;
     padding: 0.65rem 1rem;
     border-radius: 6px;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
 }
 
-.navbar.navbar-hero .navbar-links a:hover,
-.navbar.navbar-hero .language-button:hover,
-.navbar.navbar-hero .auth-button .nav-link:hover,
-.navbar.navbar-hero .auth-button button.nav-link:hover {
+.site-navbar.site-navbar-hero .navbar-links a:hover,
+.site-navbar.site-navbar-hero .language-button:hover,
+.site-navbar.site-navbar-hero .auth-button .nav-link:hover,
+.site-navbar.site-navbar-hero .auth-button button.nav-link:hover {
     color: #ffffff;
     background-color: rgba(255, 255, 255, 0.12);
 }
 
-.navbar.navbar-hero .navbar-links a[href="/"],
-.navbar.navbar-hero .navbar-links a[href="/find"] {
+.site-navbar.site-navbar-hero .navbar-links a[href="/"],
+.site-navbar.site-navbar-hero .navbar-links a[href="/find"] {
     color: #ffffff;
     font-weight: 600;
 }
 
-.navbar.navbar-hero .navbar-links a[href="/"]:after,
-.navbar.navbar-hero .navbar-links a[href="/find"]:after,
-.navbar.navbar-hero .navbar-links a.active:after {
+.site-navbar.site-navbar-hero .navbar-links a[href="/"]:after,
+.site-navbar.site-navbar-hero .navbar-links a[href="/find"]:after,
+.site-navbar.site-navbar-hero .navbar-links a.active:after {
     background-color: #3498db;
     height: 2px;
     bottom: 0.35rem;
 }
 
-.navbar.navbar-hero .navbar-links a.active {
+.site-navbar.site-navbar-hero .navbar-links a.active {
     color: #ffffff;
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-.navbar.navbar-hero .nav-icon {
+.site-navbar.site-navbar-hero .nav-icon {
     color: #3498db;
     font-size: 0.95rem;
 }
 
-.navbar.navbar-hero .auth-button a {
-    border: 1px solid rgba(255, 255, 255, 0.55);
+.site-navbar.site-navbar-hero .auth-button a {
+    border: none;
     border-radius: 999px;
     padding: 0.55rem 1.15rem;
-    transition: all 0.25s ease;
+    transition: color 0.25s ease, background-color 0.25s ease;
 }
 
-.navbar.navbar-hero .auth-button a:hover {
+.site-navbar.site-navbar-hero .auth-button a:hover {
     background-color: rgba(255, 255, 255, 0.16);
-    border-color: #ffffff;
     color: #ffffff;
 }
 
-.navbar.navbar-hero .auth-button button.nav-link {
-    border: 1px solid rgba(255, 255, 255, 0.35);
+.site-navbar.site-navbar-hero .auth-button button.nav-link {
+    border: none;
     border-radius: 999px;
 }
 
-.navbar.navbar-hero .navbar-menu-icon {
+.site-navbar.site-navbar-hero .navbar-menu-icon {
     color: #ffffff;
 }
 
-.navbar.navbar-hero.navbar-scrolled {
-    height: 84px;
+.site-navbar.site-navbar-hero.site-navbar-scrolled {
+    height: 84px !important;
+    min-height: 84px !important;
+    max-height: 84px !important;
     padding: 0 3rem;
-    background: linear-gradient(
-        180deg,
-        rgba(0, 0, 0, 0.55) 0%,
-        rgba(0, 0, 0, 0.28) 55%,
-        rgba(0, 0, 0, 0) 100%
-    );
-    box-shadow: none;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
 }
 
 .navbar-container {
@@ -397,22 +401,22 @@
 }
 
 @media (max-width: 768px) {
-    .navbar {
+    .site-navbar {
         padding: 1rem;
         height: 60px;
     }
 
-    .navbar.navbar-hero {
+    .site-navbar.site-navbar-hero {
         height: 72px;
         padding: 0 1.25rem;
     }
 
-    .navbar.navbar-hero.navbar-scrolled {
+    .site-navbar.site-navbar-hero.site-navbar-scrolled {
         height: 72px;
         padding: 0 1.25rem;
     }
 
-    .navbar-scrolled {
+    .site-navbar-scrolled {
         padding: 0.5rem 1rem;
         height: 50px;
     }
@@ -439,21 +443,21 @@
         align-items: flex-start;
     }
 
-    .navbar.navbar-hero .navbar-links {
+    .site-navbar.site-navbar-hero .navbar-links {
         background: linear-gradient(180deg, #1a2332 0%, #111827 100%);
         box-shadow: -8px 0 24px rgba(0, 0, 0, 0.35);
     }
 
-    .navbar.navbar-hero .navbar-links a,
-    .navbar.navbar-hero .language-button,
-    .navbar.navbar-hero .auth-button .nav-link,
-    .navbar.navbar-hero .auth-button button.nav-link {
+    .site-navbar.site-navbar-hero .navbar-links a,
+    .site-navbar.site-navbar-hero .language-button,
+    .site-navbar.site-navbar-hero .auth-button .nav-link,
+    .site-navbar.site-navbar-hero .auth-button button.nav-link {
         color: rgba(255, 255, 255, 0.92);
         text-transform: none;
         letter-spacing: 0.02em;
     }
 
-    .navbar.navbar-hero .navbar-links a.active {
+    .site-navbar.site-navbar-hero .navbar-links a.active {
         background-color: rgba(52, 152, 219, 0.22);
         color: #ffffff;
     }
