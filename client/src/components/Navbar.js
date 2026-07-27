@@ -7,7 +7,8 @@ import Logo from "./Logo";
 import "./Logo.css";
 import { useAuth } from "../context/AuthContext";
 
-const Navbar = () => {
+const Navbar = ({ variant = "default" }) => {
+    const isHeroVariant = variant === "hero";
     const [menuOpen, setMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [langMenuOpen, setLangMenuOpen] = useState(false);
@@ -30,7 +31,7 @@ const Navbar = () => {
     // Show success message only on actual login, not when just visiting home page while authenticated
     useEffect(() => {
         // Only show message if user just became authenticated and we haven't shown it yet
-        if (isAuthenticated && !hasShownLoginMessage && location.pathname === '/') {
+        if (isAuthenticated && !hasShownLoginMessage && (location.pathname === '/' || location.pathname === '/find')) {
             // Check if this is from a recent login (within the last 5 seconds)
             const loginTime = localStorage.getItem('loginTime');
             const now = Date.now();
@@ -63,8 +64,13 @@ const Navbar = () => {
         setLangMenuOpen(false);
     }, [location]);
 
-    // Add scroll effect
+    // Scroll effect — disabled on hero variant so navbar appearance stays consistent
     useEffect(() => {
+        if (isHeroVariant) {
+            setScrolled(false);
+            return undefined;
+        }
+
         const handleScroll = () => {
             if (window.scrollY > 50) {
                 setScrolled(true);
@@ -77,7 +83,7 @@ const Navbar = () => {
         return () => {
             window.removeEventListener("scroll", handleScroll);
         };
-    }, []);
+    }, [isHeroVariant]);
 
     // Close language dropdown when clicking outside
     useEffect(() => {
@@ -109,7 +115,7 @@ const Navbar = () => {
     };
 
     return (
-        <nav className={`navbar ${scrolled ? "navbar-scrolled" : ""}`}>
+        <nav className={`navbar ${isHeroVariant ? "navbar-hero" : ""} ${!isHeroVariant && scrolled ? "navbar-scrolled" : ""}`}>
             {showSuccessMessage && (
                 <div className="login-success-message">
                     <FaCheckCircle className="success-icon" />
@@ -118,7 +124,7 @@ const Navbar = () => {
             )}
             <div className="navbar-container">
                 <div className="navbar-logo">
-                    <Logo />
+                    <Logo light={isHeroVariant} />
                 </div>
 
                 <div className="navbar-menu-icon" onClick={() => setMenuOpen(!menuOpen)}>
