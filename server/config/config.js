@@ -3,7 +3,7 @@ const config = {
     baseUrl: process.env.CLIENT_URL || `http://localhost:${process.env.CLIENT_PORT || 3000}`,
     url: process.env.CLIENT_URL || `http://localhost:${process.env.CLIENT_PORT || 3000}`,
     loginPath: '/login',
-    defaultRedirectPath: '/find'
+    defaultRedirectPath: '/'
   },
   backend: {
     port: process.env.PORT || 5050

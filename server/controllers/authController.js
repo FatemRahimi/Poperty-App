@@ -19,28 +19,29 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // Insert user as verified for testing (temporarily)
     const insertResult = await pool.query(
       "INSERT INTO users (email, password, is_verified) VALUES ($1, $2, $3) RETURNING id",
-      [email, hashed, true] // Set to true for testing
+      [email, hashed, false]
     );
     const userId = insertResult.rows[0].id;
 
-    // Temporarily disable email verification for testing
-    /*
-    // Generate verification token
     const verificationToken = jwt.sign(
       { userId },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
-    const verificationLink = `http://localhost:5050/api/auth/verify?token=${verificationToken}`;
+    const verificationLink = `http://localhost:${process.env.PORT || 5050}/api/auth/verify?token=${verificationToken}`;
 
-    // Send verification email
-    await sendVerificationEmail(email, verificationLink);
-    */
+    try {
+      await sendVerificationEmail(email, verificationLink);
+    } catch (emailError) {
+      console.log("❌ Verification email failed:", emailError.message);
+      return res.status(201).json({
+        message: "Sign up successful, but verification email could not be sent. Please contact support.",
+      });
+    }
 
-    return res.status(201).json({ message: "Sign up successful! You can now log in." });
+    return res.status(201).json({ message: "Sign up successful! Please check your email to verify your account." });
   } catch (err) {
     console.error("❌ Signup failed:", err);
     return res.status(500).json({ message: "Signup error", error: err.message });

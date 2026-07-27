@@ -132,6 +132,18 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
     };
   };
 
+  const formatPropertyType = (type) => {
+    if (!type) return '';
+    let value = type;
+    if (Array.isArray(value)) {
+      value = value.find(Boolean) || '';
+    } else if (typeof value === 'string' && /^\{.*\}$/.test(value)) {
+      const inner = value.slice(1, -1);
+      value = inner.split(',').map(s => s.trim().replace(/^"|"$/g, '')).find(Boolean) || '';
+    }
+    return String(value).replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+  };
+
   const formatPrice = (property) => {
     if (property.category === 'sale' && property.price) {
       return `£${Number(property.price).toLocaleString()}`;
@@ -497,7 +509,7 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
                 <div className="feature-icon">
                   <i className="fas fa-building"></i>
                 </div>
-                <span>{property.property_type.replace('-', ' ').replace(/\b\w/g, char => char.toUpperCase())}</span>
+                <span>{formatPropertyType(property.property_type)}</span>
               </div>
             )}
             {(() => {

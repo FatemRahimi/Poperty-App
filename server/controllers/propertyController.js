@@ -67,7 +67,7 @@ const sendEmailNotification = async (notificationData) => {
     const { to, subject, html, property, user, notificationType } = notificationData;
     
     // Check if email configuration is available
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
       console.warn('⚠️ Email configuration missing - skipping email notification');
       return;
     }
