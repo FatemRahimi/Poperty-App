@@ -16,7 +16,6 @@ body {
 .find-property-page {
     font-family: 'Poppins', sans-serif;
     color: #333;
-    overflow-x: hidden;
     margin-top: 0;
 }
 
@@ -305,8 +304,8 @@ h1, h2, h3, h4 {
 /* Hero Section */
 .hero-section {
     position: relative;
-    height: 92vh;
-    min-height: 720px;
+    height: 85vh;
+    min-height: 640px;
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -1185,7 +1184,7 @@ h1, h2, h3, h4 {
 @media (max-width: 992px) {
     .hero-section {
         height: auto;
-        min-height: 780px;
+        min-height: 700px;
         padding: 0;
     }
     
@@ -1224,8 +1223,8 @@ h1, h2, h3, h4 {
 @media (max-width: 768px) {
     .hero-section {
         padding: 0;
-        min-height: 680px;
-        height: 100vh;
+        min-height: 600px;
+        height: 88vh;
         background-color: transparent;
     }
 
@@ -1325,8 +1324,8 @@ h1, h2, h3, h4 {
 
 @media (max-width: 576px) {
     .hero-section {
-        min-height: 550px;
-        height: 100vh;
+        min-height: 480px;
+        height: 88vh;
     }
 
     .hero-title {

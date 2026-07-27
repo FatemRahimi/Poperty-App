@@ -115,7 +115,7 @@ const Navbar = ({ variant = "default" }) => {
     };
 
     return (
-        <nav className={`navbar ${isHeroVariant ? "navbar-hero" : ""} ${!isHeroVariant && scrolled ? "navbar-scrolled" : ""}`}>
+        <nav className={`site-navbar ${isHeroVariant ? "site-navbar-hero" : ""} ${!isHeroVariant && scrolled ? "site-navbar-scrolled" : ""}`}>
             {showSuccessMessage && (
                 <div className="login-success-message">
                     <FaCheckCircle className="success-icon" />

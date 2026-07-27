@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./FindProperty.css";
+import Navbar from "../components/Navbar";
 import { FaSearch, FaHome, FaBuilding, FaTree, FaMapMarkerAlt, FaRegBuilding, FaChevronLeft, FaChevronRight, FaBath } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import LocationSearch from "../components/LocationSearch";
-import Navbar from "../components/Navbar";
 
 const BACKGROUND_VIDEOS = [
     "/videos/background.mp4",
@@ -495,7 +495,6 @@ const FindProperty = () => {
                 className="hero-section"
                 style={{ backgroundImage: `url(${HERO_POSTER})` }}
             >
-                <Navbar variant="hero" />
                 <div
                     className="hero-background"
                     ref={heroBackgroundRef}
@@ -522,6 +521,8 @@ const FindProperty = () => {
                     />
                     <div className="video-overlay"></div>
                 </div>
+
+                <Navbar variant="hero" />
 
                 <div className="hero-content container">
                     <div className="text-content">
