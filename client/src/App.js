@@ -29,8 +29,11 @@ import AdvisorProfile from "./pages/AdvisorProfile";
 function Layout() {
     const location = useLocation();
 
+    const isFindPropertyPage = location.pathname === "/" || location.pathname === "/find";
+
     // Hide Navbar on login, password, signup pages, admin login, and admin dashboard
-    const hideNavbar = ["/login", "/password", "/signup", "/addlist", "/addlistnext", "/addlease", "/additional-listing/sale", "/additional-listing/lease", "/addleasenext", "/addrent", "/advisor-profile", "/admin-x9k7m2p5q8", "/admin/dashboard", "/dashboard", "/property"].includes(location.pathname) || location.pathname.startsWith("/property/");
+    // FindProperty renders its own hero navbar inside the background image
+    const hideNavbar = isFindPropertyPage || ["/login", "/password", "/signup", "/addlist", "/addlistnext", "/addlease", "/additional-listing/sale", "/additional-listing/lease", "/addleasenext", "/addrent", "/advisor-profile", "/admin-x9k7m2p5q8", "/admin/dashboard", "/dashboard", "/property"].includes(location.pathname) || location.pathname.startsWith("/property/");
 
     return (
         <div>
