@@ -580,12 +580,6 @@ const FindProperty = () => {
                             </div>
                         ))}
                     </div>
-
-                    <div className="cta-container">
-                        <Link to="/services" className="main-cta-button">
-                            Explore All Services
-                        </Link>
-                    </div>
                 </div>
             </section>
 
