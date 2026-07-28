@@ -32,6 +32,10 @@ SESSION_SECRET=7ba9516fe3e5222799df2ba09d2b73608062b68089b37c360fb4683c1c445c1c
 # Database Configuration
 DATABASE_URL=postgres://fatemehrahimi@localhost:5432/propertydb
 
+# AI Property Services (optional — mock outputs used when unset)
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+
 # Environment
 NODE_ENV=development
 ```

@@ -25,6 +25,13 @@ import AdminDashboard from "./pages/AdminDashboard";
 import UserDashboard from "./pages/UserDashboard";
 import PropertyView from "./pages/PropertyView";
 import AdvisorProfile from "./pages/AdvisorProfile";
+import AiServicesLanding from "./pages/ai/AiServicesLanding";
+import AiPricing from "./pages/ai/AiPricing";
+import AiDashboard from "./pages/ai/AiDashboard";
+import AiListingWriter from "./pages/ai/AiListingWriter";
+import AiValuation from "./pages/ai/AiValuation";
+import AiBuyerMatch from "./pages/ai/AiBuyerMatch";
+import AiHistoryDetail from "./pages/ai/AiHistoryDetail";
 
 function Layout() {
     const location = useLocation();
@@ -51,6 +58,37 @@ function Layout() {
                 <Route path="/logout" element={<Logout />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
                 <Route path="/property/:slug" element={<PropertyView />} />
+
+                {/* AI Property Services — public landing & pricing */}
+                <Route path="/ai-services" element={<AiServicesLanding />} />
+                <Route path="/ai-services/pricing" element={<AiPricing />} />
+
+                {/* AI Property Services — authenticated tools */}
+                <Route path="/ai-services/dashboard" element={
+                    <ProtectedRoute>
+                        <AiDashboard />
+                    </ProtectedRoute>
+                } />
+                <Route path="/ai-services/listing-writer" element={
+                    <ProtectedRoute>
+                        <AiListingWriter />
+                    </ProtectedRoute>
+                } />
+                <Route path="/ai-services/valuation" element={
+                    <ProtectedRoute>
+                        <AiValuation />
+                    </ProtectedRoute>
+                } />
+                <Route path="/ai-services/buyer-match" element={
+                    <ProtectedRoute>
+                        <AiBuyerMatch />
+                    </ProtectedRoute>
+                } />
+                <Route path="/ai-services/history/:id" element={
+                    <ProtectedRoute>
+                        <AiHistoryDetail />
+                    </ProtectedRoute>
+                } />
                 
                 {/* Secure Admin Route */}
                 <Route path="/admin-x9k7m2p5q8" element={<AdminLogin />} />
