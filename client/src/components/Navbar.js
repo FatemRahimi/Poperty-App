@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./Navbar.css";
-import { FaBars, FaTimes, FaSearchLocation, FaChartLine, FaInfoCircle, FaUser, FaGlobe, FaSignOutAlt, FaCheckCircle } from "react-icons/fa";
+import { FaBars, FaTimes, FaSearchLocation, FaRobot, FaInfoCircle, FaUser, FaGlobe, FaSignOutAlt, FaCheckCircle } from "react-icons/fa";
 import { IoMdArrowDropdown } from "react-icons/io";
 import Logo from "./Logo";
 import "./Logo.css";
@@ -139,9 +139,9 @@ const Navbar = ({ variant = "default" }) => {
                         </Link>
                     </li>
                     <li>
-                        <Link to="/investment" className={location.pathname === "/investment" ? "active" : ""}>
-                            <FaChartLine className="nav-icon" />
-                            <span>Investment</span>
+                        <Link to="/ai-services" className={location.pathname.startsWith("/ai-services") ? "active" : ""}>
+                            <FaRobot className="nav-icon" />
+                            <span>AI Property Services</span>
                         </Link>
                     </li>
                     <li>

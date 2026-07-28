@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./FindProperty.css";
 import Navbar from "../components/Navbar";
-import { FaSearch, FaHome, FaBuilding, FaTree, FaMapMarkerAlt, FaRegBuilding, FaChevronLeft, FaChevronRight, FaBath } from "react-icons/fa";
+import { FaSearch, FaHome, FaBuilding, FaTree } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import LocationSearch from "../components/LocationSearch";
 
@@ -52,9 +52,8 @@ const FindProperty = () => {
     const [searchType, setSearchType] = useState("buy");
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedRadius, setSelectedRadius] = useState("3");
-    const [isLoaded, setIsLoaded] = useState(false);
-    const [activeFilter, setActiveFilter] = useState("all");
     const [selectedCategory, setSelectedCategory] = useState("residential");
+    const [searchError, setSearchError] = useState("");
     const videoRefA = useRef(null);
     const videoRefB = useRef(null);
     const heroBackgroundRef = useRef(null);
@@ -62,35 +61,9 @@ const FindProperty = () => {
     const videoIndexRef = useRef(0);
     const transitioningRef = useRef(false);
     const inputRef = useRef(null);
-    const propertiesGridRef = useRef(null);
-    const [favorites, setFavorites] = useState([]);
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
     
-
-    // Debug mount and state changes
-    useEffect(() => {
-        console.log('Component mounted');
-        console.log('Initial search type:', searchType);
-        console.log('Initial search query:', searchQuery);
-        
-        // Check if input is accessible
-        if (inputRef.current) {
-            console.log('Input element exists:', inputRef.current);
-            console.log('Input is disabled:', inputRef.current.disabled);
-            console.log('Input is readOnly:', inputRef.current.readOnly);
-        }
-    }, []);
-
-    // Property filters
-    const filters = [
-        { id: "all", label: "All Properties" },
-        { id: "residential", label: "Residential" },
-        { id: "commercial", label: "Commercial" },
-        { id: "land", label: "Land & Farms" }
-    ];
-
-
     const getVideoEl = (layer) => (layer === "a" ? videoRefA.current : videoRefB.current);
 
     const setVideoState = useCallback((layer, state) => {
@@ -206,7 +179,6 @@ const FindProperty = () => {
 
     // Set page as loaded immediately
     useEffect(() => {
-        setIsLoaded(true);
         document.querySelector('.hero-content')?.classList.add('loaded');
     }, []);
 
@@ -317,55 +289,9 @@ const FindProperty = () => {
         }
     ];
 
-    const featuredProperties = [
-        {
-            id: 1,
-            type: "residential",
-            title: "Modern Apartment Complex",
-            location: "Downtown Area",
-            price: "$850,000",
-            bedrooms: 3,
-            bathrooms: 2,
-            sqft: 1850,
-            image: "/assets/property1.jpg"
-        },
-        {
-            id: 2, 
-            type: "commercial",
-            title: "Office Building with Parking",
-            location: "Financial District",
-            price: "$2,500,000",
-            sqft: 5200,
-            image: "/assets/property2.jpg"
-        },
-        {
-            id: 3,
-            type: "land",
-            title: "Agricultural Land",
-            location: "Rural Area",
-            price: "$950,000",
-            acres: 25,
-            image: "/assets/property3.jpg"
-        },
-        {
-            id: 4,
-            type: "residential",
-            title: "Luxury Family Home",
-            location: "Suburban Area",
-            price: "$1,250,000",
-            bedrooms: 5,
-            bathrooms: 3,
-            sqft: 3200,
-            image: "/assets/property4.jpg"
-        }
-    ];
-
-    const filteredFeaturedProperties = activeFilter === 'all' 
-        ? featuredProperties 
-        : featuredProperties.filter(property => property.type === activeFilter);
-
     const handleSearchTypeChange = (type) => {
         setSearchType(type);
+        setSearchError("");
     };
 
     // Map search type (buy/rent/lease) to database category (sale/rent/lease)
@@ -392,10 +318,11 @@ const FindProperty = () => {
     // Search handler - navigate to SearchResults page
     const handleSearch = () => {
         if (!searchQuery || searchQuery.trim().length < 3) {
-            alert('Please enter at least 3 characters for location search');
+            setSearchError("Please enter at least 3 characters to search by location or postcode.");
             return;
         }
 
+        setSearchError("");
         // Map search type and category
         const category = mapSearchTypeToCategory(searchType);
         const propertyCategory = mapCategoryToPropertyCategory(selectedCategory);
@@ -435,7 +362,7 @@ const FindProperty = () => {
 
     const handleCategoryClick = (categoryId) => {
         setSelectedCategory(categoryId);
-        
+        setSearchError("");
         // Set default search type based on category
         switch(categoryId) {
             case "residential":
@@ -450,32 +377,6 @@ const FindProperty = () => {
             default:
                 setSearchType("buy");
         }
-    };
-
-    const scrollLeft = () => {
-        if (propertiesGridRef.current) {
-            propertiesGridRef.current.scrollBy({
-                left: -400,
-                behavior: 'smooth'
-            });
-        }
-    };
-
-    const scrollRight = () => {
-        if (propertiesGridRef.current) {
-            propertiesGridRef.current.scrollBy({
-                left: 400,
-                behavior: 'smooth'
-            });
-        }
-    };
-
-    const handleFavoriteClick = (propertyId) => {
-        setFavorites(prev => 
-            prev.includes(propertyId) 
-                ? prev.filter(id => id !== propertyId)
-                : [...prev, propertyId]
-        );
     };
 
     const handleStartListing = () => {
@@ -572,7 +473,10 @@ const FindProperty = () => {
                                 <div className="search-input-wrapper">
                                     <LocationSearch
                                         searchQuery={searchQuery}
-                                        onSearchQueryChange={setSearchQuery}
+                                        onSearchQueryChange={(value) => {
+                                            setSearchQuery(value);
+                                            if (searchError) setSearchError("");
+                                        }}
                                         radius={selectedRadius}
                                         onRadiusChange={setSelectedRadius}
                                         placeholder={`Search ${selectedCategory} properties by location or postcode...`}
@@ -596,6 +500,9 @@ const FindProperty = () => {
                                     <FaSearch className="btn-icon" /> Search
                                 </button>
                             </div>
+                            {searchError && (
+                                <p className="search-error" role="alert">{searchError}</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -617,15 +524,14 @@ const FindProperty = () => {
                     </button>
                 </div>
             </section>
-           {/*put your home in expert hands*/}
-            <section className="expert-section animate-on-scroll">
+           <section className="expert-section animate-on-scroll">
                 <div className="expert-content">
-                    <h2 className="expert-title">Put your home in expert hands</h2>
+                    <h2 className="expert-title">Put your property in expert hands</h2>
                     <p className="expert-desc">
-                        Moving with us means local insight, honest advice and exceptional service – every step of the way.<br />
-                        Let our clients tell you why they recommend a move with Savills.
+                        Moving with Sh.R Property means local insight, honest advice, and exceptional service at every step.
+                        Our advisors are here to guide you through buying, renting, or listing with confidence.
                     </p>
-                    <a href="#" className="expert-cta">FIND OUT MORE <span>&#9654;</span></a>
+                    <Link to="/about" className="expert-cta">Find out more <span>&#9654;</span></Link>
                 </div>
                 <div className="expert-image">
                     <img src="/assets/pexels-a-darmel-7641857.jpg" alt="Happy clients" />
@@ -667,7 +573,7 @@ const FindProperty = () => {
                                     <p className="service-badge">SERVICE</p>
                                     <h3 className="service-title">{service.title}</h3>
                                     <p className="service-description">{service.desc}</p>
-                                    <Link to="#" className="service-link">
+                                    <Link to="/search-results" className="service-link">
                                         Find out more
                                     </Link>
                                 </div>
@@ -692,16 +598,16 @@ const FindProperty = () => {
                     <div className="footer-links animate-on-scroll">
                         <h4>Quick Links</h4>
                         <ul>
-                            <li><Link to="/">Home</Link></li>
-                            <li><Link to="/buy">Buy</Link></li>
-                            <li><Link to="/rent">Rent</Link></li>
+                            <li><Link to="/">Find Property</Link></li>
+                            <li><Link to="/seller">List Property</Link></li>
+                            <li><Link to="/about">About Us</Link></li>
                             <li><Link to="/services">Services</Link></li>
-                            <li><Link to="/contact">Contact</Link></li>
+                            <li><Link to="/login">Login</Link></li>
                         </ul>
                     </div>
                     <div className="footer-contact animate-on-scroll">
                         <h4>Contact Us</h4>
-                        <p>Email: info@ShProperty.com</p>
+                        <p>Email: info@shproperty.com</p>
                         <p>Phone: +44 7398593360</p>
                         <div className="footer-social">
                             <a href="#" aria-label="Facebook"><i className="fab fa-facebook-f"></i></a>
@@ -712,7 +618,7 @@ const FindProperty = () => {
                     </div>
                 </div>
                 <div className="footer-bottom animate-on-scroll">
-                    <p>&copy; {new Date().getFullYear()} SH.RProperty. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} Sh.R Property. All rights reserved.</p>
                 </div>
             </footer>
         </div>

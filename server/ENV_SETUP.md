@@ -32,6 +32,10 @@ SESSION_SECRET=REDACTED
 # Database Configuration
 DATABASE_URL=postgres://REDACTED@localhost:5432/propertydb
 
+# AI Property Services (optional — mock outputs used when unset)
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+
 # Environment
 NODE_ENV=development
 ```

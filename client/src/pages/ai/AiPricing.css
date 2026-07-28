@@ -1,0 +1,25 @@
+.ai-pricing-page-head {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2.25rem;
+}
+
+.ai-pricing-page-head .ai-section-sub {
+  text-align: center;
+}
+
+.ai-pricing-kicker {
+  color: var(--ai-accent);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  margin: 0 0 0.75rem;
+}
+
+.ai-pricing-page-footer {
+  text-align: center;
+  margin-top: 2.5rem;
+}
