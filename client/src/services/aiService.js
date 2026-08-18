@@ -26,7 +26,7 @@ export const AI_PLANS = [
       'Buyer Match Assistant',
       'Save generation history',
     ],
-    cta: 'Get started',
+    cta: 'Start free',
     highlighted: false,
   },
   {
@@ -43,7 +43,7 @@ export const AI_PLANS = [
       'Email marketing copy',
       'Priority generation speed',
     ],
-    cta: 'Upgrade to Professional',
+    cta: 'Start Professional',
     highlighted: true,
   },
   {
@@ -60,7 +60,7 @@ export const AI_PLANS = [
       'Priority support',
       'Custom branding on reports',
     ],
-    cta: 'Upgrade to Agency',
+    cta: 'Start Agency',
     highlighted: false,
   },
 ];
