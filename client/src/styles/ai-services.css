@@ -1,23 +1,24 @@
-/* AI Property Services — shared premium SaaS theme */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap');
+/* AI Property Services — HighLevel-inspired SaaS theme */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
 :root {
-  --ai-ink: #0f1c2e;
-  --ai-ink-soft: #243447;
-  --ai-slate: #5b6b7c;
-  --ai-mist: #e8eef4;
-  --ai-cloud: #f4f7fa;
+  --ai-ink: #050a18;
+  --ai-ink-soft: #1a2338;
+  --ai-slate: #6b7289;
+  --ai-mist: #e8ecf4;
+  --ai-cloud: #f5f7fb;
   --ai-white: #ffffff;
-  --ai-accent: #0d7a6f;
-  --ai-accent-dark: #0a5c54;
-  --ai-accent-soft: #d8f0ec;
-  --ai-gold: #c4a35a;
-  --ai-border: #d5dee8;
-  --ai-danger: #b42318;
-  --ai-radius: 14px;
-  --ai-shadow: 0 18px 50px rgba(15, 28, 46, 0.08);
-  --ai-font: 'DM Sans', sans-serif;
-  --ai-display: 'Instrument Serif', Georgia, serif;
+  --ai-accent: #00b4ff;
+  --ai-accent-dark: #0090cc;
+  --ai-accent-soft: #e5f7ff;
+  --ai-cyan: #00d4ff;
+  --ai-gold: #f5c518;
+  --ai-border: #e2e8f0;
+  --ai-danger: #e11d48;
+  --ai-radius: 16px;
+  --ai-shadow: 0 20px 50px rgba(5, 10, 24, 0.08);
+  --ai-font: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --ai-display: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
 .ai-page {
@@ -29,7 +30,7 @@
 }
 
 .ai-container {
-  width: min(1120px, calc(100% - 2rem));
+  width: min(1180px, calc(100% - 2rem));
   margin: 0 auto;
 }
 
@@ -37,19 +38,23 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--ai-accent);
-  margin-bottom: 0.85rem;
+  margin-bottom: 1rem;
+  background: rgba(0, 180, 255, 0.1);
+  border: 1px solid rgba(0, 180, 255, 0.25);
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
 }
 
 .ai-display {
   font-family: var(--ai-display);
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
   color: var(--ai-ink);
 }
 
@@ -57,20 +62,20 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   border: none;
-  border-radius: 10px;
-  padding: 0.85rem 1.35rem;
+  border-radius: 12px;
+  padding: 0.95rem 1.5rem;
   font-family: var(--ai-font);
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   text-decoration: none;
   transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .ai-btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .ai-btn:disabled {
@@ -81,13 +86,13 @@
 
 .ai-btn-primary {
   background: var(--ai-accent);
-  color: white;
-  box-shadow: 0 10px 24px rgba(13, 122, 111, 0.25);
+  color: #041018;
+  box-shadow: 0 12px 32px rgba(0, 180, 255, 0.35);
 }
 
 .ai-btn-primary:hover {
-  background: var(--ai-accent-dark);
-  color: white;
+  background: var(--ai-cyan);
+  color: #041018;
 }
 
 .ai-btn-secondary {
@@ -106,45 +111,49 @@
 }
 
 .ai-btn-gold {
-  background: linear-gradient(135deg, #d4b86a, #b8943f);
-  color: #1a1408;
+  background: var(--ai-accent);
+  color: #041018;
+  box-shadow: 0 12px 32px rgba(0, 180, 255, 0.35);
 }
 
 .ai-section {
-  padding: 4.5rem 0;
+  padding: 5rem 0;
 }
 
 .ai-section-title {
   font-family: var(--ai-display);
-  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
   margin: 0 0 0.75rem;
+  color: var(--ai-ink);
 }
 
 .ai-section-sub {
   color: var(--ai-slate);
-  font-size: 1.05rem;
-  max-width: 560px;
-  margin: 0 0 2.5rem;
-  line-height: 1.6;
+  font-size: 1.08rem;
+  max-width: 580px;
+  margin: 0 0 2.75rem;
+  line-height: 1.65;
 }
 
 .ai-grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
+  gap: 1.35rem;
 }
 
 .ai-grid-2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1.25rem;
+  gap: 1.35rem;
 }
 
 .ai-card {
   background: var(--ai-white);
   border: 1px solid var(--ai-border);
   border-radius: var(--ai-radius);
-  padding: 1.5rem;
+  padding: 1.6rem;
   box-shadow: var(--ai-shadow);
 }
 
@@ -174,8 +183,8 @@
 .ai-field select,
 .ai-field textarea {
   border: 1px solid var(--ai-border);
-  border-radius: 10px;
-  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  padding: 0.8rem 0.95rem;
   font-family: var(--ai-font);
   font-size: 0.95rem;
   background: #fff;
@@ -188,7 +197,7 @@
 .ai-field select:focus,
 .ai-field textarea:focus {
   border-color: var(--ai-accent);
-  box-shadow: 0 0 0 3px rgba(13, 122, 111, 0.15);
+  box-shadow: 0 0 0 3px rgba(0, 180, 255, 0.18);
 }
 
 .ai-field textarea {
@@ -197,22 +206,22 @@
 }
 
 .ai-alert {
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 0.9rem 1rem;
   margin-bottom: 1rem;
   font-size: 0.92rem;
 }
 
 .ai-alert-error {
-  background: #fef3f2;
+  background: #fff1f2;
   color: var(--ai-danger);
-  border: 1px solid #fecdca;
+  border: 1px solid #fecdd3;
 }
 
 .ai-alert-info {
   background: var(--ai-accent-soft);
-  color: var(--ai-accent-dark);
-  border: 1px solid #b6e2db;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
 }
 
 .ai-loading {
@@ -264,18 +273,18 @@
 .ai-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.65rem;
+  padding: 0.28rem 0.7rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   background: var(--ai-accent-soft);
-  color: var(--ai-accent-dark);
+  color: #0369a1;
 }
 
 .ai-tool-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.45rem;
   margin-bottom: 1.5rem;
 }
 
@@ -284,16 +293,16 @@
   color: var(--ai-slate);
   font-size: 0.85rem;
   font-weight: 600;
-  padding: 0.45rem 0.85rem;
+  padding: 0.5rem 0.9rem;
   border-radius: 999px;
   border: 1px solid transparent;
 }
 
 .ai-tool-nav a.active,
 .ai-tool-nav a:hover {
-  color: var(--ai-accent-dark);
+  color: #0369a1;
   background: var(--ai-accent-soft);
-  border-color: #b6e2db;
+  border-color: #bae6fd;
 }
 
 @media (max-width: 900px) {
