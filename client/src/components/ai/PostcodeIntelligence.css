@@ -1,0 +1,314 @@
+/* Postcode Property Intelligence panel */
+
+.pi-pc-panel {
+  margin: 1rem 0 1.25rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.85));
+}
+
+.pi-pc-panel--compact {
+  margin: 0.75rem 0;
+  padding: 0.85rem;
+}
+
+.pi-pc-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.pi-pc-kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #38bdf8;
+}
+
+.pi-pc-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #f1f5f9;
+}
+
+.pi-pc-meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.pi-pc-conf {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.pi-pc-conf--high { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+.pi-pc-conf--medium { background: rgba(234, 179, 8, 0.2); color: #fde047; }
+.pi-pc-conf--low { background: rgba(248, 113, 113, 0.15); color: #fca5a5; }
+/* Nothing was measured — deliberately neutral, not the red of low confidence. */
+.pi-pc-conf--insufficient,
+.pi-pc-conf--not-assessed { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+
+.pi-pc-tabs {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.75rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pi-pc-tab {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.pi-pc-tab.active {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(56, 189, 248, 0.12);
+  color: #e0f2fe;
+}
+
+.pi-pc-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+@media (min-width: 640px) {
+  .pi-pc-snapshot-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.pi-pc-snapshot-tile {
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pi-pc-snapshot-tile small {
+  display: block;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin-bottom: 0.15rem;
+}
+
+.pi-pc-snapshot-tile strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #f8fafc;
+}
+
+.pi-pc-hint,
+.pi-pc-muted {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.45;
+  margin: 0.35rem 0 0;
+}
+
+.pi-pc-source {
+  display: block;
+  font-size: 0.68rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+}
+
+.pi-pc-alert {
+  margin-top: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.pi-pc-alert strong {
+  color: #fde68a;
+  font-size: 0.85rem;
+}
+
+.pi-pc-alert p {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: #fcd34d;
+}
+
+.pi-pc-expand {
+  margin-top: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.pi-pc-expand-head {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: none;
+  color: #e2e8f0;
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pi-pc-expand-body {
+  padding: 0.55rem 0.7rem 0.7rem;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+}
+
+.pi-pc-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.pi-pc-list li {
+  margin-bottom: 0.25rem;
+}
+
+.pi-pc-evidence-block {
+  margin-bottom: 0.75rem;
+}
+
+.pi-pc-evidence-block h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.pi-pc-subhead {
+  margin: 0.75rem 0 0.5rem;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.pi-pc-segment-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pi-pc-segment-yield {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.pi-pc-segment-yield strong {
+  display: block;
+  color: #38bdf8;
+}
+
+.pi-pc-segment-yield small {
+  display: block;
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.pi-pc-yield-banner {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.08);
+  margin-bottom: 0.75rem;
+}
+
+.pi-pc-yield-banner strong {
+  display: block;
+  font-size: 1.25rem;
+  color: #7dd3fc;
+}
+
+.pi-pc-methodology {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.pi-pc-methodology strong {
+  color: #cbd5e1;
+  font-size: 0.8rem;
+}
+
+.pi-pc-sparse {
+  display: block;
+  margin: 0.25rem 0 0;
+  font-size: 0.7rem;
+  color: #fcd34d;
+  line-height: 1.4;
+}
+
+.pi-pc-snapshot-tile--sparse {
+  border-color: rgba(251, 191, 36, 0.28);
+}
+
+.pi-pc-segment-row--sparse {
+  opacity: 0.85;
+}
+
+.pi-pc-summary {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  line-height: 1.55;
+}
+
+.pi-pc-hints-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+@media (min-width: 640px) {
+  .pi-pc-hints-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pi-pc-role-hint {
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pi-pc-role-hint strong {
+  display: block;
+  font-size: 0.78rem;
+  color: #7dd3fc;
+  margin-bottom: 0.15rem;
+}
+
+.pi-pc-role-hint p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.pi-pc-actions {
+  margin-top: 0.65rem;
+}
