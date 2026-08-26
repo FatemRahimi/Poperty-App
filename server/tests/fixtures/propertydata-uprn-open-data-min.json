@@ -1,0 +1,23 @@
+{
+  "status": "success",
+  "uprn": "4510093370",
+  "address": "4 Adanac Drive, Nursling, SO16 0AS",
+  "energyScore": "C",
+  "energyScoreNumerical": 69,
+  "certNum": "1234-5678-9012-3456-7890",
+  "taxBand": "D",
+  "taxRate": 1890.12,
+  "tenure": "Owner-occupied",
+  "internalArea": 850,
+  "propertyType": "House",
+  "constructionAgeBand": "1930-1949",
+  "registeredLeases": [
+    {
+      "lease_id": "HP123456",
+      "term_years": 99,
+      "term_start_date": "1980-01-01",
+      "term_end_date": "2079-01-01",
+      "years_remaining": 53
+    }
+  ]
+}

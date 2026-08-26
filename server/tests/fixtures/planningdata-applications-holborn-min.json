@@ -1,0 +1,45 @@
+{
+  "entities": [
+    {
+      "entry-date": "2025-09-09",
+      "start-date": "",
+      "end-date": "",
+      "entity": 10000021617,
+      "name": "",
+      "dataset": "planning-application",
+      "typology": "geography",
+      "reference": "2015/3212/P",
+      "prefix": "planning-application",
+      "organisation-entity": 90,
+      "geometry": "",
+      "point": "POINT (-0.114869 51.518336)",
+      "quality": "",
+      "description": "Change of use of part of the ground floor to a flexible use as B1 (a) office use or Class A1 for a temporary period of ten years.",
+      "address-text": "Ground Floor Suite High Holborn House 50-51 High Holborn London WC1V 6EP",
+      "decision-date": "2015-10-13",
+      "planning-decision-type": "Granted",
+      "planning-application-status": "Final Decision"
+    },
+    {
+      "entry-date": "2025-09-09",
+      "start-date": "",
+      "end-date": "",
+      "entity": 10000021639,
+      "name": "",
+      "dataset": "planning-application",
+      "typology": "geography",
+      "reference": "2015/7191/P",
+      "prefix": "planning-application",
+      "organisation-entity": 90,
+      "geometry": "",
+      "point": "POINT (-0.118535 51.518908)",
+      "quality": "",
+      "description": "Conversion of ancillary space to provide additional 1 x 2 bedroom flat at lower ground floor level; replacement of external stair core structure and partial single storey extension at rear lower ground floor level with an infill extension at ground, first and second floor levels and associated works",
+      "address-text": "13 Halsey House Red Lion Square London WC1R 4QF",
+      "decision-date": "2016-05-17",
+      "planning-decision-type": "Granted Subject to a Section 106 Legal Agreement",
+      "planning-application-status": "Final Decision"
+    }
+  ],
+  "count": 2
+}
