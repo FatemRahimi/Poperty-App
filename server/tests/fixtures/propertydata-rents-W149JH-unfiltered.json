@@ -1,0 +1,293 @@
+{
+  "status": "success",
+  "postcode": "W14 9JH",
+  "postcode_type": "full",
+  "url": "https://propertydata.co.uk/draw?input=W14+9JH",
+  "data": {
+    "long_let": {
+      "points_analysed": 20,
+      "radius": "0.04",
+      "unit": "gbp_per_week",
+      "average": 520,
+      "70pc_range": [
+        405,
+        635
+      ],
+      "80pc_range": [
+        395,
+        690
+      ],
+      "90pc_range": [
+        346,
+        722
+      ],
+      "100pc_range": [
+        288,
+        865
+      ],
+      "raw_data": [
+        {
+          "address": "Charleville Rd, London W14, W14 9JH",
+          "price": 288,
+          "lat": "51.48891000",
+          "lng": "-0.20774900",
+          "bedrooms": null,
+          "type": "flat",
+          "distance": "0.00",
+          "days_on_market": 18,
+          "sstc": 0,
+          "portal": "zoopla.co.uk",
+          "url": "https://propertydata.co.uk/outbound/zoopla/73932056"
+        },
+        {
+          "address": "Castletown Road, West Kensington, W14 9HF",
+          "price": 405,
+          "lat": "51.48904800",
+          "lng": "-0.20795800",
+          "bedrooms": null,
+          "type": "flat",
+          "distance": "0.01",
+          "days_on_market": 194,
+          "sstc": 0,
+          "portal": "rightmove.co.uk",
+          "url": "https://propertydata.co.uk/outbound/rightmove/172157804"
+        },
+        {
+          "address": "Castletown Road, London W14, W14 9HF",
+          "price": 485,
+          "lat": "51.48904800",
+          "lng": "-0.20795900",
+          "bedrooms": 1,
+          "type": "flat",
+          "distance": "0.01",
+          "days_on_market": 8,
+          "sstc": 0,
+          "portal": "zoopla.co.uk",
+          "url": "https://propertydata.co.uk/outbound/zoopla/74013406"
+        },
+        {
+          "address": "Charleville Road, West Kensington, W14 9JH",
+          "price": 485,
+          "lat": "51.48897100",
+          "lng": "-0.20744900",
+          "bedrooms": 1,
+          "type": "flat",
+          "distance": "0.01",
+          "days_on_market": 6,
+          "sstc": 0,
+          "portal": "rightmove.co.uk",
+          "url": "https://propertydata.co.uk/outbound/rightmove/92205486"
+        },
+        {
+          "address": "Castletown Road, West Kensington, London, W14, W14 9HF",
+          "price": 519,
+          "lat": "51.48904800",
+          "lng": "-0.20795900",
+          "bedrooms": null,
+          "type": "flat",
+          "distance": "0.01",
+          "days_on_market": 15,
+          "sstc": 0,
+          "portal": "rightmove.co.uk",
+          "url": "https://propertydata.co.uk/outbound/rightmove/91861659"
+        },
+        {
+          "address": "38 Charleville Road, W14 9JL",
+          "price": 690,
+          "lat": "51.48887100",
+          "lng": "-0.20786500",
+          "bedrooms": 2,
+          "type": "flat",
+          "distance": "0.01",
+          "days_on_market": 63,
+          "sstc": 1,
+          "portal": "rightmove.co.uk",
+          "url": "https://propertydata.co.uk/outbound/rightmove/90106410"
+        },
+        {
+          "address": "Charleville Road, Barons Court, London W14, W14 9JJ",
+          "price": 550,
+          "lat": "51.48871400",
+          "lng": "-0.20732400",
+          "bedrooms": 1,
+          "type": "flat",
+          "distance": "0.02",
+          "days_on_market": 7,
+          "sstc": 0,
+          "portal": "zoopla.co.uk",
+          "url": "https://propertydata.co.uk/outbound/zoopla/74022387"
+        },
+        {
+          "address": "Charleville Road, LONDON, W14 9JJ, W14 9JJ",
+          "price": 577,
+          "lat": "51.48868900",
+          "lng": "-0.20741200",
+          "bedrooms": 2,
+          "type": "flat",
+          "distance": "0.02",
+          "days_on_market": 78,
+          "sstc": 0,
+          "portal": "rightmove.co.uk",
+          "url": "https://propertydata.co.uk/outbound/rightmove/89510562"
+        },
+        {
+          "address": "Castletown Road, London W14, W14 9HF",
+          "price": 635,
+          "lat": "51.48896900",
+          "lng": "-0.20830800",
+          "bedrooms": 2,
+          "type": "flat",
+          "distance": "0.02",
+          "days_on_market": 21,
+          "sstc": 1,
+          "portal": "zoopla.co.uk",
+          "url": "https://propertydata.co.uk/outbound/zoopla/67661864"
+        },
+        {
+          "address": "Charleville Road, London, W14 9JJ, W14 9JJ",
+          "price": 722,
+          "lat": "51.48868900",
+          "lng": "-0.20741200",
+          "bedrooms": 2,
+          "type": "flat",
+          "distance": "0.02",
+          "days_on_market": 85,
+          "sstc": 0,
+          "portal": "rightmove.co.uk",
+          "url": "https://propertydata.co.uk/outbound/rightmove/89214426"
+        },
+        {
+          "address": "Castletown Road, West Kensington, London, W14, W14 9HF",
+          "price": 346,
+          "lat": "51.48933400",
+          "lng": "-0.20747900",
+          "bedrooms": 1,
+          "type": "flat",
+          "distance": "0.03",
+          "days_on_market": 40,
+          "sstc": 0,
+          "portal": "rightmove.co.uk",
+          "url": "https://propertydata.co.uk/outbound/rightmove/91049088"
+        },
+        {
+          "address": "Fairholme Road, West Kensington, London W14, W14 9JX",
+          "price": 415,
+          "lat": "51.48845000",
+          "lng": "-0.20752000",
+          "bedrooms": null,
+          "type": "flat",
+          "distance": "0.03",
+          "days_on_market": 19,
+          "sstc": 0,
+          "portal": "zoopla.co.uk",
+          "url": "https://propertydata.co.uk/outbound/zoopla/63478481"
+        },
+        {
+          "address": "Fairholme Road, London, W14, W14 9JX",
+          "price": 415,
+          "lat": "51.48852680",
+          "lng": "-0.20732250",
+          "bedrooms": 1,
+          "type": "flat",
+          "distance": "0.03",
+          "days_on_market": 545,
+          "sstc": 0,
+          "portal": "onthemarket.com",
+          "url": "https://propertydata.co.uk/outbound/otm/16584493"
+        },
+        {
+          "address": "Fairholme Road, Barons Court, W14 9JX",
+          "price": 588,
+          "lat": "51.48841000",
+          "lng": "-0.20781200",
+          "bedrooms": 2,
+          "type": "flat",
+          "distance": "0.03",
+          "days_on_market": 33,
+          "sstc": 0,
+          "portal": "rightmove.co.uk",
+          "url": "https://propertydata.co.uk/outbound/rightmove/91292511"
+        },
+        {
+          "address": "Fairholme Road, Barons Court W14, W14 9JX",
+          "price": 612,
+          "lat": "51.48841000",
+          "lng": "-0.20781200",
+          "bedrooms": 2,
+          "type": "flat",
+          "distance": "0.03",
+          "days_on_market": 33,
+          "sstc": 0,
+          "portal": "zoopla.co.uk",
+          "url": "https://propertydata.co.uk/outbound/zoopla/73807294"
+        },
+        {
+          "address": "Fairholme Road, West Kensington, W14 9JX",
+          "price": 865,
+          "lat": "51.48847200",
+          "lng": "-0.20759100",
+          "bedrooms": 2,
+          "type": "flat",
+          "distance": "0.03",
+          "days_on_market": 117,
+          "sstc": 0,
+          "portal": "rightmove.co.uk",
+          "url": "https://propertydata.co.uk/outbound/rightmove/87995520"
+        },
+        {
+          "address": "Fairholme Road, West Kensington, London W14, W14 9JZ",
+          "price": 395,
+          "lat": "51.48835000",
+          "lng": "-0.20759000",
+          "bedrooms": null,
+          "type": "flat",
+          "distance": "0.04",
+          "days_on_market": 51,
+          "sstc": 0,
+          "portal": "zoopla.co.uk",
+          "url": "https://propertydata.co.uk/outbound/zoopla/63033495"
+        },
+        {
+          "address": "Castletown Road, West Kensington, W14 9HF",
+          "price": 488,
+          "lat": "51.48926100",
+          "lng": "-0.20712900",
+          "bedrooms": 1,
+          "type": "flat",
+          "distance": "0.04",
+          "days_on_market": 194,
+          "sstc": 0,
+          "portal": "rightmove.co.uk",
+          "url": "https://propertydata.co.uk/outbound/rightmove/172159136"
+        },
+        {
+          "address": "Charleville Court, Charleville Road, London W14, W14 9JG",
+          "price": 519,
+          "lat": "51.48912300",
+          "lng": "-0.20690300",
+          "bedrooms": 1,
+          "type": "flat",
+          "distance": "0.04",
+          "days_on_market": 36,
+          "sstc": 1,
+          "portal": "zoopla.co.uk",
+          "url": "https://propertydata.co.uk/outbound/zoopla/73771123"
+        },
+        {
+          "address": "Charleville Road, Barons Court, London W14, W14 9JR",
+          "price": 577,
+          "lat": "51.48864600",
+          "lng": "-0.20860200",
+          "bedrooms": 1,
+          "type": "flat",
+          "distance": "0.04",
+          "days_on_market": 35,
+          "sstc": 0,
+          "portal": "zoopla.co.uk",
+          "url": "https://propertydata.co.uk/outbound/zoopla/73781705"
+        }
+      ]
+    }
+  },
+  "process_time": "4.00"
+}

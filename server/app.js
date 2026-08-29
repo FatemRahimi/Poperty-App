@@ -38,6 +38,14 @@ const app = express();
   if (!process.env.SESSION_SECRET && !process.env.JWT_SECRET) {
     console.warn('⚠️  Neither SESSION_SECRET nor JWT_SECRET is set. Sessions/JWT may be insecure.');
   }
+
+  const { isPropertyDataConfigured, getPropertyDataSetupStatus } = require('./config/propertyIntelligence.config');
+  if (!isPropertyDataConfigured()) {
+    const setup = getPropertyDataSetupStatus();
+    console.warn(`⚠️  PropertyData UK lookup is OFF (${setup.reason}). ${setup.message}`);
+  } else {
+    console.log('✅ PropertyData UK property lookup is enabled');
+  }
 })();
 
 // CORS configuration

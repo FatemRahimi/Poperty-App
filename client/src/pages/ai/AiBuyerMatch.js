@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaComments, FaPaperPlane } from 'react-icons/fa';
-import AiToolNav from '../../components/ai/AiToolNav';
+import AiWorkspaceLayout from '../../components/ai/AiWorkspaceLayout';
 import { generateBuyerMatch } from '../../services/aiService';
-import '../../styles/ai-services.css';
+import '../../components/ai/AiWorkspaceLayout.css';
 import './AiBuyerMatch.css';
 
 const initialForm = {
@@ -77,112 +77,80 @@ const AiBuyerMatch = () => {
   };
 
   return (
-    <div className="ai-page">
-      <div className="ai-container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
-        <AiToolNav />
-        <p className="ai-eyebrow"><FaComments /> Buyer Match Assistant</p>
-        <h1 className="ai-section-title">Conversational property search</h1>
-        <p className="ai-section-sub">
-          Share how you want to live. AI ranks listings from the database against budget,
-          location, lifestyle, transport and schools.
-        </p>
+    <AiWorkspaceLayout
+      title="Buyer Match Assistant"
+      subtitle="Conversational search ranked against live listings — budget, location, lifestyle and schools."
+    >
+      {error && <div className="ai-alert ai-alert-error">{error}</div>}
+      {savedId && (
+        <div className="ai-alert ai-alert-info">
+          Match session saved. <Link to={`/ai-services/history/${savedId}`}>View history</Link>
+        </div>
+      )}
 
-        {error && <div className="ai-alert ai-alert-error">{error}</div>}
-        {savedId && (
-          <div className="ai-alert ai-alert-info">
-            Match session saved. <Link to={`/ai-services/history/${savedId}`}>View history</Link>
-          </div>
-        )}
-
-        <div className="ai-grid-2">
-          <div className="ai-chat-panel ai-card">
-            <div className="ai-chat-log">
-              {messages.map((m, idx) => (
-                <div key={`${m.role}-${idx}`} className={`ai-chat-bubble ${m.role}`}>
-                  {m.text}
-                </div>
-              ))}
-              {loading && (
-                <div className="ai-chat-bubble assistant">
-                  <span className="ai-spinner" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 8 }} />
-                  Matching properties…
-                </div>
-              )}
-            </div>
-
-            <form className="ai-chat-form" onSubmit={onSubmit}>
-              <div className="ai-form-grid">
-                <div className="ai-field">
-                  <label htmlFor="budgetMax">Max budget (£)</label>
-                  <input id="budgetMax" name="budgetMax" type="number" value={form.budgetMax} onChange={onChange} placeholder="450000" />
-                </div>
-                <div className="ai-field">
-                  <label htmlFor="budgetMin">Min budget (£)</label>
-                  <input id="budgetMin" name="budgetMin" type="number" value={form.budgetMin} onChange={onChange} placeholder="Optional" />
-                </div>
-                <div className="ai-field full">
-                  <label htmlFor="location">Location</label>
-                  <input id="location" name="location" value={form.location} onChange={onChange} placeholder="City, town or postcode area" required />
-                </div>
-                <div className="ai-field">
-                  <label htmlFor="bedrooms">Min bedrooms</label>
-                  <input id="bedrooms" name="bedrooms" type="number" min="0" value={form.bedrooms} onChange={onChange} />
-                </div>
-                <div className="ai-field">
-                  <label htmlFor="transport">Transport needs</label>
-                  <input id="transport" name="transport" value={form.transport} onChange={onChange} placeholder="Near train / parking" />
-                </div>
-                <div className="ai-field full">
-                  <label htmlFor="lifestyle">Lifestyle requirements</label>
-                  <input id="lifestyle" name="lifestyle" value={form.lifestyle} onChange={onChange} placeholder="Family home, quiet area, garden…" />
-                </div>
-                <div className="ai-field full">
-                  <label htmlFor="schools">School preferences</label>
-                  <input id="schools" name="schools" value={form.schools} onChange={onChange} placeholder="Catchment / Ofsted preference" />
-                </div>
-              </div>
-              <button type="submit" className="ai-btn ai-btn-primary" style={{ marginTop: '1rem' }} disabled={loading}>
-                <FaPaperPlane /> {loading ? 'Searching…' : 'Find matches'}
-              </button>
-            </form>
-          </div>
-
-          <div className="ai-match-results">
-            <h2 style={{ marginTop: 0 }}>Recommended properties</h2>
-            {matches.length === 0 && (
-              <div className="ai-card">
-                <p style={{ margin: 0, color: 'var(--ai-slate)' }}>
-                  Matched listings from the database will appear here with a score and reasons.
-                </p>
-              </div>
-            )}
-            {matches.map((rec) => (
-              <article key={rec.id || rec.title} className="ai-card ai-match-card">
-                <div className="ai-match-top">
-                  <span className="ai-pill">{rec.matchScore}% match</span>
-                  {rec.price != null && (
-                    <strong>£{Number(rec.price).toLocaleString()}</strong>
-                  )}
-                </div>
-                <h3>{rec.title}</h3>
-                <p className="addr">{rec.address}</p>
-                <p>{rec.summary}</p>
-                {(rec.matchReasons || []).length > 0 && (
-                  <ul>
-                    {rec.matchReasons.map((r) => <li key={r}>{r}</li>)}
-                  </ul>
-                )}
-                {rec.slug && (
-                  <Link to={`/property/${rec.slug}`} className="ai-btn ai-btn-ghost" style={{ marginTop: '0.75rem' }}>
-                    View property
-                  </Link>
-                )}
-              </article>
+      <div className="ai-bm-grid">
+        <div className="ai-panel ai-bm-chat">
+          <div className="ai-bm-log">
+            {messages.map((m, idx) => (
+              <div key={`${m.role}-${idx}`} className={`ai-bm-bubble ${m.role}`}>{m.text}</div>
             ))}
+            {loading && <div className="ai-bm-bubble assistant">Matching properties…</div>}
           </div>
+
+          <form onSubmit={onSubmit}>
+            <div className="ai-form-grid">
+              <div className="ai-field">
+                <label htmlFor="budgetMax">Max budget (£)</label>
+                <input id="budgetMax" name="budgetMax" type="number" value={form.budgetMax} onChange={onChange} placeholder="450000" />
+              </div>
+              <div className="ai-field">
+                <label htmlFor="location">Location</label>
+                <input id="location" name="location" value={form.location} onChange={onChange} placeholder="City or postcode area" required />
+              </div>
+              <div className="ai-field full">
+                <label htmlFor="lifestyle">Lifestyle</label>
+                <input id="lifestyle" name="lifestyle" value={form.lifestyle} onChange={onChange} placeholder="Family home, garden, quiet area…" />
+              </div>
+            </div>
+            <button type="submit" className="ai-btn ai-btn-primary" style={{ marginTop: '1rem' }} disabled={loading}>
+              <FaPaperPlane /> {loading ? 'Searching…' : 'Find matches'}
+            </button>
+          </form>
+        </div>
+
+        <div>
+          <h2 className="ai-bm-results-title">Recommended properties</h2>
+          {matches.length === 0 && (
+            <div className="ai-panel">
+              <p className="ai-insight-meta" style={{ margin: 0 }}>Matched listings appear here with score and reasons.</p>
+            </div>
+          )}
+          {matches.map((rec) => (
+            <article key={rec.id || rec.title} className="ai-panel ai-bm-card">
+              <div className="ai-bm-card-top">
+                <span className="ai-bm-score">
+                  {Number.isFinite(rec.matchScore) ? `${rec.matchScore}% match` : 'Match not assessed'}
+                </span>
+                {rec.price != null && <strong>£{Number(rec.price).toLocaleString()}</strong>}
+              </div>
+              <h3>{rec.title}</h3>
+              <p className="ai-insight-meta">{rec.address}</p>
+              <p>{rec.summary}</p>
+              {(rec.matchReasons || []).length > 0 && (
+                <ul className="ai-insight-meta" style={{ margin: '0.35rem 0', paddingLeft: '1.1rem' }}>
+                  {rec.matchReasons.map((r) => <li key={r}>{r}</li>)}
+                </ul>
+              )}
+              {rec.slug && (
+                <Link to={`/property/${rec.slug}`} className="ai-btn ai-btn-ghost" style={{ marginTop: '0.5rem' }}>
+                  View property
+                </Link>
+              )}
+            </article>
+          ))}
         </div>
       </div>
-    </div>
+    </AiWorkspaceLayout>
   );
 };
 

@@ -1,16 +1,20 @@
 import io from 'socket.io-client';
 
-// Create socket connection
-const socket = io('http://localhost:5050', {
+const resolveSocketUrl = () => {
+  if (process.env.REACT_APP_BACKEND_URL) return process.env.REACT_APP_BACKEND_URL;
+  return 'http://localhost:5050';
+};
+
+const socket = io(resolveSocketUrl(), {
+  withCredentials: true,
   transports: ['websocket', 'polling'],
   autoConnect: true,
   reconnection: true,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
-  reconnectionAttempts: 5
+  reconnectionAttempts: 5,
 });
 
-// Socket event handlers
 socket.on('connect', () => {
   console.log('🟢 Socket.IO connected:', socket.id);
 });
@@ -31,4 +35,4 @@ socket.on('reconnect_error', (error) => {
   console.error('❌ Socket.IO reconnection error:', error);
 });
 
-export { socket }; 
+export { socket };

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaPenFancy, FaMagic } from 'react-icons/fa';
-import AiToolNav from '../../components/ai/AiToolNav';
+import AiWorkspaceLayout from '../../components/ai/AiWorkspaceLayout';
 import CopyBlock from '../../components/ai/CopyBlock';
 import { generateListing } from '../../services/aiService';
-import '../../styles/ai-services.css';
+import '../../components/ai/AiWorkspaceLayout.css';
 
 const initialForm = {
   address: '',
@@ -60,20 +60,14 @@ const AiListingWriter = () => {
   };
 
   return (
-    <div className="ai-page">
-      <div className="ai-container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
-        <AiToolNav />
-        <p className="ai-eyebrow"><FaPenFancy /> Listing Writer</p>
-        <h1 className="ai-section-title">AI Property Listing Writer</h1>
-        <p className="ai-section-sub">
-          Enter property details and generate a professional description, SEO title,
-          social advert, email copy and key selling points.
-        </p>
-
+    <AiWorkspaceLayout
+      title="Listing Writer"
+      subtitle="Generate professional descriptions, SEO titles, social adverts, email copy and key selling points."
+    >
         {error && <div className="ai-alert ai-alert-error">{error}</div>}
 
         <div className="ai-grid-2">
-          <form className="ai-card" onSubmit={onSubmit}>
+          <form className="ai-panel ai-form-dark" onSubmit={onSubmit}>
             <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Property information</h2>
             <div className="ai-form-grid">
               <div className="ai-field full">
@@ -129,7 +123,7 @@ const AiListingWriter = () => {
 
           <div>
             {!result && !loading && (
-              <div className="ai-card">
+              <div className="ai-panel">
                 <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Results</h2>
                 <p style={{ color: 'var(--ai-slate)', margin: 0 }}>
                   Your SEO title, description, social advert, email and selling points will appear here.
@@ -144,7 +138,7 @@ const AiListingWriter = () => {
                   <div className="ai-alert ai-alert-info">
                     Saved to history. <Link to={`/ai-services/history/${savedId}`}>Open saved result</Link>
                     {' · '}
-                    <Link to="/ai-services/dashboard">Dashboard</Link>
+                    <Link to="/ai-services">Intelligence Hub</Link>
                   </div>
                 )}
                 <CopyBlock title="SEO title" text={result.seoTitle}>{result.seoTitle}</CopyBlock>
@@ -160,8 +154,7 @@ const AiListingWriter = () => {
             )}
           </div>
         </div>
-      </div>
-    </div>
+    </AiWorkspaceLayout>
   );
 };
 

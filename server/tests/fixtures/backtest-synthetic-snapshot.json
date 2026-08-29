@@ -1,0 +1,42 @@
+{
+  "synthetic": true,
+  "note": "Synthetic fixture for backtesting unit tests only. Not production evidence.",
+  "engineVersion": "property-intelligence-v2",
+  "evidenceAsOf": "2025-01-15T12:00:00.000Z",
+  "identity": { "listingId": 10, "subjectId": null, "uprn": "1000123" },
+  "property": {
+    "id": 10,
+    "listingId": 10,
+    "uprn": "1000123",
+    "price": 400000,
+    "monthly_rent": 1500,
+    "property_type": "Terraced",
+    "zip_code": "LS1 1AA",
+    "bedrooms": 2,
+    "epc_rating": "C",
+    "category": "sale"
+  },
+  "marketIntelligence": {
+    "sale": {
+      "success": true,
+      "centralEstimate": 390000,
+      "lowerEstimate": 370000,
+      "upperEstimate": 410000,
+      "boundsAvailable": true,
+      "confidence": "medium",
+      "lastSold": { "price": null, "date": null }
+    },
+    "rent": {
+      "success": true,
+      "recommendedRent": 1400,
+      "marketRange": { "low": 1300, "high": 1600 },
+      "currentRent": 1500
+    },
+    "areaMarketDemand": { "available": true, "band": "balanced", "propertyLevel": false }
+  },
+  "confidence": {
+    "level": "Medium",
+    "score": 62,
+    "assessment": { "model": { "baseVersion": "confidence-1.1.0" } }
+  }
+}

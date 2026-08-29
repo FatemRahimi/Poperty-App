@@ -102,6 +102,10 @@ async function assembleReport({ property = listing(), floodStub, skipFlood = fal
       skipPostcodeMarket: true,
       skipFlood,
       skipPlanning: true,
+      skipSchools: true,
+      skipListedBuilding: true,
+      skipConservationArea: true,
+      skipArticle4: true,
       asOf: ASOF,
       deps: {
         getFloodEvidence: floodStub,

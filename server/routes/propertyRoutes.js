@@ -13,6 +13,7 @@ const {
   deleteProperty,
   submitSaleProperty,
   updateSaleProperty,
+  recordPropertyOutcome,
 } = require('../controllers/propertyController');
 const { 
   parseSearchQuery, 
@@ -145,6 +146,7 @@ router.put('/sale/update/:id', authenticateJWT, upload.fields([
   { name: 'epcDocument', maxCount: 1 }
 ]), handleMulterError, updateSaleProperty);
 router.get('/my-properties', authenticateJWT, getUserProperties);
+router.post('/:id/outcome', authenticateJWT, recordPropertyOutcome);
 router.delete('/:id', authenticateJWT, deleteProperty);
 
 // Admin routes (protected - admin only)

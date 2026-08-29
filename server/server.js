@@ -2,6 +2,7 @@ require("dotenv").config();
 const http = require('http');
 const { Server } = require('socket.io');
 const app = require('./app');
+const { ensureIntelligenceSchema } = require('./db/ensureIntelligenceSchema');
 
 const PORT = process.env.PORT || 5050;
 
@@ -63,7 +64,15 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🔌 Socket.IO server ready for real-time updates`);
-});
+(async () => {
+  try {
+    await ensureIntelligenceSchema();
+  } catch (err) {
+    console.error('⚠️ Intelligence schema check failed:', err.message);
+  }
+
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🔌 Socket.IO server ready for real-time updates`);
+  });
+})();

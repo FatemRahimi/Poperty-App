@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { authenticateAI, requireCredits } = require('../middleware/aiAuth');
+const { requireIntelligenceAnalyseSlot } = require('../services/ai/propertyIntelligenceAnalyseGuard');
 const {
   getPlans,
   getSubscription,
@@ -14,6 +15,26 @@ const {
   createBuyerMatch,
   getDashboard,
 } = require('../controllers/aiController');
+const {
+  getIntelligenceOverview,
+  searchProperties,
+  getPropertyPreview,
+  analysePropertyIntelligence,
+  getPropertyAnalysisHistory,
+  getPropertyAnalysisById,
+  analyseInvestment,
+  analyseRentEndpoint,
+  getUserPropertiesList,
+  analysePortfolioEndpoint,
+  lookupIntelligence,
+  resolveIntelligenceSubject,
+  getRecentSubjectLookupsEndpoint,
+  getSubjectPreviewEndpoint,
+  getSubjectAnalysisHistory,
+  analyseSubjectIntelligence,
+  unlinkSubjectListing,
+  compareIntelligenceWhatIf,
+} = require('../controllers/intelligenceController');
 
 // Photo uploads for valuation (stored in memory; filenames passed through to AI context)
 const upload = multer({
@@ -63,5 +84,37 @@ router.post(
   createValuation
 );
 router.post('/buyer-match', authenticateAI, requireCredits, createBuyerMatch);
+
+// Property Intelligence
+router.get('/intelligence/overview', authenticateAI, getIntelligenceOverview);
+router.get('/intelligence/lookup', authenticateAI, lookupIntelligence);
+router.get('/intelligence/subjects/recent', authenticateAI, getRecentSubjectLookupsEndpoint);
+router.post('/intelligence/subjects/resolve', authenticateAI, requireCredits, resolveIntelligenceSubject);
+router.get('/intelligence/subjects/:subjectId/preview', authenticateAI, getSubjectPreviewEndpoint);
+router.get('/intelligence/subjects/:subjectId/history', authenticateAI, getSubjectAnalysisHistory);
+router.post(
+  '/intelligence/subjects/:subjectId/analyse',
+  authenticateAI,
+  requireCredits,
+  requireIntelligenceAnalyseSlot,
+  analyseSubjectIntelligence
+);
+router.post('/intelligence/subjects/:subjectId/unlink', authenticateAI, unlinkSubjectListing);
+router.get('/intelligence/properties', authenticateAI, getUserPropertiesList);
+router.get('/intelligence/properties/search', authenticateAI, searchProperties);
+router.get('/intelligence/properties/:propertyId/preview', authenticateAI, getPropertyPreview);
+router.get('/intelligence/properties/:propertyId/history', authenticateAI, getPropertyAnalysisHistory);
+router.get('/intelligence/analysis/:id', authenticateAI, getPropertyAnalysisById);
+router.post(
+  '/intelligence/analyse/:propertyId',
+  authenticateAI,
+  requireCredits,
+  requireIntelligenceAnalyseSlot,
+  analysePropertyIntelligence
+);
+router.post('/intelligence/what-if', authenticateAI, compareIntelligenceWhatIf);
+router.post('/investment/analyse', authenticateAI, requireCredits, analyseInvestment);
+router.post('/rent/analyse', authenticateAI, requireCredits, analyseRentEndpoint);
+router.post('/portfolio/analyse', authenticateAI, requireCredits, analysePortfolioEndpoint);
 
 module.exports = router;

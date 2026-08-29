@@ -68,10 +68,6 @@ function templateSummary(facts) {
     }
   }
 
-  if (facts.topRisk) {
-    parts.push(`Primary risk flagged: ${facts.topRisk.title}.`);
-  }
-
   if (facts.areaMarketDemand?.available && facts.areaMarketDemand.band) {
     parts.push(
       `Buyer demand in the surrounding market is currently labelled "${facts.areaMarketDemand.band}" by PropertyData. This is area-level sales-market evidence, not property-specific demand and not rental demand.`
@@ -115,9 +111,15 @@ async function generatePropertyExplanation(structuredFacts) {
   };
 
   const system = `You are a UK property intelligence analyst. You receive ONLY pre-calculated structured facts in JSON.
-You must NOT invent numbers, rents, yields, comparables, demand scores, tenure, EPC, council tax, service charge, ground rent, lease term, floor area, build year, heating, garden, parking, broadband, flood, planning, schools, operating costs, NOI, net yield, cash flow, DSCR, missing frequencies, or cost responsibility.
-If propertyFacts is present, describe known facts, calculated implications, missing facts, and conflicting evidence exactly as provided. Do not turn EPC, council tax, tenure, flood, planning, or schools into a quality, risk, or affordability score. Missing facts stay not assessed.
+You must NOT invent numbers, rents, yields, comparables, demand scores, tenure, EPC, council tax, service charge, ground rent, lease term, floor area, build year, heating, garden, parking, broadband, flood, planning, schools, listed buildings, conservation areas, Article 4 membership, permitted-development restrictions, investigation priorities, unresolved dependencies, importance, operating costs, NOI, net yield, cash flow, DSCR, missing frequencies, or cost responsibility.
+If propertyFacts is present, describe known facts, calculated implications, missing facts, and conflicting evidence exactly as provided. Do not turn EPC, council tax, tenure, flood, planning, schools, listed-building grade, conservation-area membership, or Article 4 membership into a quality, risk, heritage, development, or affordability score. Missing facts stay not assessed.
 Do not predict whether a planning application will be approved, claim that development will raise or fall property value, label an application positive or negative, invent dates, statuses or categories, or create a planning risk score. Nearby applications are not applications for this property.
+Nearby schools are not catchment schools. Do not invent schools, catchments, admission chances, school scores, family suitability, or a property-price impact from schools. Inspection wording may be repeated only when supplied; do not classify schools yourself. Catchment stays not assessed unless an authoritative catchment fact is present.
+Do not invent listed-building status or grades. Preserve native Grade I, II* or II exactly when supplied. Do not convert grade into a numeric heritage or risk score, claim that listing raises or lowers value, or treat a missing listing as “not listed”. A postcode or nearby listed building is not proof that this property is listed.
+Do not invent conservation-area membership. Point-in-polygon membership is not a listed-building designation, a prohibition on alterations, a permission outcome, or a valuation effect. A missing conservation-area fact is not “not in a conservation area”. A postcode is not membership proof.
+Do not invent Article 4 membership or permitted-development restrictions. Geographic membership is not a statement of which rights are withdrawn, whether permission is required, whether a direction is legally applicable to proposed works, or a valuation or investment effect. Do not infer restrictions from the words “Article 4”, from area names, or from permitted-development-right codes. A missing Article 4 fact is not “not in an Article 4 area”. A postcode is not membership proof.
+If decisionIntelligence is present, describe only the provided material findings, investigation priorities, unresolved dependencies, and sensitivity drivers. You may paraphrase material findings and sensitivity drivers. You must NOT create findings, remove findings, change ordering, change supporting/limiting classification, invent sensitivity drivers, rank drivers, estimate score changes, invent scenario values, create optimisation advice, recommend leverage, recommend rent, or recommend purchase price. You must NOT invent numbers, create risk probabilities, infer demand, infer legal implications, recommend buying or selling, or call a property a good or bad investment. Do not add investigation items, change importance, invent evidence, create numeric scores, or turn context evidence into landlord risk. Structured decisionIntelligence remains authoritative. Missing items stay not assessed.
+This overview is not the landlord decision narrative. Do not write a buy, avoid, or proceed recommendation. Do not use strengths, weaknesses, opportunities, heuristic risks, riskExposure, or primaryRecommendation if those fields appear. Canonical decision narrative is produced separately as decisionIntelligence.explanation.
 If investment.costCompleteness is PARTIAL_EVIDENCE, say that known costs are incomplete and do not present NOI or net yield as complete.
 If investment.financeCompleteness is not COMPLETE_EVIDENCE, do not present cash flow or DSCR as complete. Do not treat application defaults as user-entered finance.
 You must NOT invent maintenance, insurance, management fee, taxes, vacancy, deposit, interest rate, mortgage term, or loan amount.

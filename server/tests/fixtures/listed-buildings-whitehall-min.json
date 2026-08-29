@@ -1,0 +1,73 @@
+{
+  "entities": [
+    {
+      "entry-date": "2026-08-26",
+      "start-date": "1970-11-05",
+      "end-date": "",
+      "entity": 31523706,
+      "name": "THE ADMIRALTY AND THE ADMIRALTY SCREEN",
+      "dataset": "listed-building",
+      "typology": "geography",
+      "reference": "1066099",
+      "prefix": "listed-building",
+      "organisation-entity": 16,
+      "geometry": "",
+      "point": "POINT (-0.127707 51.505799)",
+      "quality": "some",
+      "documentation-url": "https://historicengland.org.uk/listing/the-list/list-entry/1066099",
+      "listed-building-grade": "I"
+    },
+    {
+      "entry-date": "2026-08-26",
+      "start-date": "1970-11-05",
+      "end-date": "",
+      "entity": 31523690,
+      "name": "ADMIRALTY HOUSE",
+      "dataset": "listed-building",
+      "typology": "geography",
+      "reference": "1066081",
+      "prefix": "listed-building",
+      "organisation-entity": 16,
+      "geometry": "",
+      "point": "POINT (-0.127592 51.505799)",
+      "quality": "some",
+      "documentation-url": "https://historicengland.org.uk/listing/the-list/list-entry/1066081",
+      "listed-building-grade": "II*"
+    },
+    {
+      "entry-date": "2026-08-26",
+      "start-date": "1975-08-21",
+      "end-date": "",
+      "entity": 31523711,
+      "name": "25, WHITEHALL SW1",
+      "dataset": "listed-building",
+      "typology": "geography",
+      "reference": "1066104",
+      "prefix": "listed-building",
+      "organisation-entity": 16,
+      "geometry": "",
+      "point": "POINT (-0.126794 51.50663)",
+      "quality": "some",
+      "documentation-url": "https://historicengland.org.uk/listing/the-list/list-entry/1066104",
+      "listed-building-grade": "II"
+    },
+    {
+      "entry-date": "2026-08-26",
+      "start-date": "1970-01-01",
+      "end-date": "1999-01-01",
+      "entity": 39999999,
+      "name": "FORMER LISTING AT THIS SITE",
+      "dataset": "listed-building",
+      "typology": "geography",
+      "reference": "9999999",
+      "prefix": "listed-building",
+      "organisation-entity": 16,
+      "geometry": "",
+      "point": "POINT (-0.127707 51.505799)",
+      "quality": "some",
+      "documentation-url": "https://historicengland.org.uk/listing/the-list/list-entry/9999999",
+      "listed-building-grade": "II"
+    }
+  ],
+  "count": 4
+}

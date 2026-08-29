@@ -97,6 +97,7 @@ test('verified /uprn facts parse into the canonical fact schema', () => {
   assert.strictEqual(facts.facts.flood.unavailableReason, 'not_attached');
   assert.strictEqual(facts.facts.planning.available, false);
   assert.strictEqual(facts.facts.schools.available, false);
+  assert.strictEqual(facts.facts.schools.unavailableReason, 'not_attached');
   assert.strictEqual(facts.identity.uprn.role, 'property_identity_candidate');
   assert.strictEqual(facts.identity.listingId.role, 'listing_identity');
   assert.strictEqual(facts.scoringActivated, false);
@@ -241,6 +242,21 @@ test('area evidence is not treated as a property fact', () => {
   assert.notStrictEqual(facts.facts.askingRent.source, 'PropertyData');
 });
 
+test('missing listing rent is notAssessed and is not coerced to zero', () => {
+  const { facts } = factsFor({ id: 21, price: 200000 });
+  assert.strictEqual(facts.facts.askingRent.available, false);
+  assert.strictEqual(facts.facts.askingRent.value, null);
+  assert.strictEqual(facts.facts.askingRent.state, 'notAssessed');
+  assert.ok(/must not be treated as 0/.test(facts.facts.askingRent.missingNote));
+});
+
+test('explicit zero listing rent remains an observed zero', () => {
+  const { facts } = factsFor({ id: 22, monthly_rent: 0 });
+  assert.strictEqual(facts.facts.askingRent.available, true);
+  assert.strictEqual(facts.facts.askingRent.value, 0);
+  assert.strictEqual(facts.facts.askingRent.state, 'observed');
+});
+
 test('user input is labelled user supplied; derived lease remaining identifies inputs', () => {
   const { facts } = factsFor({ id: 11, epc_rating: 'C', square_feet: 850 });
   assert.strictEqual(facts.facts.epcRating.trust, TRUST.userSupplied);
@@ -322,6 +338,10 @@ asyncTest('canonical report exposes propertyFacts without a second engine', asyn
       skipExplanation: true,
       skipPostcodeMarket: true,
       skipPlanning: true,
+      skipSchools: true,
+      skipListedBuilding: true,
+      skipConservationArea: true,
+      skipArticle4: true,
       asOf: '2026-08-25T12:00:00.000Z',
       deps: {
         analyseRent: async () => ({ success: false, comparables: [] }),

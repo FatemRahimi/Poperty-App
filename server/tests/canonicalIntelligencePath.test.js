@@ -12,6 +12,7 @@ const {
   LANDLORD_WEIGHTS,
 } = require('../config/personalDecision.config');
 const { assemblePropertyIntelligenceReport } = require('../services/ai/propertyIntelligenceEngine');
+const { getMonthlyRent, toListingNumber } = require('../services/ai/propertyDataAggregator');
 const {
   projectPropertyOverview,
   extractCanonicalCoreFacts,
@@ -115,6 +116,10 @@ async function runCanonical(property, extra = {}) {
       skipExplanation: true,
       skipPostcodeMarket: extra.skipPostcodeMarket !== false,
       skipPlanning: extra.skipPlanning !== false,
+      skipSchools: extra.skipSchools !== false,
+      skipListedBuilding: extra.skipListedBuilding !== false,
+      skipConservationArea: extra.skipConservationArea !== false,
+      skipArticle4: extra.skipArticle4 !== false,
       asOf: extra.asOf || ASOF,
       providerCallLog,
       deps: wired.deps,
@@ -180,6 +185,8 @@ asyncTest('subject preview endpoint no longer fails due to a missing import', as
       accessContext: { subjectId, uprn: '1000123' },
     };
   };
+  const originalAccess = lookup.assertSubjectPreviewAccess;
+  lookup.assertSubjectPreviewAccess = async () => ({ ok: true });
   try {
     delete require.cache[require.resolve('../controllers/intelligenceController')];
     const ctrl = require('../controllers/intelligenceController');
@@ -195,7 +202,10 @@ asyncTest('subject preview endpoint no longer fails due to a missing import', as
         return this;
       },
     };
-    await ctrl.getSubjectPreviewEndpoint({ params: { subjectId: '42' } }, res);
+    await ctrl.getSubjectPreviewEndpoint(
+      { params: { subjectId: '42' }, user: { id: 7 } },
+      res
+    );
     assert.notStrictEqual(calledWith, null, 'imported getSubjectPreview must be invoked');
     assert.strictEqual(calledWith, 42);
     assert.strictEqual(status, 200);
@@ -204,6 +214,7 @@ asyncTest('subject preview endpoint no longer fails due to a missing import', as
     assert.notStrictEqual(body.message, 'Failed to load property preview');
   } finally {
     lookup.getSubjectPreview = original;
+    lookup.assertSubjectPreviewAccess = originalAccess;
     delete require.cache[require.resolve('../controllers/intelligenceController')];
   }
 });
@@ -553,6 +564,60 @@ asyncTest('identity boundary keeps listing id distinct from UPRN/subject', async
   assert.strictEqual(report.identity.listingIdIsNotUprn, true);
   assert.strictEqual(report.property.listingId, 7);
   assert.notStrictEqual(String(report.identity.listingId), String(report.identity.uprn));
+});
+
+test('getMonthlyRent does not coerce missing listing rent to zero', () => {
+  assert.strictEqual(toListingNumber(null), null);
+  assert.strictEqual(toListingNumber(''), null);
+  assert.strictEqual(toListingNumber(undefined), null);
+  assert.strictEqual(toListingNumber(0), 0);
+  assert.strictEqual(getMonthlyRent({ monthly_rent: null, weekly_rent: null }), null);
+  assert.strictEqual(getMonthlyRent({ monthly_rent: '', weekly_rent: '' }), null);
+  assert.strictEqual(getMonthlyRent({ monthly_rent: 0 }), 0);
+  assert.strictEqual(getMonthlyRent({ monthly_rent: '0.00' }), 0);
+  assert.strictEqual(getMonthlyRent({ monthly_rent: 1500 }), 1500);
+  assert.strictEqual(getMonthlyRent({ weekly_rent: 300 }), 300 * 4.33);
+});
+
+asyncTest('missing listing rent stays missing and is not replaced by market rent', async () => {
+  const { report } = await runCanonical(
+    { ...LISTING, monthly_rent: null, weekly_rent: null },
+    {
+      depOverrides: {
+        analyseRent: async () => ({
+          success: true,
+          recommendedRent: 1100,
+          estimatedRent: 1100,
+          marketRange: { low: 1000, high: 1200 },
+          comparables: [{ id: 1, similarity: 0.8 }],
+        }),
+      },
+    }
+  );
+  assert.strictEqual(report.property.monthly_rent, null);
+  assert.strictEqual(report.snapshot.rent, null);
+  assert.strictEqual(report.financeRequest.expectedRent.listingMonthlyRent, null);
+  assert.strictEqual(report.propertyFacts.facts.askingRent.available, false);
+  assert.strictEqual(report.propertyFacts.facts.askingRent.value, null);
+  assert.strictEqual(report.propertyFacts.facts.askingRent.state, 'notAssessed');
+  assert.notStrictEqual(report.snapshot.rent, 1100);
+  assert.notStrictEqual(report.financeRequest.expectedRent.marketRentEvidence, null);
+});
+
+asyncTest('explicit zero listing rent is preserved as zero', async () => {
+  const { report } = await runCanonical({ ...LISTING, monthly_rent: 0, weekly_rent: null });
+  assert.strictEqual(report.property.monthly_rent, 0);
+  assert.strictEqual(report.snapshot.rent, 0);
+  assert.strictEqual(report.financeRequest.expectedRent.listingMonthlyRent, 0);
+  assert.strictEqual(report.propertyFacts.facts.askingRent.available, true);
+  assert.strictEqual(report.propertyFacts.facts.askingRent.value, 0);
+});
+
+asyncTest('missing asking price is not stored as zero', async () => {
+  const { report } = await runCanonical({ ...LISTING, price: null, category: 'rent', monthly_rent: 1200 });
+  assert.strictEqual(report.property.price, null);
+  assert.strictEqual(report.financeRequest.purchasePrice.listingAskingPrice, null);
+  assert.notStrictEqual(report.property.price, 0);
 });
 
 asyncTest('canonical PI output remains compatible with personal decision engines', async () => {

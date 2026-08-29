@@ -1,11 +1,22 @@
 const AiSubscription = require('../models/AiSubscription');
 const AiRequest = require('../models/AiRequest');
+const { getRecentSubjectLookups } = require('../services/ai/externalPropertyLookupService');
 const pool = require('../models/db');
 const {
   generateListingContent,
-  generateValuationReport,
-  generateBuyerMatches,
+  polishBuyerMatchMessage,
 } = require('../services/openaiService');
+const { generateDeterministicValuation } = require('../services/ai/standaloneValuationService');
+const { rankBuyerMatches } = require('../services/ai/buyerMatchEngine');
+const {
+  logIntelligenceFailure,
+  publicFailureBody,
+  LISTING_FAILED_PUBLIC,
+  VALUATION_FAILED_PUBLIC,
+  BUYER_MATCH_FAILED_PUBLIC,
+  UPGRADE_FAILED_PUBLIC,
+  PLANS_FAILED_PUBLIC,
+} = require('../services/ai/propertyIntelligenceProduction');
 
 function titleFromInput(type, input = {}) {
   if (type === 'listing_writer') {
@@ -28,10 +39,9 @@ async function fetchCandidateProperties(prefs = {}) {
     params.push(`%${prefs.location}%`);
     const i = params.length;
     filters.push(`(
-      COALESCE(p.address,'') ILIKE $${i}
+      COALESCE(p.address_line1,'') ILIKE $${i}
       OR COALESCE(p.city,'') ILIKE $${i}
-      OR COALESCE(p.town,'') ILIKE $${i}
-      OR COALESCE(p.postcode,'') ILIKE $${i}
+      OR COALESCE(p.zip_code,'') ILIKE $${i}
     )`);
   }
 
@@ -45,10 +55,10 @@ async function fetchCandidateProperties(prefs = {}) {
     filters.push(`(p.bedrooms IS NULL OR p.bedrooms >= $${params.length})`);
   }
 
-  const sql = `
+    const sql = `
     SELECT
-      p.id, p.slug, p.title, p.property_title, p.address, p.city, p.town, p.postcode,
-      p.price, p.monthly_rent AS rent_pcm, p.bedrooms, p.bathrooms, p.property_type,
+      p.id, p.slug, p.title, p.address_line1, p.city, p.zip_code,
+      p.price, p.monthly_rent, p.weekly_rent, p.bedrooms, p.bathrooms, p.property_type,
       p.created_at,
       (
         SELECT pi.image_url FROM property_images pi
@@ -85,7 +95,8 @@ const getPlans = async (req, res) => {
     const plans = AiSubscription.getPlans();
     res.json({ success: true, plans: Object.values(plans) });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    logIntelligenceFailure('getPlans', error);
+    res.status(500).json(publicFailureBody(PLANS_FAILED_PUBLIC));
   }
 };
 
@@ -119,8 +130,8 @@ const upgradeSubscription = async (req, res) => {
       billingNote: 'Connect Stripe webhook to finalise paid upgrades in production.',
     });
   } catch (error) {
-    console.error('upgradeSubscription error:', error);
-    res.status(500).json({ success: false, message: error.message || 'Upgrade failed' });
+    logIntelligenceFailure('upgradeSubscription', error);
+    res.status(500).json(publicFailureBody(UPGRADE_FAILED_PUBLIC));
   }
 };
 
@@ -207,8 +218,8 @@ const createListing = async (req, res) => {
       saved,
     });
   } catch (error) {
-    console.error('createListing error:', error);
-    res.status(500).json({ success: false, message: error.message || 'Listing generation failed' });
+    logIntelligenceFailure('createListing', error);
+    res.status(500).json(publicFailureBody(LISTING_FAILED_PUBLIC));
   }
 };
 
@@ -220,14 +231,27 @@ const createValuation = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Property address is required' });
     }
 
-    const result = await generateValuationReport({
-      ...input,
-      sizeSqFt: Number(input.sizeSqFt || input.size || 0) || 1000,
-      bedrooms: Number(input.bedrooms || 0) || 3,
-      bathrooms: Number(input.bathrooms || 0) || 1,
-      photos: Array.isArray(input.photos) ? input.photos.slice(0, 10) : [],
-    });
+    const deterministic = await generateDeterministicValuation(
+      {
+        ...input,
+        sizeSqFt: Number(input.sizeSqFt || input.size || 0) || undefined,
+        bedrooms: Number(input.bedrooms) || undefined,
+        bathrooms: Number(input.bathrooms) || undefined,
+      },
+      { userId: req.user.id }
+    );
 
+    if (!deterministic.success) {
+      return res.status(422).json({
+        success: false,
+        message:
+          deterministic.message ||
+          'A numeric valuation could not be produced from evidenced sources. An LLM is not used to invent values, rents, yields or comparables.',
+        unavailableReason: 'insufficient_valuation_evidence',
+      });
+    }
+
+    const result = deterministic;
     const credit = await AiSubscription.consumeCredit(req.user.id, 1);
 
     const saved = await AiRequest.create({
@@ -251,13 +275,15 @@ const createValuation = async (req, res) => {
         model: result.model,
         source: result.source,
         tokensUsed: result.tokensUsed,
+        engine: result.data?.engine,
+        evidenceCount: result.data?.evidenceCount,
       },
       subscription,
       saved,
     });
   } catch (error) {
-    console.error('createValuation error:', error);
-    res.status(500).json({ success: false, message: error.message || 'Valuation failed' });
+    logIntelligenceFailure('createValuation', error);
+    res.status(500).json(publicFailureBody(VALUATION_FAILED_PUBLIC));
   }
 };
 
@@ -273,7 +299,14 @@ const createBuyerMatch = async (req, res) => {
     }
 
     const properties = await fetchCandidateProperties(prefs);
-    const result = await generateBuyerMatches(prefs, properties);
+    const ranked = rankBuyerMatches(prefs, properties);
+    const polished = await polishBuyerMatchMessage(prefs, ranked);
+    const result = {
+      data: polished,
+      model: polished.engine || 'buyer-match-v2',
+      tokensUsed: polished.tokensUsed || 0,
+      source: 'deterministic+optional-llm',
+    };
     const credit = await AiSubscription.consumeCredit(req.user.id, 1);
 
     const saved = await AiRequest.create({
@@ -303,8 +336,8 @@ const createBuyerMatch = async (req, res) => {
       saved,
     });
   } catch (error) {
-    console.error('createBuyerMatch error:', error);
-    res.status(500).json({ success: false, message: error.message || 'Buyer match failed' });
+    logIntelligenceFailure('createBuyerMatch', error);
+    res.status(500).json(publicFailureBody(BUYER_MATCH_FAILED_PUBLIC));
   }
 };
 
@@ -315,6 +348,7 @@ const getDashboard = async (req, res) => {
     const recent = await AiRequest.findByUser(req.user.id, { limit: 12 });
     const listings = await AiRequest.findByUser(req.user.id, { type: 'listing_writer', limit: 8 });
     const reports = await AiRequest.findByUser(req.user.id, { type: 'valuation', limit: 8 });
+    const ukLookups = await getRecentSubjectLookups(req.user.id, 8);
 
     res.json({
       success: true,
@@ -322,6 +356,7 @@ const getDashboard = async (req, res) => {
       recent,
       listings,
       reports,
+      recentUkLookups: ukLookups.subjects || [],
       tools: [
         { id: 'listing_writer', name: 'Listing Writer', path: '/ai-services/listing-writer' },
         { id: 'valuation', name: 'Valuation Report', path: '/ai-services/valuation' },

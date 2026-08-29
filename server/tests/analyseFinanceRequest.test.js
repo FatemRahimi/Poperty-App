@@ -81,6 +81,17 @@ const NESTED_BODY = {
   },
 };
 
+function explanationText(decision) {
+  const exp = decision?.explanation || {};
+  return [
+    exp.overall,
+    ...(exp.strongestFactors || []).map((row) => row.text),
+    ...(exp.weakestOrUnavailable || []).map((row) => row.text),
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
 function listing(overrides = {}) {
   return {
     id: 1,
@@ -132,6 +143,10 @@ async function analyse(body, listingOverrides = {}) {
       skipExplanation: true,
       skipPostcodeMarket: true,
       skipPlanning: true,
+      skipSchools: true,
+      skipListedBuilding: true,
+      skipConservationArea: true,
+      skipArticle4: true,
       asOf: ASOF,
       ...parsed.options,
       deps: deps(),
@@ -642,6 +657,51 @@ test('prepareEvidencedInvestment still ignores unknown keys that never passed HT
   assert.ok(!Object.prototype.hasOwnProperty.call(prepared.input, 'fakeScore'));
   assert.ok(!Object.prototype.hasOwnProperty.call(prepared.input, 'skipValidation'));
   assert.strictEqual(prepared.input.maintenance, 1200);
+});
+
+asyncTest('nested complete finance plus listing charges keeps Personal Decision explanation aligned with presented metrics', async () => {
+  const { report } = await analyse(NESTED_BODY);
+  assert.strictEqual(report.investment.presented.costEvidence.completeness, 'COMPLETE_EVIDENCE');
+  assert.strictEqual(report.investment.presented.financeEvidence.completeness, 'COMPLETE_EVIDENCE');
+  assert.strictEqual(report.investment.presented.noi.available, true);
+  assert.strictEqual(report.investment.presented.dscr.available, true);
+  assert.strictEqual(report.personalDecision.dimensions.netOperating.available, true);
+  assert.notStrictEqual(report.personalDecision.dimensions.netOperating.state, 'costs_not_supplied');
+  assert.ok(
+    !/Operating costs were not supplied/i.test(explanationText(report.personalDecision)),
+    explanationText(report.personalDecision)
+  );
+});
+
+asyncTest('partial operating costs keep NOI and Personal Decision netOperating notAssessed', async () => {
+  const { report } = await analyse({
+    finance: {
+      purchasePrice: 185000,
+      expectedRent: 1100,
+      operatingCosts: {
+        maintenance: { value: 100, frequency: 'monthly' },
+      },
+      ...COMPLETE_FINANCE,
+    },
+  });
+  assert.strictEqual(report.investment.presented.costEvidence.completeness, 'PARTIAL_EVIDENCE');
+  assert.strictEqual(report.investment.presented.noi.available, false);
+  assert.strictEqual(report.personalDecision.dimensions.netOperating.available, false);
+  assert.ok(/not assessed|not supplied|incomplete/i.test(explanationText(report.personalDecision)));
+});
+
+asyncTest('missing finance does not fabricate completeness or PD cash-flow evidence', async () => {
+  const { report } = await analyse({});
+  assert.notStrictEqual(report.investment?.presented?.financeEvidence?.completeness, 'COMPLETE_EVIDENCE');
+  assert.notStrictEqual(report.investment?.presented?.costEvidence?.completeness, 'COMPLETE_EVIDENCE');
+  assert.strictEqual(report.investment?.presented?.noi?.available, false);
+  assert.strictEqual(report.investment?.presented?.dscr?.available, false);
+  assert.strictEqual(report.personalDecision.dimensions.netOperating.available, false);
+  assert.strictEqual(report.personalDecision.dimensions.cashFlow.available, false);
+  assert.strictEqual(report.personalDecision.dimensions.dscr.available, false);
+  const receivedKeys = (report.financeRequest?.received || []).map((row) => row.key);
+  assert.ok(!receivedKeys.includes('mortgageTermYears'));
+  assert.ok(!receivedKeys.includes('vacancyAssumption'));
 });
 
 async function run() {

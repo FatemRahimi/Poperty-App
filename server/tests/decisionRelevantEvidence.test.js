@@ -96,6 +96,9 @@ test('unknown remains unknown; zero/false only when genuinely evidenced', () => 
   assert.strictEqual(facts.facts.flood.value, null);
   assert.strictEqual(facts.facts.planning.value, null);
   assert.strictEqual(facts.facts.schools.value, null);
+  assert.strictEqual(facts.facts.listedBuilding.value, null);
+  assert.strictEqual(facts.facts.conservationArea.value, null);
+  assert.strictEqual(facts.facts.article4.value, null);
 });
 
 test('conflicting sources are not silently collapsed', () => {
@@ -110,17 +113,25 @@ test('conflicting sources are not silently collapsed', () => {
   assert.strictEqual(facts.facts.epcRating.value, 'B');
 });
 
-test('LLM cannot manufacture flood planning schools or garden absence', () => {
+test('LLM cannot manufacture flood planning schools listed buildings conservation areas or garden absence', () => {
   const src = fs.readFileSync(
     path.join(__dirname, '..', 'services', 'ai', 'propertyExplanationService.js'),
     'utf8'
   );
   assert.ok(/must NOT invent/.test(src));
-  assert.ok(/flood, planning, schools/.test(src));
+  assert.ok(/Nearby schools are not catchment/.test(src));
+  assert.ok(/Do not invent schools, catchments/.test(src));
+  assert.ok(/Do not invent listed-building status/.test(src));
+  assert.ok(/Do not invent conservation-area membership/.test(src));
+  assert.ok(/Do not invent Article 4 membership/.test(src));
+  assert.ok(/Do not add investigation items/.test(src));
   const explained = publicPropertyFactsForExplanation(factsFor({ id: 5 }));
   assert.strictEqual(explained.flood, null);
   assert.strictEqual(explained.planning, null);
   assert.strictEqual(explained.schools, null);
+  assert.strictEqual(explained.listedBuilding, null);
+  assert.strictEqual(explained.conservationArea, null);
+  assert.strictEqual(explained.article4, null);
   assert.strictEqual(explained.outdoorSpace, null);
 });
 

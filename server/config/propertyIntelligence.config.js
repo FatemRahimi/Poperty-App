@@ -50,6 +50,28 @@ const propertyIntelligenceConfig = {
       baseUrl: process.env.PLANNING_DATA_BASE_URL || 'https://www.planning.data.gov.uk',
       searchRadiusMetres: parseIntEnv(process.env.PLANNING_DATA_SEARCH_RADIUS_M, 400),
     },
+    educationalEstablishment: {
+      enabled: parseBool(process.env.EDUCATIONAL_ESTABLISHMENT_ENABLED, true),
+      timeoutMs: parseIntEnv(process.env.EDUCATIONAL_ESTABLISHMENT_TIMEOUT_MS, 15000),
+      baseUrl: process.env.EDUCATIONAL_ESTABLISHMENT_BASE_URL || 'https://www.planning.data.gov.uk',
+      searchRadiusMetres: parseIntEnv(process.env.EDUCATIONAL_ESTABLISHMENT_SEARCH_RADIUS_M, 800),
+    },
+    listedBuilding: {
+      enabled: parseBool(process.env.LISTED_BUILDING_ENABLED, true),
+      timeoutMs: parseIntEnv(process.env.LISTED_BUILDING_TIMEOUT_MS, 15000),
+      baseUrl: process.env.LISTED_BUILDING_BASE_URL || 'https://www.planning.data.gov.uk',
+      searchRadiusMetres: parseIntEnv(process.env.LISTED_BUILDING_SEARCH_RADIUS_M, 25),
+    },
+    conservationArea: {
+      enabled: parseBool(process.env.CONSERVATION_AREA_ENABLED, true),
+      timeoutMs: parseIntEnv(process.env.CONSERVATION_AREA_TIMEOUT_MS, 15000),
+      baseUrl: process.env.CONSERVATION_AREA_BASE_URL || 'https://www.planning.data.gov.uk',
+    },
+    article4: {
+      enabled: parseBool(process.env.ARTICLE_4_ENABLED, true),
+      timeoutMs: parseIntEnv(process.env.ARTICLE_4_TIMEOUT_MS, 15000),
+      baseUrl: process.env.ARTICLE_4_BASE_URL || 'https://www.planning.data.gov.uk',
+    },
   },
 
   /** Cache TTL in milliseconds */
@@ -63,6 +85,10 @@ const propertyIntelligenceConfig = {
     valuation: parseIntEnv(process.env.CACHE_TTL_VALUATION_MS, 7 * 24 * 60 * 60 * 1000),
     flood: parseIntEnv(process.env.CACHE_TTL_FLOOD_MS, 30 * 24 * 60 * 60 * 1000),
     planning: parseIntEnv(process.env.CACHE_TTL_PLANNING_MS, 24 * 60 * 60 * 1000),
+    schools: parseIntEnv(process.env.CACHE_TTL_SCHOOLS_MS, 24 * 60 * 60 * 1000),
+    listedBuilding: parseIntEnv(process.env.CACHE_TTL_LISTED_BUILDING_MS, 30 * 24 * 60 * 60 * 1000),
+    conservationArea: parseIntEnv(process.env.CACHE_TTL_CONSERVATION_AREA_MS, 30 * 24 * 60 * 60 * 1000),
+    article4: parseIntEnv(process.env.CACHE_TTL_ARTICLE_4_MS, 30 * 24 * 60 * 60 * 1000),
   },
 
   /**
