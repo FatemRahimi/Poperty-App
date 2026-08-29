@@ -1,0 +1,57 @@
+{
+  "entities": [
+    {
+      "entry-date": "2008-02-21",
+      "start-date": "2008-02-21",
+      "end-date": "",
+      "entity": 44002870,
+      "name": "Trafalgar Square",
+      "dataset": "conservation-area",
+      "typology": "geography",
+      "reference": "CONARA/1300",
+      "prefix": "conservation-area",
+      "organisation-entity": 387,
+      "geometry": "POLYGON((-0.129 51.506,-0.126 51.506,-0.126 51.509,-0.129 51.509,-0.129 51.506))",
+      "point": "POINT (-0.126727 51.508303)",
+      "quality": "authoritative",
+      "document-url": "https://www.westminster.gov.uk/media/document/trafalgar-square-conservation-area-audit-spg",
+      "designation-date": "1993-01-01",
+      "documentation-url": "https://www.westminster.gov.uk/planning-building-control-and-environmental-regulations/planning-policy/supplementary-planning-documents-and-guidance/conservation-area-audits-maps-and-guidance-l-z#trafalgar"
+    },
+    {
+      "entry-date": "2008-02-21",
+      "start-date": "2008-02-21",
+      "end-date": "",
+      "entity": 44009999,
+      "name": "Nearby Other Area",
+      "dataset": "conservation-area",
+      "typology": "geography",
+      "reference": "CONARA/9999",
+      "prefix": "conservation-area",
+      "organisation-entity": 387,
+      "geometry": "POLYGON((-0.140 51.500,-0.135 51.500,-0.135 51.503,-0.140 51.503,-0.140 51.500))",
+      "point": "POINT (-0.1375 51.5015)",
+      "quality": "authoritative",
+      "designation-date": "1971-01-01",
+      "documentation-url": "https://www.westminster.gov.uk/"
+    },
+    {
+      "entry-date": "2008-02-21",
+      "start-date": "1970-01-01",
+      "end-date": "2010-01-01",
+      "entity": 44008888,
+      "name": "Former Trafalgar Designation",
+      "dataset": "conservation-area",
+      "typology": "geography",
+      "reference": "CONARA/8888",
+      "prefix": "conservation-area",
+      "organisation-entity": 387,
+      "geometry": "POLYGON((-0.129 51.506,-0.126 51.506,-0.126 51.509,-0.129 51.509,-0.129 51.506))",
+      "point": "POINT (-0.1278 51.5074)",
+      "quality": "some",
+      "designation-date": "1970-01-01",
+      "documentation-url": "https://www.westminster.gov.uk/"
+    }
+  ],
+  "count": 3
+}

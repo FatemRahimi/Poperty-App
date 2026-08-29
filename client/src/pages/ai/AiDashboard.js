@@ -1,22 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FaTachometerAlt,
   FaPenFancy,
-  FaFileAlt,
   FaArrowUp,
   FaCoins,
   FaHistory,
+  FaGlobeEurope,
 } from 'react-icons/fa';
-import AiToolNav from '../../components/ai/AiToolNav';
-import { fetchDashboard } from '../../services/aiService';
-import '../../styles/ai-services.css';
-import './AiDashboard.css';
+import AiWorkspaceLayout from '../../components/ai/AiWorkspaceLayout';
+import { fetchDashboard, fetchIntelligenceOverview } from '../../services/aiService';
+import { displayAiCredits, subscribeAiCredits } from '../../services/aiCreditState';
+import '../../components/ai/AiWorkspaceLayout.css';
 
 const typeLabel = {
   listing_writer: 'Listing Writer',
   valuation: 'Valuation Report',
   buyer_match: 'Buyer Match',
+  investment_analyst: 'Investment Analyst',
+  rent_intelligence: 'Rent Intelligence',
 };
 
 const AiDashboard = () => {
@@ -24,11 +25,23 @@ const AiDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [intel, setIntel] = useState(null);
+  const [credits, setCredits] = useState(null);
+  const [planName, setPlanName] = useState(null);
+
   useEffect(() => {
     let mounted = true;
-    fetchDashboard()
-      .then((res) => {
-        if (mounted) setData(res);
+    const unsub = subscribeAiCredits((snap) => {
+      if (!mounted) return;
+      setCredits(displayAiCredits(snap));
+      setPlanName(snap?.plan?.name || null);
+    });
+    Promise.all([fetchDashboard(), fetchIntelligenceOverview().catch(() => null)])
+      .then(([res, intelRes]) => {
+        if (mounted) {
+          setData(res);
+          setIntel(intelRes);
+        }
       })
       .catch((err) => {
         if (mounted) setError(err.response?.data?.message || 'Failed to load dashboard');
@@ -36,23 +49,17 @@ const AiDashboard = () => {
       .finally(() => {
         if (mounted) setLoading(false);
       });
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+      unsub();
+    };
   }, []);
 
-  const plan = data?.plan;
-  const sub = data?.subscription;
-  const unlimited = plan?.unlimited || sub?.credits_remaining < 0;
-
   return (
-    <div className="ai-page">
-      <div className="ai-container ai-dash" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
-        <AiToolNav />
-        <p className="ai-eyebrow"><FaTachometerAlt /> Estate Agent AI Dashboard</p>
-        <h1 className="ai-section-title">Your AI workspace</h1>
-        <p className="ai-section-sub">
-          Track generations, credits and your subscription — upgrade when you need unlimited output.
-        </p>
-
+    <AiWorkspaceLayout
+      title="Activity overview"
+      subtitle="Credits, usage history and portfolio signals at a glance."
+    >
         {loading && (
           <div className="ai-loading"><span className="ai-spinner" /> Loading dashboard…</div>
         )}
@@ -60,43 +67,35 @@ const AiDashboard = () => {
 
         {data && (
           <>
-            <div className="ai-dash-stats">
-              <div className="ai-card ai-stat-card">
-                <div className="ai-stat-label"><FaCoins /> Usage credits</div>
-                <div className="ai-stat-value">
-                  {unlimited ? 'Unlimited' : sub?.credits_remaining ?? 0}
-                </div>
-                <div className="ai-stat-meta">
-                  {unlimited ? 'Professional / Agency plan' : `${sub?.credits_monthly || 3} included on Free`}
-                </div>
+            <div className="ai-metrics-grid">
+              <div className="ai-metric">
+                <div className="ai-stat-label"><FaCoins /> Credits</div>
+                <strong>{credits == null ? '—' : credits}</strong>
               </div>
-              <div className="ai-card ai-stat-card">
-                <div className="ai-stat-label"><FaArrowUp /> Subscription</div>
-                <div className="ai-stat-value">{plan?.name || 'Free'}</div>
-                <div className="ai-stat-meta">
-                  {plan?.price ? `£${plan.price}/month` : '£0 — limited generations'}
-                </div>
-                <Link to="/ai-services/pricing" className="ai-btn ai-btn-primary" style={{ marginTop: '0.85rem' }}>
-                  Upgrade plan
-                </Link>
+              <div className="ai-metric">
+                <div className="ai-stat-label"><FaArrowUp /> Plan</div>
+                <strong>{planName || data?.plan?.name || 'Free'}</strong>
               </div>
-              <div className="ai-card ai-stat-card">
-                <div className="ai-stat-label"><FaHistory /> Total generations</div>
-                <div className="ai-stat-value">{data.totals?.total_requests || 0}</div>
-                <div className="ai-stat-meta">
-                  {(data.usageByType || []).map((u) => `${typeLabel[u.request_type] || u.request_type}: ${u.count}`).join(' · ') || 'No usage yet'}
-                </div>
+              <div className="ai-metric">
+                <div className="ai-stat-label"><FaHistory /> Generations</div>
+                <strong>{data.totals?.total_requests || 0}</strong>
+              </div>
+              <div className="ai-metric">
+                <div className="ai-stat-label">Opportunities</div>
+                <strong>{intel?.opportunities?.length ?? '—'}</strong>
               </div>
             </div>
 
-            <div className="ai-dash-actions">
-              <Link to="/ai-services/listing-writer" className="ai-btn ai-btn-secondary"><FaPenFancy /> New listing</Link>
-              <Link to="/ai-services/valuation" className="ai-btn ai-btn-ghost"><FaFileAlt /> New valuation</Link>
-              <Link to="/ai-services/buyer-match" className="ai-btn ai-btn-ghost">Buyer match</Link>
+            <div className="ai-dash-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', marginBottom: '1.25rem' }}>
+              <Link to="/ai-services/property-intelligence" className="ai-btn ai-btn-primary">Property Analysis</Link>
+              <Link to="/ai-services/investment-analyst" className="ai-btn ai-btn-ghost">Investment Analyst</Link>
+              <Link to="/ai-services/rent-intelligence" className="ai-btn ai-btn-ghost">Rent Intelligence</Link>
+              <Link to="/ai-services/listing-writer" className="ai-btn ai-btn-ghost"><FaPenFancy /> Listing Writer</Link>
+              <Link to="/ai-services/pricing" className="ai-btn ai-btn-ghost">Upgrade</Link>
             </div>
 
             <div className="ai-grid-2" style={{ marginTop: '1.5rem' }}>
-              <section className="ai-card">
+              <section className="ai-panel">
                 <h2>Generated listings</h2>
                 {(data.listings || []).length === 0 && <p className="ai-muted">No listings generated yet.</p>}
                 <ul className="ai-history-list">
@@ -112,7 +111,7 @@ const AiDashboard = () => {
                 </ul>
               </section>
 
-              <section className="ai-card">
+              <section className="ai-panel">
                 <h2>AI reports</h2>
                 {(data.reports || []).length === 0 && <p className="ai-muted">No valuation reports yet.</p>}
                 <ul className="ai-history-list">
@@ -129,7 +128,32 @@ const AiDashboard = () => {
               </section>
             </div>
 
-            <section className="ai-card" style={{ marginTop: '1.25rem' }}>
+            <section className="ai-panel" style={{ marginTop: '1.25rem' }}>
+              <h2><FaGlobeEurope style={{ marginRight: '0.4rem' }} />Recent UK property lookups</h2>
+              {(data.recentUkLookups || []).length === 0 && (
+                <p className="ai-muted">Search any UK address in Property Intelligence to build this list.</p>
+              )}
+              <ul className="ai-history-list">
+                {(data.recentUkLookups || []).map((item) => (
+                  <li key={item.id}>
+                    <div>
+                      <strong>{item.address}</strong>
+                      <span>
+                        UPRN {item.uprn}
+                        {item.linkedPropertyId ? ` · Listing #${item.linkedPropertyId}` : ''}
+                        {' · '}
+                        {item.lastAccessedAt
+                          ? new Date(item.lastAccessedAt).toLocaleString()
+                          : 'Recent'}
+                      </span>
+                    </div>
+                    <Link to={`/ai-services/property-intelligence?subjectId=${item.id}`}>Analyse</Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="ai-panel" style={{ marginTop: '1.25rem' }}>
               <h2>Recent activity</h2>
               {(data.recent || []).length === 0 && <p className="ai-muted">Generate your first asset to populate history.</p>}
               <ul className="ai-history-list">
@@ -146,8 +170,7 @@ const AiDashboard = () => {
             </section>
           </>
         )}
-      </div>
-    </div>
+    </AiWorkspaceLayout>
   );
 };
 

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import PropertyAdvisorCard from '../components/PropertyAdvisorCard';
+import { useAuth } from '../context/AuthContext';
 import './PropertyView.css';
 
 const PropertyView = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isAuthenticated } = useAuth();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -263,6 +265,8 @@ const PropertyView = () => {
     return null;
   }
 
+  const isOwner = isAuthenticated && user?.id && property.user_id === user.id;
+
   const handleBack = () => {
     console.log('🔍 PropertyView handleBack Debug:', {
       locationState: location.state,
@@ -328,6 +332,27 @@ const PropertyView = () => {
           <span className={`status-badge status-${property.status}`}>
             {property.status}
           </span>
+          {isAuthenticated && property.status === 'approved' && (
+            <Link
+              to={`/ai-services/property-intelligence?propertyId=${property.id}&tab=${isOwner ? 'mine' : 'browse'}`}
+              className="property-ai-analyse-btn"
+              style={{
+                marginLeft: '0.75rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #0ea5e9, #2563eb)',
+                color: '#fff',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                textDecoration: 'none',
+              }}
+            >
+              <i className="fas fa-brain" /> {isOwner ? 'Analyse my listing' : 'View Property Intelligence'}
+            </Link>
+          )}
         </div>
       </div>
 

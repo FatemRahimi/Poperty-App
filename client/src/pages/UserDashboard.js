@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { socket } from '../services/socket';
 import SearchFilterHeader from '../components/dashboard/SearchFilterHeader';
@@ -1806,6 +1806,14 @@ const UserDashboard = () => {
             </div>
             
             <div className="header-actions">
+              <Link
+                to="/ai-services/property-intelligence"
+                className="add-listing-btn-modern"
+                style={{ marginRight: '0.75rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <i className="fas fa-robot" />
+                <span>AI Property Intelligence</span>
+              </Link>
               <div className="add-listing-dropdown-container">
                 <button 
                   className="add-listing-btn-modern"

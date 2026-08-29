@@ -36,6 +36,20 @@ DATABASE_URL=postgres://fatemehrahimi@localhost:5432/propertydb
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4o-mini
 
+# Property Intelligence Platform — Phase 2 external data (all server-side)
+PROPERTY_INTELLIGENCE_ENABLED=true
+PROPERTYDATA_ENABLED=false
+PROPERTYDATA_API_KEY=
+PROPERTYDATA_BASE_URL=https://api.propertydata.co.uk
+PROPERTYDATA_TIMEOUT_MS=15000
+
+# Future providers (stubs until credentials licensed)
+SPRIFT_ENABLED=false
+SPRIFT_API_KEY=
+HOMETRACK_ENABLED=false
+HOMETRACK_CLIENT_ID=
+HOMETRACK_CLIENT_SECRET=
+
 # Environment
 NODE_ENV=development
 ```

@@ -113,12 +113,23 @@ class AiSubscription {
 
     const result = await pool.query(
       `UPDATE ai_subscriptions
-       SET credits_remaining = GREATEST(credits_remaining - $1, 0),
+       SET credits_remaining = credits_remaining - $1,
            updated_at = CURRENT_TIMESTAMP
        WHERE user_id = $2
+         AND credits_remaining >= $1
        RETURNING *`,
       [amount, userId]
     );
+
+    if (!result.rows[0]) {
+      const sub = await this.findByUserId(userId);
+      return {
+        allowed: false,
+        reason: 'No credits remaining. Upgrade your plan to continue.',
+        subscription: sub,
+        plan,
+      };
+    }
 
     return {
       allowed: true,
@@ -126,6 +137,21 @@ class AiSubscription {
       subscription: result.rows[0],
       plan,
     };
+  }
+
+  static async restoreCredit(userId, amount = 1) {
+    const n = Number(amount);
+    if (!Number.isFinite(n) || n <= 0) return this.findByUserId(userId);
+    const result = await pool.query(
+      `UPDATE ai_subscriptions
+       SET credits_remaining = credits_remaining + $1,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $2
+         AND credits_remaining >= 0
+       RETURNING *`,
+      [n, userId]
+    );
+    return result.rows[0] || null;
   }
 
   static async upgrade(userId, planId) {

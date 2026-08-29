@@ -2,7 +2,7 @@
  * Full property intelligence analysis — deterministic engine + structured facts for LLM.
  */
 
-const { fetchPropertyForIntelligence, getMonthlyRent } = require('./propertyDataAggregator');
+const { fetchPropertyForIntelligence, getMonthlyRent, toListingNumber } = require('./propertyDataAggregator');
 const { applyReportAccessPolicy } = require('./propertyIntelligenceAccess');
 const { assessPropertyDataQuality } = require('./propertyDataQuality');
 const { analyseRent } = require('./rentIntelligenceService');
@@ -16,6 +16,10 @@ const { calculateIntelligenceScores, calculateConfidence } = require('./property
 const { generatePropertyExplanation, templateSummary } = require('./propertyExplanationService');
 const { enrichPropertyForIntelligence } = require('../enrichment/propertyEnrichmentService');
 const { isExternalEnrichmentAvailable } = require('../../config/propertyIntelligence.config');
+const {
+  logIntelligenceFailure,
+  EXTERNAL_ENRICHMENT_FAILED_PUBLIC,
+} = require('./propertyIntelligenceProduction');
 const { calculatePropertyValuation } = require('./valuationEngine');
 const { calculatePricePosition } = require('./pricePositionEngine');
 const {
@@ -43,6 +47,30 @@ const {
   UNAVAILABLE_REASONS: PLANNING_UNAVAILABLE_REASONS,
 } = require('./planningEvidence');
 const {
+  getSchoolEvidence,
+  unattachedSchoolFact,
+  notAssessedSchools,
+  UNAVAILABLE_REASONS: SCHOOL_UNAVAILABLE_REASONS,
+} = require('./schoolEvidence');
+const {
+  getListedBuildingEvidence,
+  unattachedListedBuildingFact,
+  notAssessedListedBuilding,
+  UNAVAILABLE_REASONS: LISTED_BUILDING_UNAVAILABLE_REASONS,
+} = require('./listedBuildingEvidence');
+const {
+  getConservationAreaEvidence,
+  unattachedConservationAreaFact,
+  notAssessedConservationArea,
+  UNAVAILABLE_REASONS: CONSERVATION_AREA_UNAVAILABLE_REASONS,
+} = require('./conservationAreaEvidence');
+const {
+  getArticle4Evidence,
+  unattachedArticle4Fact,
+  notAssessedArticle4,
+  UNAVAILABLE_REASONS: ARTICLE_4_UNAVAILABLE_REASONS,
+} = require('./article4Evidence');
+const {
   attachFinanceInputsToDecisionContext,
   publicFinanceInputsForExplanation,
   parseFinancePayload,
@@ -66,8 +94,10 @@ const {
   intelligenceForLandlordScore,
   scorePublicLandlordPersonalDecision,
 } = require('./personalDecisionCanonical');
+const { assembleDecisionIntelligence } = require('./decisionIntelligence');
+const { explainDecisionIntelligence } = require('./decisionIntelligenceExplanation');
+const { buildRisks } = require('./legacyHeuristicIntelligence');
 const CANONICAL_ENGINE_VERSION = 'property-intelligence-v2';
-const IMPACT_WEIGHT = { Low: 0.33, Medium: 0.66, High: 1 };
 
 function publicAnalysisOptions(options = {}) {
   const {
@@ -80,6 +110,71 @@ function publicAnalysisOptions(options = {}) {
     skipPlanning,
     planning,
     planningEvidence,
+    skipSchools,
+    schools,
+    schoolEvidence,
+    schoolScore,
+    catchment,
+    educationScore,
+    skipListedBuilding,
+    listedBuilding,
+    listedBuildingEvidence,
+    listedBuildings,
+    listed,
+    heritageScore,
+    listedBuildingScore,
+    listedScore,
+    heritageRiskScore,
+    skipConservationArea,
+    conservationArea,
+    conservationAreaEvidence,
+    conservationEvidence,
+    conservationScore,
+    skipArticle4,
+    article4,
+    article4Evidence,
+    article4Direction,
+    article4Score,
+    article4Restrictions,
+    article4DirectionArea,
+    article4Areas,
+    article4Membership,
+    permittedDevelopmentRights,
+    permittedDevelopmentRight,
+    pdRights,
+    restrictionSchedule,
+    decisionIntelligence,
+    unresolvedDependencies,
+    investigationPriorities,
+    importance,
+    importanceScore,
+    evidenceRefs,
+    affects,
+    dependencyScore,
+    dependencyScores,
+    materialFindings,
+    materialFinding,
+    findingScore,
+    materialityScore,
+    effect,
+    findingImportance,
+    sensitivityDrivers,
+    sensitivityDriver,
+    sensitivityScore,
+    rankScore,
+    driverImportance,
+    directionality,
+    dependencyGraph,
+    explanation,
+    overview,
+    currentDriversSummary,
+    unresolvedSummary,
+    verificationSummary,
+    sensitivitySummary,
+    generatedExplanation,
+    llmInstructions,
+    systemPrompt,
+    systemPrompts,
     propertyFacts,
     riskScore,
     floodScore,
@@ -249,312 +344,6 @@ function buildDocumentIntelligence(property) {
   };
 }
 
-function buildStrengths(property, rentIntel, investment, dataQuality) {
-  const strengths = [];
-
-  if (property.city && property.zip_code) {
-    strengths.push({
-      title: 'Location data on file',
-      evidence: `${property.city}, ${property.zip_code}`,
-    });
-  }
-  if (Number(property.square_feet) >= 900) {
-    strengths.push({
-      title: 'Generous floor area',
-      evidence: `${Number(property.square_feet).toLocaleString()} sq ft`,
-    });
-  }
-  if (property.parking_spaces > 0 || property.has_garage) {
-    strengths.push({
-      title: 'Parking provision',
-      evidence: property.has_garage
-        ? 'Garage available'
-        : `${property.parking_spaces} parking space(s)`,
-    });
-  }
-  if (property.has_garden) {
-    strengths.push({ title: 'Garden', evidence: 'Garden flagged in property record' });
-  }
-  if (property.epc_rating && ['A', 'B', 'C'].includes(String(property.epc_rating).toUpperCase().charAt(0))) {
-    strengths.push({ title: 'Good EPC rating', evidence: `EPC: ${property.epc_rating}` });
-  }
-  if (rentIntel?.success && rentIntel.underRented) {
-    strengths.push({
-      title: 'Rent uplift opportunity',
-      evidence: `Current rent below estimated market range (£${rentIntel.marketRange.low}–£${rentIntel.marketRange.high})`,
-    });
-  }
-  if (investment?.metrics?.grossYield >= 5) {
-    strengths.push({
-      title: 'Competitive gross yield',
-      evidence: `${investment.metrics.grossYield}% gross yield under stated assumptions`,
-    });
-  }
-  if (rentIntel?.success && rentIntel.comparables?.length >= 3) {
-    strengths.push({
-      title: 'Comparable rental listings in database',
-      evidence: `${rentIntel.comparables.length} comparable rental listings identified`,
-    });
-  }
-  if (dataQuality.score >= 75) {
-    strengths.push({
-      title: 'Strong property data completeness',
-      evidence: `Data quality score: ${dataQuality.score}/100`,
-    });
-  }
-
-  return strengths;
-}
-
-function buildWeaknesses(property, rentIntel, investment, dataQuality, marketingGaps) {
-  const weaknesses = [];
-
-  if (rentIntel?.success && rentIntel.currentRent > 0) {
-    const mid = (rentIntel.marketRange.low + rentIntel.marketRange.high) / 2;
-    if (rentIntel.currentRent > mid * 1.05) {
-      weaknesses.push({
-        title: 'Rent above comparable midpoint',
-        evidence: `Current £${rentIntel.currentRent.toLocaleString()} vs midpoint ~£${Math.round(mid).toLocaleString()}`,
-      });
-    }
-  }
-  if (!property.epc_rating && !property.epc_document_url) {
-    weaknesses.push({ title: 'Missing EPC information', evidence: 'No EPC rating or document on file' });
-  }
-  if (Number(listingObservedCharges(property).serviceCharge.value) > 2000) {
-    weaknesses.push({
-      title: 'High service charge',
-      evidence: `£${Number(property.service_charge).toLocaleString()} annual service charge`,
-    });
-  }
-  if (investment?.presented?.annualCashFlow?.available && investment.metrics.annualCashFlow < 0) {
-    weaknesses.push({
-      title: 'Negative cash flow under assumptions',
-      evidence: `Estimated annual cash flow: £${investment.metrics.annualCashFlow.toLocaleString()}`,
-    });
-  }
-  if (!rentIntel?.success) {
-    weaknesses.push({
-      title: 'Limited comparable rental data',
-      evidence: rentIntel?.message || 'Insufficient comparables in database',
-    });
-  }
-  if (dataQuality.requiredMissing?.length) {
-    weaknesses.push({
-      title: 'Incomplete core property data',
-      evidence: `Missing: ${dataQuality.requiredMissing.join(', ')}`,
-    });
-  }
-  marketingGaps.slice(0, 2).forEach((g) => {
-    weaknesses.push({ title: 'Listing positioning gap', evidence: g.message });
-  });
-
-  return weaknesses;
-}
-
-function buildOpportunities(property, rentIntel, marketingGaps) {
-  const opportunities = [];
-
-  if (rentIntel?.success && rentIntel.underRented && rentIntel.potentialAnnualUplift) {
-    opportunities.push({
-      id: 'rent-opportunity',
-      category: 'RENT',
-      title: 'Rent opportunity',
-      currentRent: rentIntel.currentRent,
-      marketRange: rentIntel.marketRange,
-      recommendedPosition: rentIntel.recommendedRent,
-      potentialAnnualImprovement: rentIntel.potentialAnnualUplift,
-      confidence: rentIntel.confidence,
-      // Reuse the level the confidence engine already decided. Re-deriving it from
-      // the numeric index turned a null score into a fabricated "Low".
-      confidenceLabel: rentIntel.confidenceLevel || 'Not assessed',
-      evidence: `${rentIntel.comparables.length} internal comparables`,
-    });
-  }
-
-  marketingGaps.forEach((g, i) => {
-    opportunities.push({
-      id: `marketing-${i}`,
-      category: 'MARKETING',
-      title: 'Marketing opportunity',
-      description: g.message,
-      evidence: g.evidence,
-      confidence: 85,
-      confidenceLabel: 'High',
-    });
-  });
-
-  return opportunities.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
-}
-
-function buildRisks(property, rentIntel, investment, dataQuality) {
-  const risks = [];
-
-  if (rentIntel?.success && rentIntel.currentRent > 0) {
-    const mid = (rentIntel.marketRange.low + rentIntel.marketRange.high) / 2;
-    if (rentIntel.currentRent < mid * 0.94) {
-      const pctBelow = ((mid - rentIntel.currentRent) / mid) * 100;
-      const prob = Math.min(0.95, 0.5 + rentIntel.confidence / 200);
-      const impact = pctBelow > 10 ? 'High' : 'Medium';
-      risks.push({
-        id: 'rent-below-market',
-        category: 'RENTAL',
-        title: 'Current rent appears below comparable midpoint',
-        severity: impact,
-        probability: Math.round(prob * 100) / 100,
-        impact,
-        riskExposure: Math.round(prob * IMPACT_WEIGHT[impact] * 100) / 100,
-        evidence: `Current rent is ${pctBelow.toFixed(1)}% below estimated market midpoint.`,
-        recommendedAction: 'Review rent at next tenancy event.',
-      });
-    }
-    if (rentIntel.currentRent > mid * 1.06) {
-      const prob = Math.min(0.9, 0.45 + rentIntel.confidence / 200);
-      risks.push({
-        id: 'rent-above-market',
-        category: 'RENTAL',
-        title: 'Current rent appears above comparable midpoint',
-        severity: 'Medium',
-        probability: Math.round(prob * 100) / 100,
-        impact: 'Medium',
-        riskExposure: Math.round(prob * IMPACT_WEIGHT.Medium * 100) / 100,
-        evidence: `Current rent exceeds estimated market midpoint.`,
-        recommendedAction: 'Monitor void risk and tenant retention.',
-      });
-    }
-  }
-
-  if (investment?.presented?.annualCashFlow?.available && investment.metrics.annualCashFlow < 0) {
-    risks.push({
-      id: 'negative-cashflow',
-      category: 'FINANCIAL',
-      title: 'Negative cash flow under current assumptions',
-      severity: 'High',
-      probability: 0.72,
-      impact: 'High',
-      riskExposure: 0.72,
-      evidence: `Annual cash flow: £${investment.metrics.annualCashFlow.toLocaleString()}`,
-      recommendedAction: 'Review financing, costs, or rent positioning.',
-    });
-  }
-
-  if (!property.epc_rating) {
-    risks.push({
-      id: 'missing-epc',
-      category: 'DOCUMENT',
-      title: 'EPC documentation missing',
-      severity: 'Medium',
-      probability: 0.95,
-      impact: 'Medium',
-      riskExposure: 0.63,
-      evidence: 'No EPC rating or document on file.',
-      recommendedAction: 'Upload EPC certificate.',
-    });
-  }
-
-  if (dataQuality.score < 50) {
-    risks.push({
-      id: 'poor-data',
-      category: 'DATA',
-      title: 'Insufficient property data for high-confidence analysis',
-      severity: 'Medium',
-      probability: 0.9,
-      impact: 'Medium',
-      riskExposure: 0.59,
-      evidence: `Data quality score: ${dataQuality.score}/100`,
-      recommendedAction: 'Complete missing property fields.',
-    });
-  }
-
-  if (property.break_clause) {
-    risks.push({
-      id: 'break-clause',
-      category: 'LEASE',
-      title: 'Break clause present on lease',
-      severity: 'Medium',
-      probability: 0.55,
-      impact: 'Medium',
-      riskExposure: 0.36,
-      evidence: 'Break clause flagged in property record.',
-      recommendedAction: 'Review lease obligations before renewal.',
-    });
-  }
-
-  return risks.sort((a, b) => b.riskExposure - a.riskExposure);
-}
-
-function buildPrimaryRecommendation({ opportunities, risks, dataQuality, investment, rentIntel }) {
-  if (!dataQuality.sufficientForAnalysis) {
-    return {
-      action: 'Insufficient data — collect additional property information.',
-      why: 'Core property fields are incomplete for reliable intelligence.',
-      evidence: dataQuality.requiredMissing?.length
-        ? `Missing: ${dataQuality.requiredMissing.join(', ')}`
-        : `Data quality score: ${dataQuality.score}/100`,
-      expectedImpact: 'Improved analysis confidence and accuracy.',
-      confidence: Math.min(dataQuality.score, 40),
-      confidenceLabel: 'Low',
-    };
-  }
-
-  const topOpp = opportunities[0];
-  if (topOpp?.category === 'RENT') {
-    return {
-      action: 'Review rental pricing.',
-      why: 'Current rent appears below the estimated market range based on internal comparables.',
-      evidence: topOpp.evidence,
-      expectedImpact: topOpp.potentialAnnualImprovement
-        ? `Potential £${Math.round(topOpp.potentialAnnualImprovement.low).toLocaleString()}–£${Math.round(topOpp.potentialAnnualImprovement.high).toLocaleString()} annual improvement`
-        : 'Potential rental income improvement',
-      confidence: topOpp.confidence,
-      confidenceLabel: topOpp.confidenceLabel,
-    };
-  }
-
-  const topRisk = risks[0];
-  if (topRisk?.category === 'FINANCIAL') {
-    return {
-      action: 'Proceed with further investment analysis.',
-      why: topRisk.title,
-      evidence: topRisk.evidence,
-      expectedImpact: 'Clarify financing and cost assumptions before committing.',
-      confidence: 65,
-      confidenceLabel: 'Medium',
-    };
-  }
-
-  if (topOpp?.category === 'MARKETING') {
-    return {
-      action: 'Improve listing positioning before reducing price.',
-      why: topOpp.description,
-      evidence: topOpp.evidence,
-      expectedImpact: 'Better marketing may improve enquiry quality without price changes.',
-      confidence: topOpp.confidence,
-      confidenceLabel: topOpp.confidenceLabel,
-    };
-  }
-
-  if (investment?.hasMortgageAssumptions === false && investment?.metrics) {
-    return {
-      action: 'Add mortgage assumptions for leveraged cash-flow analysis.',
-      why: 'Purchase price and rent are available but financing inputs were not supplied.',
-      evidence: `Gross yield: ${investment.metrics.grossYield}%`,
-      expectedImpact: 'Complete DSCR and cash-flow projections.',
-      confidence: 70,
-      confidenceLabel: 'Medium',
-    };
-  }
-
-  return {
-    action: rentIntel?.success ? 'Monitor market position and maintain listing quality.' : 'Expand property data and comparable coverage.',
-    why: 'No dominant opportunity or risk identified from current data.',
-    evidence: `Intelligence based on ${dataQuality.score}/100 data quality score.`,
-    expectedImpact: 'Maintains current positioning.',
-    confidence: 55,
-    confidenceLabel: 'Medium',
-  };
-}
-
 async function runFullPropertyAnalysis(propertyIdOrTarget, userId, options = {}) {
   const target =
     typeof propertyIdOrTarget === 'object'
@@ -617,10 +406,11 @@ async function runFullPropertyAnalysis(propertyIdOrTarget, userId, options = {})
       );
       externalEnrichment = await enrichSubjectForIntelligence(subject, property, userId);
     } catch (err) {
+      logIntelligenceFailure('enrichSubjectForIntelligence', err);
       externalEnrichment = {
         available: false,
         partial: true,
-        error: err.message,
+        error: 'EXTERNAL_ENRICHMENT_FAILED',
         message: 'External enrichment failed — continuing with UPRN profile only',
       };
     }
@@ -644,11 +434,12 @@ async function runFullPropertyAnalysis(propertyIdOrTarget, userId, options = {})
       try {
         externalEnrichment = await enrichPropertyForIntelligence(property, { userId });
       } catch (err) {
+        logIntelligenceFailure('enrichPropertyForIntelligence', err);
         externalEnrichment = {
           available: false,
           partial: true,
-          error: err.message,
-          message: 'External enrichment failed — continuing with internal data only',
+          error: 'EXTERNAL_ENRICHMENT_FAILED',
+          message: EXTERNAL_ENRICHMENT_FAILED_PUBLIC,
         };
       }
     } else {
@@ -771,6 +562,142 @@ async function assemblePropertyIntelligenceReport({
     }
   }
 
+  let schoolEvidence = unattachedSchoolFact();
+  if (options.skipSchools) {
+    schoolEvidence = unattachedSchoolFact({
+      note: 'School evidence was not retrieved for this assembly. Missing schools is not “no schools”, and nearby is not catchment.',
+    });
+  } else {
+    stamp('school_evidence', 'Retrieving DfE educational establishment evidence');
+    try {
+      noteCanonicalStep(options, 'school_evidence');
+      const getSchoolEvidenceFn = deps.getSchoolEvidence || getSchoolEvidence;
+      schoolEvidence = await getSchoolEvidenceFn(property, {
+        asOf: evidenceAsOf,
+        identity: {
+          listingId: property.id ?? target.propertyId ?? access?.propertyId ?? null,
+          subjectId: property.subjectId ?? target.subjectId ?? access?.subjectId ?? null,
+          uprn: property.uprn ?? access?.uprn ?? null,
+          postcode: property.zip_code || property.postcode || null,
+          latitude: Number.isFinite(Number(property.latitude)) ? Number(property.latitude) : null,
+          longitude: Number.isFinite(Number(property.longitude)) ? Number(property.longitude) : null,
+          coordinateSource: 'property_record',
+        },
+      });
+    } catch {
+      schoolEvidence = notAssessedSchools({
+        reason: SCHOOL_UNAVAILABLE_REASONS.providerUnavailable,
+        note: 'The educational-establishment service could not be reached. Missing schools is not “no schools”.',
+        identity: {
+          listingId: property.id ?? target.propertyId ?? null,
+          uprn: property.uprn ?? access?.uprn ?? null,
+        },
+      });
+    }
+  }
+
+  let listedBuildingEvidence = unattachedListedBuildingFact();
+  if (options.skipListedBuilding) {
+    listedBuildingEvidence = unattachedListedBuildingFact({
+      note: 'Listed-building evidence was not retrieved for this assembly. Missing listed-building status is not “not listed”.',
+    });
+  } else {
+    stamp('listed_building_evidence', 'Retrieving Historic England listed-building evidence');
+    try {
+      noteCanonicalStep(options, 'listed_building_evidence');
+      const getListedBuildingEvidenceFn = deps.getListedBuildingEvidence || getListedBuildingEvidence;
+      listedBuildingEvidence = await getListedBuildingEvidenceFn(property, {
+        asOf: evidenceAsOf,
+        identity: {
+          listingId: property.id ?? target.propertyId ?? access?.propertyId ?? null,
+          subjectId: property.subjectId ?? target.subjectId ?? access?.subjectId ?? null,
+          uprn: property.uprn ?? access?.uprn ?? null,
+          postcode: property.zip_code || property.postcode || null,
+          latitude: Number.isFinite(Number(property.latitude)) ? Number(property.latitude) : null,
+          longitude: Number.isFinite(Number(property.longitude)) ? Number(property.longitude) : null,
+          coordinateSource: 'property_record',
+        },
+      });
+    } catch {
+      listedBuildingEvidence = notAssessedListedBuilding({
+        reason: LISTED_BUILDING_UNAVAILABLE_REASONS.providerUnavailable,
+        note: 'The listed-building service could not be reached. Missing listed-building status is not “not listed”.',
+        identity: {
+          listingId: property.id ?? target.propertyId ?? null,
+          uprn: property.uprn ?? access?.uprn ?? null,
+        },
+      });
+    }
+  }
+
+  let conservationAreaEvidence = unattachedConservationAreaFact();
+  if (options.skipConservationArea) {
+    conservationAreaEvidence = unattachedConservationAreaFact({
+      note: 'Conservation-area evidence was not retrieved for this assembly. Missing conservation-area status is not “not in a conservation area”.',
+    });
+  } else {
+    stamp('conservation_area_evidence', 'Retrieving conservation-area membership evidence');
+    try {
+      noteCanonicalStep(options, 'conservation_area_evidence');
+      const getConservationAreaEvidenceFn = deps.getConservationAreaEvidence || getConservationAreaEvidence;
+      conservationAreaEvidence = await getConservationAreaEvidenceFn(property, {
+        asOf: evidenceAsOf,
+        identity: {
+          listingId: property.id ?? target.propertyId ?? access?.propertyId ?? null,
+          subjectId: property.subjectId ?? target.subjectId ?? access?.subjectId ?? null,
+          uprn: property.uprn ?? access?.uprn ?? null,
+          postcode: property.zip_code || property.postcode || null,
+          latitude: Number.isFinite(Number(property.latitude)) ? Number(property.latitude) : null,
+          longitude: Number.isFinite(Number(property.longitude)) ? Number(property.longitude) : null,
+          coordinateSource: 'property_record',
+        },
+      });
+    } catch {
+      conservationAreaEvidence = notAssessedConservationArea({
+        reason: CONSERVATION_AREA_UNAVAILABLE_REASONS.providerUnavailable,
+        note: 'The conservation-area service could not be reached. Missing conservation-area status is not “not in a conservation area”.',
+        identity: {
+          listingId: property.id ?? target.propertyId ?? null,
+          uprn: property.uprn ?? access?.uprn ?? null,
+        },
+      });
+    }
+  }
+
+  let article4Evidence = unattachedArticle4Fact();
+  if (options.skipArticle4) {
+    article4Evidence = unattachedArticle4Fact({
+      note: 'Article 4 evidence was not retrieved for this assembly. Missing Article 4 status is not “not in an Article 4 area”.',
+    });
+  } else {
+    stamp('article_4_evidence', 'Retrieving Article 4 direction-area membership evidence');
+    try {
+      noteCanonicalStep(options, 'article_4_evidence');
+      const getArticle4EvidenceFn = deps.getArticle4Evidence || getArticle4Evidence;
+      article4Evidence = await getArticle4EvidenceFn(property, {
+        asOf: evidenceAsOf,
+        identity: {
+          listingId: property.id ?? target.propertyId ?? access?.propertyId ?? null,
+          subjectId: property.subjectId ?? target.subjectId ?? access?.subjectId ?? null,
+          uprn: property.uprn ?? access?.uprn ?? null,
+          postcode: property.zip_code || property.postcode || null,
+          latitude: Number.isFinite(Number(property.latitude)) ? Number(property.latitude) : null,
+          longitude: Number.isFinite(Number(property.longitude)) ? Number(property.longitude) : null,
+          coordinateSource: 'property_record',
+        },
+      });
+    } catch {
+      article4Evidence = notAssessedArticle4({
+        reason: ARTICLE_4_UNAVAILABLE_REASONS.providerUnavailable,
+        note: 'The Article 4 service could not be reached. Missing Article 4 status is not “not in an Article 4 area”.',
+        identity: {
+          listingId: property.id ?? target.propertyId ?? null,
+          uprn: property.uprn ?? access?.uprn ?? null,
+        },
+      });
+    }
+  }
+
   const propertyFacts = assemblePropertyFacts({
     property,
     evidence: propertyDataEvidence,
@@ -781,6 +708,10 @@ async function assemblePropertyIntelligenceReport({
     listingCharges,
     floodEvidence,
     planningEvidence,
+    schoolEvidence,
+    listedBuildingEvidence,
+    conservationAreaEvidence,
+    article4Evidence,
   });
 
   if (!access) {
@@ -841,9 +772,17 @@ async function assemblePropertyIntelligenceReport({
   let pricePosition = null;
   if (property.category === 'sale' || Number(property.price) > 0) {
     noteCanonicalStep(options, 'valuation');
-    saleValuation = await valuationFn(property, externalEnrichment);
-    if (saleValuation?.success) {
-      pricePosition = calculatePricePosition(Number(property.price), saleValuation);
+    try {
+      saleValuation = await valuationFn(property, externalEnrichment);
+      if (saleValuation?.success) {
+        pricePosition = calculatePricePosition(Number(property.price), saleValuation);
+      }
+    } catch {
+      saleValuation = {
+        success: false,
+        insufficientEvidence: true,
+        message: 'Valuation service could not be reached.',
+      };
     }
   }
 
@@ -854,29 +793,37 @@ async function assemblePropertyIntelligenceReport({
     (monthlyRent > 0 || property.category === 'sale' || Number(property.price) > 0);
   if (canEstimateRent) {
     noteCanonicalStep(options, 'rent');
-    rentIntel = await analyseRentFn(
-      {
-        city: property.city,
-        postcode: property.zip_code,
-        zip_code: property.zip_code,
-        bedrooms: property.bedrooms,
-        bathrooms: property.bathrooms,
-        squareFeet: property.square_feet,
-        propertyType: property.property_type,
-        property_category: property.property_category,
-        category: property.category,
-        currentRent: monthlyRent > 0 ? monthlyRent : undefined,
-        propertyId: property.id,
-        latitude: property.latitude,
-        longitude: property.longitude,
-        furnished: property.furnished,
-        has_garden: property.has_garden,
-        has_garage: property.has_garage,
-        parking_spaces: property.parking_spaces,
-      },
-      userId,
-      { externalEnrichment }
-    );
+    try {
+      rentIntel = await analyseRentFn(
+        {
+          city: property.city,
+          postcode: property.zip_code,
+          zip_code: property.zip_code,
+          bedrooms: property.bedrooms,
+          bathrooms: property.bathrooms,
+          squareFeet: property.square_feet,
+          propertyType: property.property_type,
+          property_category: property.property_category,
+          category: property.category,
+          currentRent: monthlyRent > 0 ? monthlyRent : undefined,
+          propertyId: property.id,
+          latitude: property.latitude,
+          longitude: property.longitude,
+          furnished: property.furnished,
+          has_garden: property.has_garden,
+          has_garage: property.has_garage,
+          parking_spaces: property.parking_spaces,
+        },
+        userId,
+        { externalEnrichment }
+      );
+    } catch {
+      rentIntel = {
+        success: false,
+        message: 'Rental intelligence could not be reached.',
+        comparables: [],
+      };
+    }
     if (rentIntel.success && monthlyRent > 0) {
       rentIntel.currentRent = monthlyRent;
     } else if (rentIntel.success && rentIntel.recommendedRent) {
@@ -894,8 +841,8 @@ async function assemblePropertyIntelligenceReport({
   let prepared = null;
   const analysisOptions = publicAnalysisOptions(options);
   const financeContractPreview = parseFinancePayload(analysisOptions);
-  const listingAskingPrice = Number(property.price) || 0;
-  const listingMonthlyRent = monthlyRent > 0 ? monthlyRent : 0;
+  const listingAskingPrice = toListingNumber(property.price);
+  const listingMonthlyRent = monthlyRent;
   const marketRent = rentIntel?.recommendedRent || rentIntel?.estimatedRent || null;
   const scenarioPurchasePrice = financeContractPreview.fields.purchasePrice?.available
     ? financeContractPreview.fields.purchasePrice.value
@@ -968,8 +915,8 @@ async function assemblePropertyIntelligenceReport({
     contract: prepared?.financeInputs || financeContractPreview,
     presented: investment?.presented || null,
     submitted: analysisOptions,
-    listingAskingPrice: listingAskingPrice || null,
-    listingMonthlyRent: listingMonthlyRent || null,
+    listingAskingPrice,
+    listingMonthlyRent,
     marketRent,
     propertyFacts,
     calculationInput: prepared?.input || null,
@@ -978,14 +925,7 @@ async function assemblePropertyIntelligenceReport({
     investment.financeRequest = financeRequest;
   }
 
-  stamp('risks', 'Analysing risks');
   const marketingGaps = isProfessional ? detectMarketingGaps(property) : [];
-  const risks = buildRisks(property, rentIntel, investment, dataQuality);
-
-  stamp('opportunities', 'Identifying opportunities');
-  const opportunities = buildOpportunities(property, rentIntel, marketingGaps);
-  const strengths = buildStrengths(property, rentIntel, investment, dataQuality);
-  const weaknesses = buildWeaknesses(property, rentIntel, investment, dataQuality, marketingGaps);
   const documents = buildDocumentIntelligence(property);
 
   stamp('scoring', 'Calculating intelligence scores');
@@ -995,13 +935,19 @@ async function assemblePropertyIntelligenceReport({
       ? rentIntel.comparables.reduce((s, c) => s + c.similarity, 0) / comparableCount
       : null;
 
+  // TECHNICAL DEBT: buildRisks is still invoked so Personal Decision dimensions.risk
+  // and What-if re-score from report.risks stay numerically stable. Invented
+  // probability / riskExposure must not enter Decision Intelligence or the
+  // property-overview narrative. Do not change this scoring input in a cleanup phase.
+  const risks = buildRisks(property, rentIntel, investment, dataQuality);
+
   const scores = calculateIntelligenceScores({
     property,
     dataQuality,
     rentIntel,
     investment,
     risks,
-    opportunities,
+    opportunities: null,
     comparableCount,
     monthlyRent,
   });
@@ -1021,14 +967,6 @@ async function assemblePropertyIntelligenceReport({
     providerCoverageAvailable: Boolean(externalEnrichment?.available),
   });
 
-  const recommendation = buildPrimaryRecommendation({
-    opportunities,
-    risks,
-    dataQuality,
-    investment,
-    rentIntel,
-  });
-
   const personalDecision = scorePublicLandlordPersonalDecision({
     property,
     finance: analysisOptions,
@@ -1041,11 +979,38 @@ async function assemblePropertyIntelligenceReport({
       areaRentalDemand,
       risks,
       dataQuality,
-      opportunities,
+      opportunities: null,
       comparableCount,
+      presentedInvestment: investment?.presented || null,
     }),
     asOf: options.asOf || evidenceAsOf,
   });
+
+  const decisionIntelligence = assembleDecisionIntelligence({
+    propertyFacts,
+    investment,
+    personalDecision,
+    evidenceAsOf,
+    rentIntel,
+    pricePosition,
+    financeRequest,
+  });
+  try {
+    decisionIntelligence.explanation = await explainDecisionIntelligence({
+      decisionIntelligence,
+      personalDecision,
+      confidence,
+      skipLlm: options.skipExplanation,
+      generateJson: deps.generateDecisionIntelligenceExplanation || null,
+    });
+  } catch {
+    decisionIntelligence.explanation = await explainDecisionIntelligence({
+      decisionIntelligence,
+      personalDecision,
+      confidence,
+      skipLlm: true,
+    });
+  }
 
   const structuredFacts = {
     property: {
@@ -1097,9 +1062,6 @@ async function assemblePropertyIntelligenceReport({
           scenarioIsNotObservedResult: Boolean(investment.scenarioIsNotObservedResult),
         }
       : null,
-    topOpportunity: opportunities[0] || null,
-    topRisk: risks[0] || null,
-    recommendation,
     externalEnrichment: externalEnrichment?.available
       ? {
           uprn: externalEnrichment.identity?.uprn || null,
@@ -1208,9 +1170,19 @@ async function assemblePropertyIntelligenceReport({
   };
 
   stamp('explanation', 'Preparing AI explanation');
-  const explanation = options.skipExplanation
-    ? { summary: templateSummary(structuredFacts), source: 'template', model: null, tokensUsed: 0 }
-    : await explainFn(structuredFacts);
+  let explanation;
+  try {
+    explanation = options.skipExplanation
+      ? { summary: templateSummary(structuredFacts), source: 'template', model: null, tokensUsed: 0 }
+      : await explainFn(structuredFacts);
+  } catch {
+    explanation = {
+      summary: templateSummary(structuredFacts),
+      source: 'template',
+      model: null,
+      tokensUsed: 0,
+    };
+  }
 
   const identity = buildCanonicalIdentity(property, access, externalEnrichment, target);
 
@@ -1239,7 +1211,7 @@ async function assemblePropertyIntelligenceReport({
       property_category: property.property_category,
       category: property.category,
       price: property.price,
-      monthly_rent: monthlyRent,
+      monthly_rent: listingMonthlyRent,
       bedrooms: property.bedrooms,
       bathrooms: property.bathrooms,
       square_feet: property.square_feet,
@@ -1283,7 +1255,7 @@ async function assemblePropertyIntelligenceReport({
     explanation,
     snapshot: {
       price: property.price,
-      rent: monthlyRent > 0 ? monthlyRent : rentIntel?.recommendedRent || null,
+      rent: listingMonthlyRent,
       size: property.square_feet,
       bedrooms: property.bedrooms,
       bathrooms: property.bathrooms,
@@ -1327,12 +1299,12 @@ async function assemblePropertyIntelligenceReport({
     investment,
     financeRequest,
     personalDecision,
-    opportunities,
+    decisionIntelligence,
+    // Retained for Personal Decision risk scoring and What-if re-score from
+    // saved output. Not a landlord decision narrative. UI hides this when
+    // Decision Intelligence is present.
     risks,
-    strengths,
-    weaknesses,
     documents,
-    recommendation,
     externalIntelligence: externalEnrichment,
     professionalInsights:
       isProfessional && marketingGaps.length > 0

@@ -107,6 +107,10 @@ async function assembleReport({ property = listing(), planningStub, floodStub, s
       skipExplanation: true,
       skipPostcodeMarket: true,
       skipPlanning,
+      skipSchools: extraOptions.skipSchools !== false,
+      skipListedBuilding: extraOptions.skipListedBuilding !== false,
+      skipConservationArea: extraOptions.skipConservationArea !== false,
+      skipArticle4: extraOptions.skipArticle4 !== false,
       asOf: ASOF,
       deps: {
         getPlanningEvidence: planningStub,

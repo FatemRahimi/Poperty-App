@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "migrate:addlist": "node scripts/migrate-addlist-fields.js"
+    "test": "node scripts/run-tests.js",
+    "backtest:pi": "node scripts/run-property-intelligence-backtest.js",
+    "audit:outcomes": "node scripts/audit-listing-outcomes.js",
+    "migrate:addlist": "node scripts/migrate-addlist-fields.js",
+    "migrate:intelligence": "node scripts/migrate-intelligence-schema.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

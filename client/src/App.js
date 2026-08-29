@@ -25,13 +25,19 @@ import AdminDashboard from "./pages/AdminDashboard";
 import UserDashboard from "./pages/UserDashboard";
 import PropertyView from "./pages/PropertyView";
 import AdvisorProfile from "./pages/AdvisorProfile";
-import AiServicesLanding from "./pages/ai/AiServicesLanding";
+import AiServicesRedirect from "./pages/ai/AiServicesRedirect";
+import AiHub from "./pages/ai/AiHub";
 import AiPricing from "./pages/ai/AiPricing";
 import AiDashboard from "./pages/ai/AiDashboard";
 import AiListingWriter from "./pages/ai/AiListingWriter";
 import AiValuation from "./pages/ai/AiValuation";
 import AiBuyerMatch from "./pages/ai/AiBuyerMatch";
 import AiHistoryDetail from "./pages/ai/AiHistoryDetail";
+import PropertyIntelligence from "./pages/ai/PropertyIntelligence";
+import InvestmentAnalyst from "./pages/ai/InvestmentAnalyst";
+import RentIntelligence from "./pages/ai/RentIntelligence";
+import PortfolioOptimiser from "./pages/ai/PortfolioOptimiser";
+import AiHistory from "./pages/ai/AiHistory";
 
 function Layout() {
     const location = useLocation();
@@ -40,7 +46,8 @@ function Layout() {
 
     // Hide Navbar on login, password, signup pages, admin login, and admin dashboard
     // FindProperty renders its own hero navbar inside the background image
-    const hideNavbar = isFindPropertyPage || ["/login", "/password", "/signup", "/addlist", "/addlistnext", "/addlease", "/additional-listing/sale", "/additional-listing/lease", "/addleasenext", "/addrent", "/advisor-profile", "/admin-x9k7m2p5q8", "/admin/dashboard", "/dashboard", "/property"].includes(location.pathname) || location.pathname.startsWith("/property/");
+    const isAiServicesPage = location.pathname.startsWith("/ai-services");
+    const hideNavbar = isFindPropertyPage || isAiServicesPage || ["/login", "/password", "/signup", "/addlist", "/addlistnext", "/addlease", "/additional-listing/sale", "/additional-listing/lease", "/addleasenext", "/addrent", "/advisor-profile", "/admin-x9k7m2p5q8", "/admin/dashboard", "/dashboard", "/property"].includes(location.pathname) || location.pathname.startsWith("/property/");
 
     return (
         <div>
@@ -59,11 +66,35 @@ function Layout() {
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
                 <Route path="/property/:slug" element={<PropertyView />} />
 
-                {/* AI Property Services — public landing & pricing */}
-                <Route path="/ai-services" element={<AiServicesLanding />} />
+                {/* AI Property Intelligence Platform */}
+                <Route path="/ai-services" element={<AiHub />} />
+                <Route path="/ai-services/home" element={<AiServicesRedirect />} />
+                <Route path="/ai-services/property-intelligence" element={
+                    <ProtectedRoute>
+                        <PropertyIntelligence />
+                    </ProtectedRoute>
+                } />
+                <Route path="/ai-services/investment-analyst" element={
+                    <ProtectedRoute>
+                        <InvestmentAnalyst />
+                    </ProtectedRoute>
+                } />
+                <Route path="/ai-services/rent-intelligence" element={
+                    <ProtectedRoute>
+                        <RentIntelligence />
+                    </ProtectedRoute>
+                } />
+                <Route path="/ai-services/portfolio-optimiser" element={
+                    <ProtectedRoute>
+                        <PortfolioOptimiser />
+                    </ProtectedRoute>
+                } />
                 <Route path="/ai-services/pricing" element={<AiPricing />} />
-
-                {/* AI Property Services — authenticated tools */}
+                <Route path="/ai-services/history" element={
+                    <ProtectedRoute>
+                        <AiHistory />
+                    </ProtectedRoute>
+                } />
                 <Route path="/ai-services/dashboard" element={
                     <ProtectedRoute>
                         <AiDashboard />

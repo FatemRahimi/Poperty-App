@@ -1,6 +1,13 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import IntelligenceReport from './IntelligenceReport';
+
+function openFold(title) {
+  const btn = screen.getAllByRole('button').find((el) => (el.textContent || '').includes(title));
+  if (!btn) throw new Error(`Missing fold ${title}`);
+  if (btn.getAttribute('aria-expanded') === 'false') fireEvent.click(btn);
+  return btn;
+}
 
 function notAssessed(reason) {
   return { available: false, value: null, state: 'notAssessed', reason };
@@ -181,6 +188,8 @@ describe('IntelligenceReport finance rendering', () => {
     );
     expect(screen.getByTestId('metric-cashFlow')).toHaveTextContent('Not assessed');
     expect(screen.getByTestId('metric-dscr')).toHaveTextContent('Not assessed');
+    expect(screen.getByTestId('metric-noi')).toHaveTextContent('£9,800');
+    expect(screen.getByTestId('metric-dscr')).not.toHaveTextContent('0');
     expect(screen.getByTestId('not-assessed-reasons')).toHaveTextContent('Interest rate');
   });
 
@@ -378,6 +387,7 @@ expect(screen.getByTestId('fact-flood')).not.toHaveTextContent('safe');
     );
     expect(screen.getByTestId('fact-planning')).toHaveTextContent('FACT');
     expect(screen.getByTestId('fact-planning-value')).toHaveTextContent('1 application at this location');
+    openFold('Planning & development');
     expect(screen.getByTestId('planning-subject-0')).toHaveTextContent('2015/3212/P');
     expect(screen.getByTestId('planning-subject-0')).toHaveTextContent('Final Decision');
     expect(screen.getByText('Planning & development')).toBeInTheDocument();
@@ -410,6 +420,7 @@ expect(screen.getByTestId('fact-flood')).not.toHaveTextContent('safe');
       />
     );
     expect(screen.getByTestId('fact-planning')).toHaveTextContent('AREA CONTEXT');
+    openFold('Planning & development');
     expect(screen.getByTestId('planning-nearby-0')).toHaveTextContent('2015/7191/P');
     expect(screen.getByTestId('planning-nearby-0')).toHaveTextContent('260m');
 
@@ -433,12 +444,778 @@ expect(screen.getByTestId('fact-flood')).not.toHaveTextContent('safe');
     );
     expect(screen.getByTestId('fact-planning-value')).toHaveTextContent('NOT ASSESSED');
     expect(screen.getByTestId('fact-planning-reason')).toHaveTextContent('Reason: Provider unavailable');
+    openFold('Planning & development');
     expect(screen.getByTestId('planning-section-missing')).toHaveTextContent('NOT ASSESSED');
+  });
+
+  test('schools nearby is AREA CONTEXT and catchment stays NOT ASSESSED', () => {
+    const { rerender } = render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          propertyFacts: {
+            facts: {
+              schools: {
+                available: true,
+                value: '1 nearby establishment within 800m',
+                source: 'MHCLG_PlanningData_EducationalEstablishment',
+                trust: 'areaContext',
+                scope: 'area',
+                searchRadiusMetres: 800,
+                summary: { nearbyCount: 1 },
+                nearbySchools: [{
+                  urn: '100000',
+                  name: "St Alban's Church of England Primary School",
+                  nativeType: 'Voluntary Aided School',
+                  nativeStatus: 'Open',
+                  distanceMetres: 80,
+                }],
+                catchment: {
+                  available: false,
+                  state: 'notAssessed',
+                  reason: 'no_authoritative_catchment_source_integrated',
+                },
+                limitations: ['Nearby establishments are proximity only. They are not catchment, admissions, walking-route, or commute evidence.'],
+              },
+            },
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('fact-schools')).toHaveTextContent('AREA CONTEXT');
+    expect(screen.getByTestId('fact-schools-value')).toHaveTextContent('1 nearby establishment within 800m');
+    openFold('Schools & education');
+    expect(screen.getByTestId('schools-nearby-0')).toHaveTextContent("St Alban's Church of England Primary School");
+    expect(screen.getByTestId('schools-nearby-0')).toHaveTextContent('Voluntary Aided School');
+    expect(screen.getByTestId('schools-nearby-0')).toHaveTextContent('80m');
+    expect(screen.getByText('Schools & education')).toBeInTheDocument();
+    expect(screen.getByTestId('schools-catchment-value')).toHaveTextContent('NOT ASSESSED');
+    expect(screen.getByTestId('schools-catchment-reason')).toHaveTextContent('No authoritative catchment source');
+    expect(screen.getByTestId('fact-schools')).not.toHaveTextContent('Great schools');
+    expect(screen.getByTestId('fact-schools')).not.toHaveTextContent('Family-friendly');
+    expect(screen.getByTestId('fact-schools')).not.toHaveTextContent('Likely admission');
+    expect(screen.getByTestId('fact-schools')).not.toHaveTextContent('Adds value');
+
+    rerender(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          propertyFacts: {
+            facts: {
+              schools: {
+                available: false,
+                value: null,
+                state: 'notAssessed',
+                unavailableReason: 'provider_unavailable',
+                catchment: { reason: 'no_authoritative_catchment_source_integrated' },
+                note: 'The educational-establishment service was unavailable. Missing schools is not “no schools”.',
+              },
+            },
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('fact-schools-value')).toHaveTextContent('NOT ASSESSED');
+    expect(screen.getByTestId('fact-schools-reason')).toHaveTextContent('Reason: Provider unavailable');
+    openFold('Schools & education');
+    expect(screen.getByTestId('schools-section-missing')).toHaveTextContent('NOT ASSESSED');
+    expect(screen.getByTestId('schools-catchment-value')).toHaveTextContent('NOT ASSESSED');
+  });
+
+  test('listed building FACT vs NOT ASSESSED preserves native grade and does not score heritage', () => {
+    const { rerender } = render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          propertyFacts: {
+            facts: {
+              listedBuilding: {
+                available: true,
+                value: 'Grade I',
+                nativeGrade: 'I',
+                source: 'MHCLG_PlanningData_ListedBuilding',
+                provider: 'MHCLG_PlanningData',
+                geographicResolution: 'Historic England listed-building point intersecting a same-site coordinate buffer.',
+                retrievedAt: '2026-08-26T15:00:00.000Z',
+                listings: [
+                  { listEntryNumber: '1066099', name: 'THE ADMIRALTY AND THE ADMIRALTY SCREEN', nativeGrade: 'I' },
+                ],
+                summary: { subjectCount: 1 },
+                limitations: ['Grade is the native Historic England wording (I, II*, II).'],
+              },
+            },
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('fact-listedBuilding')).toHaveTextContent('FACT');
+    expect(screen.getByTestId('fact-listedBuilding-value')).toHaveTextContent('Grade I');
+    expect(screen.getByTestId('fact-listedBuilding-grade')).toHaveTextContent('Grade: I');
+    expect(screen.getByTestId('fact-listedBuilding-source')).toHaveTextContent('Historic England NHLE via MHCLG Planning Data');
+    openFold('Listed building');
+    expect(screen.getByTestId('listed-building-0')).toHaveTextContent('1066099');
+    expect(screen.getByTestId('listed-building-0')).toHaveTextContent('Grade I');
+    expect(screen.getByTestId('fact-listedBuilding')).not.toHaveTextContent('heritage score');
+    expect(screen.getByTestId('fact-listedBuilding')).not.toHaveTextContent('adds value');
+
+    rerender(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          propertyFacts: {
+            facts: {
+              listedBuilding: {
+                available: false,
+                value: null,
+                state: 'notAssessed',
+                unavailableReason: 'no_applicable_evidence_returned',
+                note: 'This source returned no current listed building at these coordinates. That is not evidence that the property is not listed.',
+              },
+            },
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('fact-listedBuilding-value')).toHaveTextContent('NOT ASSESSED');
+    expect(screen.getByTestId('fact-listedBuilding-reason')).toHaveTextContent('Reason: No listed building returned at these coordinates');
+    openFold('Listed building');
+    expect(screen.getByTestId('listed-building-section-missing')).toHaveTextContent('NOT ASSESSED');
+    expect(screen.getByTestId('fact-listedBuilding-value')).not.toHaveTextContent('not listed');
+  });
+
+  test('listed building II* is preserved and is not converted to a numeric grade', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          propertyFacts: {
+            facts: {
+              listedBuilding: {
+                available: true,
+                value: 'Grade II*',
+                nativeGrade: 'II*',
+                source: 'MHCLG_PlanningData_ListedBuilding',
+                listings: [
+                  { listEntryNumber: '1066081', name: 'ADMIRALTY HOUSE', nativeGrade: 'II*' },
+                ],
+                summary: { subjectCount: 1 },
+              },
+            },
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('fact-listedBuilding-value')).toHaveTextContent('Grade II*');
+    openFold('Listed building');
+    expect(screen.getByTestId('listed-building-0')).toHaveTextContent('Grade II*');
+    expect(screen.getByTestId('fact-listedBuilding')).not.toHaveTextContent('Grade 2');
+    expect(screen.getByTestId('fact-listedBuilding-value')).not.toHaveTextContent('2.5');
+  });
+
+  test('conservation area FACT vs NOT ASSESSED is membership not a heritage score', () => {
+    const { rerender } = render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          propertyFacts: {
+            facts: {
+              conservationArea: {
+                available: true,
+                value: 'Trafalgar Square',
+                source: 'MHCLG_PlanningData_ConservationArea',
+                provider: 'MHCLG_PlanningData',
+                geographicResolution: 'Property coordinates intersecting a conservation-area polygon.',
+                retrievedAt: '2026-08-26T18:00:00.000Z',
+                areas: [
+                  { name: 'Trafalgar Square', reference: 'CONARA/1300', entityId: 44002870, designationDate: '1993-01-01' },
+                ],
+                summary: { subjectCount: 1 },
+                limitations: ['Coverage is incomplete and may include duplicates.'],
+              },
+            },
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('fact-conservationArea')).toHaveTextContent('FACT');
+    expect(screen.getByTestId('fact-conservationArea-value')).toHaveTextContent('Trafalgar Square');
+    expect(screen.getByTestId('fact-conservationArea-source')).toHaveTextContent('Conservation areas via MHCLG Planning Data');
+    openFold('Conservation area');
+    expect(screen.getByTestId('conservation-area-0')).toHaveTextContent('CONARA/1300');
+    expect(screen.getByTestId('fact-conservationArea')).not.toHaveTextContent('adds value');
+    expect(screen.getByTestId('fact-conservationArea')).not.toHaveTextContent('permission will');
+
+    rerender(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          propertyFacts: {
+            facts: {
+              conservationArea: {
+                available: false,
+                value: null,
+                state: 'notAssessed',
+                unavailableReason: 'no_applicable_evidence_returned',
+                note: 'This source returned no current conservation area intersecting these coordinates. That is not evidence that the property is outside a conservation area.',
+              },
+            },
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('fact-conservationArea-value')).toHaveTextContent('NOT ASSESSED');
+    expect(screen.getByTestId('fact-conservationArea-reason')).toHaveTextContent('Reason: No conservation area returned at these coordinates');
+    openFold('Conservation area');
+    expect(screen.getByTestId('conservation-area-section-missing')).toHaveTextContent('NOT ASSESSED');
+    expect(screen.getByTestId('fact-conservationArea-value')).not.toHaveTextContent('not in a conservation area');
+  });
+
+  test('article 4 FACT is membership only and restrictions stay NOT ASSESSED', () => {
+    const { rerender } = render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          propertyFacts: {
+            facts: {
+              article4: {
+                available: true,
+                value: 'Article 4 Basement Development Permitted Rights Removed',
+                source: 'MHCLG_PlanningData_Article4DirectionArea',
+                provider: 'MHCLG_PlanningData',
+                geographicResolution: 'Property coordinates intersecting a published Article 4 Direction Area polygon.',
+                retrievedAt: '2026-08-26T20:00:00.000Z',
+                geographicMembershipOnly: true,
+                restrictionsAssessed: false,
+                restrictions: {
+                  available: false,
+                  state: 'notAssessed',
+                  reason: 'authoritative_restriction_schedule_not_integrated',
+                },
+                areas: [
+                  {
+                    name: 'Article 4 Basement Development Permitted Rights Removed',
+                    reference: 'A4/BASEMENT',
+                    entityId: 61000001,
+                    startDate: '2016-07-31',
+                  },
+                ],
+                summary: { subjectCount: 1 },
+                limitations: ['Coverage is incomplete and does not cover all of England.'],
+              },
+            },
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('fact-article4')).toHaveTextContent('FACT');
+    expect(screen.getByTestId('fact-article4-value')).toHaveTextContent('Article 4 Basement Development Permitted Rights Removed');
+    expect(screen.getByTestId('fact-article4-source')).toHaveTextContent('Article 4 direction areas via MHCLG Planning Data');
+    openFold('Article 4 Direction Area');
+    expect(screen.getByTestId('article4-0')).toHaveTextContent('A4/BASEMENT');
+    expect(screen.getByTestId('fact-article4-restrictions')).toHaveTextContent('NOT ASSESSED');
+    expect(screen.getByTestId('article4-restrictions-section')).toHaveTextContent('NOT ASSESSED');
+    expect(screen.getByTestId('fact-article4-membership')).toHaveTextContent(
+      'The property coordinates intersect a published Article 4 Direction Area. The specific permitted-development rights affected have not been assessed.'
+    );
+    expect(screen.getByTestId('fact-article4')).not.toHaveTextContent('development prohibited');
+    expect(screen.getByTestId('fact-article4')).not.toHaveTextContent('planning permission required');
+    expect(screen.getByTestId('fact-article4')).not.toHaveTextContent('Article 4 risk');
+    expect(screen.getByTestId('fact-article4')).not.toHaveTextContent('reduces value');
+    expect(screen.getByTestId('fact-article4')).not.toHaveTextContent('bad for investment');
+
+    rerender(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          propertyFacts: {
+            facts: {
+              article4: {
+                available: false,
+                value: null,
+                state: 'notAssessed',
+                unavailableReason: 'no_applicable_evidence_returned',
+                note: 'This source returned no current Article 4 direction area intersecting these coordinates. That is not evidence that the property is outside an Article 4 area.',
+              },
+            },
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('fact-article4-value')).toHaveTextContent('NOT ASSESSED');
+    expect(screen.getByTestId('fact-article4-reason')).toHaveTextContent('Reason: No Article 4 direction area returned at these coordinates');
+    openFold('Article 4 Direction Area');
+    expect(screen.getByTestId('article4-section-missing')).toHaveTextContent('NOT ASSESSED');
+    expect(screen.getByTestId('fact-article4-value')).not.toHaveTextContent('not in an Article 4');
+    expect(screen.getByTestId('fact-article4-value')).not.toHaveTextContent('No Article 4');
+    expect(screen.queryByTestId('fact-article4-restrictions')).not.toBeInTheDocument();
+  });
+
+  test('decision intelligence shows material findings then investigation priorities', () => {
+    const { rerender } = render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          decisionIntelligence: {
+            engine: 'decisionIntelligence',
+            version: 'decision-intelligence-1.0.0',
+            scoringActivated: false,
+            materialFindings: [
+              {
+                id: 'finding_gross_yield',
+                title: 'Gross yield is an assessed landlord-fit driver',
+                explanation: 'Gross yield is currently one of the assessed drivers of the landlord fit.',
+                importance: 'decision_relevant',
+                effect: 'supporting',
+                scope: 'scenario',
+              },
+            ],
+            investigationPriorities: [
+              {
+                id: 'vacancy_assumption_missing',
+                title: 'Vacancy assumption not supplied',
+                explanation: 'Vacancy was not supplied, so NOI remains not assessed. Missing vacancy is not 0%.',
+                importance: 'decision_relevant',
+                state: 'notAssessed',
+                affects: ['investment.presented.noi'],
+              },
+            ],
+          },
+        }}
+      />
+    );
+    expect(screen.getByText('What currently matters')).toBeInTheDocument();
+    expect(screen.getByText('What to verify next')).toBeInTheDocument();
+    expect(screen.getByTestId('decision-finding-finding_gross_yield-title')).toHaveTextContent(
+      'Gross yield is an assessed landlord-fit driver'
+    );
+    expect(screen.getByTestId('decision-finding-finding_gross_yield-effect')).toHaveTextContent(
+      'Currently supporting this landlord scenario'
+    );
+    expect(screen.getByTestId('decision-priority-vacancy_assumption_missing-title')).toHaveTextContent('Vacancy assumption not supplied');
+    expect(screen.getByTestId('decision-priority-vacancy_assumption_missing')).not.toHaveTextContent('low demand');
+    expect(screen.getByTestId('decision-priority-vacancy_assumption_missing')).not.toHaveTextContent('buy this');
+    expect(screen.getByTestId('decision-finding-finding_gross_yield')).not.toHaveTextContent('AI recommends');
+    expect(screen.getByTestId('decision-finding-finding_gross_yield')).not.toHaveTextContent('Strong buy');
+    expect(screen.getByTestId('decision-finding-finding_gross_yield')).not.toHaveTextContent('Top opportunity');
+
+    rerender(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          decisionIntelligence: {
+            engine: 'decisionIntelligence',
+            investigationPriorities: [],
+            unresolvedDependencies: [],
+            materialFindings: [],
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('decision-intelligence-empty')).toHaveTextContent('No decision-relevant unknowns');
+    expect(screen.getByTestId('decision-intelligence-findings-empty')).toHaveTextContent('No assessed evidence currently produces a material finding');
+  });
+
+  test('decision intelligence maps scenario drivers without ranking them', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          decisionIntelligence: {
+            engine: 'decisionIntelligence',
+            investigationPriorities: [],
+            materialFindings: [],
+            sensitivityDrivers: [
+              {
+                id: 'driver_purchasePrice',
+                inputKey: 'purchasePrice',
+                group: 'price_rent',
+                title: 'Purchase price',
+                explanation: 'Purchase price can change gross yield. It does not change the valuation estimate.',
+                state: 'active',
+                scope: 'scenario',
+                affects: ['investment.presented.grossYield'],
+                directionality: {
+                  whenInputIncreases: [
+                    { output: 'investment.presented.grossYield', whenInputIncreases: 'decreases' },
+                  ],
+                },
+              },
+              {
+                id: 'driver_interestRate',
+                inputKey: 'interestRate',
+                group: 'finance',
+                title: 'Interest rate',
+                explanation: 'Interest rate can change cash flow and DSCR.',
+                state: 'conditional',
+                scope: 'scenario',
+                affects: ['investment.presented.annualCashFlow', 'investment.presented.dscr'],
+              },
+            ],
+          },
+        }}
+      />
+    );
+    expect(screen.getByText('What can change this result')).toBeInTheDocument();
+    expect(screen.getByTestId('decision-driver-group-price_rent')).toHaveTextContent('Price and rent');
+    expect(screen.getByTestId('decision-driver-purchasePrice-title')).toHaveTextContent('Purchase price');
+    expect(screen.getByTestId('decision-driver-purchasePrice')).toHaveTextContent('gross yield');
+    expect(screen.getByTestId('decision-driver-purchasePrice')).not.toHaveTextContent('investment.presented.grossYield');
+    expect(screen.getByTestId('decision-driver-purchasePrice')).not.toHaveTextContent('Top sensitivities');
+    expect(screen.getByTestId('decision-driver-purchasePrice')).not.toHaveTextContent('best assumption');
+    expect(screen.getByTestId('decision-driver-interestRate')).toHaveTextContent('Not fully assessed');
+  });
+
+  test('decision intelligence overview paraphrases structured truth and old reports remain usable', () => {
+    const { rerender } = render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          decisionIntelligence: {
+            engine: 'decisionIntelligence',
+            investigationPriorities: [],
+            materialFindings: [],
+            sensitivityDrivers: [],
+            explanation: {
+              version: 'decision-intelligence-explanation-1.0.0',
+              source: 'template',
+              overview: 'Property-specific tenant demand is not assessed. Missing finance is notAssessed, not a risk rating.',
+              currentDriversSummary: 'Gross yield is currently supporting this landlord scenario.',
+              verificationSummary: 'To strengthen this analysis, the next useful information would be: Vacancy assumption not supplied.',
+              sensitivitySummary: 'Purchase price can affect gross yield. This is not a ranking.',
+            },
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('decision-intelligence-overview-text')).toHaveTextContent('Property-specific tenant demand is not assessed');
+    expect(screen.getByTestId('decision-intelligence-overview')).not.toHaveTextContent('good investment');
+    expect(screen.getByTestId('decision-intelligence-overview')).not.toHaveTextContent('you should buy');
+    expect(screen.getByTestId('decision-intelligence-overview-source')).toHaveTextContent('Structured synthesis');
+    expect(screen.getByText('What currently matters')).toBeInTheDocument();
+
+    rerender(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          decisionIntelligence: {
+            engine: 'decisionIntelligence',
+            investigationPriorities: [],
+            materialFindings: [],
+            sensitivityDrivers: [],
+          },
+        }}
+      />
+    );
+    expect(screen.queryByTestId('decision-intelligence-overview')).not.toBeInTheDocument();
+    expect(screen.getByTestId('decision-intelligence-findings-empty')).toBeInTheDocument();
   });
 
   test('report remains usable when Personal Decision is absent', () => {
     render(<IntelligenceReport report={BASE_REPORT} />);
     expect(screen.queryByTestId('landlord-personal-decision')).not.toBeInTheDocument();
-    expect(screen.getByText('Executive summary')).toBeInTheDocument();
+    expect(screen.getByTestId('decision-overview')).toBeInTheDocument();
+    expect(screen.getByText('Property overview')).toBeInTheDocument();
+    expect(screen.getByTestId('hero-evidence-strength')).toHaveTextContent('Not the fit score');
+    expect(screen.getByTestId('area-property-demand')).toHaveTextContent('Not assessed');
+    expect(screen.getByTestId('area-rental-demand')).toHaveTextContent('AREA CONTEXT');
+  });
+
+  test('unified hierarchy starts with current analysis then findings before property facts', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          personalDecision: {
+            profile: 'landlord',
+            available: true,
+            score: 71,
+            outcome: 'good_fit',
+            decisionStrength: 'moderate',
+            dimensions: {
+              demand: { available: false, score: null, state: 'no_demand_data_source', unavailableReason: 'no property-specific demand source' },
+            },
+          },
+          decisionIntelligence: {
+            engine: 'decisionIntelligence',
+            materialFindings: [
+              { id: 'finding_gross_yield', title: 'Gross yield is an assessed landlord-fit driver', effect: 'supporting' },
+            ],
+            investigationPriorities: [
+              { id: 'vacancy_assumption_missing', title: 'Vacancy assumption not supplied', importance: 'decision_relevant', state: 'notAssessed' },
+            ],
+            unresolvedDependencies: [
+              { id: 'vacancy_assumption_missing', title: 'Vacancy assumption not supplied', importance: 'decision_relevant' },
+              { id: 'amenity_garden', title: 'Garden is not assessed', importance: 'informational' },
+            ],
+            sensitivityDrivers: [
+              { id: 'driver_purchasePrice', inputKey: 'purchasePrice', group: 'price_rent', title: 'Purchase price', state: 'active', scope: 'scenario' },
+            ],
+            explanation: {
+              source: 'template',
+              overview: 'Property-specific tenant demand is not assessed.',
+            },
+          },
+          marketIntelligence: {
+            ...BASE_REPORT.marketIntelligence,
+            areaRentalDemand: { available: true, band: "Landlord's market", rentalDemand: true },
+          },
+          investment: {
+            presented: {
+              grossYield: assessed(6.6),
+              noi: notAssessed('Operating costs were not supplied — NOI is notAssessed.'),
+              dscr: notAssessed('complete finance inputs required'),
+            },
+          },
+        }}
+      />
+    );
+    const overview = screen.getByTestId('decision-overview');
+    const synthesis = screen.getByTestId('decision-intelligence-overview');
+    const matters = screen.getByTestId('decision-matters');
+    const verify = screen.getByTestId('decision-verify');
+    const facts = screen.getByTestId('property-facts-grid');
+    const fit = screen.getByTestId('landlord-personal-decision');
+    expect(overview.compareDocumentPosition(synthesis) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(fit.compareDocumentPosition(synthesis) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(synthesis.compareDocumentPosition(matters) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(matters.compareDocumentPosition(verify) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(verify.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId('decision-intelligence-overview')).not.toHaveTextContent('Gross yield is an assessed landlord-fit driver');
+    expect(screen.getByTestId('landlord-fit-score')).toHaveTextContent('71/100');
+    expect(screen.getByTestId('hero-evidence-strength')).toHaveTextContent('Not the fit score');
+    expect(screen.getByTestId('hero-landlord-fit')).not.toHaveTextContent('Strong buy');
+    expect(screen.getByTestId('decision-intelligence-priorities')).toHaveTextContent('Vacancy assumption not supplied');
+    expect(screen.getByTestId('decision-intelligence-priorities')).not.toHaveTextContent('Garden is not assessed');
+    expect(screen.getByTestId('decision-analysis-gaps')).toHaveTextContent('Garden is not assessed');
+    expect(screen.getByTestId('decision-analysis-gaps')).toHaveTextContent('not an urgent task');
+    expect(screen.getByTestId('decision-sensitivity')).not.toHaveTextContent('Top sensitivities');
+    expect(screen.getByTestId('decision-sensitivity')).toHaveTextContent('not a ranking');
+    expect(screen.getByRole('link', { name: /Test purchase price/i })).toHaveAttribute('href', '#pi-what-if');
+    expect(screen.getByTestId('metric-grossYield')).toHaveTextContent('6.6%');
+    expect(screen.getByTestId('metric-noi')).toHaveTextContent('Not assessed');
+    expect(screen.getByTestId('metric-noi')).not.toHaveTextContent('£0');
+    expect(screen.getByTestId('area-rental-demand-value')).toHaveTextContent("Landlord's market");
+    expect(screen.getByTestId('area-property-demand')).toHaveTextContent('Not assessed');
+    expect(screen.getByTestId('decision-intelligence-overview-source')).toHaveTextContent('Structured synthesis');
+    expect(screen.getByTestId('decision-matters')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Current analysis' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'What currently matters' })).toBeInTheDocument();
+    expect(screen.queryByText('Recommended action')).not.toBeInTheDocument();
+  });
+
+  test('old reports without Decision Intelligence remain usable', () => {
+    render(<IntelligenceReport report={BASE_REPORT} />);
+    expect(screen.queryByTestId('decision-intelligence')).not.toBeInTheDocument();
+    expect(screen.getByTestId('property-facts-grid')).toBeInTheDocument();
+    expect(screen.getByTestId('decision-overview')).toBeInTheDocument();
+    expect(screen.queryByTestId('decision-intelligence-overview')).not.toBeInTheDocument();
+  });
+
+  test('sparse notAssessed report stays useful and does not invent zeros', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          analysisDate: '2026-08-25T12:00:00.000Z',
+          property: { title: 'Sparse listing', address: '2 Test Street' },
+          confidence: { level: 'Low' },
+          executiveSummary: 'Limited evidence.',
+          disclaimer: 'Not advice.',
+          personalDecision: {
+            available: false,
+            score: null,
+            decisionStrength: 'none',
+            unavailableReason: 'Coverage below the minimum.',
+            dimensions: {
+              demand: { available: false, score: null, unavailableReason: 'no demand data source' },
+            },
+          },
+          decisionIntelligence: {
+            materialFindings: [],
+            investigationPriorities: [],
+            sensitivityDrivers: [
+              { id: 'driver_interestRate', inputKey: 'interestRate', group: 'finance', title: 'Interest rate', state: 'conditional' },
+            ],
+            explanation: { source: 'openai', overview: 'Overall landlord fit is not assessed from the current evidence coverage.' },
+          },
+          investment: {
+            presented: {
+              grossYield: notAssessed('purchase price missing'),
+              noi: notAssessed('costs missing'),
+              dscr: notAssessed('finance missing'),
+            },
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('landlord-fit-score')).toHaveTextContent('Not assessed');
+    expect(screen.getByTestId('landlord-fit-score')).not.toHaveTextContent('0/100');
+    expect(screen.getByTestId('metric-grossYield')).toHaveTextContent('Not assessed');
+    expect(screen.getByTestId('metric-grossYield')).not.toHaveTextContent('0%');
+    expect(screen.getByTestId('decision-intelligence-findings-empty')).toBeInTheDocument();
+    expect(screen.getByTestId('decision-intelligence-overview-source')).toHaveTextContent('AI paraphrase');
+    expect(screen.getByTestId('decision-driver-interestRate')).toHaveTextContent('Not fully assessed');
+  });
+});
+
+describe('legacy heuristic retirement UI', () => {
+  const legacyFields = {
+    opportunities: [
+      {
+        id: 'rent-opportunity',
+        title: 'Legacy rent opportunity',
+        evidence: 'Heuristic note',
+        confidenceLabel: 'High',
+      },
+    ],
+    risks: [
+      {
+        id: 'missing-epc',
+        title: 'Legacy invented risk',
+        category: 'DOCUMENT',
+        probability: 0.95,
+        impact: 'Medium',
+        evidence: 'Invented probability',
+        recommendedAction: 'Upload EPC',
+      },
+    ],
+    recommendation: {
+      action: 'Proceed with purchase',
+      why: 'Heuristic recommendation',
+      expectedImpact: 'Not canonical',
+    },
+    strengths: [{ title: 'Garden', evidence: 'Flagged' }],
+    weaknesses: [{ title: 'Missing EPC', evidence: 'No rating' }],
+  };
+
+  test('new report with Decision Intelligence hides legacy heuristic sections', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          ...legacyFields,
+          personalDecision: {
+            available: true,
+            score: 64,
+            outcome: 'mixed_fit',
+            decisionStrength: 'moderate',
+            dimensions: { demand: { available: false, score: null } },
+          },
+          decisionIntelligence: {
+            engine: 'decisionIntelligence',
+            materialFindings: [{ id: 'finding_rent_position', title: 'Rent is at the estimated market range', effect: 'supporting' }],
+            investigationPriorities: [],
+            sensitivityDrivers: [],
+            explanation: { source: 'template', overview: 'Canonical overview' },
+          },
+        }}
+      />
+    );
+
+    expect(screen.queryByTestId('earlier-model-analysis')).not.toBeInTheDocument();
+    expect(screen.queryByText('Legacy rent opportunity')).not.toBeInTheDocument();
+    expect(screen.queryByText('Legacy invented risk')).not.toBeInTheDocument();
+    expect(screen.queryByText('Proceed with purchase')).not.toBeInTheDocument();
+    expect(screen.queryByText('Garden')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Historical earlier-model analysis/i)).not.toBeInTheDocument();
+    expect(screen.getByText('What currently matters')).toBeInTheDocument();
+    expect(screen.getByText('Rent is at the estimated market range')).toBeInTheDocument();
+  });
+
+  test('historical legacy fields cannot override Decision Intelligence', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          ...legacyFields,
+          decisionIntelligence: {
+            engine: 'decisionIntelligence',
+            materialFindings: [{ id: 'finding_gross_yield', title: 'Gross yield is evidenced', effect: 'supporting' }],
+            investigationPriorities: [{ id: 'priority_epc', title: 'Verify EPC from an authoritative source' }],
+            sensitivityDrivers: [],
+            explanation: { source: 'template', overview: 'Canonical landlord explanation' },
+          },
+        }}
+      />
+    );
+    expect(screen.getByText('Gross yield is evidenced')).toBeInTheDocument();
+    expect(screen.getByText('Verify EPC from an authoritative source')).toBeInTheDocument();
+    expect(screen.getByText('Canonical landlord explanation')).toBeInTheDocument();
+    expect(screen.queryByTestId('earlier-model-analysis')).not.toBeInTheDocument();
+    expect(screen.queryByText('Proceed with purchase')).not.toBeInTheDocument();
+  });
+
+  test('old report without Decision Intelligence shows labelled Historical earlier-model content', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          ...legacyFields,
+          personalDecision: null,
+        }}
+      />
+    );
+
+    expect(screen.getByTestId('earlier-model-analysis')).toBeInTheDocument();
+    expect(screen.getByText(/Historical earlier-model analysis/i)).toBeInTheDocument();
+    const fold = screen.getAllByRole('button').find((el) => (el.textContent || '').includes('Historical earlier-model analysis'));
+    if (fold && fold.getAttribute('aria-expanded') === 'false') fireEvent.click(fold);
+    expect(screen.getByTestId('earlier-model-disclaimer')).toHaveTextContent(
+      'Legacy heuristic content — not part of current Decision Intelligence.'
+    );
+    expect(screen.getByText('Legacy rent opportunity')).toBeInTheDocument();
+    expect(screen.getByText('Legacy invented risk')).toBeInTheDocument();
+    expect(screen.getByText('Proceed with purchase')).toBeInTheDocument();
+    expect(screen.getByText('Garden')).toBeInTheDocument();
+    expect(screen.getByText('Missing EPC')).toBeInTheDocument();
+  });
+
+  test('sparse pre-DI historical report remains readable', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          personalDecision: null,
+          recommendation: { action: 'Review rental pricing.', why: 'Sparse saved field' },
+        }}
+      />
+    );
+    expect(screen.getByTestId('earlier-model-analysis')).toBeInTheDocument();
+    const fold = screen.getAllByRole('button').find((el) => (el.textContent || '').includes('Historical earlier-model analysis'));
+    if (fold && fold.getAttribute('aria-expanded') === 'false') fireEvent.click(fold);
+    expect(screen.getByText('Review rental pricing.')).toBeInTheDocument();
+    expect(screen.getByText('Sparse saved field')).toBeInTheDocument();
+    expect(screen.queryByText('What currently matters')).not.toBeInTheDocument();
+  });
+
+  test('malformed or missing report renders safely', () => {
+    const { rerender } = render(<IntelligenceReport report={null} />);
+    expect(screen.getByTestId('intelligence-report-empty')).toHaveTextContent('could not be displayed');
+    rerender(<IntelligenceReport report={{}} />);
+    expect(screen.getByText(/Date not recorded/)).toBeInTheDocument();
+    expect(screen.getByTestId('decision-overview')).toBeInTheDocument();
+  });
+
+  test('missing listing rent is Not on file, never £0/mo', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          property: { ...BASE_REPORT.property, monthly_rent: null },
+          snapshot: { price: 200000, rent: null },
+          marketIntelligence: {
+            ...BASE_REPORT.marketIntelligence,
+            rent: {
+              ...BASE_REPORT.marketIntelligence.rent,
+              currentRent: null,
+            },
+          },
+          financeRequest: {
+            expectedRent: { listingMonthlyRent: null, marketRentEvidence: 1100, scenarioInput: null },
+          },
+        }}
+      />
+    );
+    expect(screen.getAllByText('Not on file').length).toBeGreaterThan(0);
+    expect(screen.queryByText('£0/mo')).not.toBeInTheDocument();
   });
 });

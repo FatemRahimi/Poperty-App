@@ -3,6 +3,16 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 const { geocodeLocationEnhanced } = require('../utils/smartSearch');
+const {
+  collectAfterCreate,
+  collectAfterUpdate,
+  collectAfterStatusReview,
+} = require('../services/ai/listingLifecycleService');
+const {
+  recordListingOutcome,
+  publicOutcomeView,
+  blocksListingMutation,
+} = require('../services/ai/listingOutcomeService');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgres://fatemehrahimi@localhost:5432/propertydb'
@@ -396,6 +406,17 @@ const submitProperty = async (req, res) => {
     const utilities_mapped = utilities || '{}';
     const security_mapped = security || '{}';
 
+    const optionalNumeric = (value) => {
+      if (value === undefined || value === null || value === '') return null;
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    };
+    const tenure_mapped = req.body.tenure || null;
+    const service_charges_mapped = optionalNumeric(req.body.service_charges ?? req.body.serviceCharges);
+    const ground_rent_mapped = optionalNumeric(req.body.ground_rent ?? req.body.groundRent);
+    const original_asking_price_mapped = optionalNumeric(price_mapped);
+    const final_asking_price_mapped = original_asking_price_mapped;
+
     // Data conversion for numeric fields
     const convertBathrooms = (bathrooms) => {
       if (!bathrooms) return null;
@@ -552,7 +573,9 @@ const submitProperty = async (req, res) => {
       land_acres_mapped, lot_size_unit_mapped, taxes_per_sqft_mapped, power_mapped, zoning_mapped,
       service_charge_mapped, business_rates_mapped, floor_load_capacity_mapped, heating_cooling_mapped, toilet_kitchen_mapped,
       opening_hours_mapped, is_multiple_tenancy_mapped, break_clause_mapped, deposit_required_mapped,
-      disability_access_mapped, signage_allowed_mapped, utilities_mapped, security_mapped
+      disability_access_mapped, signage_allowed_mapped, utilities_mapped, security_mapped,
+      tenure_mapped, service_charges_mapped, ground_rent_mapped,
+      original_asking_price_mapped, final_asking_price_mapped
     ];
     
     console.log('Values array position 21 (lease_term):', valuesArray[20]);
@@ -578,12 +601,14 @@ const submitProperty = async (req, res) => {
         land_acres, lot_size_unit, taxes_per_sqft, power, zoning,
         service_charge, business_rates, floor_load_capacity, heating_cooling, toilet_kitchen,
         opening_hours, is_multiple_tenancy, break_clause, deposit_required,
-        disability_access, signage_allowed, utilities, security
+        disability_access, signage_allowed, utilities, security,
+        tenure, service_charges, ground_rent, original_asking_price, final_asking_price
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36,
         $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59,
-        $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74, $75, $76, $77, $78, $79, $80, $81, $82, $83, $84, $85, $86
+        $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74, $75, $76, $77, $78, $79, $80, $81, $82, $83, $84, $85, $86,
+        $87, $88, $89, $90, $91
       ) RETURNING *`,
       valuesArray
     );
@@ -710,6 +735,8 @@ const submitProperty = async (req, res) => {
        VALUES ($1, $2, 'new')`,
       [property.id, user_id]
     );
+
+    await collectAfterCreate(client, { property, actorUserId: user_id });
 
     await client.query('COMMIT');
 
@@ -1093,6 +1120,7 @@ const getAllProperties = async (req, res) => {
 
 // Approve/Reject property (admin)
 const updatePropertyStatus = async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
     const { status, admin_notes, rejection_reason } = req.body;
@@ -1105,31 +1133,58 @@ const updatePropertyStatus = async (req, res) => {
       });
     }
 
-    // Update property status
-    const updateQuery = `
-      UPDATE properties 
-      SET status = $1, approved_by = $2, approved_at = NOW(), updated_at = NOW()
-      WHERE id = $3 
-      RETURNING *
-    `;
+    await client.query('BEGIN');
 
-    const result = await pool.query(updateQuery, [status, admin_id, id]);
+    const existingResult = await client.query(
+      'SELECT * FROM properties WHERE id = $1 FOR UPDATE',
+      [id]
+    );
 
-    if (result.rows.length === 0) {
+    if (existingResult.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({
         success: false,
         message: 'Property not found'
       });
     }
 
+    const previous = existingResult.rows[0];
+    if (blocksListingMutation(previous.status)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        success: false,
+        code: 'outcome_recorded',
+        message: 'This listing has a recorded outcome. Admin approve/reject cannot overwrite it.',
+      });
+    }
+
+    const updateQuery = `
+      UPDATE properties 
+      SET status = $1, approved_by = $2, approved_at = NOW(), updated_at = NOW(),
+          first_published_at = CASE
+            WHEN $1 = 'approved' THEN COALESCE(first_published_at, NOW())
+            ELSE first_published_at
+          END
+      WHERE id = $3 
+      RETURNING *
+    `;
+
+    const result = await client.query(updateQuery, [status, admin_id, id]);
     const property = result.rows[0];
 
-    // Update submission tracking
-    await pool.query(
+    await collectAfterStatusReview(client, {
+      previous,
+      next: property,
+      actorUserId: admin_id,
+    });
+
+    await client.query(
       `INSERT INTO property_submissions (property_id, user_id, submission_type, admin_notes, rejection_reason, reviewed_by, reviewed_at)
        VALUES ($1, $2, 'review', $3, $4, $5, NOW())`,
       [property.id, property.user_id, admin_notes, rejection_reason, admin_id]
     );
+
+    await client.query('COMMIT');
 
     // Get user details for email
     const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [property.user_id]);
@@ -1222,12 +1277,19 @@ const updatePropertyStatus = async (req, res) => {
     });
 
   } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      /* ignore */
+    }
     console.error('Update property status error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update property status',
       error: error.message
     });
+  } finally {
+    client.release();
   }
 };
 
@@ -1310,6 +1372,7 @@ const deleteProperty = async (req, res) => {
     }
     
     const property = propertyResult.rows[0];
+    // Hard DELETE removes the listing. This is not a withdrawn outcome.
     
     // Get all image files to delete from filesystem
     const imagesResult = await client.query(
@@ -1397,11 +1460,12 @@ const updateProperty = async (req, res) => {
     
     // Check if property exists and belongs to user
     const existingPropertyResult = await client.query(
-      'SELECT * FROM properties WHERE id = $1 AND user_id = $2',
+      'SELECT * FROM properties WHERE id = $1 AND user_id = $2 FOR UPDATE',
       [id, user_id]
     );
     
     if (existingPropertyResult.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({
         success: false,
         message: 'Property not found or you do not have permission to edit it'
@@ -1409,6 +1473,14 @@ const updateProperty = async (req, res) => {
     }
     
     const existingProperty = existingPropertyResult.rows[0];
+    if (blocksListingMutation(existingProperty.status)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        success: false,
+        code: 'outcome_recorded',
+        message: 'This listing has a recorded outcome. Edits that reset status are not allowed without an explicit correction flow.',
+      });
+    }
     
     const {
       title: providedTitle,
@@ -1623,9 +1695,25 @@ const updateProperty = async (req, res) => {
     const floor_number_mapped = floor_number || floorNumber || '';
 
     // NEW: Additional information fields (map camelCase and snake_case)
+    const pickNumericField = (...candidates) => {
+      for (const value of candidates) {
+        if (value === undefined || value === null || value === '') continue;
+        const n = Number(value);
+        if (Number.isFinite(n)) return n;
+      }
+      return null;
+    };
     const tenure_mapped = req.body.tenure || existingProperty.tenure || null;
-    const service_charges_mapped = req.body.service_charges || req.body.serviceCharges || existingProperty.service_charges || null;
-    const ground_rent_mapped = req.body.ground_rent || req.body.groundRent || existingProperty.ground_rent || null;
+    const service_charges_mapped = pickNumericField(
+      req.body.service_charges,
+      req.body.serviceCharges,
+      existingProperty.service_charges
+    );
+    const ground_rent_mapped = pickNumericField(
+      req.body.ground_rent,
+      req.body.groundRent,
+      existingProperty.ground_rent
+    );
     const price_type_mapped = req.body.price_type || req.body.priceType || existingProperty.price_type || null;
     const floor_area_unit_mapped = req.body.floor_area_unit || req.body.floorAreaUnit || existingProperty.floor_area_unit || null;
     const heating_type_mapped = req.body.heating_type || req.body.heatingType || existingProperty.heating_type || null;
@@ -1864,7 +1952,9 @@ const updateProperty = async (req, res) => {
         opening_hours = $77, is_multiple_tenancy = $78, break_clause = $79, deposit_required = $80,
         disability_access = $81, signage_allowed = $82, utilities = $83, security = $84,
         tenure = $85, service_charges = $86, ground_rent = $87, price_type = $88, floor_area_unit = $89,
-        is_new_build = $90, is_chain_free = $91, is_recently_renovated = $92, has_balcony_terrace = $93, has_accessible_access = $94
+        is_new_build = $90, is_chain_free = $91, is_recently_renovated = $92, has_balcony_terrace = $93, has_accessible_access = $94,
+        original_asking_price = COALESCE(original_asking_price, $17),
+        final_asking_price = $17
        WHERE id = $95 AND user_id = $96
        RETURNING *`,
       params
@@ -1875,6 +1965,12 @@ const updateProperty = async (req, res) => {
     }
 
     const property = propertyResult.rows[0];
+
+    await collectAfterUpdate(client, {
+      previous: existingProperty,
+      next: property,
+      actorUserId: user_id,
+    });
 
     // Handle photo management: Keep specific photos, delete specific photos, add new photos
     let deletedPhotos = req.body.deletedPhotos;
@@ -2264,6 +2360,58 @@ const updateSaleProperty = async (req, res) => {
   }
 };
 
+const recordPropertyOutcome = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await recordListingOutcome(client, {
+      listingId: req.params.id,
+      outcome: req.body?.outcome,
+      occurredAt: req.body?.occurredAt,
+      achievedPrice: req.body?.achievedPrice,
+      achievedRent: req.body?.achievedRent,
+      achievedRentUnit: req.body?.achievedRentUnit,
+      actor: { id: req.user.id, role: req.user.role },
+    });
+    if (!result.ok) {
+      await client.query('ROLLBACK');
+      return res.status(result.httpStatus).json({
+        success: false,
+        code: result.code,
+        message: result.message,
+      });
+    }
+    await client.query('COMMIT');
+    return res.json({
+      success: true,
+      code: result.code,
+      idempotent: result.idempotent,
+      property: publicOutcomeView(result.property),
+      event: result.event
+        ? {
+            event_type: result.event.event_type,
+            event_at: result.event.event_at,
+            created_at: result.event.created_at,
+          }
+        : null,
+    });
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      /* ignore */
+    }
+    console.error('Record property outcome error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to record listing outcome',
+      error: error.message,
+    });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   submitProperty,
   updateProperty,
@@ -2273,5 +2421,6 @@ module.exports = {
   getDashboardStats,
   deleteProperty,
   submitSaleProperty,
-  updateSaleProperty
+  updateSaleProperty,
+  recordPropertyOutcome,
 }; 

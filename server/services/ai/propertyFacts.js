@@ -9,6 +9,10 @@
 const { listingObservedCharges, listingObservedAmenities, frequencyForListingField } = require('./listingObservedFields');
 const { sanitizeFloodFact, unattachedFloodFact } = require('./floodEvidence');
 const { sanitizePlanningFact, unattachedPlanningFact } = require('./planningEvidence');
+const { sanitizeSchoolFact, unattachedSchoolFact } = require('./schoolEvidence');
+const { sanitizeListedBuildingFact, unattachedListedBuildingFact } = require('./listedBuildingEvidence');
+const { sanitizeConservationAreaFact, unattachedConservationAreaFact } = require('./conservationAreaEvidence');
+const { sanitizeArticle4Fact, unattachedArticle4Fact } = require('./article4Evidence');
 
 const TRUST = Object.freeze({
   observed: 'observed',
@@ -58,7 +62,10 @@ const SOURCE_PRECEDENCE = Object.freeze({
   broadband: Object.freeze(['InternalListing']),
   flood: Object.freeze(['EnvironmentAgency_FloodMapForPlanning']),
   planning: Object.freeze(['MHCLG_PlanningData']),
-  schools: Object.freeze([]),
+  schools: Object.freeze(['MHCLG_PlanningData_EducationalEstablishment']),
+  listedBuilding: Object.freeze(['MHCLG_PlanningData_ListedBuilding']),
+  conservationArea: Object.freeze(['MHCLG_PlanningData_ConservationArea']),
+  article4: Object.freeze(['MHCLG_PlanningData_Article4DirectionArea']),
 });
 
 const DEPENDENCY_MODEL = Object.freeze({
@@ -113,6 +120,24 @@ const DEPENDENCY_MODEL = Object.freeze({
     productionScoringActivated: false,
     financialUseActivated: false,
     note: 'MHCLG Planning Data applications are report/context evidence only. Planning is not a valuation adjustment, development-opportunity score, or Personal Decision input.',
+  },
+  listedBuilding: {
+    mayAffect: Object.freeze(['heritageContext']),
+    productionScoringActivated: false,
+    financialUseActivated: false,
+    note: 'Historic England listed-building status is report/context evidence only. Native grade is not a heritage score, valuation adjustment, or Personal Decision input. Unknown remains notAssessed, not “not listed”.',
+  },
+  conservationArea: {
+    mayAffect: Object.freeze(['heritageContext']),
+    productionScoringActivated: false,
+    financialUseActivated: false,
+    note: 'Conservation-area membership is report/context evidence only. Point-in-polygon membership is not a listed-building designation, permission outcome, valuation adjustment, or Personal Decision input. Unknown remains notAssessed, not “not in a conservation area”.',
+  },
+  article4: {
+    mayAffect: Object.freeze(['developmentContext']),
+    productionScoringActivated: false,
+    financialUseActivated: false,
+    note: 'Article 4 direction-area membership is report/context evidence only. Point-in-polygon membership is geographic only and is not a restriction schedule, permission outcome, valuation adjustment, or Personal Decision input. Restricted permitted-development rights stay notAssessed. Unknown remains notAssessed, not “not in an Article 4 area”.',
   },
   note:
     'Causal usage documentation only. New facts in this phase are report/context evidence unless an existing scorer already consumed the listing field.',
@@ -374,6 +399,10 @@ function assemblePropertyFacts({
   listingCharges = null,
   floodEvidence = null,
   planningEvidence = null,
+  schoolEvidence = null,
+  listedBuildingEvidence = null,
+  conservationAreaEvidence = null,
+  article4Evidence = null,
 } = {}) {
   const fields = evidence?.fields || {};
   const conflicts = evidence?.conflicts || [];
@@ -526,6 +555,7 @@ function assemblePropertyFacts({
       listingTruth: true,
       mustNotOverwrite: true,
       areaRentsAreNotPropertyFact: true,
+      missingNote: 'Missing listing rent is notAssessed and must not be treated as 0.',
     }),
     achievedPrice: fromListingNumber('achievedPrice', property.achieved_price, {
       trust: TRUST.userSupplied,
@@ -564,10 +594,16 @@ function assemblePropertyFacts({
     }),
     flood: floodEvidence ? sanitizeFloodFact(floodEvidence) : unattachedFloodFact(),
     planning: planningEvidence ? sanitizePlanningFact(planningEvidence) : unattachedPlanningFact(),
-    schools: unavailableSourceFact(
-      'schools',
-      'No authoritative school-catchment source is integrated. Schools are not scored.'
-    ),
+    schools: schoolEvidence ? sanitizeSchoolFact(schoolEvidence) : unattachedSchoolFact(),
+    listedBuilding: listedBuildingEvidence
+      ? sanitizeListedBuildingFact(listedBuildingEvidence)
+      : unattachedListedBuildingFact(),
+    conservationArea: conservationAreaEvidence
+      ? sanitizeConservationAreaFact(conservationAreaEvidence)
+      : unattachedConservationAreaFact(),
+    article4: article4Evidence
+      ? sanitizeArticle4Fact(article4Evidence)
+      : unattachedArticle4Fact(),
   };
 
   const listingId = property.id ?? identity.listingId ?? evidence?.identity?.listingId ?? null;
@@ -651,6 +687,9 @@ function projectPropertyFactsForDecision(propertyFacts) {
       flood: propertyFacts.facts.flood,
       planning: propertyFacts.facts.planning,
       schools: propertyFacts.facts.schools,
+      listedBuilding: propertyFacts.facts.listedBuilding,
+      conservationArea: propertyFacts.facts.conservationArea,
+      article4: propertyFacts.facts.article4,
       councilTaxBand: propertyFacts.facts.councilTaxBand,
       councilTaxAmount: propertyFacts.facts.councilTaxAmount,
       groundRent: propertyFacts.facts.groundRent,
@@ -667,6 +706,32 @@ function attachPropertyFactsToDecisionContext(decisionContext, propertyFacts) {
   return { ...decisionContext, propertyFacts: slice };
 }
 
+function publicSchoolsSlice(fact) {
+  if (!fact?.available) return null;
+  return {
+    value: fact.value,
+    available: true,
+    source: fact.source || null,
+    provider: fact.provider || null,
+    scope: fact.scope || 'area',
+    searchRadiusMetres: fact.searchRadiusMetres ?? null,
+    summary: fact.summary || null,
+    nearbySchools: Array.isArray(fact.nearbySchools) ? fact.nearbySchools : [],
+    catchment: {
+      available: false,
+      state: 'notAssessed',
+      reason: fact.catchment?.reason || 'no_authoritative_catchment_source_integrated',
+    },
+    retrievedAt: fact.retrievedAt || null,
+    limitations: fact.limitations || [],
+    notAScore: true,
+    notCatchment: true,
+    notAdmissionEvidence: true,
+    notAValuationAdjustment: true,
+    notPersonalDecisionInput: true,
+  };
+}
+
 function publicPlanningSlice(fact) {
   if (!fact?.available) return null;
   return {
@@ -679,6 +744,79 @@ function publicPlanningSlice(fact) {
     summary: fact.summary || null,
     subjectApplications: Array.isArray(fact.subjectApplications) ? fact.subjectApplications : [],
     nearbyApplications: Array.isArray(fact.nearbyApplications) ? fact.nearbyApplications : [],
+    retrievedAt: fact.retrievedAt || null,
+    limitations: fact.limitations || [],
+    notAScore: true,
+    notAValuationAdjustment: true,
+    notPersonalDecisionInput: true,
+  };
+}
+
+function publicArticle4Slice(fact) {
+  if (!fact?.available) return null;
+  return {
+    value: fact.value,
+    available: true,
+    source: fact.source || null,
+    provider: fact.provider || null,
+    scope: fact.scope || 'coordinate_point_in_polygon',
+    summary: fact.summary || null,
+    areas: Array.isArray(fact.areas) ? fact.areas : [],
+    restrictions: {
+      available: false,
+      state: 'notAssessed',
+      assessed: false,
+      reason: fact.restrictions?.reason || 'authoritative_restriction_schedule_not_integrated',
+      note: fact.restrictions?.note
+        || 'The specific permitted-development rights affected have not been assessed.',
+    },
+    retrievedAt: fact.retrievedAt || null,
+    evidenceAsOf: fact.evidenceAsOf || null,
+    geographicResolution: fact.geographicResolution || null,
+    geographicMembershipOnly: true,
+    restrictionsAssessed: false,
+    legalEffectivenessAssessed: false,
+    limitations: fact.limitations || [],
+    notAScore: true,
+    notLegalAdvice: true,
+    notAValuationAdjustment: true,
+    notPersonalDecisionInput: true,
+  };
+}
+
+function publicConservationAreaSlice(fact) {
+  if (!fact?.available) return null;
+  return {
+    value: fact.value,
+    available: true,
+    source: fact.source || null,
+    provider: fact.provider || null,
+    scope: fact.scope || 'coordinate_point_in_polygon',
+    summary: fact.summary || null,
+    areas: Array.isArray(fact.areas) ? fact.areas : [],
+    retrievedAt: fact.retrievedAt || null,
+    geographicResolution: fact.geographicResolution || null,
+    limitations: fact.limitations || [],
+    notAScore: true,
+    notAListedBuilding: true,
+    notAPlanningApplication: true,
+    notAValuationAdjustment: true,
+    notPersonalDecisionInput: true,
+  };
+}
+
+function publicListedBuildingSlice(fact) {
+  if (!fact?.available) return null;
+  return {
+    value: fact.value,
+    available: true,
+    source: fact.source || null,
+    provider: fact.provider || null,
+    scope: fact.scope || 'property',
+    nativeGrade: fact.nativeGrade || null,
+    searchRadiusMetres: fact.searchRadiusMetres ?? null,
+    summary: fact.summary || null,
+    listings: Array.isArray(fact.listings) ? fact.listings : [],
     retrievedAt: fact.retrievedAt || null,
     limitations: fact.limitations || [],
     notAScore: true,
@@ -721,7 +859,10 @@ function publicPropertyFactsForExplanation(propertyFacts) {
     broadband: propertyFacts.facts.broadband?.value ?? null,
     flood: publicFloodSlice(propertyFacts.facts.flood),
     planning: publicPlanningSlice(propertyFacts.facts.planning),
-    schools: null,
+    schools: publicSchoolsSlice(propertyFacts.facts.schools),
+    listedBuilding: publicListedBuildingSlice(propertyFacts.facts.listedBuilding),
+    conservationArea: publicConservationAreaSlice(propertyFacts.facts.conservationArea),
+    article4: publicArticle4Slice(propertyFacts.facts.article4),
     councilTaxBand: propertyFacts.facts.councilTaxBand?.value ?? null,
     councilTaxAmount: propertyFacts.facts.councilTaxAmount?.value ?? null,
     councilTaxAmountUsedAsFinance: false,

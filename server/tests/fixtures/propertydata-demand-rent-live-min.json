@@ -1,0 +1,13 @@
+{
+  "status": "success",
+  "postcode": "W14 9JH",
+  "postcode_type": "full",
+  "radius": 0.7,
+  "total_for_rent": 592,
+  "transactions_per_month": 284,
+  "turnover_per_month": "48%",
+  "months_of_inventory": "2.1",
+  "days_on_market": 63,
+  "rental_demand_rating": "Landlord's market",
+  "process_time": "8.03"
+}
