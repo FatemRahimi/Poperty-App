@@ -86,8 +86,9 @@ async function linkSubjectToMarketplaceListing({ uprn, postcode, normalizedAddre
   }
 
   const listing = match.listing;
+  const exactIdentity = match.matchMethod === 'uprn_identity' || match.matchMethod === 'subject_link';
 
-  if (uprn) {
+  if (uprn && exactIdentity) {
     await upsertIdentity({
       propertyId: listing.id,
       uprn: String(uprn),
@@ -99,6 +100,10 @@ async function linkSubjectToMarketplaceListing({ uprn, postcode, normalizedAddre
       matchMethod: match.matchMethod,
       provider: 'PropertyData',
       providerPayload: { linkedFrom: 'intelligence_subject_resolve' },
+      uprnMode: 'set',
+      identityState: 'SOURCE_ASSERTED',
+      verificationState: 'SOURCE_ASSERTED',
+      identitySource: 'PropertyData',
     });
   }
 

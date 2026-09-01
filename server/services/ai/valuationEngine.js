@@ -14,6 +14,31 @@ const {
   parseUprnSaleEstimate,
   parseSoldTransactionsFromPayload,
 } = require('../providers/propertyData/propertyDataParsers');
+const {
+  isFinitePositiveMoney,
+  isValidBlendEstimate,
+  isValidBlendWeight,
+  parsePositiveMoney,
+  parsePositiveArea,
+  optionalPositiveBound,
+  isIndependentValuationMethod,
+  isAskingListingMethod,
+  hasProvenancedAssessableFloorArea,
+} = require('./valuationIntegrity');
+const {
+  evaluateComponentEligibility,
+  decideAssessment,
+  selectAssessableComponents,
+  prepareSoldTransactions,
+  lastSoldFact,
+} = require('./valuationEligibility');
+const {
+  ASSESSMENT_SAFETY_VERSION,
+  ORDER_OF_MAGNITUDE_RATIO,
+  validateSaleComponent,
+  evaluatePlausibility,
+  validateAssessedBounds,
+} = require('./valuationAssessmentSafety');
 
 /**
  * Counts corroborating sources only. Retained because callers still use it as a
@@ -28,17 +53,41 @@ function confidenceFromEvidence(signals) {
   return 'insufficient';
 }
 
-function weightedBlend(estimates) {
-  const valid = estimates.filter((e) => e && e.centralEstimate > 0);
-  if (!valid.length) return null;
+const BLEND_WEIGHTS = {
+  valuation_sale_avm: 0.35,
+  uprn_profile: 0.3,
+  sold_prices_statistics: 0.2,
+  internal_sale_comparables: 0.25,
+  sqft_implied: 0.15,
+};
 
-  const weightMap = {
-    valuation_sale_avm: 0.35,
-    uprn_profile: 0.3,
-    sold_prices_statistics: 0.2,
-    internal_sale_comparables: 0.25,
-    sqft_implied: 0.15,
-  };
+function resolveBlendWeight(item) {
+  if (item && Object.prototype.hasOwnProperty.call(item, 'weight')) {
+    return isValidBlendWeight(item.weight) ? Number(item.weight) : null;
+  }
+  const mapped = BLEND_WEIGHTS[item?.method];
+  return isValidBlendWeight(mapped) ? mapped : 0.15;
+}
+
+function weightedBlend(estimates) {
+  const valid = [];
+  (estimates || []).forEach((item) => {
+    if (!item || isAskingListingMethod(item.method)) return;
+    if (!isIndependentValuationMethod(item.method)) return;
+    if (!isValidBlendEstimate(item.centralEstimate)) return;
+    const weight = resolveBlendWeight(item);
+    if (!isValidBlendWeight(weight)) return;
+    valid.push({
+      ...item,
+      centralEstimate: Number(item.centralEstimate),
+      weight,
+      lowerEstimate: optionalPositiveBound(item.lowerEstimate),
+      upperEstimate: optionalPositiveBound(item.upperEstimate),
+    });
+  });
+
+  if (!valid.length) return null;
+  if (!valid.some((item) => isIndependentValuationMethod(item.method))) return null;
 
   let totalWeight = 0;
   let weightedSum = 0;
@@ -48,66 +97,150 @@ function weightedBlend(estimates) {
   let upperWeight = 0;
 
   valid.forEach((item) => {
-    const w = weightMap[item.method] || 0.15;
-    totalWeight += w;
-    weightedSum += item.centralEstimate * w;
-    if (item.lowerEstimate) {
-      lowerSum += item.lowerEstimate * w;
-      lowerWeight += w;
+    totalWeight += item.weight;
+    weightedSum += item.centralEstimate * item.weight;
+    if (item.lowerEstimate != null) {
+      lowerSum += item.lowerEstimate * item.weight;
+      lowerWeight += item.weight;
     }
-    if (item.upperEstimate) {
-      upperSum += item.upperEstimate * w;
-      upperWeight += w;
+    if (item.upperEstimate != null) {
+      upperSum += item.upperEstimate * item.weight;
+      upperWeight += item.weight;
     }
   });
 
+  if (!isValidBlendWeight(totalWeight) || !Number.isFinite(weightedSum)) return null;
+
+  const centrals = valid.map((item) => item.centralEstimate);
+  const minCentral = Math.min(...centrals);
+  const maxCentral = Math.max(...centrals);
+  if (valid.length >= 2 && minCentral > 0 && maxCentral / minCentral >= ORDER_OF_MAGNITUDE_RATIO) {
+    return null;
+  }
+
   const central = Math.round(weightedSum / totalWeight);
+  if (!isFinitePositiveMoney(central)) return null;
+
   const lower = lowerWeight ? Math.round(lowerSum / lowerWeight) : null;
   const upper = upperWeight ? Math.round(upperSum / upperWeight) : null;
+  const safeLower = optionalPositiveBound(lower);
+  const safeUpper = optionalPositiveBound(upper);
 
   return {
     central,
-    lower,
-    upper,
-    boundsAvailable: lower != null && upper != null,
+    lower: safeLower,
+    upper: safeUpper,
+    boundsAvailable: safeLower != null && safeUpper != null,
     evidenceCount: valid.length,
   };
 }
 
-function buildSqftImpliedEstimate(property, psfStats) {
-  const sqft = Number(property.square_feet);
-  const avg = psfStats?.averagePerSqft;
-  if (!sqft || !avg) return null;
+function buildSqftImpliedEstimate(property, psfStats, uprnInternalArea = null) {
+  if (!hasProvenancedAssessableFloorArea(property, uprnInternalArea)) return null;
+  const sqft = parsePositiveArea(property.square_feet);
+  const avg = parsePositiveMoney(psfStats?.averagePerSqft);
+  if (sqft == null || avg == null) return null;
+
+  const rateUnit = psfStats?.declaredUnit || psfStats?.unit || 'gbp_per_sqft';
+  if (String(rateUnit).toLowerCase().replace(/\s+/g, '_') !== 'gbp_per_sqft') return null;
 
   const central = Math.round(sqft * avg);
-  const lowPsf = psfStats.range?.low;
-  const highPsf = psfStats.range?.high;
+  if (!isFinitePositiveMoney(central)) return null;
+
+  const lowPsf = parsePositiveMoney(psfStats.range?.low);
+  const highPsf = parsePositiveMoney(psfStats.range?.high);
+  const conversionBasis = {
+    area: sqft,
+    areaUnit: 'sqft',
+    rate: avg,
+    rateUnit: 'gbp_per_sqft',
+  };
 
   return {
     centralEstimate: central,
-    lowerEstimate: Number.isFinite(lowPsf) ? Math.round(sqft * lowPsf) : null,
-    upperEstimate: Number.isFinite(highPsf) ? Math.round(sqft * highPsf) : null,
+    lowerEstimate: lowPsf != null ? Math.round(sqft * lowPsf) : null,
+    upperEstimate: highPsf != null ? Math.round(sqft * highPsf) : null,
     pricePerSqft: avg,
     method: 'sqft_implied',
+    valueUnit: 'gbp_total',
+    conversionBasis,
     source: psfStats.source,
     underlyingSource: psfStats.underlyingSource,
+  };
+}
+
+function attachComponentContract(component, extras = {}) {
+  const next = {
+    ...component,
+    valueUnit: extras.valueUnit || component.valueUnit || component.declaredUnit || extras.declaredUnit || null,
+    declaredUnit: extras.declaredUnit || component.declaredUnit || null,
+  };
+  return {
+    ...next,
+    componentValidation: validateSaleComponent(next),
+  };
+}
+
+function applyValidityToEligibility(eligibility, validation) {
+  if (!validation || validation.valid) {
+    return { ...eligibility, componentValidation: validation || null };
+  }
+  return {
+    ...eligibility,
+    eligibleForAssessment: false,
+    canAssessAlone: false,
+    rejectionReasons: [...new Set([...(eligibility.rejectionReasons || []), ...validation.reasonCodes])],
+    componentValidation: validation,
+  };
+}
+
+function insufficientValuation({
+  askingPrice,
+  components,
+  internalSale,
+  externalTransactions,
+  lastSold,
+  evidenceEligibility,
+  assessmentSafety,
+  message,
+}) {
+  return {
+    success: false,
+    insufficientEvidence: true,
+    notAssessed: true,
+    assessmentState: 'notAssessed',
+    assessmentSafetyVersion: ASSESSMENT_SAFETY_VERSION,
+    assessmentSafety: assessmentSafety || null,
+    message:
+      message ||
+      'Insufficient evidence for a reliable sale valuation. Internal asking listings alone cannot assess sale value, and no eligible property-specific valuation method was available.',
+    askingPrice,
+    components,
+    internalSale,
+    externalTransactions: (externalTransactions || []).slice(0, 10),
+    lastSold,
+    internalComparables: internalSale?.comparables || [],
+    evidenceEligibility: evidenceEligibility || null,
   };
 }
 
 /**
  * @param {object} property - full property record
  * @param {object} externalEnrichment - from propertyEnrichmentService
+ * @param {object} [options]
+ * @param {Function} [options.analyseSaleComparables]
  */
-async function calculatePropertyValuation(property, externalEnrichment = null) {
-  const askingPrice = Number(property.price) || 0;
+async function calculatePropertyValuation(property, externalEnrichment = null, options = {}) {
+  const analyseInternal = options.analyseSaleComparables || analyseSaleComparables;
+  const askingPrice = parsePositiveMoney(property.price);
   const components = [];
   const externalTransactions = [];
 
-  if (property.category !== 'sale' && askingPrice <= 0) {
+  if (property.category !== 'sale' && askingPrice == null) {
     return {
       success: false,
       message: 'Sale valuation requires a property listed for sale with an asking price.',
-      askingPrice,
+      askingPrice: null,
     };
   }
 
@@ -117,9 +250,9 @@ async function calculatePropertyValuation(property, externalEnrichment = null) {
   const valuationEnrichment = enrichments.valuation_sale;
   if (valuationEnrichment?.success && valuationEnrichment?.data) {
     const parsed = parseValuationSaleResponse(valuationEnrichment.data);
-    if (parsed) {
+    if (parsed && isValidBlendEstimate(parsed.centralEstimate)) {
       providerReportedConfidence = parsed.confidence ?? null;
-      components.push({
+      components.push(attachComponentContract({
         ...parsed,
         provenance: createProvenance({
           source: 'PropertyData',
@@ -127,18 +260,18 @@ async function calculatePropertyValuation(property, externalEnrichment = null) {
           confidence: parsed.confidence,
           providerEndpoint: '/valuation-sale',
         }),
-      });
+      }, { declaredUnit: parsed.declaredUnit }));
     }
   }
 
   const soldPricesEnrichment = enrichments.sold_prices;
   if (soldPricesEnrichment?.success && soldPricesEnrichment?.data) {
     const stats = parseSoldPricesStats(soldPricesEnrichment.data);
-    if (stats) {
-      components.push({
+    if (stats && isValidBlendEstimate(stats.average)) {
+      components.push(attachComponentContract({
         centralEstimate: stats.average,
-        lowerEstimate: stats.range.low,
-        upperEstimate: stats.range.high,
+        lowerEstimate: optionalPositiveBound(stats.range?.low),
+        upperEstimate: optionalPositiveBound(stats.range?.high),
         method: stats.method,
         source: stats.source,
         sampleSize: stats.sampleSize,
@@ -148,8 +281,9 @@ async function calculatePropertyValuation(property, externalEnrichment = null) {
           notes: stats.underlyingSource,
           providerEndpoint: '/sold-prices',
         }),
-      });
-      externalTransactions.push(...parseSoldTransactionsFromPayload(soldPricesEnrichment.data));
+      }, { declaredUnit: stats.declaredUnit }));
+      const prepared = prepareSoldTransactions(parseSoldTransactionsFromPayload(soldPricesEnrichment.data));
+      externalTransactions.push(...prepared.transactions);
     }
   }
 
@@ -160,33 +294,26 @@ async function calculatePropertyValuation(property, externalEnrichment = null) {
     date: null,
     state: 'notAssessed',
   };
+  let uprnInternalArea = null;
   if (uprnEnrichment?.success && uprnEnrichment?.data) {
     const profile = parseUprnProfile(uprnEnrichment.data);
-    if (profile.lastSoldPrice || profile.lastSoldDate) {
-      lastSold = {
-        available: true,
-        price: profile.lastSoldPrice,
-        date: profile.lastSoldDate,
-        state: 'observed',
-        provenance: createProvenance({
-          source: 'PropertyData',
-          method: 'uprn_profile',
-          observedAt: profile.lastSoldDate,
-          providerEndpoint: '/uprn',
-          notes: 'HM Land Registry last sale via PropertyData UPRN. created_at/updated_at are not used.',
-        }),
-      };
+    uprnInternalArea = profile.internalArea;
+    lastSold = lastSoldFact(profile);
+    if (lastSold.available) {
+      lastSold.provenance = createProvenance({
+        source: 'PropertyData',
+        method: 'uprn_profile',
+        observedAt: lastSold.date,
+        providerEndpoint: '/uprn',
+        notes: 'HM Land Registry last sale via PropertyData UPRN. created_at/updated_at are not used.',
+      });
     }
     const uprnEst = parseUprnSaleEstimate(uprnEnrichment.data);
-    if (uprnEst) {
-      components.push({
+    if (uprnEst && isValidBlendEstimate(uprnEst.centralEstimate)) {
+      components.push(attachComponentContract({
         centralEstimate: uprnEst.centralEstimate,
-        lowerEstimate: Number.isFinite(uprnEst.lowerEstimate)
-          ? uprnEst.lowerEstimate
-          : null,
-        upperEstimate: Number.isFinite(uprnEst.upperEstimate)
-          ? uprnEst.upperEstimate
-          : null,
+        lowerEstimate: optionalPositiveBound(uprnEst.lowerEstimate),
+        upperEstimate: optionalPositiveBound(uprnEst.upperEstimate),
         method: uprnEst.method,
         lastSoldPrice: uprnEst.lastSoldPrice,
         lastSoldDate: uprnEst.lastSoldDate,
@@ -196,7 +323,7 @@ async function calculatePropertyValuation(property, externalEnrichment = null) {
           notes: uprnEst.underlyingSource,
           providerEndpoint: '/uprn',
         }),
-      });
+      }, { declaredUnit: uprnEst.declaredUnit }));
     }
   }
 
@@ -204,59 +331,69 @@ async function calculatePropertyValuation(property, externalEnrichment = null) {
   let psfStats = null;
   if (psfEnrichment?.success && psfEnrichment?.data) {
     psfStats = parseSoldPricesPerSqf(psfEnrichment.data);
-    const sqftEst = buildSqftImpliedEstimate(property, psfStats);
+    const sqftEst = buildSqftImpliedEstimate(property, psfStats, uprnInternalArea);
     if (sqftEst) {
-      components.push({
+      components.push(attachComponentContract({
         ...sqftEst,
         provenance: createProvenance({
           source: 'PropertyData',
           method: 'sqft_implied',
-          notes: 'Local sold £/sqft applied to listing floor area',
+          notes: 'Local sold £/sqft applied to listing floor area with provenanced sqft',
           providerEndpoint: '/sold-prices-per-sqf',
         }),
-      });
+      }, { declaredUnit: 'gbp_total' }));
     }
   }
 
   let internalSale = null;
   try {
-    internalSale = await analyseSaleComparables(property);
-    if (internalSale.success) {
-      components.push({
-        centralEstimate: internalSale.recommendedPrice,
-        lowerEstimate: internalSale.marketRange.low,
-        upperEstimate: internalSale.marketRange.high,
-        method: 'internal_sale_comparables',
-        comparableCount: internalSale.comparableCount,
-        provenance: internalSale.provenance,
-      });
-    }
+    internalSale = await analyseInternal(property);
   } catch {
     internalSale = { success: false };
   }
 
-  const blend = weightedBlend(components);
+  const eligibilityContext = {
+    property,
+    uprnProfile: uprnEnrichment?.success ? parseUprnProfile(uprnEnrichment.data) : {},
+  };
+  const evidenceEligibility = components.map((component) =>
+    applyValidityToEligibility(
+      evaluateComponentEligibility(component, eligibilityContext),
+      component.componentValidation || validateSaleComponent(component)
+    )
+  );
+  const assessment = decideAssessment(evidenceEligibility);
+  const selectedComponents = assessment.assess
+    ? selectAssessableComponents(components, evidenceEligibility)
+    : [];
+  const assessmentSafety = evaluatePlausibility({
+    selectedComponents,
+    eligibilities: evidenceEligibility,
+    askingPrice,
+  });
+  const assessedComponents = assessmentSafety.assess ? assessmentSafety.retained : [];
+  const blend = assessment.assess && assessmentSafety.assess ? weightedBlend(assessedComponents) : null;
+  const bounds = blend ? validateAssessedBounds(blend) : { valid: false };
 
-  if (!blend) {
-    return {
-      success: false,
-      insufficientEvidence: true,
-      message:
-        'Insufficient evidence for a reliable sale valuation. External market data and internal comparables were unavailable.',
+  if (!blend || !bounds.valid) {
+    return insufficientValuation({
       askingPrice,
       components,
       internalSale,
-      externalTransactions: externalTransactions.slice(0, 10),
+      externalTransactions,
       lastSold,
-    };
+      evidenceEligibility: { methods: evidenceEligibility, assessment, assessmentSafety },
+      assessmentSafety,
+    });
   }
 
+  const independentComponents = assessedComponents.filter((c) => isIndependentValuationMethod(c.method));
   const confidenceAssessment = assessConfidence({
     scope: 'sale_valuation',
     comparables: internalSale?.comparables || [],
     target: property,
     dataQuality: internalSale?.dataQuality || null,
-    methodEstimates: components.map((c) => ({ method: c.method, value: c.centralEstimate })),
+    methodEstimates: independentComponents.map((c) => ({ method: c.method, value: c.centralEstimate })),
     providerConfidence: providerReportedConfidence,
     providerCoverageAvailable: Boolean(
       enrichments.valuation_sale?.success ||
@@ -267,17 +404,22 @@ async function calculatePropertyValuation(property, externalEnrichment = null) {
   });
   const level = confidenceAssessment.level.toLowerCase();
 
+  const assessableArea = hasProvenancedAssessableFloorArea(property, uprnInternalArea);
   const result = {
     success: true,
-    askingPrice: askingPrice || null,
-    centralEstimate: wrapValue(blend.central, {
+    notAssessed: false,
+    assessmentState: 'assessed',
+    assessmentSafetyVersion: ASSESSMENT_SAFETY_VERSION,
+    assessmentSafety,
+    askingPrice,
+    centralEstimate: wrapValue(bounds.central, {
       source: 'BlendedEvidence',
       method: 'weighted_evidence_blend',
       confidence: level,
     }),
     lowerEstimate:
-      blend.lower != null
-        ? wrapValue(blend.lower, {
+      bounds.lower != null
+        ? wrapValue(bounds.lower, {
             source: 'BlendedEvidence',
             method: 'weighted_evidence_blend',
           })
@@ -288,8 +430,8 @@ async function calculatePropertyValuation(property, externalEnrichment = null) {
             reason: 'No evidenced lower bound was supplied by any valuation method. A ±6% band is not invented.',
           },
     upperEstimate:
-      blend.upper != null
-        ? wrapValue(blend.upper, {
+      bounds.upper != null
+        ? wrapValue(bounds.upper, {
             source: 'BlendedEvidence',
             method: 'weighted_evidence_blend',
           })
@@ -299,12 +441,29 @@ async function calculatePropertyValuation(property, externalEnrichment = null) {
             state: 'notAssessed',
             reason: 'No evidenced upper bound was supplied by any valuation method. A ±6% band is not invented.',
           },
-    boundsAvailable: Boolean(blend.boundsAvailable),
+    boundsAvailable: Boolean(bounds.boundsAvailable),
     confidence: level,
     confidenceAssessment,
     evidenceCount: blend.evidenceCount,
+    evidenceEligibility: {
+      methods: evidenceEligibility,
+      assessment,
+      assessmentSafety,
+      assessedMethods: assessedComponents.map((c) => c.method),
+      methodFamilies: assessment.families,
+    },
     components,
     internalComparables: internalSale?.comparables || [],
+    askingListingEvidence: internalSale?.success
+      ? {
+          present: true,
+          evidenceKind: 'asking_listing',
+          notTransactionEvidence: true,
+          cannotSolelyAssessValuation: true,
+          comparableCount: internalSale.comparableCount,
+          recommendedPrice: internalSale.recommendedPrice ?? null,
+        }
+      : null,
     externalTransactions: externalTransactions.slice(0, 10),
     lastSold,
     pricePerSqft: psfStats
@@ -313,8 +472,8 @@ async function calculatePropertyValuation(property, externalEnrichment = null) {
           method: 'sold_prices_per_sqf',
           notes: psfStats.underlyingSource,
         })
-      : property.square_feet && blend.central
-        ? wrapValue(Math.round(blend.central / Number(property.square_feet)), {
+      : assessableArea && bounds.central
+        ? wrapValue(Math.round(bounds.central / parsePositiveArea(property.square_feet)), {
             source: 'BlendedEvidence',
             method: 'implied_from_central_estimate',
           })
@@ -327,7 +486,7 @@ async function calculatePropertyValuation(property, externalEnrichment = null) {
         }
       : null,
     methodology:
-      'Weighted blend of available evidence sources (PropertyData AVM, HM Land Registry statistics, UPRN profile, internal comparables, £/sqft).',
+      'Weighted blend of independent evidence sources (PropertyData AVM, HM Land Registry statistics, UPRN profile, provenanced £/sqft). Internal asking listings are contextual only.',
     disclaimer:
       'Indicative analytical estimate only — not a RICS survey or mortgage valuation.',
   };
@@ -335,4 +494,10 @@ async function calculatePropertyValuation(property, externalEnrichment = null) {
   return result;
 }
 
-module.exports = { calculatePropertyValuation, weightedBlend, confidenceFromEvidence };
+module.exports = {
+  calculatePropertyValuation,
+  weightedBlend,
+  confidenceFromEvidence,
+  buildSqftImpliedEstimate,
+  ASSESSMENT_SAFETY_VERSION,
+};

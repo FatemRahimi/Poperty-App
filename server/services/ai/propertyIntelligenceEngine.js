@@ -15,6 +15,8 @@ const {
 const { calculateIntelligenceScores, calculateConfidence } = require('./propertyScoring');
 const { generatePropertyExplanation, templateSummary } = require('./propertyExplanationService');
 const { enrichPropertyForIntelligence } = require('../enrichment/propertyEnrichmentService');
+const { extractCanonicalAddress } = require('../identity/canonicalAddress');
+const { CANONICAL_IDENTITY_VERSION } = require('../../architecture/canonicalIdentity');
 const { isExternalEnrichmentAvailable } = require('../../config/propertyIntelligence.config');
 const {
   logIntelligenceFailure,
@@ -23,11 +25,36 @@ const {
 const { calculatePropertyValuation } = require('./valuationEngine');
 const { calculatePricePosition } = require('./pricePositionEngine');
 const {
+  ASSESSMENT_SAFETY_VERSION,
+  isDefensibleAssessedValuation,
+} = require('./valuationAssessmentSafety');
+const {
   getPostcodeMarketIntelligence,
   buildPropertyMarketContext,
   buildDecisionContext,
 } = require('./postcodeMarketIntelligenceService');
 const { listingObservedCharges } = require('./listingObservedFields');
+const {
+  resolveRuntimeClassification,
+  residentialMethodologyGate,
+  unsupportedResidentialValuation,
+  unsupportedResidentialRent,
+  attachIdentityBoundary,
+  attachPersistedClassification,
+} = require('../identity/assetClassificationRuntime');
+const { evaluatePlatformApplicability } = require('../identity/domainApplicability');
+const { attachPlanningDomain } = require('../domains/planningDomain');
+const { attachEnvironmentDomain } = require('../domains/environmentDomain');
+const { attachLegalTitleFoundation } = require('../domains/legalTitleDomain');
+const { attachMarketDomain } = require('../domains/marketDomain');
+const { composeLiveDomainEnvelopes } = require('../domains/composeLiveDomains');
+const { resolveMarketAcquisitionPolicy } = require('../identity/marketAcquisitionPolicy');
+const { loadLegalEvidenceForAnalysis, snapshotLegalEvidence } = require('../evidence/legalEvidenceConsumer');
+const {
+  queryOfficialSaleTransactions,
+  emptyResult,
+} = require('../market/officialSaleTransactionQuery');
+const { IMPORT_STATUS } = require('../../architecture/officialSaleTransaction');
 const {
   assemblePropertyFacts,
   attachPropertyFactsToDecisionContext,
@@ -77,6 +104,8 @@ const {
   parseAnalyseFinanceRequest,
   pickRecognisedFinanceKeys,
   buildFinanceRequestTransparency,
+  resolveRentBasis,
+  resolvePurchasePriceBasis,
   FINANCE_INPUT_VERSION,
 } = require('./financeInputContract');
 const {
@@ -183,6 +212,7 @@ function publicAnalysisOptions(options = {}) {
     asOf,
     providerCallLog,
     skipValidation,
+    skipOfficialSales,
     ...rest
   } = options;
   const parsed = parseAnalyseFinanceRequest(rest);
@@ -201,21 +231,41 @@ function buildCanonicalIdentity(property, access, externalEnrichment, target = {
     (property?.id != null ? property.id : null);
   const subjectId =
     access?.subjectId ?? property?.subjectId ?? target.subjectId ?? null;
+  const persisted = externalEnrichment?.identity || {};
+  const listing = extractCanonicalAddress(property || {});
   const uprn =
-    access?.uprn ?? property?.uprn ?? externalEnrichment?.identity?.uprn ?? null;
-  let source = property?.source || access?.source || null;
+    access?.uprn ?? property?.uprn ?? persisted.uprn ?? null;
+  let source = property?.source || access?.source || persisted.identity_source || persisted.identitySource || null;
   if (!source) {
     if (subjectId && listingId) source = 'linked_marketplace_listing';
     else if (subjectId) source = 'intelligence_subject';
     else source = 'marketplace_listing';
   }
+  const paon = persisted.paon || listing.paon || null;
+  const saon = persisted.saon || listing.saon || null;
+  const postcode = persisted.postcode || listing.postcode || property?.zip_code || property?.postcode || null;
+  const verificationState =
+    persisted.verification_state || persisted.verificationState || listing.verificationState || 'UNRESOLVED';
   return {
     listingId,
     subjectId,
     uprn,
+    paon,
+    saon,
+    postcode,
+    postcodeCompact: persisted.postcode_compact || persisted.postcodeCompact || listing.postcodeCompact || null,
+    canonicalAddress: persisted.normalized_address || persisted.canonicalAddress || listing.canonicalAddress || null,
+    identitySource: persisted.identity_source || persisted.identitySource || listing.identitySource || source,
+    evidenceSourceType: persisted.evidence_source_type || persisted.evidenceSourceType || listing.evidenceSourceType || null,
+    verificationState,
+    identityState: persisted.identity_state || persisted.identityState || listing.identityState || verificationState,
+    retrievedAt: persisted.retrieved_at || persisted.retrievedAt || listing.retrievedAt || null,
+    identityContractVersion: persisted.identity_contract_version || CANONICAL_IDENTITY_VERSION,
     source,
     listingIdIsNotUprn: listingId == null || String(listingId) !== String(uprn || ''),
     uprnIsNotListingId: !uprn || String(uprn) !== String(listingId || ''),
+    uprnIsNotTitleNumber: true,
+    inferredIsNotVerified: true,
   };
 }
 
@@ -399,12 +449,19 @@ async function runFullPropertyAnalysis(propertyIdOrTarget, userId, options = {})
       uprn: preview.property?.uprn,
       source: 'PropertyData',
     };
+    property = await attachPersistedClassification(property, access, target);
+    const subjectAcquisition = resolveMarketAcquisitionPolicy({
+      classification: resolveRuntimeClassification({ property, access, target, options }),
+      property,
+    });
     mark('enrichment', 'Loading external property intelligence');
     try {
       const subject = await require('../enrichment/intelligenceSubjectRepository').findSubjectById(
         target.subjectId
       );
-      externalEnrichment = await enrichSubjectForIntelligence(subject, property, userId);
+      externalEnrichment = await enrichSubjectForIntelligence(subject, property, userId, {
+        acquisition: subjectAcquisition,
+      });
     } catch (err) {
       logIntelligenceFailure('enrichSubjectForIntelligence', err);
       externalEnrichment = {
@@ -429,10 +486,29 @@ async function runFullPropertyAnalysis(propertyIdOrTarget, userId, options = {})
       };
     }
 
+    property = await attachPersistedClassification(property, access, target);
+    const listingClassification = resolveRuntimeClassification({
+      property,
+      access,
+      target,
+      options,
+    });
+    const listingAcquisition = resolveMarketAcquisitionPolicy({
+      classification: listingClassification,
+      property,
+    });
+
     mark('enrichment', 'Loading external property intelligence');
     if (isExternalEnrichmentAvailable()) {
       try {
-        externalEnrichment = await enrichPropertyForIntelligence(property, { userId });
+        externalEnrichment = await enrichPropertyForIntelligence(property, {
+          userId,
+          uprn: property.uprn || access?.uprn || null,
+          subjectId: property.subjectId || access?.subjectId || null,
+          classification: listingClassification,
+          acquisition: listingAcquisition,
+          allowPaidIdentity: false,
+        });
       } catch (err) {
         logIntelligenceFailure('enrichPropertyForIntelligence', err);
         externalEnrichment = {
@@ -450,6 +526,8 @@ async function runFullPropertyAnalysis(propertyIdOrTarget, userId, options = {})
       };
     }
   }
+
+  property = await attachPersistedClassification(property, access, target);
 
   return assemblePropertyIntelligenceReport({
     property,
@@ -729,6 +807,14 @@ async function assemblePropertyIntelligenceReport({
 
   const isProfessional = access.accessLevel === 'professional_intelligence';
 
+  const assetClassification = resolveRuntimeClassification({
+    property,
+    access,
+    target,
+    options,
+  });
+  const methodologyGate = residentialMethodologyGate(assetClassification);
+
   let postcodeIntelligence = null;
   let marketContext = null;
   let decisionContext = null;
@@ -736,7 +822,10 @@ async function assemblePropertyIntelligenceReport({
   if (postcodeForMarket && !options.skipPostcodeMarket) {
     try {
       noteCanonicalStep(options, 'postcode_market');
-      postcodeIntelligence = await postcodeFn(postcodeForMarket, { userId });
+      postcodeIntelligence = await postcodeFn(postcodeForMarket, {
+        userId,
+        skipResidentialRents: !methodologyGate.allowed,
+      });
       if (postcodeIntelligence?.success) {
         marketContext = buildPropertyMarketContext(property, postcodeIntelligence);
         decisionContext = attachPropertyFactsToDecisionContext(
@@ -770,12 +859,29 @@ async function assemblePropertyIntelligenceReport({
   stamp('valuation', 'Calculating sale valuation');
   let saleValuation = null;
   let pricePosition = null;
-  if (property.category === 'sale' || Number(property.price) > 0) {
+  if (!methodologyGate.allowed) {
+    saleValuation = unsupportedResidentialValuation(methodologyGate);
+    pricePosition = {
+      success: false,
+      notAssessed: true,
+      assessmentState: 'notAssessed',
+      message: methodologyGate.note,
+      askingPrice: Number(property.price) || null,
+    };
+  } else if (property.category === 'sale' || Number(property.price) > 0) {
     noteCanonicalStep(options, 'valuation');
     try {
       saleValuation = await valuationFn(property, externalEnrichment);
-      if (saleValuation?.success) {
+      if (isDefensibleAssessedValuation(saleValuation)) {
         pricePosition = calculatePricePosition(Number(property.price), saleValuation);
+      } else if (saleValuation) {
+        pricePosition = {
+          success: false,
+          notAssessed: true,
+          assessmentState: 'notAssessed',
+          message: saleValuation.message || 'Sale valuation was not assessed.',
+          askingPrice: Number(property.price) || null,
+        };
       }
     } catch {
       saleValuation = {
@@ -791,7 +897,9 @@ async function assemblePropertyIntelligenceReport({
   const canEstimateRent =
     (property.city || property.zip_code) &&
     (monthlyRent > 0 || property.category === 'sale' || Number(property.price) > 0);
-  if (canEstimateRent) {
+  if (!methodologyGate.allowed) {
+    rentIntel = unsupportedResidentialRent(methodologyGate);
+  } else if (canEstimateRent) {
     noteCanonicalStep(options, 'rent');
     try {
       rentIntel = await analyseRentFn(
@@ -850,12 +958,17 @@ async function assemblePropertyIntelligenceReport({
   const scenarioExpectedRent = financeContractPreview.fields.expectedRent?.available
     ? financeContractPreview.fields.expectedRent.value
     : null;
-  const purchasePriceBase =
-    listingAskingPrice > 0 ? listingAskingPrice : Number(scenarioPurchasePrice) || 0;
-  const listingOrMarketRent =
-    listingMonthlyRent > 0 ? listingMonthlyRent : Number(marketRent) > 0 ? Number(marketRent) : 0;
-  const rentForInvestment =
-    listingOrMarketRent > 0 ? listingOrMarketRent : Number(scenarioExpectedRent) || 0;
+  const priceBasis = resolvePurchasePriceBasis({
+    listingAskingPrice,
+    scenarioPurchasePrice,
+  });
+  const rentBasis = resolveRentBasis({
+    listingMonthlyRent,
+    marketRent,
+    scenarioExpectedRent,
+  });
+  const purchasePriceBase = priceBasis.selectedPrice;
+  const rentForInvestment = rentBasis.selectedRent;
 
   if (purchasePriceBase > 0 && rentForInvestment > 0) {
     prepared = prepareEvidencedInvestment({
@@ -866,7 +979,8 @@ async function assemblePropertyIntelligenceReport({
       propertyFacts,
     });
     const metrics = calculateInvestmentMetrics(prepared.input, prepared.provenanceHints);
-    const presented = presentEvidencedInvestment(metrics, prepared.operatingCostEvidence);
+    metrics.rentBasis = rentBasis;
+    const presented = presentEvidencedInvestment(metrics, prepared.operatingCostEvidence, { rentBasis });
     if (decisionContext) {
       decisionContext = attachFinanceInputsToDecisionContext(decisionContext, prepared.financeInputs);
     }
@@ -880,7 +994,8 @@ async function assemblePropertyIntelligenceReport({
       financeEvidence: presented.financeEvidence,
       financeInputs: publicFinanceInputsForExplanation(prepared.financeInputs),
       scenarioOverrides: prepared.scenarioOverrides,
-      expectedRentIsNotMarketRent: true,
+      rentBasis,
+      expectedRentIsNotMarketRent: rentBasis.kind !== 'MARKET',
       scenarioIsNotObservedResult: prepared.analysisKind === 'user_scenario',
       scenarios: financeComplete
         ? buildDetailedScenarios(prepared.input)
@@ -1058,7 +1173,17 @@ async function assemblePropertyIntelligenceReport({
           missingCosts: investment.presented.costEvidence?.missing || [],
           councilTaxTreatedAsLandlordCost: false,
           analysisKind: investment.analysisKind || null,
-          expectedRentIsNotMarketRent: true,
+          rentBasis: investment.rentBasis
+            ? {
+                kind: investment.rentBasis.kind,
+                label: investment.rentBasis.label,
+                marketSubstitutedForMissingListing: Boolean(
+                  investment.rentBasis.marketSubstitutedForMissingListing
+                ),
+              }
+            : null,
+          grossYieldBasis: investment.presented.grossYieldBasis || investment.presented.grossYield?.basis || null,
+          expectedRentIsNotMarketRent: investment.expectedRentIsNotMarketRent !== false,
           scenarioIsNotObservedResult: Boolean(investment.scenarioIsNotObservedResult),
         }
       : null,
@@ -1070,7 +1195,7 @@ async function assemblePropertyIntelligenceReport({
           hasValuation: Boolean(externalEnrichment.enrichments?.valuation_sale?.success),
         }
       : null,
-    saleValuation: saleValuation?.success
+    saleValuation: isDefensibleAssessedValuation(saleValuation)
       ? {
           centralEstimate: saleValuation.centralEstimate?.value ?? saleValuation.centralEstimate,
           lowerEstimate: saleValuation.lowerEstimate?.value ?? saleValuation.lowerEstimate,
@@ -1079,7 +1204,7 @@ async function assemblePropertyIntelligenceReport({
           evidenceCount: saleValuation.evidenceCount,
         }
       : null,
-    pricePosition: pricePosition?.success
+    pricePosition: pricePosition?.success && !pricePosition?.notAssessed
       ? {
           label: pricePosition.label,
           position: pricePosition.position,
@@ -1184,7 +1309,80 @@ async function assemblePropertyIntelligenceReport({
     };
   }
 
-  const identity = buildCanonicalIdentity(property, access, externalEnrichment, target);
+  const identity = attachIdentityBoundary(
+    buildCanonicalIdentity(property, access, externalEnrichment, target),
+    assetClassification
+  );
+
+  const planningAttachment = attachPlanningDomain({
+    planningEvidence: propertyFacts?.facts?.planning || planningEvidence,
+    identity,
+    assetClassification,
+    analysisAt: evidenceAsOf,
+  });
+  const environmentAttachment = attachEnvironmentDomain({
+    floodEvidence: propertyFacts?.facts?.flood || floodEvidence,
+    identity,
+    assetClassification,
+    analysisAt: evidenceAsOf,
+  });
+  let legalDocuments = [];
+  let legalTitleRefs = [];
+  try {
+    const loaded = await loadLegalEvidenceForAnalysis({
+      ownerUserId: userId,
+      propertyId: target.propertyId || property.id || access?.propertyId || null,
+      subjectId: target.subjectId || access?.subjectId || null,
+    });
+    legalDocuments = loaded.documents || [];
+    legalTitleRefs = loaded.titleRefs || [];
+  } catch {
+    legalDocuments = [];
+    legalTitleRefs = [];
+  }
+  const legalAttachment = attachLegalTitleFoundation({
+    propertyFacts,
+    listingTenure: property.tenure || propertyFacts?.facts?.tenure?.value || null,
+    documents: legalDocuments,
+    titleRefs: legalTitleRefs,
+    identity,
+    assetClassification,
+    analysisAt: evidenceAsOf,
+  });
+  let officialSales = null;
+  if (options.skipOfficialSales) {
+    officialSales = null;
+  } else {
+    try {
+      const queryOfficialSalesFn = deps.queryOfficialSaleTransactions || queryOfficialSaleTransactions;
+      officialSales = await queryOfficialSalesFn({
+        identity,
+        property,
+        store: deps.officialSaleStore || null,
+      });
+      noteCanonicalStep(options, 'official_sale_transactions');
+    } catch {
+      officialSales = emptyResult(IMPORT_STATUS.SOURCE_NOT_AVAILABLE, {
+        officialTransactionSourceAvailable: false,
+      });
+    }
+  }
+  const marketAttachment = attachMarketDomain({
+    property,
+    identity,
+    assetClassification,
+    externalEnrichment,
+    comparableCount,
+    saleComparableCount: saleValuation?.internalComparables?.length || 0,
+    analysisAt: evidenceAsOf,
+    officialSales,
+  });
+  const liveDomains = composeLiveDomainEnvelopes([
+    marketAttachment.marketDomain,
+    planningAttachment.planningDomain,
+    environmentAttachment.environmentDomain,
+    legalAttachment.legalTitleDomain,
+  ]);
 
   const insufficientData =
     !dataQuality.sufficientForAnalysis && comparableCount === 0 && !monthlyRent && !rentIntel?.success;
@@ -1194,10 +1392,25 @@ async function assemblePropertyIntelligenceReport({
     insufficientData,
     analysisMode: 'canonical',
     engineVersion: CANONICAL_ENGINE_VERSION,
+    assessmentSafetyVersion: ASSESSMENT_SAFETY_VERSION,
     evidenceAsOf,
     analysisDate: evidenceAsOf,
     modelVersion: CANONICAL_ENGINE_VERSION,
     identity,
+    assetClassification,
+    residentialMethodology: methodologyGate,
+    domainApplicability: evaluatePlatformApplicability({
+      assetClass: assetClassification.assetClass,
+      subjectKind: identity.entityKind,
+    }),
+    marketDomain: marketAttachment.marketDomain,
+    planningDomain: planningAttachment.planningDomain,
+    environmentDomain: environmentAttachment.environmentDomain,
+    legalTitleDomain: {
+      ...legalAttachment.legalTitleDomain,
+      documents: snapshotLegalEvidence(legalDocuments),
+    },
+    domains: liveDomains,
     stages,
     property: {
       id: property.id,
@@ -1234,6 +1447,7 @@ async function assemblePropertyIntelligenceReport({
       listingId: identity.listingId,
       subjectId: identity.subjectId,
       uprn: identity.uprn,
+      assetClassification,
       options: analysisOptions,
       finance: {
         version: FINANCE_INPUT_VERSION,

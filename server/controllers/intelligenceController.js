@@ -381,7 +381,12 @@ const resolveIntelligenceSubject = async (req, res) => {
       matchConfidence,
     });
     if (!result.success) {
-      return res.status(422).json(result);
+      const status = result.code === 'PROVIDER_LOOKUP_LIMIT' ? 429 : 422;
+      return res.status(status).json({
+        success: false,
+        code: result.code || undefined,
+        message: result.message,
+      });
     }
     res.json(result);
   } catch (error) {

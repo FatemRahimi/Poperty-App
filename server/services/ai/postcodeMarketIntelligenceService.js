@@ -194,7 +194,10 @@ async function fetchInternalPostcodeListings(postcodeCompact) {
   return result.rows;
 }
 
-async function fetchExternalPostcodeEvidence(postcode, userId) {
+async function fetchExternalPostcodeEvidence(postcode, userIdOrContext) {
+  const context = userIdOrContext && typeof userIdOrContext === 'object' ? userIdOrContext : {};
+  const userId = context.userId != null ? context.userId : userIdOrContext;
+  const skipResidentialRents = context.skipResidentialRents === true;
   if (!isExternalEnrichmentAvailable()) {
     return {
       available: false,
@@ -229,15 +232,15 @@ async function fetchExternalPostcodeEvidence(postcode, userId) {
   const [sold, psf, rentsRes, demandRes, demandRentRes] = await Promise.all([
     provider.getSoldPrices(postcode, ctx).catch(() => ({ success: false })),
     provider.getSoldPricesPerSqf(postcode, ctx).catch(() => ({ success: false })),
-    typeof provider.getRents === 'function'
+    !skipResidentialRents && typeof provider.getRents === 'function'
       ? provider.getRents(postcode, ctx).catch(() => ({ success: false }))
-      : Promise.resolve({ success: false }),
+      : Promise.resolve({ success: false, skipped: skipResidentialRents }),
     typeof provider.getDemand === 'function'
       ? provider.getDemand(postcode, ctx).catch(() => ({ success: false }))
       : Promise.resolve({ success: false }),
-    typeof provider.getDemandRent === 'function'
+    !skipResidentialRents && typeof provider.getDemandRent === 'function'
       ? provider.getDemandRent(postcode, ctx).catch(() => ({ success: false }))
-      : Promise.resolve({ success: false }),
+      : Promise.resolve({ success: false, skipped: skipResidentialRents }),
   ]);
 
   const soldStats = sold?.success ? parseSoldPricesStats(sold.data) : null;
@@ -883,7 +886,7 @@ async function getPostcodeMarketIntelligence(postcodeInput, context = {}) {
 
   const [listings, external] = await Promise.all([
     fetchInternalPostcodeListings(postcodeCompact),
-    fetchExternalPostcodeEvidence(normalized, context.userId),
+    fetchExternalPostcodeEvidence(normalized, context),
   ]);
 
   const residentialSale = listings.filter(

@@ -16,7 +16,16 @@ const {
   blocksListingMutation,
   recordListingOutcome,
   publicOutcomeView,
+  deriveSaleOutcomeState,
+  SALE_OUTCOME_STATE,
 } = require('../services/ai/listingOutcomeService');
+const { applyPropertyUpdate } = require('./helpers/outcomeTestStore');
+const {
+  ISSUE,
+  classifySaleOutcomeLabel,
+  aggregateOutcomeIssues,
+} = require('../services/ai/listingOutcomeQuality');
+const { OUTCOME_TRUST } = require('../services/ai/backtesting/constants');
 const {
   extractListingOutcomes,
   extractPredictionSnapshot,
@@ -102,20 +111,7 @@ function createOutcomeClient(listings) {
         const id = Number(params[params.length - 1]);
         const current = properties.get(id);
         if (!current) return { rows: [] };
-        const next = {
-          ...current,
-          status: params[0],
-          updated_at: '2026-08-25T18:00:00.000Z',
-        };
-        if (/= \$2/.test(text) && /sold_at =/.test(text)) next.sold_at = params[1];
-        if (/= \$2/.test(text) && /let_at =/.test(text)) next.let_at = params[1];
-        if (/under_offer_at =/.test(text)) next.under_offer_at = params[1];
-        if (/withdrawn_at =/.test(text)) next.withdrawn_at = params[1];
-        if (/achieved_price =/.test(text)) next.achieved_price = params[2];
-        if (/achieved_rent =/.test(text)) next.achieved_rent = params[2];
-        if (/final_asking_price =/.test(text)) {
-          next.final_asking_price = current.final_asking_price ?? current.price ?? null;
-        }
+        const next = applyPropertyUpdate(current, text, params);
         properties.set(id, next);
         return { rows: [{ ...next }] };
       }
@@ -589,6 +585,13 @@ async function run() {
       actor: OWNER,
     });
     assert.strictEqual(copied.code, 'invalid_amount_source');
+    const valuation = await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      useValuation: true,
+      actor: OWNER,
+    });
+    assert.strictEqual(valuation.code, 'invalid_amount_source');
   });
 
   await asyncTest('sale after under_offer is allowed and remains one sold event', async () => {
@@ -678,6 +681,10 @@ async function run() {
   });
 
   test('valuation rent finance and confidence-1.1.0 remain unchanged', () => {
+    const { ASSESSMENT_SAFETY_VERSION } = require('../services/ai/valuationAssessmentSafety');
+    const { propertyIntelligenceConfig } = require('../config/propertyIntelligence.config');
+    assert.strictEqual(ASSESSMENT_SAFETY_VERSION, 'assessment-safety-1.0.0');
+    assert.strictEqual(propertyIntelligenceConfig.providerProtection.maxPaidExecutionsPerUserHour, 40);
     assert.strictEqual(CONFIDENCE_MODEL.baseVersion, 'confidence-1.1.0');
     assert.strictEqual(FACTOR_WEIGHTS.dataCompleteness, 0.06);
     const metrics = calculateInvestmentMetrics({
@@ -773,6 +780,345 @@ async function run() {
     });
     assert.deepStrictEqual(extractListingOutcomes(recorded.property), []);
     assert.deepStrictEqual(fromAsking, []);
+  });
+
+  test('sale outcome states are derived from stored fields', () => {
+    assert.strictEqual(deriveSaleOutcomeState(saleListing()), SALE_OUTCOME_STATE.NO_OUTCOME);
+    assert.strictEqual(
+      deriveSaleOutcomeState(saleListing({ status: 'sold', sold_at: '2026-07-01T10:00:00.000Z' })),
+      SALE_OUTCOME_STATE.INCOMPLETE_SALE_OUTCOME
+    );
+    assert.strictEqual(
+      deriveSaleOutcomeState(
+        saleListing({
+          status: 'sold',
+          sold_at: '2026-07-01T10:00:00.000Z',
+          achieved_price: 385000,
+        })
+      ),
+      SALE_OUTCOME_STATE.COMPLETE_SALE_OUTCOME
+    );
+  });
+
+  await asyncTest('incomplete sold outcome can later receive a genuine achieved price', async () => {
+    const client = createOutcomeClient([saleListing({ price: 400000, valuation: 410000 })]);
+    const soldAt = '2026-07-01T10:00:00.000Z';
+    const first = await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: soldAt,
+      actor: OWNER,
+    });
+    assert.strictEqual(first.ok, true);
+    assert.strictEqual(first.property.achieved_price, null);
+    assert.strictEqual(deriveSaleOutcomeState(first.property), SALE_OUTCOME_STATE.INCOMPLETE_SALE_OUTCOME);
+
+    const completed = await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: soldAt,
+      achievedPrice: 385000,
+      actor: OWNER,
+    });
+    assert.strictEqual(completed.ok, true);
+    assert.strictEqual(completed.code, 'completed');
+    assert.strictEqual(completed.property.sold_at, soldAt);
+    assert.strictEqual(completed.property.achieved_price, 385000);
+    assert.notStrictEqual(completed.property.achieved_price, 400000);
+    assert.notStrictEqual(completed.property.achieved_price, 410000);
+    assert.strictEqual(client.events.filter((e) => e.event_type === 'sold').length, 1);
+    assert.strictEqual(client.events.filter((e) => e.event_type === 'sale_outcome_completed').length, 1);
+    assert.strictEqual(client.events[0].payload.achieved_price, null);
+    assert.strictEqual(completed.event.event_type, 'sale_outcome_completed');
+    assert.strictEqual(completed.event.payload.completionOfIncompleteOutcome, true);
+    assert.strictEqual(completed.event.payload.trust, 'USER_REPORTED');
+    assert.strictEqual(completed.event.payload.verificationState, 'user_reported');
+    assert.strictEqual(completed.event.payload.occurredAtSource, 'existing_sold_at');
+    assert.strictEqual(completed.event.provenance.source, 'ApplicationDatabase');
+  });
+
+  await asyncTest('omitted date on completion reuses canonical sold_at and does not use server now', async () => {
+    const client = createOutcomeClient([saleListing()]);
+    const soldAt = '2026-07-01T10:00:00.000Z';
+    await record(client, { listingId: 10, outcome: 'sold', occurredAt: soldAt, actor: OWNER });
+    const later = new Date('2026-08-30T09:00:00.000Z');
+    const completed = await record(
+      client,
+      { listingId: 10, outcome: 'sold', achievedPrice: 385000, actor: OWNER },
+      later
+    );
+    assert.strictEqual(completed.property.sold_at, soldAt);
+    assert.notStrictEqual(completed.property.sold_at, later.toISOString());
+    assert.strictEqual(completed.event.event_at, soldAt);
+    assert.strictEqual(completed.event.provenance.retrievedAt, later.toISOString());
+  });
+
+  await asyncTest('identical completion repeated is idempotent and does not add a second completion event', async () => {
+    const client = createOutcomeClient([saleListing()]);
+    const input = {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-07-01T10:00:00.000Z',
+      achievedPrice: 385000,
+      actor: OWNER,
+    };
+    await record(client, { listingId: 10, outcome: 'sold', occurredAt: input.occurredAt, actor: OWNER });
+    const first = await record(client, input);
+    const second = await record(client, input);
+    assert.strictEqual(first.code, 'completed');
+    assert.strictEqual(second.ok, true);
+    assert.strictEqual(second.idempotent, true);
+    assert.strictEqual(second.code, 'idempotent');
+    assert.strictEqual(client.events.filter((e) => e.event_type === 'sale_outcome_completed').length, 1);
+    assert.strictEqual(client.properties.get(10).achieved_price, 385000);
+  });
+
+  await asyncTest('existing genuine price cannot silently change', async () => {
+    const client = createOutcomeClient([saleListing()]);
+    await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-07-01T10:00:00.000Z',
+      achievedPrice: 385000,
+      actor: OWNER,
+    });
+    const conflict = await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-07-01T10:00:00.000Z',
+      achievedPrice: 399000,
+      actor: OWNER,
+    });
+    assert.strictEqual(conflict.code, 'outcome_conflict');
+    assert.strictEqual(client.properties.get(10).achieved_price, 385000);
+  });
+
+  await asyncTest('existing sold_at cannot silently change', async () => {
+    const client = createOutcomeClient([saleListing()]);
+    await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-07-01T10:00:00.000Z',
+      achievedPrice: 385000,
+      actor: OWNER,
+    });
+    const conflict = await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-08-01T10:00:00.000Z',
+      achievedPrice: 385000,
+      actor: OWNER,
+    });
+    assert.strictEqual(conflict.code, 'outcome_conflict');
+    assert.strictEqual(client.properties.get(10).sold_at, '2026-07-01T10:00:00.000Z');
+  });
+
+  await asyncTest('completion with a different date than stored sold_at conflicts', async () => {
+    const client = createOutcomeClient([saleListing()]);
+    await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-07-01T10:00:00.000Z',
+      actor: OWNER,
+    });
+    const conflict = await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-08-01T10:00:00.000Z',
+      achievedPrice: 385000,
+      actor: OWNER,
+    });
+    assert.strictEqual(conflict.code, 'outcome_conflict');
+    assert.strictEqual(client.properties.get(10).achieved_price, null);
+    assert.strictEqual(client.properties.get(10).sold_at, '2026-07-01T10:00:00.000Z');
+  });
+
+  await asyncTest('invalid zero negative and non-finite prices are rejected on completion', async () => {
+    const soldAt = '2026-07-01T10:00:00.000Z';
+    async function completeWith(price) {
+      const client = createOutcomeClient([saleListing()]);
+      await record(client, { listingId: 10, outcome: 'sold', occurredAt: soldAt, actor: OWNER });
+      return record(client, {
+        listingId: 10,
+        outcome: 'sold',
+        occurredAt: soldAt,
+        achievedPrice: price,
+        actor: OWNER,
+      });
+    }
+    assert.strictEqual((await completeWith(0)).code, 'invalid_achieved_price');
+    assert.strictEqual((await completeWith(-10)).code, 'invalid_achieved_price');
+    assert.strictEqual((await completeWith(Number.NaN)).code, 'invalid_achieved_price');
+    assert.strictEqual((await completeWith(Number.POSITIVE_INFINITY)).code, 'invalid_achieved_price');
+    assert.strictEqual((await completeWith('not-a-number')).code, 'invalid_achieved_price');
+  });
+
+  await asyncTest('completion cannot copy asking or valuation into achieved_price', async () => {
+    const client = createOutcomeClient([saleListing({ price: 400000, valuation: 410000 })]);
+    await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-07-01T10:00:00.000Z',
+      actor: OWNER,
+    });
+    const asking = await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      copyFromAsking: true,
+      achievedPrice: 400000,
+      actor: OWNER,
+    });
+    const valuation = await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      useValuation: true,
+      achievedPrice: 410000,
+      actor: OWNER,
+    });
+    assert.strictEqual(asking.code, 'invalid_amount_source');
+    assert.strictEqual(valuation.code, 'invalid_amount_source');
+    assert.strictEqual(client.properties.get(10).achieved_price, null);
+  });
+
+  await asyncTest('owner and admin may complete; unrelated user cannot', async () => {
+    const ownerClient = createOutcomeClient([saleListing()]);
+    await record(ownerClient, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-07-01T10:00:00.000Z',
+      actor: OWNER,
+    });
+    const ownerDone = await record(ownerClient, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-07-01T10:00:00.000Z',
+      achievedPrice: 385000,
+      actor: OWNER,
+    });
+    assert.strictEqual(ownerDone.ok, true);
+
+    const adminClient = createOutcomeClient([saleListing()]);
+    await record(adminClient, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-07-01T10:00:00.000Z',
+      actor: ADMIN,
+    });
+    const adminDone = await record(adminClient, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-07-01T10:00:00.000Z',
+      achievedPrice: 385000,
+      actor: ADMIN,
+    });
+    assert.strictEqual(adminDone.ok, true);
+    assert.strictEqual(adminDone.event.payload.actorType, 'admin');
+
+    const strangerClient = createOutcomeClient([
+      saleListing({ status: 'sold', sold_at: '2026-07-01T10:00:00.000Z', achieved_price: null }),
+    ]);
+    const denied = await record(strangerClient, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2026-07-01T10:00:00.000Z',
+      achievedPrice: 385000,
+      actor: STRANGER,
+    });
+    assert.strictEqual(denied.httpStatus, 403);
+    assert.strictEqual(strangerClient.properties.get(10).achieved_price, null);
+  });
+
+  await asyncTest('completed first-party sale remains USER_REPORTED and backtest-eligible only under existing rules', async () => {
+    const client = createOutcomeClient([saleListing({ id: 10 })]);
+    await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2025-06-01T00:00:00.000Z',
+      actor: OWNER,
+    });
+    const completed = await record(client, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2025-06-01T00:00:00.000Z',
+      achievedPrice: 380000,
+      actor: OWNER,
+    });
+    const outcomes = extractListingOutcomes({ ...completed.property, uprn: '1000123' });
+    assert.strictEqual(outcomes.length, 1);
+    assert.strictEqual(outcomes[0].trust, OUTCOME_TRUST.userReported);
+    assert.strictEqual(outcomes[0].verificationState, 'user_reported');
+    assert.notStrictEqual(outcomes[0].trust, OUTCOME_TRUST.verifiedObserved);
+    const eligible = pairSnapshotWithOutcome(extractPredictionSnapshot(snapshotRow()), outcomes[0]);
+    assert.strictEqual(eligible.eligible, true);
+
+    const leakClient = createOutcomeClient([saleListing({ id: 10 })]);
+    await record(leakClient, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2024-12-01T00:00:00.000Z',
+      actor: OWNER,
+    });
+    const tooEarly = await record(leakClient, {
+      listingId: 10,
+      outcome: 'sold',
+      occurredAt: '2024-12-01T00:00:00.000Z',
+      achievedPrice: 380000,
+      actor: OWNER,
+    });
+    const leaked = pairSnapshotWithOutcome(
+      extractPredictionSnapshot(snapshotRow()),
+      extractListingOutcomes(tooEarly.property)[0]
+    );
+    assert.strictEqual(leaked.eligible, false);
+    assert.strictEqual(leaked.reason, 'prediction_not_before_outcome');
+  });
+
+  test('quality audit distinguishes incomplete completed-after and complete usable outcomes', () => {
+    const incomplete = saleListing({
+      id: 10,
+      status: 'sold',
+      sold_at: '2026-07-01T10:00:00.000Z',
+      achieved_price: null,
+    });
+    const complete = saleListing({
+      id: 11,
+      status: 'sold',
+      sold_at: '2026-07-01T10:00:00.000Z',
+      achieved_price: 385000,
+    });
+    const events = [
+      { property_id: 11, event_type: 'sold' },
+      { property_id: 11, event_type: 'sale_outcome_completed' },
+    ];
+    assert.ok(classifySaleOutcomeLabel(incomplete).incomplete);
+    assert.ok(classifySaleOutcomeLabel(complete, events).completeUsable);
+    assert.strictEqual(classifySaleOutcomeLabel(complete, events).completedAfterInitialRecord, true);
+    const counts = aggregateOutcomeIssues([incomplete, complete], { events });
+    assert.strictEqual(counts.incompleteSaleOutcomes, 1);
+    assert.strictEqual(counts.completeSaleOutcomes, 1);
+    assert.strictEqual(counts.completedAfterInitialRecord, 1);
+    assert.ok(
+      require('../services/ai/listingOutcomeQuality')
+        .detectListingOutcomeIssues(incomplete)
+        .includes(ISSUE.incomplete_sale_outcome)
+    );
+  });
+
+  test('outcome completion does not import valuation PD DI providers or LLM', () => {
+    const src = fs.readFileSync(
+      path.join(__dirname, '..', 'services', 'ai', 'listingOutcomeService.js'),
+      'utf8'
+    );
+    assert.ok(!/scorePersonalDecision/.test(src));
+    assert.ok(!/buildDecisionIntelligence/.test(src));
+    assert.ok(!/calculatePropertyValuation/.test(src));
+    assert.ok(!/valuationAssessmentSafety/.test(src));
+    assert.ok(!/providerCost/.test(src));
+    assert.ok(!/analyseCredits/.test(src));
+    assert.ok(!/openai|anthropic|chat\.completions/i.test(src));
+    assert.ok(!/propertyData/.test(src));
+    assert.ok(!/ai_requests/.test(src));
+    assert.ok(!/UPDATE\s+ai_requests/i.test(src));
   });
 
   console.log('\nlistingOutcome.test.js — all passed');

@@ -87,7 +87,9 @@ test('known annual ground rent is consumed correctly', () => {
   assert.strictEqual(prepared.input.groundRent, 250);
   const metrics = calculateInvestmentMetrics(prepared.input, prepared.provenanceHints);
   assert.strictEqual(metrics.groundRent, 250);
-  assert.strictEqual(metrics.groundRentIncludedInNoi, true);
+  assert.strictEqual(metrics.groundRentState, 'observed');
+  assert.strictEqual(metrics.metricAssessment.noi.state, 'notAssessed');
+  assert.strictEqual(metrics.groundRentIncludedInNoi, false);
 });
 
 test('missing service charge is not zero', () => {
@@ -269,7 +271,8 @@ test('LLM cannot create financial inputs', () => {
   assert.ok(/operating costs, NOI, net yield, cash flow, DSCR/.test(explanation));
   assert.ok(!/callOpenAI/.test(adapter));
   assert.ok(!/callOpenAI/.test(engine));
-  assert.ok(/Number\(input.serviceCharge\) \|\| 0/.test(engine));
+  assert.ok(!/Number\(input.serviceCharge\) \|\| 0/.test(engine));
+  assert.ok(/assessFinanceMetrics/.test(engine));
 });
 
 test('complete cost set still uses existing financialEngine arithmetic', () => {

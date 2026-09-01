@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import RecordSaleOutcome from './listing/RecordSaleOutcome';
 import './PropertyCard.css';
 
-const PropertyCard = ({ property, showActions = true, compact = false, onPropertyDeleted, sourcePage, userId, fallbackContact, propertyConsultantData }) => {
+const PropertyCard = ({ property, showActions = true, compact = false, onPropertyDeleted, onSaleOutcomeRecorded, allowSaleOutcome = false, sourcePage, userId, fallbackContact, propertyConsultantData }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -728,6 +729,11 @@ const PropertyCard = ({ property, showActions = true, compact = false, onPropert
             ></i>
           </div>
         )}
+        {allowSaleOutcome ? (
+          <div onClick={(e) => e.stopPropagation()}>
+            <RecordSaleOutcome property={property} onRecorded={onSaleOutcomeRecorded} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

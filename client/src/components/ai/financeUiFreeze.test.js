@@ -9,10 +9,17 @@ describe('finance UI freeze', () => {
   test('frontend performs no finance arithmetic', () => {
     const files = [
       '../../Utils/financeScenario.js',
+      '../../Utils/assessedMetricDisplay.js',
       './FinanceScenarioForm.js',
       './WhatIfPanel.js',
       './IntelligenceReport.js',
+      './InvestmentResultView.js',
+      './RentResultView.js',
+      './PortfolioResultView.js',
       '../../pages/ai/PropertyIntelligence.js',
+      '../../pages/ai/InvestmentAnalyst.js',
+      '../../pages/ai/RentIntelligence.js',
+      '../../pages/ai/PortfolioOptimiser.js',
     ];
     files.forEach((rel) => {
       const src = read(rel);

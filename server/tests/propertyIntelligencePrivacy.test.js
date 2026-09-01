@@ -338,7 +338,7 @@ test('client source does not consume externalIntelligence', () => {
 
 test('saved analysis persistence helper still stores the full output object', () => {
   const persist = read('services/ai/propertyIntelligenceProduction.js');
-  assert.ok(persist.includes('outputData: output,'));
+  assert.ok(persist.includes('outputData: sanitizePrivateEvidenceSnapshot(output)'));
   assert.ok(persist.includes('function toPublicIntelligenceHttpOutput'));
   const controller = read('controllers/intelligenceController.js');
   assert.ok(controller.includes('output: toPublicIntelligenceHttpOutput(output)'));

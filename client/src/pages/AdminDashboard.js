@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { socket } from '../services/socket';
+import RecordSaleOutcome from '../components/listing/RecordSaleOutcome';
 import './AdminDashboard.css';
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
@@ -359,6 +360,14 @@ const AdminDashboard = () => {
           <i className="fas fa-eye"></i> Review
         </button>
         
+        <RecordSaleOutcome
+          property={property}
+          onRecorded={(updated) => {
+            setProperties((prev) =>
+              prev.map((row) => (row.id === updated.id ? { ...row, ...updated } : row))
+            );
+          }}
+        />
         {property.status === 'pending' && (
           <>
             <button 

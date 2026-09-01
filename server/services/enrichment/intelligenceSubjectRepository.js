@@ -15,6 +15,16 @@ async function findSubjectByUprn(uprn) {
   return result.rows[0] || null;
 }
 
+async function findSubjectByPropertyId(propertyId) {
+  const id = Number(propertyId);
+  if (!Number.isInteger(id) || id <= 0) return null;
+  const result = await pool.query(
+    `SELECT * FROM intelligence_subjects WHERE property_id = $1 LIMIT 1`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
 async function upsertSubject({
   uprn,
   normalizedAddress,
@@ -218,6 +228,7 @@ async function recordSubjectLookup(userId, subjectId) {
 module.exports = {
   findSubjectById,
   findSubjectByUprn,
+  findSubjectByPropertyId,
   upsertSubject,
   findEnrichmentBySubject,
   upsertSubjectEnrichment,

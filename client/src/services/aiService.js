@@ -259,6 +259,29 @@ export async function fetchPropertyAnalysisById(id) {
   return data;
 }
 
+export async function fetchLegalEvidence({ propertyId, subjectId } = {}) {
+  const { data } = await api.get('/api/ai/intelligence/legal-evidence', {
+    params: { propertyId, subjectId },
+  });
+  return data;
+}
+
+export async function uploadLegalEvidence(formData) {
+  const { data } = await api.post('/api/ai/intelligence/legal-evidence', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+export async function archiveLegalEvidence(documentId) {
+  const { data } = await api.delete(`/api/ai/intelligence/legal-evidence/${documentId}`);
+  return data;
+}
+
+export function legalEvidenceFileUrl(documentId) {
+  return `/api/ai/intelligence/legal-evidence/${documentId}/file`;
+}
+
 export async function analyseInvestment(payload) {
   const { data } = await api.post('/api/ai/investment/analyse', payload);
   return data;

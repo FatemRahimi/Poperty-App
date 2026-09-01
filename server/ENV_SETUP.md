@@ -52,6 +52,17 @@ HOMETRACK_CLIENT_SECRET=
 
 # Environment
 NODE_ENV=development
+
+# Private evidence (server-side only). Production ingest stays closed until a
+# real implemented backend AND scanner exist in this deployment. Do not invent
+# provider names or put credentials in git/client.
+PRIVATE_EVIDENCE_PROVIDER=local
+PRIVATE_EVIDENCE_PRODUCTION_BACKEND=
+PRIVATE_EVIDENCE_SCANNER=
+PRIVATE_EVIDENCE_SCANNER_TIMEOUT_MS=
+PRIVATE_EVIDENCE_ROOT=
+PRIVATE_EVIDENCE_MAX_BYTES=
+PRIVATE_EVIDENCE_SMOKE_DOCUMENT=
 ```
 
 ### 3. Get Google OAuth Credentials

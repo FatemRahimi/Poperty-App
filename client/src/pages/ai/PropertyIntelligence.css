@@ -21,6 +21,38 @@
   line-height: 1.55;
 }
 
+.pi-legal-evidence-panel {
+  margin: 1rem 0;
+  padding: 1rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pi-legal-evidence-form {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.75rem 0;
+}
+
+.pi-legal-evidence-form label {
+  display: grid;
+  gap: 0.3rem;
+  color: #cbd5e1;
+  font-size: 0.82rem;
+}
+
+.pi-legal-evidence-form input,
+.pi-legal-evidence-form select {
+  max-width: 28rem;
+}
+
+.pi-legal-evidence-panel li {
+  margin: 0.4rem 0;
+  color: #e2e8f0;
+  font-size: 0.88rem;
+}
+
 .pi-lookup-select-heading {
   margin: 1rem 0 0.75rem;
   font-size: 0.95rem;

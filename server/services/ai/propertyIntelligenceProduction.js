@@ -6,6 +6,7 @@
 
 const AiRequest = require('../../models/AiRequest');
 const AiSubscription = require('../../models/AiSubscription');
+const { sanitizePrivateEvidenceSnapshot } = require('../evidence/sanitizePrivateEvidence');
 
 const ANALYSIS_FAILED_PUBLIC = 'Property analysis failed';
 const WHAT_IF_FAILED_PUBLIC = 'What-if comparison failed';
@@ -31,7 +32,12 @@ function redactSensitiveLogText(text) {
   return String(text || '')
     .replace(/Bearer\s+\S+/gi, 'Bearer [redacted]')
     .replace(/\bsk-[A-Za-z0-9_-]{8,}/g, '[redacted-key]')
-    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '[redacted-jwt]');
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '[redacted-jwt]')
+    .replace(/[A-Za-z]:\\[^\s"'`]+private-evidence[^\s"'`]*/gi, '[redacted-private-path]')
+    .replace(/\/[^\s"'`]*private-evidence[^\s"'`]*/gi, '[redacted-private-path]')
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi, '[redacted-storage-key]')
+    .replace(/\bAKIA[0-9A-Z]{16}\b/g, '[redacted-access-key]')
+    .replace(/\b(SecretAccessKey|AccountKey|SharedAccessKey)=[^\s"'`]+/gi, '$1=[redacted]');
 }
 
 function logIntelligenceFailure(scope, error) {
@@ -79,7 +85,7 @@ function toPublicIntelligenceHttpOutput(output) {
   if (!output || typeof output !== 'object' || Array.isArray(output)) return output;
   const publicOutput = { ...output };
   delete publicOutput.externalIntelligence;
-  return publicOutput;
+  return sanitizePrivateEvidenceSnapshot(publicOutput);
 }
 
 function isCanonicalPropertyIntelligence(requestType) {
@@ -126,7 +132,7 @@ async function persistCompletedCanonicalAnalysis({
       userId,
       requestType,
       inputData: input,
-      outputData: output,
+      outputData: sanitizePrivateEvidenceSnapshot(output),
       creditsUsed: credit.consumed ?? 1,
       modelUsed: modelVersion || output.explanation?.model || 'deterministic-v1',
       tokensUsed,

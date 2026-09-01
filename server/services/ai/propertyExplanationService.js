@@ -46,7 +46,13 @@ function templateSummary(facts) {
 
   if (facts.investment) {
     if (facts.investment.grossYield != null) {
-      parts.push(`Gross yield is ${facts.investment.grossYield}%.`);
+      if (facts.investment.grossYieldBasis === 'MARKET_RENT') {
+        parts.push(
+          `Market-rent-based gross yield is ${facts.investment.grossYield}%. This uses a market rent estimate, not observed listing rent.`
+        );
+      } else {
+        parts.push(`Gross yield is ${facts.investment.grossYield}%.`);
+      }
     }
     if (facts.investment.costCompleteness === 'PARTIAL_EVIDENCE') {
       parts.push(

@@ -535,11 +535,32 @@
   margin-bottom: 1.25rem;
 }
 
+.ai-metrics-grid--dense {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 .ai-metric {
   background: #0f1623;
   border: 1px solid #1f2937;
   border-radius: 10px;
   padding: 0.85rem;
+  min-height: 5.75rem;
+}
+
+.ai-metric--unavailable strong {
+  color: #cbd5e1;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.ai-metric-reason {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #94a3b8;
 }
 
 .ai-metric small {
@@ -753,7 +774,8 @@
 
 @media (max-width: 1024px) {
   .ai-intel-grid,
-  .ai-metrics-grid {
+  .ai-metrics-grid,
+  .ai-metrics-grid--dense {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -793,6 +815,7 @@
 
   .ai-intel-grid,
   .ai-metrics-grid,
+  .ai-metrics-grid--dense,
   .ai-grid-2 {
     grid-template-columns: 1fr;
   }

@@ -46,6 +46,12 @@ Thumbs.db
 # Optional REPL history
 .node_repl_history
 
+# Private legal/professional evidence (never publicly served)
+server/private-evidence/
+
+# Official HMLR bulk downloads (address data; do not commit)
+server/data/hmlr/
+
 # Output of 'npm pack'
 *.tgz
 

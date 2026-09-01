@@ -16,6 +16,8 @@ const SUPPORTED_EVENT_TYPES = Object.freeze([
   'sold',
   'let',
   'withdrawn',
+  'sale_outcome_completed',
+  'let_outcome_completed',
 ]);
 
 const ONCE_ONLY_EVENT_TYPES = Object.freeze([

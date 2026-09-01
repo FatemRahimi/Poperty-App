@@ -6,6 +6,7 @@ const {
 } = require('../ai/comparableEngine');
 const { assessDataQuality } = require('../ai/dataQualityEngine');
 const { createProvenance } = require('../../utils/provenance');
+const { isFinitePositiveMoney } = require('../ai/valuationIntegrity');
 
 async function fetchSaleComparables(criteria = {}) {
   const params = [];
@@ -80,10 +81,13 @@ async function analyseSaleComparables(property) {
     fieldsTotal: 4,
   });
 
-  if (!ranked.length || !median) {
+  if (!ranked.length || !isFinitePositiveMoney(median)) {
     return {
       success: false,
       insufficientData: true,
+      evidenceKind: 'asking_listing',
+      notTransactionEvidence: true,
+      cannotSolelyAssessValuation: true,
       message: 'Insufficient comparable sale data in the application database.',
       comparables: [],
       dataQuality,
@@ -92,20 +96,48 @@ async function analyseSaleComparables(property) {
   }
 
   const recommended = Math.round((median + (trimmed || median)) / 2);
+  if (!isFinitePositiveMoney(recommended)) {
+    return {
+      success: false,
+      insufficientData: true,
+      evidenceKind: 'asking_listing',
+      notTransactionEvidence: true,
+      cannotSolelyAssessValuation: true,
+      message: 'Internal asking-listing prices were not valid sale valuation evidence.',
+      comparables: ranked.slice(0, 8),
+      dataQuality,
+      source: 'application_database',
+    };
+  }
+
   const spread = Math.max(5000, Math.round(recommended * 0.04));
+  const rawLow = recommended - spread;
+  const rawHigh = recommended + spread;
 
   return {
     success: true,
+    evidenceKind: 'asking_listing',
+    notTransactionEvidence: true,
+    cannotSolelyAssessValuation: true,
     recommendedPrice: recommended,
-    marketRange: { low: recommended - spread, high: recommended + spread },
+    marketRange: {
+      low: isFinitePositiveMoney(rawLow) ? rawLow : null,
+      high: isFinitePositiveMoney(rawHigh) ? rawHigh : null,
+      synthetic: true,
+      notTransactionEvidenced: true,
+      excludedFromAssessedBlend: true,
+    },
     comparables: ranked.slice(0, 8),
     comparableCount: ranked.length,
     dataQuality,
-    methodology: 'Weighted median of internal approved sale listings',
+    methodology:
+      'Weighted median of internal approved sale listings. Asking-listing context only — not sold transactions and not sufficient to assess sale value.',
     provenance: createProvenance({
       source: 'ApplicationDatabase',
       method: 'internal_sale_comparables',
       confidence: dataQuality.level.toLowerCase(),
+      notes:
+        'Asking-listing context only. Not a sold transaction set and cannot solely assess sale value. Synthetic ±4% band is display metadata and is excluded from the assessed blend.',
     }),
     source: 'application_database',
   };

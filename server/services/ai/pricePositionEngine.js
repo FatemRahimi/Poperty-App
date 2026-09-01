@@ -3,38 +3,43 @@
  */
 
 const { createProvenance } = require('../../utils/provenance');
+const { isFinitePositiveMoney, parsePositiveMoney } = require('./valuationIntegrity');
+const { isDefensibleAssessedValuation } = require('./valuationAssessmentSafety');
 
 const THRESHOLDS = {
   fairBandPct: 3,
   moderateBandPct: 7,
 };
 
+function notAssessedPricePosition(askingPrice, message) {
+  return {
+    success: false,
+    notAssessed: true,
+    assessmentState: 'notAssessed',
+    message,
+    askingPrice: parsePositiveMoney(askingPrice),
+  };
+}
+
 function calculatePricePosition(askingPrice, valuation) {
-  if (!askingPrice || askingPrice <= 0) {
-    return {
-      success: false,
-      message: 'No asking price available for price position analysis.',
-    };
+  const asking = parsePositiveMoney(askingPrice);
+  if (asking == null) {
+    return notAssessedPricePosition(null, 'No asking price available for price position analysis.');
   }
 
-  if (!valuation?.success) {
-    return {
-      success: false,
-      message: valuation?.message || 'Valuation unavailable — cannot assess price position.',
-      askingPrice,
-    };
+  if (!isDefensibleAssessedValuation(valuation)) {
+    return notAssessedPricePosition(
+      asking,
+      valuation?.message || 'Valuation unavailable — cannot assess price position.'
+    );
   }
 
   const central = valuation.centralEstimate?.value ?? valuation.centralEstimate;
   const lower = valuation.lowerEstimate?.value ?? valuation.lowerEstimate;
   const upper = valuation.upperEstimate?.value ?? valuation.upperEstimate;
 
-  if (!central || central <= 0) {
-    return {
-      success: false,
-      message: 'Central valuation estimate unavailable.',
-      askingPrice,
-    };
+  if (!isFinitePositiveMoney(central)) {
+    return notAssessedPricePosition(asking, 'Central valuation estimate unavailable.');
   }
 
   const diffPct = ((askingPrice - central) / central) * 100;
@@ -120,7 +125,9 @@ function calculatePricePosition(askingPrice, valuation) {
 
   return {
     success: true,
-    askingPrice,
+    notAssessed: false,
+    assessmentState: 'assessed',
+    askingPrice: asking,
     position,
     label,
     summary,

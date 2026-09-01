@@ -61,6 +61,17 @@ const OUTCOME_DEFINITIONS = Object.freeze({
   },
 });
 
+const SALE_OUTCOME_STATE = Object.freeze({
+  NO_OUTCOME: 'NO_OUTCOME',
+  INCOMPLETE_SALE_OUTCOME: 'INCOMPLETE_SALE_OUTCOME',
+  COMPLETE_SALE_OUTCOME: 'COMPLETE_SALE_OUTCOME',
+});
+
+const COMPLETION_EVENT_TYPE = Object.freeze({
+  sold: 'sale_outcome_completed',
+  let: 'let_outcome_completed',
+});
+
 function isAdminActor(actor = {}) {
   return ['admin', 'super_admin'].includes(String(actor.role || ''));
 }
@@ -127,21 +138,177 @@ function resolveOccurredAt(input = {}, now = new Date()) {
   return { ok: true, value: parsed, source: 'declared_completion_time' };
 }
 
+function hasPositiveAmount(listing, definition) {
+  if (!definition?.amountColumn) return false;
+  const n = numericOrNull(listing[definition.amountColumn]);
+  return n != null && n > 0;
+}
+
+function storedTimestamp(listing, definition) {
+  return parseOutcomeTime(listing?.[definition.timestampColumn]);
+}
+
 function alreadyRecorded(listing, definition) {
   const statusMatches = String(listing.status) === definition.toStatus;
-  const timestamp = listing[definition.timestampColumn];
-  return Boolean(statusMatches || timestamp);
+  return Boolean(statusMatches || listing[definition.timestampColumn] || hasPositiveAmount(listing, definition));
+}
+
+function deriveAmountOutcomeCompleteness(listing, definition) {
+  if (!definition.amountColumn) {
+    return alreadyRecorded(listing, definition) ? 'COMPLETE' : 'NO_OUTCOME';
+  }
+  const hasTs = Boolean(storedTimestamp(listing, definition));
+  const hasAmt = hasPositiveAmount(listing, definition);
+  const statusMatch = String(listing.status) === definition.toStatus;
+  if (hasTs && hasAmt) return 'COMPLETE';
+  if (statusMatch || hasTs || hasAmt) return 'INCOMPLETE';
+  return 'NO_OUTCOME';
+}
+
+function deriveSaleOutcomeState(listing = {}) {
+  const completeness = deriveAmountOutcomeCompleteness(listing, OUTCOME_DEFINITIONS.sold);
+  if (completeness === 'COMPLETE') return SALE_OUTCOME_STATE.COMPLETE_SALE_OUTCOME;
+  if (completeness === 'INCOMPLETE') return SALE_OUTCOME_STATE.INCOMPLETE_SALE_OUTCOME;
+  return SALE_OUTCOME_STATE.NO_OUTCOME;
+}
+
+function dateCompatible(listing, definition, occurredAt, occurredAtProvided) {
+  const existing = storedTimestamp(listing, definition);
+  if (!existing) return true;
+  if (!occurredAtProvided) return true;
+  return timesEqual(existing, occurredAt);
 }
 
 function sameRecordedOutcome(listing, definition, occurredAt, amount, occurredAtProvided) {
-  if (String(listing.status) !== definition.toStatus && !listing[definition.timestampColumn]) {
+  if (
+    String(listing.status) !== definition.toStatus &&
+    !listing[definition.timestampColumn] &&
+    !hasPositiveAmount(listing, definition)
+  ) {
     return false;
   }
-  if (occurredAtProvided && !timesEqual(listing[definition.timestampColumn], occurredAt)) {
+  if (occurredAtProvided && !dateCompatible(listing, definition, occurredAt, occurredAtProvided)) {
     return false;
   }
   if (!definition.amountColumn) return true;
   return numbersEqual(listing[definition.amountColumn], amount);
+}
+
+function completionPlan(listing, definition, occurredAt, occurredAtProvided, achievedAmount) {
+  if (!definition.amountColumn) return null;
+  if (deriveAmountOutcomeCompleteness(listing, definition) !== 'INCOMPLETE') return null;
+
+  const existingTs = storedTimestamp(listing, definition);
+  const existingAmount = numericOrNull(listing[definition.amountColumn]);
+  const existingPositive = existingAmount != null && existingAmount > 0;
+
+  if (!dateCompatible(listing, definition, occurredAt, occurredAtProvided)) {
+    return { conflict: true };
+  }
+  if (existingPositive && achievedAmount != null && !numbersEqual(existingAmount, achievedAmount)) {
+    return { conflict: true };
+  }
+
+  const completingAmount = !existingPositive && achievedAmount != null;
+  const completingDate = !existingTs && occurredAtProvided;
+  if (!completingAmount && !completingDate) return null;
+
+  return {
+    conflict: false,
+    nextAmount: existingPositive ? existingAmount : achievedAmount,
+    nextTimestamp: existingTs || (occurredAtProvided ? occurredAt : null),
+    setStatus: String(listing.status) !== definition.toStatus && Boolean(existingTs || occurredAtProvided),
+    completingAmount,
+    completingDate,
+    occurredAtSource: existingTs
+      ? `existing_${definition.timestampColumn}`
+      : occurredAtProvided
+        ? 'declared_completion_time'
+        : null,
+  };
+}
+
+async function applyOutcomeCompletion(client, {
+  listing,
+  definition,
+  outcome,
+  plan,
+  input,
+  now,
+  listingId,
+}) {
+  const identity = await lookupListingIdentity(client, listingId);
+  const assignments = [];
+  const params = [];
+  if (plan.setStatus) {
+    assignments.push(`status = $${params.length + 1}`);
+    params.push(definition.toStatus);
+  }
+  if (plan.completingDate && plan.nextTimestamp) {
+    assignments.push(`${definition.timestampColumn} = $${params.length + 1}`);
+    params.push(plan.nextTimestamp);
+  }
+  if (plan.completingAmount) {
+    assignments.push(`${definition.amountColumn} = $${params.length + 1}`);
+    params.push(plan.nextAmount);
+  }
+  if (outcome === 'sold' && plan.setStatus) {
+    assignments.push('final_asking_price = COALESCE(final_asking_price, price)');
+  }
+  assignments.push('updated_at = NOW()');
+  params.push(listingId);
+
+  const updated = await client.query(
+    `UPDATE properties SET ${assignments.join(', ')} WHERE id = $${params.length} RETURNING *`,
+    params
+  );
+  const next = updated.rows[0];
+  const eventType = COMPLETION_EVENT_TYPE[outcome];
+  const payload = {
+    previous: listing.status,
+    next: next.status,
+    category: listing.category,
+    source: 'first_party',
+    occurredAtSource: plan.occurredAtSource,
+    actorType: isAdminActor(input.actor) ? 'admin' : 'owner',
+    copiedFromAsking: false,
+    asking_price: numericOrNull(listing.price),
+    asking_rent: numericOrNull(listing.monthly_rent),
+    completionOfIncompleteOutcome: true,
+    completedFields: [
+      plan.completingAmount ? definition.amountColumn : null,
+      plan.completingDate ? definition.timestampColumn : null,
+    ].filter(Boolean),
+    trust: 'USER_REPORTED',
+    verificationState: 'user_reported',
+  };
+  if (definition.amountColumn) {
+    payload[definition.amountColumn] = plan.nextAmount;
+  }
+  payload[definition.timestampColumn] = plan.nextTimestamp;
+
+  const recorded = await recordListingEvent(
+    client,
+    buildEvent({
+      eventType,
+      propertyId: listingId,
+      eventAt: plan.nextTimestamp || now.toISOString(),
+      recordedAt: now.toISOString(),
+      actorUserId: input.actor?.id ?? null,
+      identity,
+      method: `listing_${eventType}`,
+      payload,
+    })
+  );
+
+  return {
+    ok: true,
+    idempotent: Boolean(recorded.duplicate),
+    property: next,
+    event: recorded.row,
+    code: recorded.duplicate ? 'idempotent' : 'completed',
+    completed: true,
+  };
 }
 
 function forbiddenAmountFields(input = {}) {
@@ -231,6 +398,31 @@ async function recordListingOutcome(client, input = {}, now = new Date()) {
   }
 
   if (alreadyRecorded(listing, definition)) {
+    const plan = completionPlan(
+      listing,
+      definition,
+      occurred.value,
+      occurredAtProvided,
+      achievedAmount
+    );
+    if (plan?.conflict) {
+      return fail(
+        409,
+        'outcome_conflict',
+        'A different outcome is already recorded. Silent overwrite is not allowed; an explicit correction flow is required.'
+      );
+    }
+    if (plan && !plan.conflict) {
+      return applyOutcomeCompletion(client, {
+        listing,
+        definition,
+        outcome,
+        plan,
+        input,
+        now,
+        listingId,
+      });
+    }
     if (sameRecordedOutcome(listing, definition, occurred.value, achievedAmount, occurredAtProvided)) {
       return {
         ok: true,
@@ -381,6 +573,8 @@ module.exports = {
   TERMINAL_STATUSES,
   MUTATION_BLOCKING_STATUSES,
   WEEKLY_TO_MONTHLY,
+  SALE_OUTCOME_STATE,
+  COMPLETION_EVENT_TYPE,
   canRecordOutcome,
   isAdminActor,
   isImmutableOutcomeStatus,
@@ -388,6 +582,7 @@ module.exports = {
   classifyListingCategory,
   normaliseAchievedRent,
   parseOutcomeTime,
+  deriveSaleOutcomeState,
   recordListingOutcome,
   publicOutcomeView,
   CANONICAL_OUTCOME_CONTRACT,

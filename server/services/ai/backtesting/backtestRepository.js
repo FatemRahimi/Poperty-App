@@ -176,6 +176,17 @@ async function countListingEvents(pool) {
   return { available: true, byType };
 }
 
+async function loadListingsForCollection(pool) {
+  if (!(await tableExists(pool, 'properties'))) return [];
+  const result = await pool.query(`
+    SELECT id, category, status,
+           first_published_at, sold_at, let_at, under_offer_at, withdrawn_at,
+           achieved_price, achieved_rent, price
+    FROM properties
+  `);
+  return result.rows;
+}
+
 async function loadBacktestDataset(pool) {
   const schema = await auditSchema(pool);
   const snapshots = schema.tables.ai_requests ? await loadSnapshots(pool) : [];
@@ -212,5 +223,6 @@ module.exports = {
   loadListingOutcomes,
   loadTransactionOutcomes,
   loadBacktestDataset,
+  loadListingsForCollection,
   countListingEvents,
 };

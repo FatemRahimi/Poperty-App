@@ -14,13 +14,16 @@ const {
 } = require('./propertyTypeMapping');
 const { propertyIntelligenceConfig } = require('../../../config/propertyIntelligence.config');
 const { createProvenance } = require('../../../utils/provenance');
-const { buildPropertyDataSearchAddress, buildPropertyDataSearchAddressFromQuery, inferMatchConfidenceFromRank } = require('../../../utils/ukAddress');
+const { buildPropertyDataSearchAddress, buildPropertyDataSearchAddressFromQuery, inferMatchConfidenceFromRank, normalizeIdentitySearchAddress } = require('../../../utils/ukAddress');
+const { selectUniqueUprnMatch } = require('../../../architecture/canonicalIdentity');
 const {
   buildCacheKey,
   getCachedResponse,
   setCachedResponse,
 } = require('../cache/DataProviderCache');
 const { logProviderUsage } = require('../cache/usageLogger');
+const { coalesceCachedProviderRequest } = require('../cache/providerExecutionGuard');
+const { classifyProviderFailure, logProviderCostEvent } = require('../cache/providerCostProtection');
 
 const PROVIDER = 'propertydata';
 
@@ -49,54 +52,77 @@ class PropertyDataAdapter {
   async _cachedRequest(endpoint, params, { ttlMs, userId, propertyId }) {
     params = omitAbsentProviderParams(params);
     const cacheKey = buildCacheKey(PROVIDER, endpoint, params);
-    const cached = await getCachedResponse(cacheKey);
-    if (cached) {
-      await logProviderUsage({
-        userId,
-        propertyId,
-        provider: PROVIDER,
-        endpoint,
-        cacheHit: true,
-        creditsUsed: 0,
-        success: true,
-      });
-      return { ...cached, endpoint, provider: PROVIDER, creditsUsed: 0 };
-    }
-
     const started = Date.now();
     const creditsUsed = this.client.getEndpointCreditCost(endpoint);
 
     try {
-      const data = await this.client.request(endpoint, params);
-      await setCachedResponse({
+      const coalesced = await coalesceCachedProviderRequest({
         cacheKey,
-        provider: PROVIDER,
-        endpoint,
-        response: data,
-        ttlMs,
-        creditsUsed,
+        getCached: async (key) => {
+          const cached = await getCachedResponse(key);
+          if (!cached) return null;
+          return {
+            cacheEnvelope: true,
+            data: cached.data,
+            retrievedAt: cached.retrievedAt,
+          };
+        },
+        useSharedLock: true,
+        execute: () => this.client.request(endpoint, params),
+        setCached: (data) =>
+          setCachedResponse({
+            cacheKey,
+            provider: PROVIDER,
+            endpoint,
+            response: data?.cacheEnvelope ? data.data : data,
+            ttlMs,
+            creditsUsed,
+          }),
       });
 
+      const cacheHit = coalesced.outcome !== 'provider_execution';
+      const envelope = coalesced.result && coalesced.result.cacheEnvelope;
+      const data = envelope ? coalesced.result.data : coalesced.result;
+      const retrievedAt =
+        envelope && coalesced.result.retrievedAt
+          ? new Date(coalesced.result.retrievedAt).toISOString()
+          : new Date().toISOString();
+      logProviderCostEvent({
+        event: 'request',
+        provider: PROVIDER,
+        endpoint,
+        outcome: coalesced.outcome,
+        userId,
+      });
       await logProviderUsage({
         userId,
         propertyId,
         provider: PROVIDER,
         endpoint,
-        cacheHit: false,
-        creditsUsed,
+        cacheHit,
+        creditsUsed: cacheHit ? 0 : creditsUsed,
         success: true,
         latencyMs: Date.now() - started,
       });
 
       return {
         data,
-        cacheHit: false,
+        cacheHit,
         endpoint,
         provider: PROVIDER,
-        creditsUsed,
-        retrievedAt: new Date().toISOString(),
+        creditsUsed: cacheHit ? 0 : creditsUsed,
+        retrievedAt,
+        outcome: coalesced.outcome,
       };
     } catch (error) {
+      const classified = classifyProviderFailure(error);
+      logProviderCostEvent({
+        event: 'provider_failure',
+        provider: PROVIDER,
+        endpoint,
+        outcome: classified.usageCode,
+        userId,
+      });
       await logProviderUsage({
         userId,
         propertyId,
@@ -105,10 +131,12 @@ class PropertyDataAdapter {
         cacheHit: false,
         creditsUsed: 0,
         success: false,
-        errorMessage: error.message,
+        errorMessage: classified.usageCode,
         latencyMs: Date.now() - started,
       });
-      throw error;
+      const safe = new Error(classified.message);
+      safe.code = classified.code;
+      throw safe;
     }
   }
 
@@ -117,12 +145,13 @@ class PropertyDataAdapter {
    * GET /address-match-uprn?key=&address=
    */
   async resolveIdentity(property, context = {}) {
-    const address =
+    const address = normalizeIdentitySearchAddress(
       property.searchAddress ||
-      (property.address_line1 && !property.house_number && !property.street_name
-        ? buildPropertyDataSearchAddressFromQuery(property.address_line1)
-        : '') ||
-      buildPropertyDataSearchAddress(property);
+        (property.address_line1 && !property.house_number && !property.street_name
+          ? buildPropertyDataSearchAddressFromQuery(property.address_line1)
+          : '') ||
+        buildPropertyDataSearchAddress(property)
+    );
     if (!address || address.length < 8) {
       return {
         success: false,
@@ -143,36 +172,52 @@ class PropertyDataAdapter {
 
     const matches = result.data?.results || result.data?.data || result.data?.matches || [];
     const list = Array.isArray(matches) ? matches : [];
-    const best = list[0];
+    const unique = selectUniqueUprnMatch(list);
 
-    if (!best?.uprn) {
+    if (!unique.unique) {
       return {
         success: false,
-        message: 'No UPRN match returned from PropertyData',
+        unresolved: true,
+        reason: unique.reason || 'NO_UPRN',
+        message: unique.reason === 'MULTIPLE_CANDIDATE_UPRNS'
+          ? 'Multiple UPRN candidates; none selected'
+          : 'No UPRN match returned from PropertyData',
         provider: PROVIDER,
-        raw: result.data,
+        uprn: null,
+        alternativeMatches: list.slice(0, 8),
+        candidateUprns: unique.candidateUprns,
+        candidateCount: unique.candidateCount,
+        matchMethod: unique.reason === 'MULTIPLE_CANDIDATE_UPRNS'
+          ? 'unresolved_multiple_uprn'
+          : 'unresolved_no_uprn',
+        cacheHit: result.cacheHit,
+        creditsUsed: result.creditsUsed,
       };
     }
 
-    const confidence = inferMatchConfidenceFromRank(0, list.length);
+    const best = unique.match || list.find((row) => String(row?.uprn || '').trim() === unique.uprn);
+    const confidence = inferMatchConfidenceFromRank(0, 1);
 
     return {
       success: true,
       provider: PROVIDER,
-      uprn: String(best.uprn),
-      address: best.address || address,
-      latitude: best.latitude ?? best.lat ?? null,
-      longitude: best.longitude ?? best.lng ?? null,
-      classificationCode: best.classificationCode || null,
-      classificationCodeDesc: best.classificationCodeDesc || null,
+      uprn: String(unique.uprn),
+      address: best?.address || address,
+      latitude: best?.latitude ?? best?.lat ?? null,
+      longitude: best?.longitude ?? best?.lng ?? null,
+      classificationCode: best?.classificationCode || null,
+      classificationCodeDesc: best?.classificationCodeDesc || null,
       matchConfidence: confidence,
-      matchMethod: 'propertydata_address_match',
-      alternativeMatches: list.slice(1, 5),
+      matchMethod: 'propertydata_unique_uprn',
+      uniqueUprn: true,
+      alternativeMatches: [],
       provenance: createProvenance({
         source: 'PropertyData',
         method: 'address_match_uprn',
         providerEndpoint: '/address-match-uprn',
+        retrievedAt: result.retrievedAt || new Date(),
         confidence,
+        notes: 'Persisted only because exactly one distinct UPRN was returned. Not VERIFIED_EXACT. Not title identity.',
       }),
       cacheHit: result.cacheHit,
       creditsUsed: result.creditsUsed,
@@ -207,6 +252,7 @@ class PropertyDataAdapter {
         source: 'PropertyData',
         method: 'uprn_profile',
         providerEndpoint: '/uprn',
+        retrievedAt: result.retrievedAt || new Date(),
         notes: 'Includes HM Land Registry and EPC-derived fields where available',
       }),
       cacheHit: result.cacheHit,
@@ -422,6 +468,7 @@ class PropertyDataAdapter {
         source: 'PropertyData',
         method: 'valuation_sale_avm',
         providerEndpoint: '/valuation-sale',
+        retrievedAt: result.retrievedAt || new Date(),
         notes: params.construction_date
           ? 'PropertyData AVM using market £/sqft data'
           : 'construction_date omitted because build year was unavailable; age was not inferred from style, postcode or listing copy.',

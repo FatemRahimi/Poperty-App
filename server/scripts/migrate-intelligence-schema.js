@@ -1,5 +1,5 @@
 /**
- * Apply Property Intelligence DB migrations (011–019).
+ * Apply Property Intelligence DB migrations (011–024).
  * Run: node scripts/migrate-intelligence-schema.js
  */
 require('dotenv').config();
@@ -17,6 +17,12 @@ const MIGRATIONS = [
   '017_listing_lifecycle_idempotency.sql',
   '018_listing_outcome_idempotency.sql',
   '019_pi_analyse_slots.sql',
+  '020_asset_classifications.sql',
+  '021_private_evidence_documents.sql',
+  '022_private_evidence_hardening.sql',
+  '023_official_sale_transactions.sql',
+  '024_official_sale_lookup_links.sql',
+  '025_canonical_subject_identity.sql',
 ];
 
 async function columnExists(table, column) {
@@ -50,6 +56,13 @@ async function run() {
     ['intelligence_subjects', 'id'],
     ['property_identities', 'id'],
     ['pi_analyse_slots', 'user_id'],
+    ['asset_classifications', 'asset_class'],
+    ['evidence_documents', 'document_id'],
+    ['official_sale_transactions', 'source_transaction_id'],
+    ['official_sale_import_runs', 'status'],
+    ['official_sale_lookup_links', 'identifier'],
+    ['property_identities', 'paon'],
+    ['property_identity_events', 'property_id'],
   ];
 
   console.log('\nVerification:');

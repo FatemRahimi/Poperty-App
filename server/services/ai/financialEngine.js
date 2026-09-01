@@ -1,7 +1,16 @@
 /**
  * Layer 1 — Deterministic financial calculations.
  * All formulas documented inline. No LLM involvement.
+ *
+ * Arithmetic is unchanged. A formula only writes a canonical numeric result
+ * when required inputs are actually present (UNKNOWN ≠ ZERO).
  */
+
+const {
+  assessFinanceMetrics,
+  FINANCE_SEMANTIC_VERSION,
+  FINANCING_KIND,
+} = require('./financeInputContract');
 
 const round = (n, d = 2) => Math.round(n * 10 ** d) / 10 ** d;
 
@@ -175,50 +184,100 @@ function monthlyMortgagePayment(principal, annualRate, termYears) {
   return annualMortgagePayment(principal, annualRate, termYears) / 12;
 }
 
-function calculateInvestmentMetrics(input, provenanceHints = {}) {
-  const purchasePrice = Number(input.purchasePrice) || 0;
-  const deposit = Number(input.deposit) || 0;
-  const mortgageAmount = Number(input.mortgageAmount) || Math.max(0, purchasePrice - deposit);
-  const interestRate = Number(input.interestRate) || 0;
-  const mortgageTermYears = Number(input.mortgageTermYears) || 25;
-  const annualRent = Number(input.expectedRent) * 12 || Number(input.annualRent) || 0;
-  const vacancyRate = (Number(input.vacancyAssumption) || 0) / 100;
-  const maintenance = Number(input.maintenance) || 0;
-  const insurance = Number(input.insurance) || 0;
-  const managementFee = Number(input.managementFee) || 0;
-  const serviceCharge = Number(input.serviceCharge) || 0;
-  const groundRentSupplied = isSupplied(input.groundRent);
-  const groundRentValue = groundRentSupplied ? Number(input.groundRent) : null;
-  const taxes = Number(input.taxes) || 0;
-  const otherExpenses = Number(input.otherExpenses) || 0;
-  const renovationCost = Number(input.renovationCost) || 0;
-  const appreciationRate = (Number(input.expectedAppreciation) || 0) / 100;
-  const holdingPeriodYears = Number(input.holdingPeriod) || 5;
+function presentOrNull(parsed) {
+  if (!parsed) return null;
+  if (parsed.state === 'EXPLICIT_ZERO') return 0;
+  if (parsed.state === 'POSITIVE_VALUE') return parsed.value;
+  return null;
+}
 
-  const effectiveGrossRent = annualRent * (1 - vacancyRate);
-  const knownOperatingExpenses =
-    maintenance + insurance + managementFee + serviceCharge + taxes + otherExpenses;
-  const operatingExpenses =
-    knownOperatingExpenses + (groundRentValue == null ? 0 : groundRentValue);
-  const noi = effectiveGrossRent - operatingExpenses;
-  const annualDebtService = annualMortgagePayment(mortgageAmount, interestRate, mortgageTermYears);
-  const annualCashFlow = noi - annualDebtService;
-  const monthlyCashFlow = annualCashFlow / 12;
-  const initialCashInvested = deposit + renovationCost;
-  const grossYield = purchasePrice > 0 ? (annualRent / purchasePrice) * 100 : 0;
-  const netYield = purchasePrice > 0 ? (noi / purchasePrice) * 100 : 0;
+function calculateInvestmentMetrics(input = {}, provenanceHints = {}) {
+  const assessment = assessFinanceMetrics(input);
+  const fields = assessment.fields;
+  const purchasePrice = presentOrNull(fields.purchasePrice);
+  const deposit = presentOrNull(fields.deposit);
+  const financing = assessment.financing;
+  const mortgageAmount = financing.amount;
+  const interestRate = presentOrNull(fields.interestRate);
+  const mortgageTermYears = presentOrNull(fields.mortgageTermYears);
+  const annualRent = assessment.annualRentValue;
+  const vacancyValue = presentOrNull(fields.vacancyAssumption);
+  const vacancyRate = vacancyValue == null ? null : vacancyValue / 100;
+  const maintenance = presentOrNull(fields.maintenance);
+  const insurance = presentOrNull(fields.insurance);
+  const managementFee = presentOrNull(fields.managementFee);
+  const serviceCharge = presentOrNull(fields.serviceCharge);
+  const groundRentSupplied = presentOrNull(fields.groundRent) != null;
+  const groundRentValue = groundRentSupplied ? presentOrNull(fields.groundRent) : null;
+  const taxes = presentOrNull(fields.taxes);
+  const otherExpenses = presentOrNull(fields.otherExpenses);
+  const renovationCost = presentOrNull(fields.renovationCost);
+  const appreciationValue = presentOrNull(fields.expectedAppreciation);
+  const holdingPeriodYears = presentOrNull(fields.holdingPeriod);
+  const appreciationRate = appreciationValue == null ? null : appreciationValue / 100;
+
+  const noiAssessed = assessment.noi.state === 'assessed';
+  const yieldAssessed = assessment.grossYield.state === 'assessed';
+  const netYieldAssessed = assessment.netYield.state === 'assessed';
+  const vacancyIncomeAssessed = assessment.vacancyAdjustedIncome.state === 'assessed';
+  const costsAssessed = assessment.operatingCosts.state === 'assessed';
+  const cashFlowAssessed = assessment.cashFlow.state === 'assessed';
+  const dscrAssessed = assessment.dscr.state === 'assessed';
+  const debtAssessed = assessment.mortgagePayment.state === 'assessed';
+
+  let effectiveGrossRent = null;
+  let operatingExpenses = null;
+  let noi = null;
+  if (vacancyIncomeAssessed) {
+    effectiveGrossRent = annualRent * (1 - vacancyRate);
+  }
+  if (costsAssessed) {
+    operatingExpenses =
+      maintenance +
+      insurance +
+      managementFee +
+      serviceCharge +
+      taxes +
+      (otherExpenses == null ? 0 : otherExpenses) +
+      groundRentValue;
+  }
+  if (noiAssessed) {
+    noi = effectiveGrossRent - operatingExpenses;
+  }
+
+  const cashPurchase =
+    financing.kind === FINANCING_KIND.EXPLICIT_CASH || financing.kind === FINANCING_KIND.DERIVED_CASH;
+  let annualDebtService = null;
+  if (debtAssessed) {
+    annualDebtService = cashPurchase
+      ? 0
+      : annualMortgagePayment(mortgageAmount, interestRate, mortgageTermYears);
+  }
+
+  const annualCashFlow = cashFlowAssessed ? noi - annualDebtService : null;
+  const monthlyCashFlow = cashFlowAssessed ? annualCashFlow / 12 : null;
+  const initialCashInvested =
+    deposit != null ? deposit + (renovationCost == null ? 0 : renovationCost) : null;
+  const grossYield = yieldAssessed ? (annualRent / purchasePrice) * 100 : null;
+  const netYield = netYieldAssessed ? (noi / purchasePrice) * 100 : null;
   const cashOnCash =
-    initialCashInvested > 0 ? (annualCashFlow / initialCashInvested) * 100 : 0;
-  const dscr = annualDebtService > 0 ? noi / annualDebtService : null;
+    cashFlowAssessed && initialCashInvested > 0 ? (annualCashFlow / initialCashInvested) * 100 : null;
+  const dscr = dscrAssessed && annualDebtService > 0 ? noi / annualDebtService : null;
   const breakEvenOccupancy =
-    annualRent > 0 ? (operatingExpenses + annualDebtService) / annualRent : null;
-  const capRate = purchasePrice > 0 ? (noi / purchasePrice) * 100 : 0;
+    noiAssessed && debtAssessed && annualRent > 0
+      ? (operatingExpenses + annualDebtService) / annualRent
+      : null;
+  const capRate = netYieldAssessed ? (noi / purchasePrice) * 100 : null;
 
-  const futureValue = purchasePrice * (1 + appreciationRate) ** holdingPeriodYears;
-  const equityGain = futureValue - purchasePrice;
-  const totalCashFlow = annualCashFlow * holdingPeriodYears;
+  const futureValue =
+    purchasePrice != null
+      ? purchasePrice * (1 + (appreciationRate == null ? 0 : appreciationRate)) ** (holdingPeriodYears == null ? 5 : holdingPeriodYears)
+      : null;
+  const equityGain = futureValue != null && purchasePrice != null ? futureValue - purchasePrice : null;
+  const totalCashFlow =
+    annualCashFlow != null ? annualCashFlow * (holdingPeriodYears == null ? 5 : holdingPeriodYears) : null;
   const equityMultiple =
-    initialCashInvested > 0
+    initialCashInvested > 0 && totalCashFlow != null && equityGain != null
       ? (initialCashInvested + totalCashFlow + equityGain) / initialCashInvested
       : null;
 
@@ -229,39 +288,46 @@ function calculateInvestmentMetrics(input, provenanceHints = {}) {
     interestRate,
     mortgageTermYears,
     annualRent,
-    vacancyRate: vacancyRate * 100,
+    vacancyRate: vacancyRate == null ? null : vacancyRate * 100,
     operatingExpenses,
     effectiveGrossRent,
     annualDebtService,
     renovationCost,
-    appreciationRate: appreciationRate * 100,
+    appreciationRate: appreciationRate == null ? null : appreciationRate * 100,
     holdingPeriodYears,
+    financingKind: financing.kind,
   };
 
   return {
-    grossYield: round(grossYield),
-    netYield: round(netYield),
-    capRate: round(capRate),
-    noi: round(noi),
-    effectiveGrossRent: round(effectiveGrossRent),
-    operatingExpenses: round(operatingExpenses),
-    monthlyCashFlow: round(monthlyCashFlow),
-    annualCashFlow: round(annualCashFlow),
-    cashOnCashReturn: round(cashOnCash),
-    dscr: dscr !== null ? round(dscr, 3) : null,
-    breakEvenOccupancy: breakEvenOccupancy !== null ? round(breakEvenOccupancy * 100) : null,
-    annualDebtService: round(annualDebtService),
-    monthlyDebtService: round(annualDebtService / 12),
-    futureValue: round(futureValue),
-    equityGain: round(equityGain),
-    equityMultiple: equityMultiple !== null ? round(equityMultiple, 3) : null,
+    semanticVersion: FINANCE_SEMANTIC_VERSION,
+    metricAssessment: assessment,
+    inputSemantics: fields,
+    financingState: financing,
+    grossYield: yieldAssessed ? round(grossYield) : null,
+    netYield: netYieldAssessed ? round(netYield) : null,
+    capRate: capRate != null ? round(capRate) : null,
+    noi: noiAssessed ? round(noi) : null,
+    effectiveGrossRent: effectiveGrossRent != null ? round(effectiveGrossRent) : null,
+    operatingExpenses: operatingExpenses != null ? round(operatingExpenses) : null,
+    monthlyCashFlow: cashFlowAssessed ? round(monthlyCashFlow) : null,
+    annualCashFlow: cashFlowAssessed ? round(annualCashFlow) : null,
+    cashOnCashReturn: cashOnCash != null ? round(cashOnCash) : null,
+    dscr: dscr != null ? round(dscr, 3) : null,
+    breakEvenOccupancy: breakEvenOccupancy != null ? round(breakEvenOccupancy * 100) : null,
+    annualDebtService: debtAssessed ? round(annualDebtService) : null,
+    monthlyDebtService: debtAssessed ? round(annualDebtService / 12) : null,
+    futureValue: futureValue != null ? round(futureValue) : null,
+    equityGain: equityGain != null ? round(equityGain) : null,
+    equityMultiple: equityMultiple != null ? round(equityMultiple, 3) : null,
     paybackPeriodYears:
-      annualCashFlow > 0 ? round(initialCashInvested / annualCashFlow, 1) : null,
+      annualCashFlow > 0 && initialCashInvested != null
+        ? round(initialCashInvested / annualCashFlow, 1)
+        : null,
     assumptions,
     assumptionCoverage: buildAssumptionCoverage(input, provenanceHints),
     groundRent: groundRentSupplied ? round(groundRentValue) : null,
     groundRentState: groundRentSupplied ? 'observed' : 'notAssessed',
-    groundRentIncludedInNoi: groundRentSupplied,
+    groundRentIncludedInNoi: groundRentSupplied && noiAssessed,
     disclaimer:
       'This analysis is an estimate based on the supplied assumptions and available data. It is not financial advice.',
   };
@@ -483,7 +549,12 @@ function calculateInvestmentScore(metrics, context = {}) {
   const materialDefaults = coverage?.materialDefaults || [];
   const dependsOnDefault = (keys) => keys.some((k) => materialDefaults.includes(k));
 
-  const rentKnown = !materialDefaults.includes('expectedRent') && Number(metrics.grossYield) > 0;
+  const assessment = metrics.metricAssessment || null;
+  const rentKnown =
+    !materialDefaults.includes('expectedRent')
+    && metrics.grossYield != null
+    && Number(metrics.grossYield) > 0
+    && (!assessment || assessment.grossYield.state === 'assessed');
   const costsDefaulted = dependsOnDefault([
     'maintenance',
     'insurance',
@@ -494,7 +565,9 @@ function calculateInvestmentScore(metrics, context = {}) {
   ]);
   const vacancySupplied = coverage
     ? !materialDefaults.includes('vacancyAssumption')
-    : Number(metrics.assumptions?.vacancyRate) > 0;
+    : metrics.assumptions?.vacancyRate != null;
+  const cashFlowKnown = !assessment || assessment.cashFlow.state === 'assessed';
+  const dscrKnown = !assessment || assessment.dscr.state === 'assessed';
 
   const parts = {
     yield: rentKnown
@@ -518,13 +591,19 @@ function calculateInvestmentScore(metrics, context = {}) {
             detail:
               'Operating costs were not supplied and default to zero, so cash flow is overstated and is excluded from the score.',
           }
+        : !cashFlowKnown
+          ? {
+              available: false,
+              state: 'finance_incomplete',
+              detail: 'Cash flow is not assessed without an explicit financing state.',
+            }
         : {
             available: true,
             score: metrics.annualCashFlow > 0 ? 85 : metrics.annualCashFlow > -2000 ? 50 : 25,
             detail: `Annual cash flow £${metrics.annualCashFlow}`,
           },
     dscr:
-      metrics.dscr === null
+      metrics.dscr === null || !dscrKnown
         ? {
             available: false,
             state: 'no_debt_service',

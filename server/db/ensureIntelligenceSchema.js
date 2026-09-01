@@ -15,6 +15,12 @@ const MIGRATION_FILES = [
   '017_listing_lifecycle_idempotency.sql',
   '018_listing_outcome_idempotency.sql',
   '019_pi_analyse_slots.sql',
+  '020_asset_classifications.sql',
+  '021_private_evidence_documents.sql',
+  '022_private_evidence_hardening.sql',
+  '023_official_sale_transactions.sql',
+  '024_official_sale_lookup_links.sql',
+  '025_canonical_subject_identity.sql',
 ];
 
 async function columnExists(table, column) {
@@ -58,6 +64,12 @@ async function ensureIntelligenceSchema() {
   const needsLifecycleIndexes = !(await indexExists('listing_events_one_listing_created'));
   const needsOutcomeIndexes = !(await indexExists('listing_events_one_sold'));
   const needsAnalyseSlots = !(await tableExists('pi_analyse_slots'));
+  const needsAssetClassifications = !(await tableExists('asset_classifications'));
+  const needsEvidenceDocuments = !(await tableExists('evidence_documents'));
+  const needsEvidenceHardening = !(await columnExists('evidence_documents', 'scan_state'));
+  const needsOfficialSales = !(await tableExists('official_sale_transactions'));
+  const needsOfficialSaleLinks = !(await tableExists('official_sale_lookup_links'));
+  const needsCanonicalIdentity = !(await columnExists('property_identities', 'paon'));
 
   if (
     !needsSubjectId &&
@@ -67,7 +79,13 @@ async function ensureIntelligenceSchema() {
     !needsGroundRent &&
     !needsLifecycleIndexes &&
     !needsOutcomeIndexes &&
-    !needsAnalyseSlots
+    !needsAnalyseSlots &&
+    !needsAssetClassifications &&
+    !needsEvidenceDocuments &&
+    !needsEvidenceHardening &&
+    !needsOfficialSales &&
+    !needsOfficialSaleLinks &&
+    !needsCanonicalIdentity
   ) {
     return { applied: false, ok: true };
   }
@@ -90,11 +108,43 @@ async function ensureIntelligenceSchema() {
   if (needsAnalyseSlots) {
     await applySql('019_pi_analyse_slots.sql');
   }
+  if (needsAssetClassifications) {
+    await applySql('020_asset_classifications.sql');
+  }
+  if (needsEvidenceDocuments) {
+    await applySql('021_private_evidence_documents.sql');
+  }
+  if (needsEvidenceHardening) {
+    await applySql('022_private_evidence_hardening.sql');
+  }
+  if (needsOfficialSales) {
+    try {
+      await applySql('023_official_sale_transactions.sql');
+    } catch (err) {
+      console.error('❌ Official sale transaction schema could not be applied:', err.message);
+    }
+  }
+  if (needsOfficialSaleLinks) {
+    try {
+      await applySql('024_official_sale_lookup_links.sql');
+    } catch (err) {
+      console.error('❌ Official sale lookup links schema could not be applied:', err.message);
+    }
+  }
+  if (needsCanonicalIdentity) {
+    try {
+      await applySql('025_canonical_subject_identity.sql');
+    } catch (err) {
+      console.error('❌ Canonical subject identity schema could not be applied:', err.message);
+    }
+  }
 
   const ok =
     (await columnExists('ai_requests', 'subject_id')) &&
     (await tableExists('listing_events')) &&
-    (await tableExists('pi_analyse_slots'));
+    (await tableExists('pi_analyse_slots')) &&
+    (await tableExists('asset_classifications')) &&
+    (await tableExists('evidence_documents'));
   if (ok) {
     console.log('✅ Property Intelligence listing event schema ready');
   } else {

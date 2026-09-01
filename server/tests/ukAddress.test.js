@@ -8,6 +8,7 @@ const {
   buildAddressFromProperty,
   buildPropertyDataSearchAddress,
   buildPropertyDataSearchAddressFromQuery,
+  normalizeIdentitySearchAddress,
   extractPostcodeFromAddress,
   inferMatchConfidenceFromRank,
 } = require('../utils/ukAddress');
@@ -27,6 +28,7 @@ test('normalisePostcode formats UK postcode', () => {
   assert.strictEqual(normalisePostcode('M1 4DY'), 'M1 4DY');
   assert.strictEqual(normalisePostcode('B12UJ'), 'B1 2UJ');
   assert.strictEqual(normalisePostcode('b12uj'), 'B1 2UJ');
+  assert.strictEqual(normalisePostcode('B4\u00A06EY'), 'B4 6EY');
 });
 
 test('extractPostcodeFromAddress handles compact postcodes', () => {
@@ -41,6 +43,13 @@ test('buildPropertyDataSearchAddressFromQuery normalizes free text', () => {
     '301 flat, Cantubery Tower, Marks Street, B12uj'
   );
   assert.strictEqual(addr, '301 flat, Cantubery Tower, Marks Street, B1 2UJ');
+});
+
+test('normalizeIdentitySearchAddress collapses equivalent queries', () => {
+  const a = normalizeIdentitySearchAddress('12 High Street, b12uj');
+  const b = normalizeIdentitySearchAddress('12   HIGH street, B1 2UJ');
+  assert.strictEqual(a, b);
+  assert.ok(a.endsWith('B1 2UJ'));
 });
 
 test('buildPropertyDataSearchAddress uses comma separation', () => {

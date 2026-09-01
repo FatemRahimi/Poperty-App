@@ -4,7 +4,7 @@ import SelectInput from "../components/inputs/SelectInput";
 import TextInput from "../components/inputs/TextInput";
 import DateInput from "../components/inputs/DateInput";
 import Logo from "../components/Logo";
-import { socket } from "../socket";
+import { socket } from '../services/socket';
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 import "../styles/AddList.css"; // reusing the AddList CSS
 import "./AddRent.css"; // AddRent specific styles

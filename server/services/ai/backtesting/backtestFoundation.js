@@ -11,6 +11,9 @@ const {
   CONFIDENCE_MODEL_VERSION,
   STATE,
   EXCLUSION,
+  MATCH_STATE,
+  OUTCOME_TRUST,
+  SAMPLE_SUFFICIENCY,
   MIN_SEGMENT_SAMPLE,
   MIN_CONFIDENCE_GROUP_SAMPLE,
   PERSONAL_DECISION_REQUIRED_LABELS,
@@ -83,13 +86,24 @@ function round4(n) {
   return Math.round(n * 10000) / 10000;
 }
 
+function sampleSufficiencyOf(n) {
+  if (!n) return SAMPLE_SUFFICIENCY.noData;
+  if (n <= 2) return SAMPLE_SUFFICIENCY.verySparse;
+  if (n <= 4) return SAMPLE_SUFFICIENCY.limited;
+  return SAMPLE_SUFFICIENCY.sufficient;
+}
+
 function emptyMetricBlock(state, extra = {}) {
   return {
     state,
     sampleSize: 0,
+    sampleSufficiency: SAMPLE_SUFFICIENCY.noData,
     mae: null,
+    medianAbsoluteError: null,
+    mape: null,
     medianAbsolutePercentageError: null,
     signedBias: null,
+    medianSignedPercentageError: null,
     boundsCoverage: null,
     ...extra,
   };
@@ -113,10 +127,12 @@ function reportConfidence(report = {}) {
 }
 
 function extractSalePrediction(report = {}) {
-  const sale = report.marketIntelligence?.sale || report.saleValuation || null;
-  if (!sale || sale.success === false) {
+  const sale = report.marketIntelligence?.sale || report.saleValuation || report.sale || null;
+  if (!sale) {
     return {
       available: false,
+      assessed: false,
+      reason: EXCLUSION.not_assessed,
       central: null,
       lower: null,
       upper: null,
@@ -124,6 +140,24 @@ function extractSalePrediction(report = {}) {
       lastSoldPrice: null,
       lastSoldDate: null,
       evidenceSources: [],
+      methodFamilies: [],
+      evidenceEligibility: null,
+    };
+  }
+  if (sale.success === false || sale.insufficientEvidence) {
+    return {
+      available: false,
+      assessed: false,
+      reason: EXCLUSION.not_assessed,
+      central: null,
+      lower: null,
+      upper: null,
+      boundsAvailable: false,
+      lastSoldPrice: null,
+      lastSoldDate: null,
+      evidenceSources: [],
+      methodFamilies: sale.evidenceEligibility?.methodFamilies || [],
+      evidenceEligibility: sale.evidenceEligibility || null,
     };
   }
   const central = positiveNumber(sale.centralEstimate);
@@ -131,8 +165,27 @@ function extractSalePrediction(report = {}) {
   const upper = positiveNumber(sale.upperEstimate);
   const lastSold = sale.lastSold || {};
   const components = Array.isArray(sale.components) ? sale.components : [];
+  const eligibility = sale.evidenceEligibility || report.evidenceEligibility || null;
+  if (central == null) {
+    return {
+      available: false,
+      assessed: false,
+      reason: EXCLUSION.invalid_prediction,
+      central: null,
+      lower: null,
+      upper: null,
+      boundsAvailable: false,
+      lastSoldPrice: positiveNumber(lastSold.price),
+      lastSoldDate: parseTime(lastSold.date || lastSold.observedAt),
+      evidenceSources: components.map((c) => c.method).filter(Boolean),
+      methodFamilies: eligibility?.methodFamilies || [],
+      evidenceEligibility: eligibility,
+    };
+  }
   return {
-    available: central != null,
+    available: true,
+    assessed: true,
+    reason: null,
     central,
     lower,
     upper,
@@ -140,6 +193,8 @@ function extractSalePrediction(report = {}) {
     lastSoldPrice: positiveNumber(lastSold.price),
     lastSoldDate: parseTime(lastSold.date || lastSold.observedAt),
     evidenceSources: components.map((c) => c.method).filter(Boolean),
+    methodFamilies: eligibility?.methodFamilies || eligibility?.assessedMethods || [],
+    evidenceEligibility: eligibility,
     confidence: sale.confidence || sale.confidenceAssessment?.level || null,
   };
 }
@@ -219,6 +274,10 @@ function extractPredictionSnapshot(row = {}) {
   const confidence = reportConfidence(report);
   const askingPrice = positiveNumber(property.price);
   const askingRent = positiveNumber(property.monthly_rent ?? rent.askingRentAtT);
+  const valuationMeasurementVersion =
+    report.valuationMeasurementVersion ||
+    sale.valuationMeasurementVersion ||
+    (sale.evidenceEligibility ? 'post-1B' : null);
 
   return {
     available: true,
@@ -229,7 +288,8 @@ function extractPredictionSnapshot(row = {}) {
     uprn: uprn ? String(uprn) : null,
     analysisAt,
     timestampSource: evidenceAsOf ? 'evidenceAsOf' : 'ai_requests.created_at',
-    engineVersion: report.engineVersion || report.modelVersion || row.model_version || null,
+    engineVersion: report.engineVersion || report.modelVersion || row.model_version || 'UNKNOWN',
+    valuationMeasurementVersion: valuationMeasurementVersion || 'UNKNOWN',
     evidenceAsOf: evidenceAsOf,
     persistedAt,
     askingPriceAtT: askingPrice,
@@ -291,6 +351,9 @@ function extractListingOutcomes(listing = {}) {
       value: achievedPrice,
       observedAt: soldAt,
       timestampSource: 'sold_at',
+      trust: OUTCOME_TRUST.userReported,
+      verificationState: 'user_reported',
+      sourceRecordId: listingId != null ? `listing:${listingId}:sold` : null,
       provenance: {
         source: 'ApplicationDatabase',
         field: 'achieved_price',
@@ -311,6 +374,9 @@ function extractListingOutcomes(listing = {}) {
       value: achievedRent,
       observedAt: letAt,
       timestampSource: 'let_at',
+      trust: OUTCOME_TRUST.userReported,
+      verificationState: 'user_reported',
+      sourceRecordId: listingId != null ? `listing:${listingId}:let` : null,
       provenance: {
         source: 'ApplicationDatabase',
         field: 'achieved_rent',
@@ -342,6 +408,9 @@ function extractTransactionOutcome(tx = {}) {
     value: price,
     observedAt,
     timestampSource: 'transaction_date',
+    trust: OUTCOME_TRUST.verifiedObserved,
+    verificationState: 'verified_observed',
+    sourceRecordId: tx.sourceRecordId || tx.id || tx.transaction_id || null,
     provenance: {
       source: tx.provider || 'PropertyData',
       method: 'later_sold_transaction',
@@ -351,33 +420,70 @@ function extractTransactionOutcome(tx = {}) {
   };
 }
 
+function outcomeDedupeKeys(outcome) {
+  const keys = [];
+  if (outcome.source && outcome.sourceRecordId) {
+    keys.push(`src:${outcome.source}:${outcome.sourceRecordId}`);
+  }
+  const date = parseTime(outcome.observedAt);
+  if (outcome.uprn && outcome.value != null && date) {
+    keys.push(`uprn:${outcome.kind}:${outcome.uprn}:${outcome.value}:${date}`);
+  }
+  if (isPresent(outcome.listingId) && outcome.value != null && date) {
+    keys.push(`listing:${outcome.kind}:${outcome.listingId}:${outcome.value}:${date}`);
+  }
+  if (!keys.length) {
+    keys.push(`raw:${outcome.kind}:${outcome.source}:${outcome.value}:${date}`);
+  }
+  return keys;
+}
+
+/**
+ * One real transaction from multiple sources is counted once.
+ * Same source+record, same UPRN+price+date, or same listing+price+date.
+ */
+function dedupeOutcomes(outcomes = []) {
+  const seenKeys = new Set();
+  const unique = [];
+  outcomes.forEach((outcome) => {
+    const keys = outcomeDedupeKeys(outcome);
+    if (keys.some((key) => seenKeys.has(key))) return;
+    keys.forEach((key) => seenKeys.add(key));
+    unique.push(outcome);
+  });
+  return unique;
+}
+
 function identityCompatible(snapshot, outcome) {
+  if (outcome.matchBasis === 'address' || outcome.matchBasis === 'fuzzy') {
+    return { ok: false, reason: EXCLUSION.weak_identity_match, matchState: MATCH_STATE.ambiguous };
+  }
   if (outcome.matchBasis === 'listingId') {
     if (!isPresent(snapshot.listingId) || !isPresent(outcome.listingId)) {
-      return { ok: false, reason: EXCLUSION.ambiguous_identity };
+      return { ok: false, reason: EXCLUSION.ambiguous_identity, matchState: MATCH_STATE.unmatched };
     }
     if (!sameText(snapshot.listingId, outcome.listingId)) {
-      return { ok: false, reason: EXCLUSION.ambiguous_identity };
+      return { ok: false, reason: EXCLUSION.ambiguous_identity, matchState: MATCH_STATE.unmatched };
     }
     if (snapshot.uprn && outcome.uprn && !sameText(snapshot.uprn, outcome.uprn)) {
-      return { ok: false, reason: EXCLUSION.ambiguous_identity };
+      return { ok: false, reason: EXCLUSION.ambiguous_identity, matchState: MATCH_STATE.ambiguous };
     }
-    return { ok: true };
+    return { ok: true, matchState: MATCH_STATE.verified };
   }
   if (outcome.matchBasis === 'uprn') {
     if (!snapshot.uprn || !outcome.uprn || !sameText(snapshot.uprn, outcome.uprn)) {
-      return { ok: false, reason: EXCLUSION.ambiguous_identity };
+      return { ok: false, reason: EXCLUSION.ambiguous_identity, matchState: MATCH_STATE.unmatched };
     }
     if (
       isPresent(snapshot.listingId) &&
       isPresent(outcome.listingId) &&
       !sameText(snapshot.listingId, outcome.listingId)
     ) {
-      return { ok: false, reason: EXCLUSION.ambiguous_identity };
+      return { ok: false, reason: EXCLUSION.ambiguous_identity, matchState: MATCH_STATE.ambiguous };
     }
-    return { ok: true };
+    return { ok: true, matchState: MATCH_STATE.verified };
   }
-  return { ok: false, reason: EXCLUSION.ambiguous_identity };
+  return { ok: false, reason: EXCLUSION.ambiguous_identity, matchState: MATCH_STATE.unmatched };
 }
 
 function outcomeKnownAtPrediction(snapshot, outcome) {
@@ -395,26 +501,43 @@ function outcomeKnownAtPrediction(snapshot, outcome) {
   return sameDate && (samePrice || knownPrices.length === 0);
 }
 
-function pairSnapshotWithOutcome(snapshot, outcome) {
+function pairSnapshotWithOutcome(snapshot, outcome, { asOf = Date.now() } = {}) {
   if (!snapshot?.available) {
-    return { eligible: false, reason: EXCLUSION.missing_historical_snapshot };
+    return { eligible: false, reason: EXCLUSION.missing_historical_snapshot, matchState: MATCH_STATE.unmatched };
+  }
+  if (outcome && isPresent(outcome.value) && positiveNumber(outcome.value) == null) {
+    return { eligible: false, reason: EXCLUSION.invalid_outcome_value, matchState: MATCH_STATE.unmatched };
+  }
+  if (outcome && isPresent(outcome.observedAt) && !parseTime(outcome.observedAt)) {
+    return { eligible: false, reason: EXCLUSION.malformed_outcome_date, matchState: MATCH_STATE.unmatched };
   }
   if (!outcome || !positiveNumber(outcome.value) || !parseTime(outcome.observedAt)) {
-    return { eligible: false, reason: EXCLUSION.missing_outcome };
+    return { eligible: false, reason: EXCLUSION.missing_outcome, matchState: MATCH_STATE.unmatched };
+  }
+  if (outcome.trust === OUTCOME_TRUST.notSuitable) {
+    return { eligible: false, reason: EXCLUSION.unverified_outcome, matchState: MATCH_STATE.unmatched };
   }
 
   const badTime = invalidOutcomeTime(outcome);
-  if (badTime) return { eligible: false, reason: badTime };
+  if (badTime) return { eligible: false, reason: badTime, matchState: MATCH_STATE.unmatched };
+
+  if (timeMs(outcome.observedAt) > asOf) {
+    return { eligible: false, reason: EXCLUSION.future_outcome_date, matchState: MATCH_STATE.verified };
+  }
 
   if (snapshot.leakageFlags?.usedCurrentProviderAsHistory) {
-    return { eligible: false, reason: EXCLUSION.current_provider_response_as_history };
+    return { eligible: false, reason: EXCLUSION.current_provider_response_as_history, matchState: MATCH_STATE.unmatched };
   }
 
   const identity = identityCompatible(snapshot, outcome);
-  if (!identity.ok) return { eligible: false, reason: identity.reason };
+  if (!identity.ok) return { eligible: false, reason: identity.reason, matchState: identity.matchState };
 
   if (outcomeKnownAtPrediction(snapshot, outcome)) {
-    return { eligible: false, reason: EXCLUSION.outcome_already_known_at_prediction };
+    return {
+      eligible: false,
+      reason: EXCLUSION.outcome_already_known_at_prediction,
+      matchState: identity.matchState,
+    };
   }
 
   const futureEvidence = [
@@ -422,36 +545,49 @@ function pairSnapshotWithOutcome(snapshot, outcome) {
     snapshot.lastSoldInSnapshot?.propertyLastSoldDate,
   ].some((d) => d && timeMs(d) > timeMs(snapshot.analysisAt));
   if (futureEvidence) {
-    return { eligible: false, reason: EXCLUSION.later_evidence_leakage };
+    return { eligible: false, reason: EXCLUSION.later_evidence_leakage, matchState: identity.matchState };
   }
 
   if (!isBefore(snapshot.analysisAt, outcome.observedAt)) {
-    return { eligible: false, reason: EXCLUSION.prediction_not_before_outcome };
+    return { eligible: false, reason: EXCLUSION.prediction_not_before_outcome, matchState: identity.matchState };
   }
 
   if (outcome.kind === 'sale') {
     if (!snapshot.sale?.available || snapshot.sale.central == null) {
-      return { eligible: false, reason: EXCLUSION.missing_historical_valuation };
+      return {
+        eligible: false,
+        reason: snapshot.sale?.reason || EXCLUSION.missing_historical_valuation,
+        matchState: identity.matchState,
+      };
     }
     if (snapshot.sale.central === outcome.value && outcome.source === 'valuation') {
-      return { eligible: false, reason: EXCLUSION.valuation_used_as_outcome };
+      return { eligible: false, reason: EXCLUSION.valuation_used_as_outcome, matchState: identity.matchState };
     }
   }
   if (outcome.kind === 'rent') {
     if (!snapshot.rent?.available || snapshot.rent.predictedRent == null) {
-      return { eligible: false, reason: EXCLUSION.missing_historical_rent_prediction };
+      return {
+        eligible: false,
+        reason: EXCLUSION.missing_historical_rent_prediction,
+        matchState: identity.matchState,
+      };
     }
   }
 
-  return { eligible: true, snapshot, outcome };
+  return { eligible: true, snapshot, outcome, matchState: identity.matchState };
 }
 
 function valuationCaseMetrics(snapshot, outcome) {
   const predicted = snapshot.sale.central;
   const achieved = outcome.value;
   const absoluteError = Math.abs(predicted - achieved);
-  const percentageError = absoluteError / achieved;
   const signedError = predicted - achieved;
+  const absolutePercentageError = absoluteError / achieved;
+  const percentageError = absolutePercentageError;
+  const signedPercentageError = signedError / achieved;
+  const predictionToOutcomeDays = Math.round(
+    (timeMs(outcome.observedAt) - timeMs(snapshot.analysisAt)) / (24 * 60 * 60 * 1000)
+  );
   const boundsAvailable = Boolean(snapshot.sale.boundsAvailable);
   const withinBounds = boundsAvailable
     ? achieved >= snapshot.sale.lower && achieved <= snapshot.sale.upper
@@ -468,7 +604,15 @@ function valuationCaseMetrics(snapshot, outcome) {
     achieved,
     absoluteError,
     percentageError,
+    absolutePercentageError,
     signedError,
+    signedPercentageError,
+    predictionToOutcomeDays,
+    matchState: MATCH_STATE.verified,
+    outcomeTrust: outcome.trust || null,
+    methodFamilies: snapshot.sale.methodFamilies || [],
+    engineVersion: snapshot.engineVersion || 'UNKNOWN',
+    valuationMeasurementVersion: snapshot.valuationMeasurementVersion || 'UNKNOWN',
     boundsAvailable,
     withinBounds,
     lower: boundsAvailable ? snapshot.sale.lower : null,
@@ -518,8 +662,13 @@ function rentCaseMetrics(snapshot, outcome) {
 function aggregateCases(cases, { includeBounds = true } = {}) {
   if (!cases.length) return emptyMetricBlock(STATE.insufficientData);
   const mae = mean(cases.map((c) => c.absoluteError));
-  const mdape = median(cases.map((c) => c.percentageError));
+  const medianAbsoluteError = median(cases.map((c) => c.absoluteError));
+  const mape = mean(cases.map((c) => c.absolutePercentageError ?? c.percentageError));
+  const mdape = median(cases.map((c) => c.absolutePercentageError ?? c.percentageError));
   const bias = mean(cases.map((c) => c.signedError));
+  const medianSignedPercentageError = median(
+    cases.map((c) => c.signedPercentageError ?? (c.achieved ? c.signedError / c.achieved : null))
+  );
   const withBounds = cases.filter((c) => c.boundsAvailable);
   let boundsCoverage = null;
   if (includeBounds && withBounds.length) {
@@ -533,10 +682,18 @@ function aggregateCases(cases, { includeBounds = true } = {}) {
   return {
     state: STATE.available,
     sampleSize: cases.length,
+    sampleSufficiency: sampleSufficiencyOf(cases.length),
     mae: round4(mae),
+    medianAbsoluteError: round4(medianAbsoluteError),
+    mape: round4(mape),
     medianAbsolutePercentageError: round4(mdape),
     signedBias: round4(bias),
+    medianSignedPercentageError: round4(medianSignedPercentageError),
     boundsCoverage,
+    limitation:
+      cases.length < MIN_SEGMENT_SAMPLE
+        ? `Sample ${cases.length} is ${sampleSufficiencyOf(cases.length)}; this is not a calibration result.`
+        : null,
   };
 }
 
@@ -570,6 +727,18 @@ function segmentKey(caseRow, name) {
     if (sources.length === 1) return sources[0];
     return 'blended';
   }
+  if (name === 'methodFamily') {
+    const families = caseRow.methodFamilies || [];
+    return families.length === 1 ? families[0] : families.length ? 'multiple' : null;
+  }
+  if (name === 'engineVersion') return caseRow.engineVersion || 'UNKNOWN';
+  if (name === 'horizonBand') {
+    const days = caseRow.predictionToOutcomeDays;
+    if (!Number.isFinite(days)) return null;
+    if (days <= 90) return '0_to_90_days';
+    if (days <= 365) return '91_to_365_days';
+    return 'over_365_days';
+  }
   return null;
 }
 
@@ -580,8 +749,11 @@ function segmentSaleCases(cases, askingByRequestId = {}) {
     'bedrooms',
     'priceBand',
     'epcAvailability',
-    'confidenceBand',
-    'valuationEvidenceSource',
+      'confidenceBand',
+      'valuationEvidenceSource',
+      'methodFamily',
+      'engineVersion',
+      'horizonBand',
   ];
   const segments = [];
   names.forEach((name) => {
@@ -680,14 +852,16 @@ function chooseOutcome(snapshot, kind, outcomes) {
   if (firstParty.length && pool.length > 1) {
     const prices = new Set(pool.map((c) => c.outcome.value));
     if (prices.size > 1 && timeMs(pool[0].outcome.observedAt) === timeMs(pool[1].outcome.observedAt)) {
-      return { eligible: false, reason: EXCLUSION.conflicting_outcomes };
+      return { eligible: false, reason: EXCLUSION.conflicting_outcomes, matchState: MATCH_STATE.ambiguous };
     }
   }
   if (!firstParty.length && distinctValues.size > 1) {
     const earliest = pool[0].outcome.observedAt;
     const sameTime = pool.filter((c) => c.outcome.observedAt === earliest);
     const prices = new Set(sameTime.map((c) => c.outcome.value));
-    if (prices.size > 1) return { eligible: false, reason: EXCLUSION.conflicting_outcomes };
+    if (prices.size > 1) {
+      return { eligible: false, reason: EXCLUSION.conflicting_outcomes, matchState: MATCH_STATE.ambiguous };
+    }
   }
   return selected.paired;
 }
@@ -711,9 +885,11 @@ function runBacktest({
   const extracted = snapshots.map((row) =>
     row.available && row.analysisAt ? row : extractPredictionSnapshot(row)
   );
-  const normalisedOutcomes = outcomes
-    .map((o) => (o.kind && o.value && o.observedAt ? o : extractTransactionOutcome(o) || o))
-    .filter(Boolean);
+  const normalisedOutcomes = dedupeOutcomes(
+    outcomes
+      .map((o) => (o.kind && o.value && o.observedAt ? o : extractTransactionOutcome(o) || o))
+      .filter(Boolean)
+  );
 
   const saleCases = [];
   const rentCases = [];
@@ -858,7 +1034,15 @@ function runBacktest({
         achieved: c.achieved,
         absoluteError: c.absoluteError,
         percentageError: c.percentageError,
+        absolutePercentageError: c.absolutePercentageError,
         signedError: c.signedError,
+        signedPercentageError: c.signedPercentageError,
+        predictionToOutcomeDays: c.predictionToOutcomeDays,
+        matchState: c.matchState,
+        outcomeTrust: c.outcomeTrust,
+        methodFamilies: c.methodFamilies,
+        engineVersion: c.engineVersion,
+        valuationMeasurementVersion: c.valuationMeasurementVersion,
         boundsAvailable: c.boundsAvailable,
         withinBounds: c.withinBounds,
         confidenceLevel: c.confidenceLevel,
@@ -888,10 +1072,15 @@ module.exports = {
   BACKTEST_ENGINE_VERSION,
   STATE,
   EXCLUSION,
+  MATCH_STATE,
+  OUTCOME_TRUST,
+  SAMPLE_SUFFICIENCY,
   MIN_SEGMENT_SAMPLE,
+  sampleSufficiencyOf,
   extractPredictionSnapshot,
   extractListingOutcomes,
   extractTransactionOutcome,
+  dedupeOutcomes,
   pairSnapshotWithOutcome,
   valuationCaseMetrics,
   rentCaseMetrics,
