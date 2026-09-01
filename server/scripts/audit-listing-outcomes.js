@@ -10,6 +10,7 @@ const pool = require('../models/db');
 const { loadBacktestDataset } = require('../services/ai/backtesting/backtestRepository');
 const { runBacktest } = require('../services/ai/backtesting/backtestFoundation');
 const { aggregateOutcomeIssues } = require('../services/ai/listingOutcomeQuality');
+const { auditOutcomeCollection } = require('../services/ai/outcomeCollectionService');
 
 async function tableExists(table) {
   const result = await pool.query(
@@ -54,11 +55,20 @@ async function listingCounts() {
 async function outcomeCounts() {
   const empty = {
     sold: 0,
+    soldListings: 0,
+    soldAtPresent: 0,
+    achievedPricePresent: 0,
+    soldAtWithoutAchievedPrice: 0,
+    achievedPriceWithoutSoldAt: 0,
+    completeSaleOutcomes: 0,
     soldWithAchievedPrice: 0,
     let: 0,
     letWithAchievedRent: 0,
     underOffer: 0,
     withdrawn: 0,
+    soldEvents: 0,
+    saleOutcomeCompletedEvents: 0,
+    duplicateSoldEventGroups: 0,
   };
   if (!(await tableExists('properties'))) return empty;
   const hasSoldAt = await columnExists('properties', 'sold_at');
@@ -67,6 +77,18 @@ async function outcomeCounts() {
   const result = await pool.query(`
     SELECT
       COUNT(*) FILTER (WHERE status = 'sold' OR sold_at IS NOT NULL)::int AS sold,
+      COUNT(*) FILTER (WHERE status = 'sold')::int AS sold_listings,
+      COUNT(*) FILTER (WHERE sold_at IS NOT NULL)::int AS sold_at_present,
+      COUNT(*) FILTER (WHERE achieved_price IS NOT NULL AND achieved_price > 0)::int AS achieved_price_present,
+      COUNT(*) FILTER (
+        WHERE sold_at IS NOT NULL AND (achieved_price IS NULL OR achieved_price <= 0)
+      )::int AS sold_at_without_achieved_price,
+      COUNT(*) FILTER (
+        WHERE achieved_price IS NOT NULL AND achieved_price > 0 AND sold_at IS NULL
+      )::int AS achieved_price_without_sold_at,
+      COUNT(*) FILTER (
+        WHERE sold_at IS NOT NULL AND achieved_price IS NOT NULL AND achieved_price > 0
+      )::int AS complete_sale_outcomes,
       COUNT(*) FILTER (
         WHERE (status = 'sold' OR sold_at IS NOT NULL)
           AND achieved_price IS NOT NULL AND achieved_price > 0
@@ -81,13 +103,46 @@ async function outcomeCounts() {
     FROM properties
   `);
   const row = result.rows[0];
+  let soldEvents = 0;
+  let saleOutcomeCompletedEvents = 0;
+  let duplicateSoldEventGroups = 0;
+  if (await tableExists('listing_events')) {
+    const events = await pool.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE event_type = 'sold')::int AS sold_events,
+        COUNT(*) FILTER (WHERE event_type = 'sale_outcome_completed')::int AS completed_events
+      FROM listing_events
+    `);
+    soldEvents = events.rows[0].sold_events;
+    saleOutcomeCompletedEvents = events.rows[0].completed_events;
+    const dupes = await pool.query(`
+      SELECT COUNT(*)::int AS groups
+      FROM (
+        SELECT property_id
+        FROM listing_events
+        WHERE event_type = 'sold'
+        GROUP BY property_id
+        HAVING COUNT(*) > 1
+      ) d
+    `);
+    duplicateSoldEventGroups = dupes.rows[0].groups;
+  }
   return {
     sold: row.sold,
+    soldListings: row.sold_listings,
+    soldAtPresent: row.sold_at_present,
+    achievedPricePresent: row.achieved_price_present,
+    soldAtWithoutAchievedPrice: row.sold_at_without_achieved_price,
+    achievedPriceWithoutSoldAt: row.achieved_price_without_sold_at,
+    completeSaleOutcomes: row.complete_sale_outcomes,
     soldWithAchievedPrice: row.sold_with_achieved_price,
     let: row.let,
     letWithAchievedRent: row.let_with_achieved_rent,
     underOffer: row.under_offer,
     withdrawn: row.withdrawn,
+    soldEvents,
+    saleOutcomeCompletedEvents,
+    duplicateSoldEventGroups,
   };
 }
 
@@ -102,25 +157,60 @@ async function loadOutcomeQualityRows() {
   return result.rows;
 }
 
-function publicAudit(listings, outcomes, backtest, issues, schema) {
+function publicAudit(listings, outcomes, backtest, issues, schema, collection) {
   return {
     listings,
     outcomes,
     backtesting: {
       historicalSnapshots: backtest.historicalPredictionSnapshots,
+      assessedSalePredictions: backtest.assessedSalePredictions,
       eligibleSalePairs: backtest.eligibleSalePairs,
       eligibleRentPairs: backtest.eligibleRentPairs,
       state: backtest.state,
+      sufficiency: backtest.sufficiency,
     },
+    collection: collection
+      ? {
+          sampleUnit: collection.sampleUnit,
+          predictions: collection.predictions,
+          outcomes: {
+            candidateSale: collection.outcomes.candidateSale,
+            firstPartySale: collection.outcomes.firstPartySale,
+          },
+          matches: collection.matches,
+          evaluation: {
+            n: collection.evaluation.n,
+            uniqueSaleOutcomes: collection.evaluation.uniqueSaleOutcomes,
+            sufficiency: collection.evaluation.sufficiency,
+            exclusions: collection.evaluation.exclusions,
+          },
+          collectionGaps: collection.collectionGaps,
+          collectionGapRows: collection.collectionGapRows || [],
+          pairingExclusions: collection.pairingExclusions || [],
+          firstOutcomePipeline: collection.firstOutcomePipeline || null,
+          firstOutcomeBlockers: collection.firstOutcomeBlockers || null,
+          verifiedObservedAccumulation: collection.verifiedObservedAccumulation,
+          measurementSemantics: collection.measurementSemantics,
+        }
+      : null,
     issues: {
       temporalConflicts: issues.temporalConflicts,
       categoryConflicts: issues.categoryConflicts,
       terminalStateConflicts: issues.terminalStateConflicts,
       missingAchievedSaleAmount: issues.missingAchievedSaleAmount,
       missingAchievedRentAmount: issues.missingAchievedRentAmount,
+      incompleteSaleOutcomes: issues.incompleteSaleOutcomes,
+      completeSaleOutcomes: issues.completeSaleOutcomes,
+      completedAfterInitialRecord: issues.completedAfterInitialRecord,
     },
     schema,
-    note: 'Aggregates only. Zero outcome counts are valid. No historical backfill was performed.',
+    firstOutcomeReadiness: {
+      pipeline: collection?.firstOutcomePipeline || 'READY',
+      currentNIsNotReadiness: true,
+      note:
+        'READY means a genuine later sale on a listing with an earlier assessed immutable prediction can be captured and evaluated. N=0 with no completed sales is a valid successful measurement.',
+    },
+    note: 'Aggregates only. Zero outcome counts are valid. No historical backfill was performed. No addresses, emails, tokens, or provider payloads.',
   };
 }
 
@@ -128,12 +218,24 @@ async function runAudit() {
   const listings = await listingCounts();
   const outcomes = await outcomeCounts();
   const qualityRows = await loadOutcomeQualityRows();
-  const issues = aggregateOutcomeIssues(qualityRows);
+  let lifecycleEvents = [];
+  if (await tableExists('listing_events')) {
+    const eventRows = await pool.query(`
+      SELECT property_id, event_type
+      FROM listing_events
+      WHERE event_type IN ('sold', 'sale_outcome_completed')
+    `);
+    lifecycleEvents = eventRows.rows;
+  }
+  const issues = aggregateOutcomeIssues(qualityRows, { events: lifecycleEvents });
 
   let historicalSnapshots = 0;
+  let assessedSalePredictions = 0;
   let eligibleSalePairs = 0;
   let eligibleRentPairs = 0;
   let state = 'insufficientData';
+  let sufficiency = 'NO_DATA';
+  let collection = null;
   try {
     const dataset = await loadBacktestDataset(pool);
     historicalSnapshots = dataset.audit.historicalPredictionSnapshots;
@@ -144,6 +246,13 @@ async function runAudit() {
     eligibleSalePairs = result.eligibility.eligibleSale;
     eligibleRentPairs = result.eligibility.eligibleRent;
     state = result.state;
+    sufficiency = result.valuation.sampleSufficiency || 'NO_DATA';
+    collection = auditOutcomeCollection({
+      listings: qualityRows,
+      snapshots: dataset.snapshots,
+      outcomes: dataset.outcomes,
+    });
+    assessedSalePredictions = collection.predictions.assessedSale;
   } catch {
     /* schema or DB unavailable — leave zeros */
   }
@@ -166,9 +275,17 @@ async function runAudit() {
   return publicAudit(
     listings,
     outcomes,
-    { historicalPredictionSnapshots: historicalSnapshots, eligibleSalePairs, eligibleRentPairs, state },
+    {
+      historicalPredictionSnapshots: historicalSnapshots,
+      assessedSalePredictions,
+      eligibleSalePairs,
+      eligibleRentPairs,
+      state,
+      sufficiency,
+    },
     issues,
-    schema
+    schema,
+    collection
   );
 }
 

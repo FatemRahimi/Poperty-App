@@ -10,25 +10,36 @@ const {
   extractPostcodeFromAddress,
   parseCityFromAddress,
   inferMatchConfidenceFromRank,
-  buildPropertyDataSearchAddressFromQuery,
+  normalizeIdentitySearchAddress,
 } = require('../../utils/ukAddress');
 const { searchUserProperties } = require('./propertyDataAggregator');
 const { searchPublicPropertiesForIntelligence } = require('./propertyIntelligenceSearch');
 const {
   upsertSubject,
   findSubjectById,
+  findSubjectByUprn,
   findEnrichmentBySubject,
   upsertSubjectEnrichment,
   recordSubjectLookup,
   listRecentSubjectsForUser,
   userHasSubjectLookup,
 } = require('../enrichment/intelligenceSubjectRepository');
+const {
+  lookupQueryInvalid,
+  checkExpensiveProviderQuota,
+  hasReusableUprnProfile,
+  classifyProviderFailure,
+  logProviderCostEvent,
+  PROVIDER_LOOKUP_LIMIT,
+} = require('../providers/cache/providerCostProtection');
 const { linkSubjectToMarketplaceListing, getListingSummaryById } = require('./listingUprnLinkService');
 const { getPostcodeMarketIntelligence } = require('./postcodeMarketIntelligenceService');
 const { parseUprnProfile } = require('../providers/propertyData/propertyDataParsers');
 const { applyPropertyDataEvidence } = require('../providers/propertyData/propertyDataEvidence');
-const { buildSoldPriceFilters, isResidentialRentsEligible } = require('../providers/propertyData/propertyTypeMapping');
-const { mergeSources } = require('../../utils/provenance');
+const { buildSoldPriceFilters } = require('../providers/propertyData/propertyTypeMapping');
+const { acquisitionFromContext } = require('../identity/marketAcquisitionPolicy');
+const { mergeSources, createProvenance } = require('../../utils/provenance');
+const { reusedUprnProfileFromSubject } = require('../enrichment/propertyEnrichmentService');
 const {
   logIntelligenceFailure,
   POSTCODE_INTEL_UNAVAILABLE_PUBLIC,
@@ -82,7 +93,8 @@ function buildSyntheticPropertyFromSubject(subject) {
     description: '',
     category: 'sale',
     property_type: attrs.property_type || parsed.propertyType || null,
-    property_category: 'residential',
+    // Subjects are not classified as residential by default. UNKNOWN is valid.
+    property_category: null,
     status: 'external',
     zip_code: postcode,
     postcode,
@@ -123,8 +135,8 @@ function ttlToExpiresAt(ttlMs) {
 /**
  * Enrich external subject with postcode/UPRN market data (cached on subject_id).
  */
-async function enrichSubjectForIntelligence(subject, property, userId) {
-  if (!isPropertyDataConfigured()) {
+async function enrichSubjectForIntelligence(subject, property, userId, deps = {}) {
+  if (!isPropertyDataConfigured() && !deps.marketProvider) {
     return {
       available: false,
       message: 'External enrichment not configured',
@@ -134,15 +146,18 @@ async function enrichSubjectForIntelligence(subject, property, userId) {
     };
   }
 
-  const registry = getProviderRegistry();
-  const marketProvider = registry.getPrimaryMarketDataProvider();
+  const registry = deps.getProviderRegistry ? deps.getProviderRegistry() : getProviderRegistry();
+  const marketProvider = deps.marketProvider || registry.getPrimaryMarketDataProvider();
   const ctx = { userId, propertyId: null, subjectId: subject.id };
   const enrichments = {};
   let totalCreditsUsed = 0;
   const postcode = normalisePostcode(subject.postcode || property.zip_code);
+  const acquisition = deps.acquisition || acquisitionFromContext(deps, property);
 
   async function fetchAndPersist(type, method, ttlKey, fetchFn) {
-    const cached = await findEnrichmentBySubject(subject.id, type, 'PropertyData');
+    const findCached = deps.findEnrichmentBySubject || findEnrichmentBySubject;
+    const persist = deps.upsertSubjectEnrichment || upsertSubjectEnrichment;
+    const cached = await findCached(subject.id, type, 'PropertyData');
     if (cached) {
       enrichments[type] = {
         success: true,
@@ -157,7 +172,7 @@ async function enrichSubjectForIntelligence(subject, property, userId) {
       enrichments[type] = fetched;
       return;
     }
-    await upsertSubjectEnrichment({
+    await persist({
       subjectId: subject.id,
       enrichmentType: type,
       source: 'PropertyData',
@@ -171,34 +186,54 @@ async function enrichSubjectForIntelligence(subject, property, userId) {
 
   if (marketProvider?.isAvailable() && postcode) {
     const soldFilters = buildSoldPriceFilters(property);
-    await fetchAndPersist('sold_prices', 'getSoldPrices', 'soldPrices', () =>
-      marketProvider.getSoldPrices(postcode, ctx, soldFilters)
-    );
-    await fetchAndPersist('sold_prices_per_sqf', 'getSoldPricesPerSqf', 'soldPricesPerSqf', () =>
-      marketProvider.getSoldPricesPerSqf(postcode, ctx, soldFilters)
-    );
-    if (isResidentialRentsEligible(property)) {
+    if (acquisition.fetchSoldPrices) {
+      await fetchAndPersist('sold_prices', 'getSoldPrices', 'soldPrices', () =>
+        marketProvider.getSoldPrices(postcode, ctx, soldFilters)
+      );
+    }
+    if (acquisition.fetchSoldPricesPerSqf) {
+      await fetchAndPersist('sold_prices_per_sqf', 'getSoldPricesPerSqf', 'soldPricesPerSqf', () =>
+        marketProvider.getSoldPricesPerSqf(postcode, ctx, soldFilters)
+      );
+    }
+    if (acquisition.fetchRents) {
       await fetchAndPersist('rents', 'getRents', 'rents', () =>
         marketProvider.getRents(postcode, ctx, soldFilters)
       );
     }
-    if (typeof marketProvider.getDemand === 'function') {
+    if (acquisition.fetchDemand && typeof marketProvider.getDemand === 'function') {
       await fetchAndPersist('demand', 'getDemand', 'marketDemand', () =>
         marketProvider.getDemand(postcode, ctx)
       );
     }
-    if (typeof marketProvider.getDemandRent === 'function') {
+    if (acquisition.fetchDemandRent && typeof marketProvider.getDemandRent === 'function') {
       await fetchAndPersist('demand_rent', 'getDemandRent', 'marketDemand', () =>
         marketProvider.getDemandRent(postcode, ctx)
       );
     }
   }
 
-  enrichments.uprn_profile = {
-    success: true,
-    data: subject.profile_snapshot,
-    fromSubject: true,
-  };
+  const reusedProfile = reusedUprnProfileFromSubject(subject);
+  if (reusedProfile) {
+    enrichments.uprn_profile = reusedProfile;
+  } else if (marketProvider?.isAvailable() && subject.uprn) {
+    await fetchAndPersist('uprn_profile', 'getUprnProfile', 'uprnProfile', () =>
+      marketProvider.getUprnProfile(subject.uprn, ctx)
+    );
+  } else {
+    enrichments.uprn_profile = {
+      success: true,
+      data: subject.profile_snapshot,
+      fromSubject: true,
+      provenance: createProvenance({
+        source: 'PropertyData',
+        method: 'uprn_profile',
+        providerEndpoint: '/uprn',
+        retrievedAt: subject.updated_at || subject.created_at || new Date(),
+        notes: 'Subject profile_snapshot used without a freshness window. Not newly retrieved.',
+      }),
+    };
+  }
 
   const identity = {
     uprn: subject.uprn,
@@ -208,7 +243,12 @@ async function enrichSubjectForIntelligence(subject, property, userId) {
   };
   const avmProperty = applyPropertyDataEvidence(property, { enrichments, identity }).property;
 
-  if (marketProvider?.isAvailable() && avmProperty.square_feet >= 300 && postcode) {
+  if (
+    acquisition.fetchSaleValuation
+    && marketProvider?.isAvailable()
+    && avmProperty.square_feet >= 300
+    && postcode
+  ) {
     await fetchAndPersist('valuation_sale', 'getSaleValuation', 'valuation', () =>
       marketProvider.getSaleValuation(avmProperty, ctx)
     );
@@ -250,15 +290,17 @@ function buildExternalMatchRow(m) {
   };
 }
 
-async function lookupPropertyIntelligence(query, userId) {
-  const q = (query || '').trim();
-  if (q.length < 3) {
-    return { success: false, message: 'Enter at least 3 characters (address or postcode).' };
-  }
+async function lookupPropertyIntelligence(query, userId, deps = {}) {
+  const invalid = lookupQueryInvalid(query);
+  if (invalid) return invalid;
 
+  const q = (query || '').trim();
+
+  const searchMine = deps.searchUserProperties || searchUserProperties;
+  const searchBrowse = deps.searchPublicPropertiesForIntelligence || searchPublicPropertiesForIntelligence;
   const [internalMine, internalBrowse] = await Promise.all([
-    userId ? searchUserProperties(userId, q) : [],
-    searchPublicPropertiesForIntelligence(q, { limit: 40 }),
+    userId ? searchMine(userId, q) : [],
+    searchBrowse(q, { limit: 40 }),
   ]);
 
   const internalIds = new Set(internalMine.map((p) => p.id));
@@ -277,7 +319,8 @@ async function lookupPropertyIntelligence(query, userId) {
   const postcodeForMarket = extractPostcodeFromAddress(q);
   if (postcodeForMarket) {
     try {
-      basePayload.postcodeIntelligence = await getPostcodeMarketIntelligence(postcodeForMarket, { userId });
+      const postcodeFn = deps.getPostcodeMarketIntelligence || getPostcodeMarketIntelligence;
+      basePayload.postcodeIntelligence = await postcodeFn(postcodeForMarket, { userId });
     } catch (err) {
       logIntelligenceFailure('lookupPropertyIntelligence.postcode', err);
       basePayload.postcodeIntelligence = {
@@ -287,8 +330,13 @@ async function lookupPropertyIntelligence(query, userId) {
     }
   }
 
-  if (!isPropertyDataConfigured()) {
-    const setup = getPropertyDataSetupStatus();
+  const configured = deps.isPropertyDataConfigured
+    ? deps.isPropertyDataConfigured()
+    : isPropertyDataConfigured();
+  if (!configured) {
+    const setup = deps.getPropertyDataSetupStatus
+      ? deps.getPropertyDataSetupStatus()
+      : getPropertyDataSetupStatus();
     return {
       ...basePayload,
       external: {
@@ -302,10 +350,34 @@ async function lookupPropertyIntelligence(query, userId) {
     };
   }
 
+  const quotaFn = deps.checkExpensiveProviderQuota || checkExpensiveProviderQuota;
+  const quota = await quotaFn(userId);
+  if (!quota.allowed) {
+    logProviderCostEvent({
+      event: 'lookup_quota',
+      outcome: PROVIDER_LOOKUP_LIMIT,
+      endpoint: 'address-match-uprn',
+      userId,
+    });
+    return {
+      ...basePayload,
+      normalizedSearch: {
+        searchAddress: normalizeIdentitySearchAddress(q),
+        postcode: extractPostcodeFromAddress(q),
+      },
+      external: {
+        available: true,
+        matches: [],
+        code: PROVIDER_LOOKUP_LIMIT,
+        message: quota.message,
+      },
+    };
+  }
+
   const registry = getProviderRegistry();
-  const provider = registry.getPrimaryIdentityProvider();
+  const provider = deps.identityProvider || registry.getPrimaryIdentityProvider();
   const postcode = extractPostcodeFromAddress(q);
-  const searchAddress = buildPropertyDataSearchAddressFromQuery(q);
+  const searchAddress = normalizeIdentitySearchAddress(q);
   const syntheticProperty = {
     address_line1: q,
     zip_code: postcode,
@@ -317,7 +389,8 @@ async function lookupPropertyIntelligence(query, userId) {
   let externalMatches = [];
   let lastSearchAddress = searchAddress;
   try {
-    const resolved = await provider.resolveIdentity(syntheticProperty, {
+    const resolveIdentity = deps.resolveIdentity || ((property, ctx) => provider.resolveIdentity(property, ctx));
+    const resolved = await resolveIdentity(syntheticProperty, {
       userId,
       propertyId: null,
     });
@@ -363,17 +436,17 @@ async function lookupPropertyIntelligence(query, userId) {
     });
   } catch (err) {
     logIntelligenceFailure('lookupPropertyIntelligence.external', err);
+    const classified = classifyProviderFailure(err);
     return {
       ...basePayload,
       normalizedSearch: { searchAddress, postcode },
       external: {
         available: true,
         matches: [],
+        code: classified.code,
         message: internal.length
           ? `${internal.length} listing${internal.length === 1 ? '' : 's'} on our platform. External lookup failed — you can still analyse a platform listing above.`
-          : postcode
-            ? `External lookup failed for ${searchAddress}. Check spelling and try again.`
-            : 'External lookup failed. Include a valid UK postcode.',
+          : classified.message,
       },
     };
   }
@@ -399,61 +472,61 @@ async function lookupPropertyIntelligence(query, userId) {
   };
 }
 
-async function resolveExternalSubject({ uprn, address, userId, matchConfidence = 'medium' }) {
-  if (!isPropertyDataConfigured()) {
-    return { success: false, message: 'PropertyData API is not configured on this server.' };
-  }
-
-  const uprnStr = String(uprn);
-  const registry = getProviderRegistry();
-  const provider = registry.getPrimaryMarketDataProvider();
-
-  let profileResult = null;
-  try {
-    profileResult = await provider.getUprnProfile(uprnStr, { userId, propertyId: null });
-  } catch (err) {
-    logIntelligenceFailure('resolveExternalSubject.uprnProfile', err);
-    return { success: false, message: UPRN_PROFILE_FAILED_PUBLIC };
-  }
-
-  const profile = profileResult.profile || profileResult.data || {};
+async function finishResolvedSubject({
+  subject,
+  userId,
+  uprnStr,
+  profile,
+  matchConfidence,
+  address,
+  providerExecution,
+  creditsUsed = 0,
+  deps = {},
+}) {
   const attrs = profileToAttributes(profile);
-  const normalizedAddress = address || profile.address || profile.full_address || `UPRN ${uprnStr}`;
+  const normalizedAddress =
+    address ||
+    subject?.normalized_address ||
+    profile.address ||
+    profile.full_address ||
+    `UPRN ${uprnStr}`;
   const postcode =
     normalisePostcode(extractPostcodeFromAddress(normalizedAddress)) ||
-    normalisePostcode(profile.postcode);
+    normalisePostcode(profile.postcode || subject?.postcode);
 
-  const linkResult = await linkSubjectToMarketplaceListing({
+  const linkFn = deps.linkSubjectToMarketplaceListing || linkSubjectToMarketplaceListing;
+  const upsert = deps.upsertSubject || upsertSubject;
+  const recordLookup = deps.recordSubjectLookup || recordSubjectLookup;
+  const linkResult = await linkFn({
     uprn: uprnStr,
     postcode,
     normalizedAddress,
-    latitude: profile.latitude ?? profile.lat ?? null,
-    longitude: profile.longitude ?? profile.lng ?? null,
+    latitude: profile.latitude ?? profile.lat ?? subject?.latitude ?? null,
+    longitude: profile.longitude ?? profile.lng ?? subject?.longitude ?? null,
   });
 
-  const subject = await upsertSubject({
+  const saved = await upsert({
     uprn: uprnStr,
     normalizedAddress,
     postcode,
-    latitude: profile.latitude ?? profile.lat ?? null,
-    longitude: profile.longitude ?? profile.lng ?? null,
-    propertyId: linkResult.listing?.id || null,
+    latitude: profile.latitude ?? profile.lat ?? subject?.latitude ?? null,
+    longitude: profile.longitude ?? profile.lng ?? subject?.longitude ?? null,
+    propertyId: linkResult.listing?.id || subject?.property_id || null,
     attributes: attrs,
-    profileSnapshot: profile,
+    profileSnapshot: profile && Object.keys(profile).length ? profile : {},
     matchConfidence,
     matchMethod: 'propertydata_address_match',
     createdBy: userId,
   });
 
   if (userId) {
-    await recordSubjectLookup(userId, subject.id);
+    await recordLookup(userId, saved.id);
   }
 
-  const property = buildSyntheticPropertyFromSubject(subject);
-
+  const property = buildSyntheticPropertyFromSubject(saved);
   return {
     success: true,
-    subject,
+    subject: saved,
     property,
     linkedListing: linkResult.linked ? linkResult.listing : null,
     linkMeta: linkResult.linked
@@ -464,11 +537,107 @@ async function resolveExternalSubject({ uprn, address, userId, matchConfidence =
       accessLevel: 'public_intelligence',
       source: 'PropertyData',
       uprn: uprnStr,
-      subjectId: subject.id,
+      subjectId: saved.id,
       linkedPropertyId: linkResult.listing?.id || null,
     },
-    creditsUsed: profileResult.creditsUsed || 0,
+    providerExecution,
+    creditsUsed,
   };
+}
+
+async function resolveExternalSubject({
+  uprn,
+  address,
+  userId,
+  matchConfidence = 'medium',
+  deps = {},
+} = {}) {
+  if (!isPropertyDataConfigured() && !deps.getUprnProfile && !deps.findSubjectByUprn) {
+    return { success: false, message: 'PropertyData API is not configured on this server.' };
+  }
+
+  const uprnStr = String(uprn);
+  const findSubject = deps.findSubjectByUprn || findSubjectByUprn;
+  const existing = await findSubject(uprnStr);
+
+  if (hasReusableUprnProfile(existing)) {
+    logProviderCostEvent({
+      event: 'resolve_reuse',
+      endpoint: 'uprn',
+      outcome: 'reused_subject',
+      userId,
+    });
+    const subject = existing;
+    const linkFn = deps.linkSubjectToMarketplaceListing || linkSubjectToMarketplaceListing;
+    const linkResult = await linkFn({
+      uprn: uprnStr,
+      postcode: existing.postcode,
+      normalizedAddress: address || existing.normalized_address,
+      latitude: existing.latitude,
+      longitude: existing.longitude,
+    });
+    if (userId) {
+      if (deps.recordSubjectLookup) await deps.recordSubjectLookup(userId, subject.id);
+      else await recordSubjectLookup(userId, subject.id);
+    }
+    return {
+      success: true,
+      subject: existing,
+      property: buildSyntheticPropertyFromSubject(existing),
+      linkedListing: linkResult.linked ? linkResult.listing : null,
+      linkMeta: linkResult.linked
+        ? { matchMethod: linkResult.matchMethod, confidence: linkResult.confidence }
+        : null,
+      accessContext: {
+        relationship: linkResult.linked ? 'external_linked_listing' : 'external_lookup',
+        accessLevel: 'public_intelligence',
+        source: existing.provider || 'PropertyData',
+        uprn: uprnStr,
+        subjectId: existing.id,
+        linkedPropertyId: linkResult.listing?.id || existing.property_id || null,
+      },
+      providerExecution: 'reused_subject',
+      creditsUsed: 0,
+    };
+  }
+
+  const quotaFn = deps.checkExpensiveProviderQuota || checkExpensiveProviderQuota;
+  const quota = await quotaFn(userId);
+  if (!quota.allowed) {
+    return {
+      success: false,
+      code: PROVIDER_LOOKUP_LIMIT,
+      message: quota.message,
+    };
+  }
+
+  const registry = getProviderRegistry();
+  const provider = deps.marketProvider || registry.getPrimaryMarketDataProvider();
+  const getUprnProfile =
+    deps.getUprnProfile || ((id, ctx) => provider.getUprnProfile(id, ctx));
+
+  let profileResult = null;
+  try {
+    profileResult = await getUprnProfile(uprnStr, { userId, propertyId: null });
+  } catch (err) {
+    logIntelligenceFailure('resolveExternalSubject.uprnProfile', err);
+    const classified = classifyProviderFailure(err);
+    return { success: false, code: classified.code, message: UPRN_PROFILE_FAILED_PUBLIC };
+  }
+
+  const profile = profileResult.profile || profileResult.data || {};
+  const persistMeta = { createdBy: userId, matchConfidence };
+  return finishResolvedSubject({
+    subject: existing,
+    userId: persistMeta.createdBy,
+    uprnStr,
+    profile,
+    matchConfidence: persistMeta.matchConfidence,
+    address,
+    providerExecution: profileResult.cacheHit ? 'cache_hit' : 'provider_execution',
+    creditsUsed: profileResult.creditsUsed || 0,
+    deps,
+  });
 }
 
 const SUBJECT_PREVIEW_NOT_FOUND_PUBLIC = 'Analysis subject not found.';
@@ -565,6 +734,7 @@ module.exports = {
   enrichSubjectForIntelligence,
   buildSyntheticPropertyFromSubject,
   profileToAttributes,
+  hasReusableUprnProfile,
   evaluateSubjectPreviewAccess,
   assertSubjectPreviewAccess,
   assertSubjectAccess: assertSubjectPreviewAccess,

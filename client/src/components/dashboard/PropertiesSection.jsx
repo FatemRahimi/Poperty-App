@@ -10,6 +10,7 @@ const PropertiesSection = ({
   propertyTypeOptions,
   statusOptions,
   handlePropertyDeleted,
+  onSaleOutcomeRecorded,
   isRadiusFiltering,
   isSearching,
   totalCount
@@ -61,6 +62,8 @@ const PropertiesSection = ({
                 key={property.id} 
                 property={property} 
                 onPropertyDeleted={handlePropertyDeleted}
+                onSaleOutcomeRecorded={onSaleOutcomeRecorded}
+                allowSaleOutcome={true}
                 sourcePage="/dashboard?tab=properties"
                 userId={property.user_id}
                 fallbackContact={{

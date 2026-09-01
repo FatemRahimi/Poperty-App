@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import AiWorkspaceLayout from '../../components/ai/AiWorkspaceLayout';
+import RentResultView from '../../components/ai/RentResultView';
 import { analyseRent } from '../../services/aiService';
 import { useAuth } from '../../context/AuthContext';
 import '../../components/ai/AiWorkspaceLayout.css';
@@ -92,55 +93,7 @@ const RentIntelligence = () => {
             </div>
           )}
 
-          {result?.insufficientData && (
-            <div className="ai-panel">
-              <h2>Insufficient data</h2>
-              <p className="ai-insight-meta">{result.message}</p>
-              <p className="ai-disclaimer">{result.disclaimer}</p>
-            </div>
-          )}
-
-          {result?.success && (
-            <>
-              <div className="ai-metrics-grid">
-                <div className="ai-metric"><small>Recommended rent</small><strong>£{result.recommendedRent?.toLocaleString()}</strong></div>
-                <div className="ai-metric"><small>Market range</small><strong>£{result.marketRange.low}–£{result.marketRange.high}</strong></div>
-                <div className="ai-metric"><small>Confidence</small><strong>{result.confidenceLevel || 'Not assessed'}</strong></div>
-                <div className="ai-metric"><small>Data quality</small><strong>{result.dataQuality?.level || 'Not assessed'}</strong></div>
-              </div>
-
-              <div className="ai-panel">
-                <h2>Price sensitivity</h2>
-                <table className="ai-data-table">
-                  <thead><tr><th>Position</th><th>Rent</th><th>Demand</th></tr></thead>
-                  <tbody>
-                    {result.priceSensitivity.map((row) => (
-                      <tr key={row.label}><td>{row.label}</td><td>£{row.rent?.toLocaleString()}</td><td>{row.demand}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="ai-panel">
-                <h2>Comparable properties ({result.comparables.length})</h2>
-                <table className="ai-data-table">
-                  <thead><tr><th>Property</th><th>Rent</th><th>Similarity</th><th>Why selected</th></tr></thead>
-                  <tbody>
-                    {result.comparables.map((c) => (
-                      <tr key={c.id}>
-                        <td>{c.title || c.city}</td>
-                        <td>£{c.monthly_rent?.toLocaleString()}</td>
-                        <td>{c.similarity}%</td>
-                        <td>{(c.reasons || []).join(', ') || 'Comparable match'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <p className="ai-disclaimer">{result.disclaimer}</p>
-            </>
-          )}
+          <RentResultView result={result} />
         </div>
       </div>
     </AiWorkspaceLayout>

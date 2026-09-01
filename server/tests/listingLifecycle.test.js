@@ -147,8 +147,10 @@ async function run() {
     assert.deepStrictEqual([...SUPPORTED_EVENT_TYPES].sort(), [
       'first_published',
       'let',
+      'let_outcome_completed',
       'listing_created',
       'price_changed',
+      'sale_outcome_completed',
       'sold',
       'status_changed',
       'under_offer',

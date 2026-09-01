@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { FaBrain, FaBookmark, FaBuilding, FaClock, FaGlobeEurope, FaSearch } from 'react-icons/fa';
 import AiWorkspaceLayout from '../../components/ai/AiWorkspaceLayout';
 import IntelligenceReport, { fmt } from '../../components/ai/IntelligenceReport';
+import LegalTitleEvidencePanel from '../../components/ai/LegalTitleEvidencePanel';
 import FinanceScenarioForm from '../../components/ai/FinanceScenarioForm';
 import WhatIfPanel from '../../components/ai/WhatIfPanel';
 import PostcodeIntelligencePanel from '../../components/ai/PostcodeIntelligencePanel';
@@ -21,6 +22,7 @@ import {
   unlinkIntelligenceSubject,
 } from '../../services/aiService';
 import { displayAiCredits, isUnlimitedPlan, refreshAiCredits, subscribeAiCredits } from '../../services/aiCreditState';
+import { canStartLookup, canStartResolve } from '../../services/providerSearchGuard';
 import { useAuth } from '../../context/AuthContext';
 import {
   EMPTY_FINANCE_SCENARIO,
@@ -103,6 +105,8 @@ const PropertyIntelligence = () => {
   const [aiCredits, setAiCredits] = useState(null);
   const [aiPlanUnlimited, setAiPlanUnlimited] = useState(false);
   const stageTimer = useRef(null);
+  const lookupInFlightRef = useRef(false);
+  const resolveInFlightRef = useRef(false);
   const ukLookupRef = useRef(null);
   const previewRef = useRef(null);
   const selectionPanelRef = useRef(null);
@@ -234,10 +238,14 @@ const PropertyIntelligence = () => {
       }
     }
     const q = ukQuery.trim();
-    if (q.length < 3) {
-      setUkLookupError('Enter at least 3 characters — full address with postcode works best.');
+    const gate = canStartLookup({ inFlight: lookupInFlightRef.current, query: q });
+    if (!gate.ok) {
+      if (gate.reason === 'too_short') {
+        setUkLookupError('Enter at least 3 characters — full address with postcode works best.');
+      }
       return;
     }
+    lookupInFlightRef.current = true;
     setUkSearching(true);
     setUkLookupError('');
     setUkSessionExpired(false);
@@ -266,6 +274,7 @@ const PropertyIntelligence = () => {
       setUkLookupError(msg);
       if (!is401) setError(msg);
     } finally {
+      lookupInFlightRef.current = false;
       setUkSearching(false);
     }
   };
@@ -293,6 +302,9 @@ const PropertyIntelligence = () => {
   }, []);
 
   const selectExternalMatch = async (match) => {
+    const gate = canStartResolve({ inFlight: resolveInFlightRef.current, uprn: match?.uprn });
+    if (!gate.ok) return;
+    resolveInFlightRef.current = true;
     setResolvingExternal(true);
     setError('');
     setSelectedId(null);
@@ -322,6 +334,7 @@ const PropertyIntelligence = () => {
       setError(err.response?.data?.message || 'Failed to resolve UK property');
       setPreview(null);
     } finally {
+      resolveInFlightRef.current = false;
       setResolvingExternal(false);
     }
   };
@@ -549,6 +562,14 @@ const PropertyIntelligence = () => {
             </div>
           </div>
         </div>
+
+        {(isProfessional || isExternal) && (
+          <LegalTitleEvidencePanel
+            enabled
+            propertyId={selectedId}
+            subjectId={selectedSubjectId}
+          />
+        )}
 
         <FinanceScenarioForm
           form={financeScenario}

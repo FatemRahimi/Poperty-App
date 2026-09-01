@@ -13,6 +13,40 @@ const {
   publicOutcomeView,
   blocksListingMutation,
 } = require('../services/ai/listingOutcomeService');
+const {
+  persistListingClassificationFromSubmission,
+} = require('../services/identity/assetClassificationService');
+const {
+  persistListingCanonicalIdentity,
+} = require('../services/identity/canonicalIdentityService');
+
+async function persistListingIdentitySafely(property) {
+  if (!property?.id) return;
+  try {
+    await persistListingCanonicalIdentity(property);
+  } catch (err) {
+    console.error('Listing identity persist failed (property not blocked):', err.message);
+  }
+}
+
+async function persistSubmittedClassification(client, property, body, userId) {
+  if (!property?.id) return;
+  try {
+    const assetClass = body.assetClass || body.asset_class || null;
+    await persistListingClassificationFromSubmission({
+      listingId: property.id,
+      userId,
+      assetClass,
+      subtype: body.assetSubtype || body.asset_subtype || null,
+      propertyCategory: property.property_category || body.property_category,
+      propertyType: property.property_type,
+      explicit: assetClass != null && assetClass !== '',
+      client,
+    });
+  } catch (err) {
+    console.warn('Asset classification persist skipped:', err.message);
+  }
+}
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgres://fatemehrahimi@localhost:5432/propertydb'
@@ -614,6 +648,7 @@ const submitProperty = async (req, res) => {
     );
 
     const property = propertyResult.rows[0];
+    await persistSubmittedClassification(client, property, req.body, user_id);
 
     // Handle uploaded files from multer
     if (req.files) {
@@ -739,6 +774,7 @@ const submitProperty = async (req, res) => {
     await collectAfterCreate(client, { property, actorUserId: user_id });
 
     await client.query('COMMIT');
+    persistListingIdentitySafely(property).catch(() => {});
 
     // Get user details for email
     const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [user_id]);
@@ -1965,6 +2001,7 @@ const updateProperty = async (req, res) => {
     }
 
     const property = propertyResult.rows[0];
+    await persistSubmittedClassification(client, property, req.body, user_id);
 
     await collectAfterUpdate(client, {
       previous: existingProperty,
@@ -2296,6 +2333,7 @@ const updateProperty = async (req, res) => {
     }
 
     await client.query('COMMIT');
+    persistListingIdentitySafely(property).catch(() => {});
 
     // 🔧 SOCKET.IO: Send real-time notification to admin about property update
     const io = req.app.get('io');
@@ -2371,6 +2409,10 @@ const recordPropertyOutcome = async (req, res) => {
       achievedPrice: req.body?.achievedPrice,
       achievedRent: req.body?.achievedRent,
       achievedRentUnit: req.body?.achievedRentUnit,
+      copyFromAsking: req.body?.copyFromAsking,
+      useValuation: req.body?.useValuation,
+      useRecommendedRent: req.body?.useRecommendedRent,
+      useRents: req.body?.useRents,
       actor: { id: req.user.id, role: req.user.role },
     });
     if (!result.ok) {

@@ -43,6 +43,10 @@ function pickNonNegativeInteger(...candidates) {
   return null;
 }
 
+function pickDeclaredUnit(...candidates) {
+  return pickText(...candidates);
+}
+
 function pickDate(...candidates) {
   for (const candidate of candidates) {
     if (candidate === undefined || candidate === null || candidate === '') continue;
@@ -70,6 +74,7 @@ function parseValuationSaleResponse(payload) {
     upperEstimate: margin != null ? estimate + margin : null,
     margin: margin,
     confidence: rawConfidence ? rawConfidence.toLowerCase() : null,
+    declaredUnit: pickDeclaredUnit(result.unit, result.value_unit, result.valueUnit, result.price_unit),
     source: 'PropertyData',
     method: 'valuation_sale_avm',
   };
@@ -97,6 +102,7 @@ function parseSoldPricesStats(payload) {
       high: high,
     },
     sampleSize: points,
+    declaredUnit: pickDeclaredUnit(data.unit, data.value_unit, data.valueUnit, data.price_unit),
     source: 'PropertyData',
     method: 'sold_prices_statistics',
     underlyingSource: 'HM Land Registry',
@@ -115,6 +121,7 @@ function parseSoldPricesPerSqf(payload) {
       low: pickPositiveNumber(data['80pc_low'], data.range_low, data.low),
       high: pickPositiveNumber(data['80pc_high'], data.range_high, data.high),
     },
+    declaredUnit: pickDeclaredUnit(data.unit, data.value_unit, data.valueUnit) || 'gbp_per_sqft',
     source: 'PropertyData',
     method: 'sold_prices_per_sqf',
     underlyingSource: 'HM Land Registry + MHCLG EPC',
@@ -278,6 +285,7 @@ function parseUprnSaleEstimate(payload) {
   const profile = parseUprnProfile(payload);
   if (!profile.currentSaleEstimate) return null;
 
+  const node = unwrapPayload(payload);
   return {
     centralEstimate: profile.currentSaleEstimate,
     lowerEstimate: null,
@@ -285,6 +293,12 @@ function parseUprnSaleEstimate(payload) {
     lastSoldPrice: profile.lastSoldPrice,
     lastSoldDate: profile.lastSoldDate,
     internalArea: profile.internalArea,
+    declaredUnit: pickDeclaredUnit(
+      node.unit,
+      node.value_unit,
+      node.valueUnit,
+      node.current_sale_estimate_unit
+    ),
     source: 'PropertyData',
     method: 'uprn_profile',
     underlyingSource: 'HM Land Registry / EPC where available',

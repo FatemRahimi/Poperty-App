@@ -155,6 +155,19 @@ function applyReportAccessPolicy(report, access) {
     };
   }
 
+  if (filtered.legalTitleDomain) {
+    filtered.legalTitleDomain = {
+      ...filtered.legalTitleDomain,
+      documents: [],
+      evidence: [],
+      assessment: {
+        ...(filtered.legalTitleDomain.assessment || {}),
+        documentsPresent: false,
+        titleRegisterAvailable: false,
+        titlePlanAvailable: false,
+      },
+    };
+  }
   filtered.professionalInsights = null;
   if (filtered.inputSnapshot?.fieldsUsed) {
     filtered.inputSnapshot = {

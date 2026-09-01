@@ -165,6 +165,7 @@ const FULL_INPUT = {
   purchasePrice: 152000,
   deposit: 38000,
   interestRate: 5.2,
+  mortgageTermYears: 25,
   expectedRent: 925,
   vacancyAssumption: 5,
   maintenance: 600,
@@ -271,7 +272,7 @@ test('missing vacancy assumption does not create a near-perfect score', () => {
 
 test('missing rent is unscored rather than scored as a poor yield', () => {
   const metrics = calculateInvestmentMetrics({ purchasePrice: 152000, deposit: 38000, interestRate: 5.2 });
-  assert.strictEqual(metrics.grossYield, 0);
+  assert.strictEqual(metrics.grossYield, null);
   const score = calculateInvestmentScore(metrics);
   assert.strictEqual(score.components.yield, null, 'missing rent must not score 35 for 0% yield');
   assert.strictEqual(score.components.cashFlow, null);
@@ -286,8 +287,8 @@ test('results resting on defaulted costs do not receive a favourable sub-score',
     expectedRent: 925,
     vacancyAssumption: 5,
   });
-  // With zero-default costs the raw cash flow looks strongly positive.
-  assert.ok(metrics.annualCashFlow > 0);
+  assert.strictEqual(metrics.annualCashFlow, null);
+  assert.strictEqual(metrics.metricAssessment.cashFlow.state, 'notAssessed');
   const score = calculateInvestmentScore(metrics);
   assert.strictEqual(score.components.cashFlow, null, 'provisional cash flow must not be scored');
   const cf = score.excluded.find((e) => e.component === 'cashFlow');

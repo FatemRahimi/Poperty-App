@@ -62,7 +62,7 @@ test('gross yield calculation', () => {
   assert.strictEqual(m.grossYield, 6);
 });
 
-test('NOI subtracts operating expenses', () => {
+test('NOI subtracts operating expenses when the cost contract is complete', () => {
   const m = calculateInvestmentMetrics({
     purchasePrice: 200000,
     expectedRent: 1000,
@@ -71,8 +71,26 @@ test('NOI subtracts operating expenses', () => {
     vacancyAssumption: 0,
     maintenance: 1200,
     insurance: 600,
+    managementFee: 0,
+    serviceCharge: 0,
+    groundRent: 0,
+    taxes: 0,
   });
   assert.strictEqual(m.noi, 12000 - 1200 - 600);
+  assert.strictEqual(m.metricAssessment.noi.state, 'assessed');
+});
+
+test('incomplete operating costs do not produce an assessed NOI from invented zeros', () => {
+  const m = calculateInvestmentMetrics({
+    purchasePrice: 200000,
+    expectedRent: 1000,
+    vacancyAssumption: 0,
+    maintenance: 1200,
+    insurance: 600,
+  });
+  assert.strictEqual(m.noi, null);
+  assert.strictEqual(m.metricAssessment.noi.state, 'notAssessed');
+  assert.strictEqual(m.grossYield, 6);
 });
 
 test('scenarios produce three rows', () => {

@@ -3,11 +3,15 @@ import { Link, useParams } from 'react-router-dom';
 import CopyBlock from '../../components/ai/CopyBlock';
 import AiWorkspaceLayout from '../../components/ai/AiWorkspaceLayout';
 import IntelligenceReport from '../../components/ai/IntelligenceReport';
+import InvestmentResultView from '../../components/ai/InvestmentResultView';
+import RentResultView from '../../components/ai/RentResultView';
+import PortfolioResultView from '../../components/ai/PortfolioResultView';
 import { fetchHistoryItem, deleteHistoryItem } from '../../services/aiService';
 import { savedIntelligenceReportFromRow } from '../../Utils/savedIntelligenceReport';
 import '../../components/ai/AiWorkspaceLayout.css';
 import '../../components/ai/IntelligenceReport.css';
 import './AiValuation.css';
+import './PortfolioOptimiser.css';
 
 const AiHistoryDetail = () => {
   const { id } = useParams();
@@ -93,6 +97,33 @@ const AiHistoryDetail = () => {
           <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'inherit', fontSize: '0.85rem', color: '#cbd5e1' }}>
             {JSON.stringify(output, null, 2)}
           </pre>
+        </div>
+      )}
+
+      {item?.request_type === 'investment_analyst' && output.metrics && (
+        <div data-testid="saved-investment-history">
+          <p className="ai-insight-meta">
+            This is the Investment Analyst result stored at analysis time. It is not recalculated.
+          </p>
+          <InvestmentResultView result={output} />
+        </div>
+      )}
+
+      {item?.request_type === 'rent_intelligence' && (
+        <div data-testid="saved-rent-history">
+          <p className="ai-insight-meta">
+            This is the Rent Intelligence result stored at analysis time. It is not recalculated.
+          </p>
+          <RentResultView result={output} />
+        </div>
+      )}
+
+      {item?.request_type === 'portfolio_optimiser' && (
+        <div data-testid="saved-portfolio-history">
+          <p className="ai-insight-meta">
+            This is the Portfolio Optimiser result stored at analysis time. It is not recalculated.
+          </p>
+          <PortfolioResultView report={output} />
         </div>
       )}
 

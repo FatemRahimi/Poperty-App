@@ -74,6 +74,26 @@ const propertyIntelligenceConfig = {
     },
   },
 
+  /**
+   * Provider-cost protection. Does not consume AI generation credits.
+   * Limits paid identity/UPRN executions per user. Cache hits do not count.
+   */
+  providerProtection: {
+    minLookupQueryLength: parseIntEnv(process.env.PROVIDER_LOOKUP_MIN_QUERY_LENGTH, 3),
+    expensiveEndpoints: ['address-match-uprn', 'uprn'],
+    maxPaidExecutionsPerUserHour: parseIntEnv(
+      process.env.PROVIDER_PAID_EXECUTIONS_PER_USER_HOUR,
+      40
+    ),
+    quotaWindowMs: parseIntEnv(process.env.PROVIDER_QUOTA_WINDOW_MS, 60 * 60 * 1000),
+    identityResolution: {
+      uniqueUprnOnly: true,
+      analysePaysForUprn: false,
+      creditsPerAddressMatch: 10,
+      doNotInferUprnFromPostcode: true,
+    },
+  },
+
   /** Cache TTL in milliseconds */
   cacheTtl: {
     identity: parseIntEnv(process.env.CACHE_TTL_IDENTITY_MS, 30 * 24 * 60 * 60 * 1000),

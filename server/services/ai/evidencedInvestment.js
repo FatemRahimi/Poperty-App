@@ -234,7 +234,15 @@ function incompleteOperatingCostReason(costEvidence, metric) {
   return `Operating costs were not supplied — ${metric} is notAssessed.`;
 }
 
-function presentEvidencedInvestment(metrics, adapterEvidence = null) {
+function presentFromAssessment(assessment, value, fallbackReason) {
+  if (!assessment) return null;
+  if (assessment.state === 'assessed' && value != null) {
+    return calculated(value);
+  }
+  return notAssessed(fallbackReason || assessment.reason);
+}
+
+function presentEvidencedInvestment(metrics, adapterEvidence = null, options = {}) {
   const assumptions = metrics?.assumptionCoverage?.assumptions || {};
   const costEvidence = describeCostCompleteness(assumptions, adapterEvidence);
   const financeEvidence = describeFinanceCompleteness(assumptions);
@@ -242,42 +250,108 @@ function presentEvidencedInvestment(metrics, adapterEvidence = null) {
   const financeAssessed = financeEvidence.completeness === 'COMPLETE_EVIDENCE';
   const priceAndRent =
     sourceIsEvidenced(assumptions.purchasePrice) && sourceIsEvidenced(assumptions.expectedRent);
+  const assessment = metrics?.metricAssessment || null;
+  const rentBasis = options.rentBasis || metrics?.rentBasis || null;
+  const expectedRentIsNotMarketRent = rentBasis
+    ? rentBasis.kind !== 'MARKET'
+    : true;
+  const grossYieldBasis =
+    rentBasis?.kind === 'MARKET'
+      ? 'MARKET_RENT'
+      : rentBasis?.kind === 'SCENARIO'
+        ? 'SCENARIO_RENT'
+        : rentBasis?.kind === 'LISTING'
+          ? 'LISTING_RENT'
+          : null;
+
+  const cashFlowReason = financeAssessed
+    ? incompleteOperatingCostReason(costEvidence, 'cash flow')
+    : 'Cash flow requires evidenced operating costs and complete finance inputs (deposit, interest rate, term). Application defaults are not user-supplied evidence.';
+  const fromEngine = assessment
+    ? {
+        grossYield: presentFromAssessment(
+          assessment.grossYield,
+          metrics.grossYield,
+          'Gross yield requires an evidenced purchase price and expected rent.'
+        ),
+        netYield: presentFromAssessment(
+          assessment.netYield,
+          metrics.netYield,
+          incompleteOperatingCostReason(costEvidence, 'net yield')
+        ),
+        noi: presentFromAssessment(
+          assessment.noi,
+          metrics.noi,
+          incompleteOperatingCostReason(costEvidence, 'NOI')
+        ),
+        annualCashFlow: presentFromAssessment(
+          assessment.cashFlow,
+          metrics.annualCashFlow,
+          cashFlowReason
+        ),
+        monthlyCashFlow: presentFromAssessment(
+          assessment.cashFlow,
+          metrics.monthlyCashFlow,
+          'Mortgage cash flow requires evidenced operating costs and complete finance inputs.'
+        ),
+        dscr: presentFromAssessment(
+          assessment.dscr,
+          metrics.dscr,
+          'DSCR requires evidenced operating costs and complete finance inputs. Missing inputs are notAssessed, not a default mortgage.'
+        ),
+      }
+    : {
+        grossYield: priceAndRent
+          ? calculated(metrics.grossYield)
+          : notAssessed('Gross yield requires an evidenced purchase price and expected rent.'),
+        netYield: costsAssessed && priceAndRent
+          ? calculated(metrics.netYield)
+          : notAssessed(incompleteOperatingCostReason(costEvidence, 'net yield')),
+        noi: costsAssessed
+          ? calculated(metrics.noi)
+          : notAssessed(incompleteOperatingCostReason(costEvidence, 'NOI')),
+        annualCashFlow:
+          costsAssessed && financeAssessed
+            ? calculated(metrics.annualCashFlow)
+            : notAssessed(
+                financeAssessed
+                  ? incompleteOperatingCostReason(costEvidence, 'cash flow')
+                  : 'Cash flow requires evidenced operating costs and complete finance inputs (deposit, interest rate, term). Application defaults are not user-supplied evidence.'
+              ),
+        monthlyCashFlow:
+          costsAssessed && financeAssessed
+            ? calculated(metrics.monthlyCashFlow)
+            : notAssessed(
+                'Mortgage cash flow requires evidenced operating costs and complete finance inputs.'
+              ),
+        dscr:
+          costsAssessed && financeAssessed && metrics.dscr != null
+            ? calculated(metrics.dscr)
+            : notAssessed(
+                'DSCR requires evidenced operating costs and complete finance inputs. Missing inputs are notAssessed, not a default mortgage.'
+              ),
+      };
+
+  if (fromEngine.grossYield?.available && grossYieldBasis) {
+    fromEngine.grossYield.basis = grossYieldBasis;
+    fromEngine.grossYield.rentBasisKind = rentBasis.kind;
+  }
 
   return {
-    grossYield: priceAndRent
-      ? calculated(metrics.grossYield)
-      : notAssessed('Gross yield requires an evidenced purchase price and expected rent.'),
-    netYield: costsAssessed && priceAndRent
-      ? calculated(metrics.netYield)
-      : notAssessed(incompleteOperatingCostReason(costEvidence, 'net yield')),
-    noi: costsAssessed
-      ? calculated(metrics.noi)
-      : notAssessed(incompleteOperatingCostReason(costEvidence, 'NOI')),
-    annualCashFlow:
-      costsAssessed && financeAssessed
-        ? calculated(metrics.annualCashFlow)
-        : notAssessed(
-            financeAssessed
-              ? incompleteOperatingCostReason(costEvidence, 'cash flow')
-              : 'Cash flow requires evidenced operating costs and complete finance inputs (deposit, interest rate, term). Application defaults are not user-supplied evidence.'
-          ),
-    monthlyCashFlow:
-      costsAssessed && financeAssessed
-        ? calculated(metrics.monthlyCashFlow)
-        : notAssessed(
-            'Mortgage cash flow requires evidenced operating costs and complete finance inputs.'
-          ),
-    dscr:
-      costsAssessed && financeAssessed && metrics.dscr != null
-        ? calculated(metrics.dscr)
-        : notAssessed(
-            'DSCR requires evidenced operating costs and complete finance inputs. Missing inputs are notAssessed, not a default mortgage.'
-          ),
+    ...fromEngine,
     costsAssessed,
     financeAssessed,
     costEvidence,
     financeEvidence,
-    expectedRentIsNotMarketRent: true,
+    rentBasis: rentBasis
+      ? {
+          kind: rentBasis.kind,
+          label: rentBasis.label,
+          marketSubstitutedForMissingListing: Boolean(rentBasis.marketSubstitutedForMissingListing),
+        }
+      : null,
+    grossYieldBasis,
+    expectedRentIsNotMarketRent,
     scenarioIsNotObservedResult: true,
   };
 }

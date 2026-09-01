@@ -32,6 +32,34 @@ const EXCLUSION = Object.freeze({
   later_evidence_leakage: 'later_evidence_leakage',
   current_provider_response_as_history: 'current_provider_response_as_history',
   synthetic_fixture_not_production_evidence: 'synthetic_fixture_not_production_evidence',
+  not_assessed: 'not_assessed',
+  invalid_prediction: 'invalid_prediction',
+  future_outcome_date: 'future_outcome_date',
+  malformed_outcome_date: 'malformed_outcome_date',
+  invalid_outcome_value: 'invalid_outcome_value',
+  unverified_outcome: 'unverified_outcome',
+  weak_identity_match: 'weak_identity_match',
+});
+
+const MATCH_STATE = Object.freeze({
+  verified: 'VERIFIED',
+  probable: 'PROBABLE',
+  ambiguous: 'AMBIGUOUS',
+  unmatched: 'UNMATCHED',
+});
+
+const OUTCOME_TRUST = Object.freeze({
+  verifiedObserved: 'VERIFIED_OBSERVED',
+  userReported: 'USER_REPORTED',
+  context: 'CONTEXT',
+  notSuitable: 'NOT_SUITABLE',
+});
+
+const SAMPLE_SUFFICIENCY = Object.freeze({
+  noData: 'NO_DATA',
+  verySparse: 'VERY_SPARSE',
+  limited: 'LIMITED',
+  sufficient: 'SUFFICIENT',
 });
 
 const MIN_SEGMENT_SAMPLE = 5;
@@ -47,6 +75,9 @@ module.exports = {
   CONFIDENCE_MODEL_VERSION,
   STATE,
   EXCLUSION,
+  MATCH_STATE,
+  OUTCOME_TRUST,
+  SAMPLE_SUFFICIENCY,
   MIN_SEGMENT_SAMPLE,
   MIN_CONFIDENCE_GROUP_SAMPLE,
   PERSONAL_DECISION_REQUIRED_LABELS,

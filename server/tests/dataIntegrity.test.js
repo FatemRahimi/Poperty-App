@@ -160,9 +160,16 @@ test('updated_at is not treated as sold date', () => {
   assert.ok(!rentRanked[0].selectionReasons.includes('Recent listing data'));
 
   const saleRanked = rankSaleComparables(target, [listingOnly]);
-  assert.ok(saleRanked.length, 'sale comparables with asking price must still rank');
+  assert.ok(saleRanked.length, 'sale comparables with asking price must still rank as asking-listing context');
   assert.strictEqual(saleRanked[0].sold_date, null);
+  assert.strictEqual(saleRanked[0].evidenceKind, 'asking_listing');
+  assert.strictEqual(saleRanked[0].notTransactionEvidence, true);
   assert.ok(!saleRanked[0].selectionReasons.includes('Recent listing data'));
+  assert.strictEqual(
+    weightedBlend([{ centralEstimate: saleRanked[0].price, method: 'internal_sale_comparables' }]),
+    null,
+    'ranking asking listings must not imply they can assess sale value alone'
+  );
 
   const withSold = rankSaleComparables(target, [
     { ...listingOnly, id: 3, sold_date: stamp },

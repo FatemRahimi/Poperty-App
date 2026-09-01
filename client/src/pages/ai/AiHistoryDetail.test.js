@@ -100,6 +100,35 @@ describe('AiHistoryDetail Property Intelligence snapshot', () => {
     expect(analysePropertyIntelligence).not.toHaveBeenCalled();
   });
 
+  test('investment analyst history uses stored metrics and does not invent cash purchase', async () => {
+    fetchHistoryItem.mockResolvedValue({
+      success: true,
+      item: {
+        id: 12,
+        request_type: 'investment_analyst',
+        created_at: '2026-08-20T12:00:00.000Z',
+        output_data: {
+          metrics: {
+            grossYield: 5.5,
+            netYield: null,
+            noi: null,
+            monthlyCashFlow: null,
+            dscr: null,
+          },
+        },
+      },
+    });
+
+    renderDetail('12');
+
+    expect(await screen.findByTestId('saved-investment-history')).toBeInTheDocument();
+    expect(screen.getByTestId('legacy-assessment-note')).toBeInTheDocument();
+    expect(screen.getByTestId('metric-grossYield')).toHaveTextContent('5.5%');
+    expect(screen.getByTestId('metric-grossYield')).not.toHaveTextContent('Listing-rent');
+    expect(screen.getByTestId('financing-state')).not.toHaveTextContent('Cash purchase');
+    expect(analysePropertyIntelligence).not.toHaveBeenCalled();
+  });
+
   test('source freeze: snapshot render only, no live analyse or listing fetch', () => {
     const src = fs.readFileSync(path.join(__dirname, 'AiHistoryDetail.js'), 'utf8');
     expect(src).toMatch(/savedIntelligenceReportFromRow/);

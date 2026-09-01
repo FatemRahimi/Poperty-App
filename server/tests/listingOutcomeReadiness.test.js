@@ -405,6 +405,79 @@ async function run() {
     if (listing.status === 'withdrawn') assert.strictEqual(listing.let_at, null);
   });
 
+  await asyncTest('HTTP incomplete sold can later be completed with a genuine price', async () => {
+    store.seed([saleListing({ id: 41, price: 400000 })]);
+    const soldAt = '2026-07-01T10:00:00.000Z';
+    const first = await postOutcome(port, 41, { outcome: 'sold', occurredAt: soldAt }, OWNER);
+    const completed = await postOutcome(
+      port,
+      41,
+      { outcome: 'sold', occurredAt: soldAt, achievedPrice: 385000 },
+      OWNER
+    );
+    assert.strictEqual(first.status, 200);
+    assert.strictEqual(first.body.property.achieved_price, null);
+    assert.strictEqual(completed.status, 200);
+    assert.strictEqual(completed.body.code, 'completed');
+    assert.strictEqual(completed.body.property.sold_at, soldAt);
+    assert.strictEqual(completed.body.property.achieved_price, 385000);
+    assert.strictEqual(store.events.filter((e) => e.property_id === 41 && e.event_type === 'sold').length, 1);
+    assert.strictEqual(
+      store.events.filter((e) => e.property_id === 41 && e.event_type === 'sale_outcome_completed').length,
+      1
+    );
+  });
+
+  await asyncTest('HTTP copyFromAsking and useValuation are rejected', async () => {
+    store.seed([saleListing({ id: 42 })]);
+    const asking = await postOutcome(port, 42, { outcome: 'sold', copyFromAsking: true }, OWNER);
+    const valuation = await postOutcome(port, 42, { outcome: 'sold', useValuation: true }, OWNER);
+    assert.strictEqual(asking.status, 400);
+    assert.strictEqual(asking.body.code, 'invalid_amount_source');
+    assert.strictEqual(valuation.status, 400);
+    assert.strictEqual(valuation.body.code, 'invalid_amount_source');
+    assert.strictEqual(store.listingById(42).status, 'approved');
+  });
+
+  await asyncTest('concurrent identical completions are idempotent', async () => {
+    store.seed([saleListing({ id: 43 })]);
+    const soldAt = '2026-07-01T10:00:00.000Z';
+    await postOutcome(port, 43, { outcome: 'sold', occurredAt: soldAt }, OWNER);
+    const body = { outcome: 'sold', occurredAt: soldAt, achievedPrice: 360000 };
+    const [a, b] = await Promise.all([postOutcome(port, 43, body, OWNER), postOutcome(port, 43, body, OWNER)]);
+    assert.ok([a.status, b.status].every((s) => s === 200));
+    const codes = [a.body.code, b.body.code].sort();
+    assert.deepStrictEqual(codes, ['completed', 'idempotent']);
+    assert.strictEqual(store.listingById(43).achieved_price, 360000);
+    assert.strictEqual(store.listingById(43).sold_at, soldAt);
+    assert.strictEqual(
+      store.events.filter((e) => e.property_id === 43 && e.event_type === 'sale_outcome_completed').length,
+      1
+    );
+    assert.strictEqual(store.events.filter((e) => e.property_id === 43 && e.event_type === 'sold').length, 1);
+  });
+
+  await asyncTest('concurrent different completion prices conflict deterministically', async () => {
+    store.seed([saleListing({ id: 44 })]);
+    const soldAt = '2026-07-01T10:00:00.000Z';
+    await postOutcome(port, 44, { outcome: 'sold', occurredAt: soldAt }, OWNER);
+    const [a, b] = await Promise.all([
+      postOutcome(port, 44, { outcome: 'sold', occurredAt: soldAt, achievedPrice: 300000 }, OWNER),
+      postOutcome(port, 44, { outcome: 'sold', occurredAt: soldAt, achievedPrice: 310000 }, OWNER),
+    ]);
+    const statuses = [a.status, b.status].sort();
+    assert.deepStrictEqual(statuses, [200, 409]);
+    const winner = a.status === 200 ? a : b;
+    const loser = a.status === 409 ? a : b;
+    assert.strictEqual(loser.body.code, 'outcome_conflict');
+    assert.strictEqual(store.listingById(44).achieved_price, winner.body.property.achieved_price);
+    assert.ok([300000, 310000].includes(store.listingById(44).achieved_price));
+    assert.strictEqual(
+      store.events.filter((e) => e.property_id === 44 && e.event_type === 'sale_outcome_completed').length,
+      1
+    );
+  });
+
   await asyncTest('sold listing cannot return to pending by ordinary edit', async () => {
     store.seed([
       saleListing({

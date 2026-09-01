@@ -9,8 +9,17 @@
     "test": "node scripts/run-tests.js",
     "backtest:pi": "node scripts/run-property-intelligence-backtest.js",
     "audit:outcomes": "node scripts/audit-listing-outcomes.js",
+    "audit:classification": "node scripts/audit-asset-classification.js",
+    "audit:planning": "node scripts/audit-planning-domain.js",
+    "audit:development": "node scripts/audit-development-project.js",
+    "audit:project-cost": "node scripts/audit-project-cost.js",
+    "audit:legal-evidence": "node scripts/audit-legal-evidence.js",
+    "audit:private-evidence": "node scripts/audit-private-evidence-security.js",
+    "reconcile:private-evidence": "node scripts/reconcile-private-evidence.js",
     "migrate:addlist": "node scripts/migrate-addlist-fields.js",
-    "migrate:intelligence": "node scripts/migrate-intelligence-schema.js"
+    "migrate:intelligence": "node scripts/migrate-intelligence-schema.js",
+    "import:hmlr-ppd": "node scripts/import-hmlr-price-paid.js",
+    "enrich:listing-identity": "node scripts/enrich-listing-identity.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

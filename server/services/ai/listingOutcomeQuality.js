@@ -8,6 +8,7 @@ const {
   extractPredictionSnapshot,
   pairSnapshotWithOutcome,
 } = require('./backtesting/backtestFoundation');
+const { deriveSaleOutcomeState, SALE_OUTCOME_STATE } = require('./listingOutcomeService');
 
 const ISSUE = Object.freeze({
   sold_at_before_first_published: 'sold_at_before_first_published',
@@ -19,6 +20,7 @@ const ISSUE = Object.freeze({
   withdrawn_with_sold_or_let: 'withdrawn_with_sold_or_let',
   achieved_price_without_sold_at: 'achieved_price_without_sold_at',
   achieved_rent_without_let_at: 'achieved_rent_without_let_at',
+  incomplete_sale_outcome: 'incomplete_sale_outcome',
 });
 
 const TEMPORAL_ISSUES = new Set([
@@ -94,11 +96,30 @@ function detectListingOutcomeIssues(listing = {}) {
   if (achievedRent != null && letAt == null) {
     issues.push(ISSUE.achieved_rent_without_let_at);
   }
+  if (deriveSaleOutcomeState(listing) === SALE_OUTCOME_STATE.INCOMPLETE_SALE_OUTCOME) {
+    issues.push(ISSUE.incomplete_sale_outcome);
+  }
 
   return issues;
 }
 
-function aggregateOutcomeIssues(listings = []) {
+function classifySaleOutcomeLabel(listing = {}, events = []) {
+  const state = deriveSaleOutcomeState(listing);
+  const completedAfterInitialRecord = (events || []).some(
+    (event) =>
+      Number(event.property_id) === Number(listing.id) &&
+      event.event_type === 'sale_outcome_completed'
+  );
+  return {
+    state,
+    incomplete: state === SALE_OUTCOME_STATE.INCOMPLETE_SALE_OUTCOME,
+    completeUsable: state === SALE_OUTCOME_STATE.COMPLETE_SALE_OUTCOME,
+    completedAfterInitialRecord,
+    conflictingAttemptedCorrection: false,
+  };
+}
+
+function aggregateOutcomeIssues(listings = [], { events = [] } = {}) {
   const counts = {
     temporalConflicts: 0,
     categoryConflicts: 0,
@@ -107,9 +128,13 @@ function aggregateOutcomeIssues(listings = []) {
     missingAchievedRentAmount: 0,
     achievedPriceWithoutSoldAt: 0,
     achievedRentWithoutLetAt: 0,
+    incompleteSaleOutcomes: 0,
+    completeSaleOutcomes: 0,
+    completedAfterInitialRecord: 0,
   };
   listings.forEach((listing) => {
     const found = detectListingOutcomeIssues(listing);
+    const label = classifySaleOutcomeLabel(listing, events);
     if (found.some((code) => TEMPORAL_ISSUES.has(code))) counts.temporalConflicts += 1;
     if (found.some((code) => CATEGORY_ISSUES.has(code))) counts.categoryConflicts += 1;
     if (found.some((code) => TERMINAL_ISSUES.has(code))) counts.terminalStateConflicts += 1;
@@ -121,6 +146,9 @@ function aggregateOutcomeIssues(listings = []) {
     if (parseTime(listing.let_at) && !positiveNumber(listing.achieved_rent)) {
       counts.missingAchievedRentAmount += 1;
     }
+    if (label.incomplete) counts.incompleteSaleOutcomes += 1;
+    if (label.completeUsable) counts.completeSaleOutcomes += 1;
+    if (label.completedAfterInitialRecord) counts.completedAfterInitialRecord += 1;
   });
   return counts;
 }
@@ -190,6 +218,7 @@ function classifyFirstPartyBacktestEligibility(listing = {}, snapshotRow = null)
 module.exports = {
   ISSUE,
   detectListingOutcomeIssues,
+  classifySaleOutcomeLabel,
   aggregateOutcomeIssues,
   classifyFirstPartyBacktestEligibility,
 };

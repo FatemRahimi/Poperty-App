@@ -2,6 +2,9 @@
  * Comparable property similarity engine — transparent weighted scoring.
  */
 
+const { parsePositiveMoney, parsePositiveArea } = require('./valuationIntegrity');
+const { canonicalPropertyTypeToken, classifyEvidenceDate } = require('./valuationEligibility');
+
 const SIMILARITY_WEIGHTS = {
   location: 0.3,
   propertyType: 0.15,
@@ -104,8 +107,8 @@ function bedroomScore(target, comp) {
 }
 
 function typeScore(target, comp) {
-  const t = normStr(target);
-  const c = normStr(comp);
+  const t = canonicalPropertyTypeToken(target);
+  const c = canonicalPropertyTypeToken(comp);
   if (!t || !c) return null;
   if (t === c) return 1;
   if (t.includes(c) || c.includes(t)) return 0.7;
@@ -138,8 +141,9 @@ function transactionSoldDate(comp = {}) {
 
 function recencyScore(comp) {
   const raw = transactionSoldDate(comp);
-  if (!raw) return null;
-  const d = new Date(raw);
+  const classified = classifyEvidenceDate(raw);
+  if (classified.state !== 'valid') return null;
+  const d = new Date(classified.iso || raw);
   if (Number.isNaN(d.getTime())) return null;
   const days = (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24);
   if (days <= 30) return 1;
@@ -298,8 +302,9 @@ function rankSaleComparables(target, comparables, minSimilarity = 35) {
         comparable,
         evidenceWeight,
       } = calculateSimilarity(target, comp);
-      const price = Number(comp.price || comp.sold_price || 0);
-      const sqft = Number(comp.square_feet) || null;
+      const price = parsePositiveMoney(comp.price) ?? parsePositiveMoney(comp.sold_price);
+      const sqft = parsePositiveArea(comp.square_feet);
+      const soldDate = transactionSoldDate(comp);
       return {
         id: comp.id,
         title: comp.title,
@@ -311,7 +316,9 @@ function rankSaleComparables(target, comparables, minSimilarity = 35) {
         property_type: comp.property_type,
         price,
         price_per_sqft: sqft && price ? Math.round(price / sqft) : null,
-        sold_date: transactionSoldDate(comp),
+        sold_date: soldDate,
+        evidenceKind: soldDate ? 'sold_transaction' : 'asking_listing',
+        notTransactionEvidence: !soldDate,
         similarity,
         breakdown,
         weights,
@@ -325,7 +332,7 @@ function rankSaleComparables(target, comparables, minSimilarity = 35) {
         source: comp.source || 'application_database',
       };
     })
-    .filter((c) => c.comparable && c.similarity >= minSimilarity && c.price > 0)
+    .filter((c) => c.comparable && c.similarity >= minSimilarity && c.price != null && c.price > 0)
     .sort((a, b) => b.similarity - a.similarity);
 }
 
@@ -356,6 +363,7 @@ module.exports = {
   MIN_COMPARISON_COVERAGE,
   transactionSoldDate,
   calculateSimilarity,
+  canonicalPropertyTypeToken,
   rankComparables,
   rankSaleComparables,
   weightedMedianRent,

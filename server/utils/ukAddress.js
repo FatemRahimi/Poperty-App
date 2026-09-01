@@ -4,7 +4,7 @@
 
 function normalisePostcode(postcode) {
   if (!postcode) return '';
-  const cleaned = String(postcode).toUpperCase().replace(/\s+/g, '').trim();
+  const cleaned = String(postcode).toUpperCase().replace(/[\s\u00A0\u2007\u202F]+/g, '').trim();
   if (cleaned.length <= 3) return cleaned;
 
   // UK inward code is always digit + 2 letters (e.g. 2UJ in B1 2UJ)
@@ -79,6 +79,27 @@ function buildPropertyDataSearchAddressFromQuery(query) {
   return body ? `${body}, ${postcode}` : postcode;
 }
 
+/**
+ * Identity cache key / provider address: collapse case and whitespace.
+ * Postcode stays canonically spaced/uppercased. Does not invent missing parts.
+ */
+function normalizeIdentitySearchAddress(query) {
+  const search = buildPropertyDataSearchAddressFromQuery(query);
+  if (!search) return '';
+  const postcode = extractPostcodeFromAddress(search);
+  const collapsed = search.replace(/\s+/g, ' ').trim();
+  if (!postcode) return collapsed.toLowerCase();
+  const compact = postcode.replace(/\s+/g, '');
+  let body = collapsed
+    .replace(new RegExp(`\\b${postcode.replace(' ', '\\s*')}\\s*$`, 'i'), '')
+    .replace(new RegExp(`\\b${compact}\\s*$`, 'i'), '')
+    .replace(/,\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+  return body ? `${body}, ${postcode}` : postcode;
+}
+
 function inferMatchConfidenceFromRank(rank, total) {
   if (rank === 0 && total === 1) return 'high';
   if (rank === 0 && total > 1) return 'medium';
@@ -123,6 +144,7 @@ module.exports = {
   buildAddressFromProperty,
   buildPropertyDataSearchAddress,
   buildPropertyDataSearchAddressFromQuery,
+  normalizeIdentitySearchAddress,
   inferMatchConfidenceFromRank,
   extractPostcodeFromAddress,
   parseCityFromAddress,

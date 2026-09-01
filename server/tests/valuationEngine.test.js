@@ -48,13 +48,15 @@ test('parseSoldPricesStats extracts average and range', () => {
   assert.strictEqual(parsed.range.low, 380000);
 });
 
-test('weightedBlend combines multiple estimates', () => {
+test('weightedBlend combines independent estimates and excludes asking listings', () => {
   const blend = weightedBlend([
     { centralEstimate: 500000, lowerEstimate: 480000, upperEstimate: 520000, method: 'valuation_sale_avm' },
-    { centralEstimate: 480000, lowerEstimate: 460000, upperEstimate: 500000, method: 'internal_sale_comparables' },
+    { centralEstimate: 480000, lowerEstimate: 460000, upperEstimate: 500000, method: 'sold_prices_statistics' },
+    { centralEstimate: 232, lowerEstimate: -4768, upperEstimate: 5232, method: 'internal_sale_comparables' },
   ]);
   assert.ok(blend.central >= 480000 && blend.central <= 500000);
   assert.strictEqual(blend.evidenceCount, 2);
+  assert.notStrictEqual(blend.central, 232);
 });
 
 test('confidenceFromEvidence levels', () => {
@@ -93,7 +95,7 @@ test('calculatePricePosition overpriced above upper bound', () => {
 test('missing valuation bounds are not fabricated as ±6% of central', () => {
   const blend = weightedBlend([
     { centralEstimate: 500000, method: 'valuation_sale_avm' },
-    { centralEstimate: 480000, method: 'internal_sale_comparables' },
+    { centralEstimate: 480000, method: 'sold_prices_statistics' },
   ]);
   assert.ok(blend.central > 0);
   assert.strictEqual(blend.lower, null);

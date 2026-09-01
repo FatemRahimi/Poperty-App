@@ -35,6 +35,14 @@ const {
   unlinkSubjectListing,
   compareIntelligenceWhatIf,
 } = require('../controllers/intelligenceController');
+const {
+  handleEvidenceUpload,
+  uploadLegalEvidence,
+  listLegalEvidence,
+  getLegalEvidence,
+  downloadLegalEvidence,
+  archiveLegalEvidence,
+} = require('../controllers/evidenceDocumentController');
 
 // Photo uploads for valuation (stored in memory; filenames passed through to AI context)
 const upload = multer({
@@ -87,6 +95,16 @@ router.post('/buyer-match', authenticateAI, requireCredits, createBuyerMatch);
 
 // Property Intelligence
 router.get('/intelligence/overview', authenticateAI, getIntelligenceOverview);
+router.post(
+  '/intelligence/legal-evidence',
+  authenticateAI,
+  handleEvidenceUpload,
+  uploadLegalEvidence
+);
+router.get('/intelligence/legal-evidence', authenticateAI, listLegalEvidence);
+router.get('/intelligence/legal-evidence/:documentId', authenticateAI, getLegalEvidence);
+router.get('/intelligence/legal-evidence/:documentId/file', authenticateAI, downloadLegalEvidence);
+router.delete('/intelligence/legal-evidence/:documentId', authenticateAI, archiveLegalEvidence);
 router.get('/intelligence/lookup', authenticateAI, lookupIntelligence);
 router.get('/intelligence/subjects/recent', authenticateAI, getRecentSubjectLookupsEndpoint);
 router.post('/intelligence/subjects/resolve', authenticateAI, requireCredits, resolveIntelligenceSubject);

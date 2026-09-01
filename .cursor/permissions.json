@@ -1,0 +1,37 @@
+{
+  "terminalAllowlist": [
+    "npm test",
+    "npm run test",
+    "npm run build",
+    "npm run lint",
+    "npm run",
+    "node",
+    "git status",
+    "git diff",
+    "git log",
+    "git branch",
+    "git rev-parse"
+  ],
+  "autoRun": {
+    "allow_instructions": [
+      "Allow read-only inspection of files, source code, logs, database metadata, and local development data.",
+      "Allow running project tests, focused tests, linting, type checks, and production builds.",
+      "Allow safe Node.js project scripts that inspect, validate, audit, or test the local development environment.",
+      "Allow read-only PostgreSQL queries and database coverage audits against the local development database.",
+      "Allow git status, git diff, git log, git branch, and git rev-parse.",
+      "Allow ordinary edits to files inside this project workspace when required to implement the requested phase."
+    ],
+    "block_instructions": [
+      "Require approval before any production deployment or command that modifies production infrastructure.",
+      "Require approval before any destructive database operation including DROP, TRUNCATE, destructive bulk DELETE, database reset, or schema destruction.",
+      "Require approval before running migrations against any production database.",
+      "Require approval before deleting large datasets or directories.",
+      "Require approval before git push, force push, reset --hard, rebase, tag creation, tag movement, or destructive git operations.",
+      "Require approval before accessing, printing, copying, changing, or exposing secrets, API keys, credentials, SSH keys, or environment secrets.",
+      "Require approval before uncontrolled paid-provider API calls or operations that may incur material external cost.",
+      "Require approval before purchasing, provisioning, or modifying paid cloud services.",
+      "Require approval before modifying resources outside this project workspace.",
+      "Require approval before changing production security, firewall, IAM, DNS, storage, backup, or encryption configuration."
+    ]
+  }
+}

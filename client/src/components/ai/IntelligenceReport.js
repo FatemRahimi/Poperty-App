@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FaPrint, FaFileDownload } from 'react-icons/fa';
 import './IntelligenceReport.css';
 import PostcodeIntelligencePanel from './PostcodeIntelligencePanel';
+import { formatAssetClassLabel, formatClassificationStateLabel } from '../../Utils/assetClassificationDisplay';
 
 const fmt = (n) => (n != null && !Number.isNaN(Number(n)) ? `£${Number(n).toLocaleString()}` : '—');
 const fmtPct = (n) => (n != null ? `${n}%` : '—');
@@ -34,9 +35,10 @@ const MISSING_LABELS = {
 
 function PresentedMetric({ label, field, format = fmt, testId }) {
   const assessed = Boolean(field?.available);
+  const displayLabel = field?.basis === 'MARKET_RENT' ? 'Market-rent-based gross yield' : label;
   return (
     <div className={`pi-metric-tile ${assessed ? 'pi-metric-tile--assessed' : 'pi-metric-tile--missing'}`} data-testid={testId}>
-      <small>{label}</small>
+      <small>{displayLabel}</small>
       <strong>{assessed ? format(field.value) : 'Not assessed'}</strong>
       {assessed ? <em>Calculated result</em> : (field?.reason && <em>{field.reason}</em>)}
     </div>
@@ -805,23 +807,375 @@ function Article4Section({ report }) {
   );
 }
 
+function planningDomainStateLabel(envelope) {
+  if (!envelope) return null;
+  const state = envelope.assessment?.state || envelope.status;
+  if (state === 'ASSESSED' || state === 'AVAILABLE') return 'Assessed';
+  if (state === 'PARTIAL') return 'Partial';
+  if (state === 'UNAVAILABLE') return 'Unavailable';
+  if (state === 'INSUFFICIENT_EVIDENCE') return 'Not assessed — insufficient evidence';
+  if (state === 'NOT_APPLICABLE') return 'Not applicable';
+  return 'Not assessed';
+}
+
+function environmentDomainStateLabel(envelope) {
+  if (!envelope) return null;
+  const state = envelope.assessment?.state || envelope.status;
+  if (state === 'ASSESSED' && envelope.status === 'PARTIAL') return 'Assessed — configured check only';
+  if (state === 'ASSESSED' || state === 'AVAILABLE') return 'Assessed';
+  if (state === 'PARTIAL') return 'Partial';
+  if (state === 'UNAVAILABLE') return 'Unavailable';
+  if (state === 'INSUFFICIENT_EVIDENCE') return 'Not assessed — insufficient evidence';
+  if (state === 'NOT_APPLICABLE') return 'Not applicable';
+  return 'Not assessed';
+}
+
+function marketDomainStateLabel(envelope) {
+  if (!envelope) return null;
+  const state = envelope.assessment?.state || envelope.status;
+  if (state === 'ASSESSED' && envelope.status === 'PARTIAL') return 'Assessed — evidence only';
+  if (state === 'ASSESSED' || state === 'AVAILABLE') return 'Assessed';
+  if (state === 'PARTIAL') return 'Partial';
+  if (state === 'UNAVAILABLE') return 'Unavailable';
+  if (state === 'INSUFFICIENT_EVIDENCE') return 'Not assessed — insufficient evidence';
+  if (state === 'NOT_APPLICABLE') return 'Not applicable';
+  return 'Not assessed';
+}
+
+function countOrNotAssessed(value) {
+  return value == null ? 'Not assessed' : String(value);
+}
+
+function officialSaleDate(iso) {
+  if (!iso) return 'Not recorded';
+  const text = String(iso).slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (!match) return text;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[Number(match[2]) - 1];
+  if (!month) return text;
+  return `${match[3]} ${month} ${match[1]}`;
+}
+
+function officialMatchLabel(method) {
+  if (method === 'EXACT_UPRN') return 'UPRN / exact subject';
+  if (method === 'EXACT_CANONICAL_ADDRESS') return 'exact subject';
+  if (method === 'AREA_POSTCODE') return 'area / postcode';
+  return 'no exact match';
+}
+
+function identityStatusLabel(report) {
+  const identity = report?.identity || {};
+  const state = identity.verificationState || identity.identityState || null;
+  if (!state) return 'Not recorded';
+  if (state === 'VERIFIED_EXACT') return 'Identity verified';
+  if (state === 'UNRESOLVED') return 'Identity unresolved';
+  if (state === 'USER_DECLARED') return 'User-declared identity';
+  if (state === 'INFERRED') return 'Identity inferred (not verified)';
+  if (state === 'SOURCE_ASSERTED') return 'Identity recorded';
+  return 'Identity unresolved';
+}
+
+function identityUprn(report) {
+  const identity = report?.identity || {};
+  const state = identity.verificationState || identity.identityState;
+  if (state === 'UNRESOLVED' && !identity.uprn) return null;
+  return identity.uprn || null;
+}
+
+function identityCanonical(report) {
+  const identity = report?.identity || {};
+  const parts = [identity.paon, identity.saon, identity.postcode].filter(Boolean);
+  return identity.canonicalAddress || (parts.length ? parts.join(', ') : null);
+}
+
+function officialSalePrice(tx) {
+  if (!tx || tx.pricePresent !== true || tx.priceGbp == null) return 'Not recorded';
+  const n = Number(tx.priceGbp);
+  if (!Number.isFinite(n) || n <= 0) return 'Not recorded';
+  return fmt(n);
+}
+
+function MarketEvidenceSection({ report }) {
+  const envelope = report?.marketDomain;
+  if (!envelope) return null;
+  const coverage = envelope.assessment?.coverage || {};
+  const domainLabel = marketDomainStateLabel(envelope);
+  const asking = envelope.evidence?.find((row) => row.factType === 'listingAskingPrice');
+  const lastSale = envelope.evidence?.find((row) => row.factType === 'userReportedSubjectTransaction');
+  const declared = envelope.evidence?.find((row) => row.factType === 'declaredUseAndClassification');
+  const areaSalesDemand = envelope.evidence?.find((row) => row.factType === 'areaSalesMarketActivity');
+  const areaRentDemand = envelope.evidence?.find((row) => row.factType === 'areaRentalMarketActivity');
+  const officialSubjectSales = (envelope.evidence || []).filter((row) => row.factType === 'officialSaleTransaction');
+  const officialAreaSales = envelope.evidence?.find((row) => row.factType === 'officialAreaSaleTransactions');
+  const assetClass = declared?.value?.assetClass || envelope.subject?.assetClass || report?.assetClassification?.assetClass;
+  return (
+    <ReportSection
+      title="Market evidence"
+      badge={domainLabel || 'Not assessed'}
+      defaultOpen={false}
+    >
+      <p className="pi-muted">
+        What the current sources actually show. Asking price is not an achieved sale.
+        Official completed sales are not valuation comparables. Area sold-price
+        observations are not the subject&apos;s sale. Missing evidence is missing, not zero.
+      </p>
+      <div className="pi-snapshot-grid" data-testid="market-domain-envelope">
+        <div><span>Assessment</span><span data-testid="market-domain-state">{domainLabel}</span></div>
+        <div><span>Asset class</span>{formatAssetClassLabel({ assetClass })}</div>
+        <div><span>Declared use</span>
+          {declared?.value?.declaredUse || 'Not recorded'}
+        </div>
+        <div>
+          <span>Subject identity</span>
+          <span data-testid="subject-identity-status">{identityStatusLabel(report)}</span>
+        </div>
+        {identityUprn(report) ? (
+          <div>
+            <span>UPRN</span>
+            <span data-testid="subject-identity-uprn">{identityUprn(report)}</span>
+          </div>
+        ) : null}
+        {identityCanonical(report) ? (
+          <div>
+            <span>Canonical address</span>
+            <span data-testid="subject-identity-address">{identityCanonical(report)}</span>
+          </div>
+        ) : null}
+        <div>
+          <span>Asking price</span>
+          {asking?.present ? fmt(asking.value) : 'Not recorded'}
+        </div>
+        <div>
+          <span>User-reported last sale</span>
+          {lastSale?.present ? fmt(lastSale.value) : 'Not recorded'}
+        </div>
+        <div>
+          <span>Official sale source</span>
+          {coverage.officialTransactionStatus || 'Not assessed'}
+        </div>
+        <div>
+          <span>Source geography</span>
+          {coverage.sourceGeography || 'Not assessed'}
+        </div>
+        <div>
+          <span>Official subject sales</span>
+          {countOrNotAssessed(coverage.subjectOfficialTransactionCount)}
+        </div>
+        <div>
+          <span>Official area sales</span>
+          {countOrNotAssessed(coverage.areaOfficialTransactionCount)}
+        </div>
+        <div>
+          <span>Area transaction observations</span>
+          {countOrNotAssessed(coverage.transactionObservationCount)}
+        </div>
+        <div>
+          <span>Comparable candidates</span>
+          {coverage.comparableCandidateCount == null
+            ? 'Not assessed'
+            : `${coverage.comparableCandidateCount} (residential methodology only)`}
+        </div>
+        <div>
+          <span>Area sales-market activity</span>
+          {areaSalesDemand?.value?.band || 'Not recorded'}
+        </div>
+        <div>
+          <span>Area rental-market activity</span>
+          {areaRentDemand?.value?.band || 'Not recorded'}
+        </div>
+        <div>
+          <span>Sources</span>
+          {(coverage.sourceCoverage && coverage.sourceCoverage.length)
+            ? coverage.sourceCoverage.join(', ')
+            : 'Not recorded'}
+        </div>
+      </div>
+      {officialSubjectSales.length > 0 && (
+        <div data-testid="official-sale-history">
+          <p><strong>Official sale history</strong></p>
+          {officialSubjectSales.map((row) => {
+            const tx = row.value || {};
+            return (
+              <p key={tx.sourceTransactionId || row.sourceRecordId || tx.transferDate}>
+                Source: HM Land Registry.
+                Sold: {officialSalePrice(tx)}.
+                Date: {officialSaleDate(tx.transferDate)}.
+                Match: {officialMatchLabel(tx.matchMethod)}.
+              </p>
+            );
+          })}
+        </div>
+      )}
+      {officialAreaSales?.value?.observationCount > 0 && (
+        <p data-testid="official-area-sales">
+          Official area transactions (postcode context, not the subject&apos;s sale):
+          {' '}{officialAreaSales.value.observationCount}.
+          Latest: {officialSaleDate(officialAreaSales.value.latestTransferDate)}.
+        </p>
+      )}
+      {Array.isArray(envelope.findings) && envelope.findings.length > 0 && (
+        <ul data-testid="market-domain-findings">
+          {envelope.findings.map((row) => (
+            <li key={row.id || row.text}>{row.text}</li>
+          ))}
+        </ul>
+      )}
+      {Array.isArray(coverage.missingEvidenceTypes) && coverage.missingEvidenceTypes.length > 0 && (
+        <p className="pi-muted" data-testid="market-domain-gaps">
+          Not available from current sources: {coverage.missingEvidenceTypes.join(', ')}
+        </p>
+      )}
+      {Array.isArray(envelope.limitations) && envelope.limitations.length > 0 && (
+        <p className="pi-muted" data-testid="market-domain-limitations">{envelope.limitations.join(' ')}</p>
+      )}
+    </ReportSection>
+  );
+}
+
+function legalTitleDomainStateLabel(envelope) {
+  if (!envelope) return null;
+  if (envelope.assessment?.documentsPresent) return 'Evidence supplied — not assessed';
+  const state = envelope.assessment?.state || envelope.status;
+  if (state === 'PARTIAL') return 'Partial';
+  if (state === 'INSUFFICIENT_EVIDENCE') return 'Not assessed — insufficient evidence';
+  return 'Not assessed';
+}
+
+function LegalTitleEvidenceSection({ report }) {
+  const envelope = report?.legalTitleDomain;
+  if (!envelope) return null;
+  const documents = Array.isArray(envelope.documents) ? envelope.documents : [];
+  const domainLabel = legalTitleDomainStateLabel(envelope);
+  return (
+    <ReportSection
+      title="Legal / title evidence"
+      badge={domainLabel || 'Not assessed'}
+      defaultOpen={false}
+    >
+      <p className="pi-muted">
+        Private legal documents are evidence supplied by you. Upload is not authenticity
+        verification, and missing documents are not a clean title.
+      </p>
+      <div className="pi-snapshot-grid" data-testid="legal-title-domain-envelope">
+        <div><span>Assessment</span><span data-testid="legal-title-domain-state">{domainLabel}</span></div>
+        <div><span>Title register</span>{envelope.assessment?.titleRegisterAvailable ? 'Evidence supplied' : 'Not supplied'}</div>
+        <div><span>Title plan</span>{envelope.assessment?.titlePlanAvailable ? 'Evidence supplied' : 'Not supplied'}</div>
+        <div><span>Verification</span>Unverified</div>
+        <div><span>Contents</span>Not assessed</div>
+        <div><span>Source</span>{envelope.provenance?.source || 'User-supplied private evidence'}</div>
+      </div>
+      {documents.length > 0 && (
+        <ul data-testid="legal-title-documents">
+          {documents.map((doc) => (
+            <li key={doc.documentId}>
+              {doc.documentType || 'UNKNOWN'} · {doc.verificationState === 'USER_DECLARED' ? 'User declared' : 'Unverified'} · Not assessed
+              {doc.documentDate ? ` · Document date ${doc.documentDate}` : ''}
+              {doc.uploadedAt ? ` · Uploaded ${new Date(doc.uploadedAt).toLocaleDateString('en-GB')}` : ''}
+            </li>
+          ))}
+        </ul>
+      )}
+      {Array.isArray(envelope.findings) && envelope.findings.length > 0 && (
+        <ul data-testid="legal-title-domain-findings">
+          {envelope.findings.map((row) => (
+            <li key={row.id || row.text}>{row.text}</li>
+          ))}
+        </ul>
+      )}
+      {Array.isArray(envelope.limitations) && envelope.limitations.length > 0 && (
+        <p className="pi-muted" data-testid="legal-title-domain-limitations">
+          {envelope.limitations.join(' ')}
+        </p>
+      )}
+    </ReportSection>
+  );
+}
+
+function sourcedFloodZoneLabel(envelope) {
+  if (envelope?.assessment?.sourcedZone) return envelope.assessment.sourcedZone;
+  if (envelope?.assessment?.noIntersectionIsNotNoFloodRisk) {
+    return 'None in the configured dataset — not “no flood risk”';
+  }
+  return 'Not recorded';
+}
+
+function EnvironmentEvidenceSection({ report }) {
+  const envelope = report?.environmentDomain;
+  if (!envelope) return null;
+  const domainLabel = environmentDomainStateLabel(envelope);
+  const sourcedZone = sourcedFloodZoneLabel(envelope);
+  return (
+    <ReportSection
+      title="Environmental evidence"
+      badge={domainLabel || 'Flood'}
+      defaultOpen={false}
+    >
+      <p className="pi-muted">
+        Flood evidence is the configured Environment Agency Flood Map for Planning check
+        (rivers and sea). It is not an insurance, valuation, or legal conclusion.
+      </p>
+      <div className="pi-snapshot-grid" data-testid="environment-domain-envelope">
+        <div><span>Flood</span><span data-testid="environment-domain-flood">Configured rivers-and-sea map</span></div>
+        <div><span>Assessment state</span><span data-testid="environment-domain-state">{domainLabel}</span></div>
+        <div><span>Sourced zone/category</span><span data-testid="environment-domain-zone">{sourcedZone}</span></div>
+        <div>
+          <span>Evidence date</span>
+          {envelope.evidenceAsOf
+            ? new Date(envelope.evidenceAsOf).toLocaleDateString('en-GB')
+            : 'Not recorded'}
+        </div>
+        <div><span>Source</span>{envelope.provenance?.source || 'Not recorded'}</div>
+      </div>
+      {Array.isArray(envelope.findings) && envelope.findings.length > 0 && (
+        <ul data-testid="environment-domain-findings">
+          {envelope.findings.map((row) => (
+            <li key={row.id || row.text}>{row.text}</li>
+          ))}
+        </ul>
+      )}
+      {Array.isArray(envelope.limitations) && envelope.limitations.length > 0 && (
+        <p className="pi-muted" data-testid="environment-domain-limitations">
+          {envelope.limitations.join(' ')}
+        </p>
+      )}
+    </ReportSection>
+  );
+}
+
 function PlanningDevelopmentSection({ report }) {
   const fact = report?.propertyFacts?.facts?.planning;
-  if (!fact) return null;
-  const subject = Array.isArray(fact.subjectApplications) ? fact.subjectApplications : [];
-  const nearby = Array.isArray(fact.nearbyApplications) ? fact.nearbyApplications : [];
-  const assessed = Boolean(fact.available);
-  const reasonLabel = PLANNING_REASON_LABELS[fact.unavailableReason] || fact.unavailableReason || null;
+  const envelope = report?.planningDomain;
+  if (!fact && !envelope) return null;
+  const subject = Array.isArray(fact?.subjectApplications) ? fact.subjectApplications : [];
+  const nearby = Array.isArray(fact?.nearbyApplications) ? fact.nearbyApplications : [];
+  const assessed = Boolean(fact?.available);
+  const reasonLabel = PLANNING_REASON_LABELS[fact?.unavailableReason] || fact?.unavailableReason || null;
+  const domainLabel = planningDomainStateLabel(envelope);
   return (
     <ReportSection
       title="Planning & development"
-      badge={assessed ? 'Canonical evidence' : 'Not assessed'}
+      badge={domainLabel || (assessed ? 'Canonical evidence' : 'Not assessed')}
       defaultOpen={false}
     >
       <p className="pi-muted">
         Applications at this location are shown separately from nearby applications. Nearby records are
         area context, not applications for this property. Status is the source wording, not an investment rating.
       </p>
+      {envelope && (
+        <div className="pi-snapshot-grid" data-testid="planning-domain-envelope">
+          <div><span>Planning domain</span><span data-testid="planning-domain-state">{domainLabel}</span></div>
+          <div><span>Evidence date</span>{envelope.evidenceAsOf ? new Date(envelope.evidenceAsOf).toLocaleDateString('en-GB') : 'Not recorded'}</div>
+          <div><span>Source</span>{envelope.provenance?.source || 'Not recorded'}</div>
+        </div>
+      )}
+      {Array.isArray(envelope?.findings) && envelope.findings.length > 0 && (
+        <ul data-testid="planning-domain-findings">
+          {envelope.findings.map((row) => (
+            <li key={row.id || row.text}>{row.text}</li>
+          ))}
+        </ul>
+      )}
       {!assessed && (
         <p data-testid="planning-section-missing">
           NOT ASSESSED{reasonLabel ? ` — Reason: ${reasonLabel}` : ''}
@@ -890,6 +1244,29 @@ function FactRow({ label, fact, implication = false, unit, yesLabel, testId }) {
   );
 }
 
+function AssetClassRow({ report }) {
+  const classification = report?.assetClassification;
+  const historical = !classification;
+  const label = formatAssetClassLabel(classification, { historical });
+  const stateLabel = formatClassificationStateLabel(classification);
+  const gate = report?.residentialMethodology;
+  return (
+    <div className="pi-fact" data-testid="asset-classification">
+      <div className="pi-fact-body">
+        <span className="pi-fact-label">Asset class</span>
+        <strong data-testid="asset-classification-value">{label}</strong>
+        {stateLabel && <em className="pi-fact-source">{stateLabel}</em>}
+        {gate?.mode === 'LEGACY_RESIDENTIAL_COMPATIBILITY' && (
+          <em className="pi-fact-source">{gate.note}</em>
+        )}
+        {gate?.mode === 'NOT_SUPPORTED_FOR_ASSET_CLASS' && (
+          <em className="pi-fact-source">{gate.note}</em>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PropertyFactsSection({ report }) {
   const facts = report?.propertyFacts?.facts;
   const lease = report?.propertyFacts?.implications?.leaseRemaining;
@@ -897,6 +1274,12 @@ function PropertyFactsSection({ report }) {
     return (
       <ReportSection title="Property facts">
         <div className="pi-snapshot-grid">
+          <div data-testid="asset-classification">
+            <span>Asset class</span>
+            <span data-testid="asset-classification-value">
+              {formatAssetClassLabel(report.assetClassification, { historical: !report.assetClassification })}
+            </span>
+          </div>
           <div><span>Type</span>{report.snapshot?.propertyType ?? '—'}</div>
           <div><span>Bedrooms</span>{report.snapshot?.bedrooms ?? '—'}</div>
           <div><span>Bathrooms</span>{report.snapshot?.bathrooms ?? '—'}</div>
@@ -914,6 +1297,7 @@ function PropertyFactsSection({ report }) {
         the field — it is not zero, false, or a score.
       </p>
       <div className="pi-fact-grid" data-testid="property-facts-grid">
+        <AssetClassRow report={report} />
         <FactRow label="Property type" fact={facts.propertyType} testId="fact-propertyType" />
         <FactRow label="Bedrooms" fact={facts.bedrooms} testId="fact-bedrooms" />
         <FactRow label="Bathrooms" fact={facts.bathrooms} testId="fact-bathrooms" />
@@ -1946,8 +2330,11 @@ export default function IntelligenceReport({ report }) {
           Canonical listing facts and open-data membership records. They are supporting evidence, not
           landlord-fit scores, legal restrictions, or valuation penalties.
         </p>
+        <MarketEvidenceSection report={report} />
         <PropertyFactsSection report={report} />
         <PlanningDevelopmentSection report={report} />
+        <EnvironmentEvidenceSection report={report} />
+        <LegalTitleEvidenceSection report={report} />
         <SchoolsEducationSection report={report} />
         <ListedBuildingSection report={report} />
         <ConservationAreaSection report={report} />

@@ -448,6 +448,120 @@ expect(screen.getByTestId('fact-flood')).not.toHaveTextContent('safe');
     expect(screen.getByTestId('planning-section-missing')).toHaveTextContent('NOT ASSESSED');
   });
 
+  test('planning domain envelope is shown without a planning score', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          planningDomain: {
+            domain: 'PLANNING',
+            version: 'planning-domain-1.0.0',
+            status: 'AVAILABLE',
+            assessment: { state: 'ASSESSED' },
+            evidenceAsOf: '2026-08-01T10:00:00.000Z',
+            provenance: { source: 'MHCLG_PlanningData' },
+            findings: [{ id: 'subject_application_evidence', text: 'Subject planning-application evidence exists in the source response.' }],
+          },
+          propertyFacts: {
+            facts: {
+              planning: {
+                available: true,
+                value: '1 application at this location',
+                source: 'MHCLG_PlanningData',
+                searchRadiusMetres: 400,
+                summary: { subjectCount: 1, nearbyCount: 0 },
+                subjectApplications: [{ reference: '24/001', nativeStatus: 'decided' }],
+                nearbyApplications: [],
+                limitations: ['This is not planning or legal advice.'],
+              },
+            },
+          },
+        }}
+      />
+    );
+    openFold('Planning & development');
+    expect(screen.getByTestId('planning-domain-state')).toHaveTextContent('Assessed');
+    expect(screen.getByTestId('planning-domain-findings')).toHaveTextContent('Subject planning-application evidence exists');
+    expect(screen.queryByText(/planning score/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/likely approval/i)).not.toBeInTheDocument();
+  });
+
+  test('environment domain envelope is shown without a risk score or insurance claim', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          environmentDomain: {
+            domain: 'ENVIRONMENT',
+            version: 'environment-domain-1.0.0',
+            status: 'AVAILABLE',
+            assessment: { state: 'ASSESSED', sourcedZone: 'Flood Zone 3' },
+            evidenceAsOf: '2026-08-01T10:00:00.000Z',
+            provenance: { source: 'EnvironmentAgency_FloodMapForPlanning' },
+            findings: [{
+              id: 'subject_intersects_sourced_flood_zone',
+              text: 'Subject coordinates intersect sourced Flood Zone 3 geometry.',
+            }],
+            limitations: [
+              'This is Flood Map for Planning (rivers and sea) only.',
+              'No insurance availability or premium is assessed.',
+            ],
+          },
+          propertyFacts: {
+            facts: {
+              flood: {
+                available: true,
+                value: 'Flood Zone 3',
+                source: 'EnvironmentAgency_FloodMapForPlanning',
+                floodTypes: ['rivers_and_sea'],
+                geographicResolution: 'Coordinates intersecting mapped flood-zone polygons.',
+                retrievedAt: '2026-08-01T10:00:00.000Z',
+              },
+            },
+          },
+        }}
+      />
+    );
+    openFold('Environmental evidence');
+    expect(screen.getByTestId('environment-domain-state')).toHaveTextContent('Assessed');
+    expect(screen.getByTestId('environment-domain-zone')).toHaveTextContent('Flood Zone 3');
+    expect(screen.getByTestId('environment-domain-findings')).toHaveTextContent('Subject coordinates intersect sourced Flood Zone 3');
+    expect(screen.queryByText(/environment score/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/insurance premium/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/good investment/i)).not.toBeInTheDocument();
+  });
+
+  test('no-intersection environment envelope does not say no flood risk', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          environmentDomain: {
+            domain: 'ENVIRONMENT',
+            version: 'environment-domain-1.0.0',
+            status: 'PARTIAL',
+            assessment: {
+              state: 'ASSESSED',
+              sourcedZone: null,
+              noIntersectionIsNotNoFloodRisk: true,
+            },
+            evidenceAsOf: '2026-08-01T10:00:00.000Z',
+            provenance: { source: 'EnvironmentAgency_FloodMapForPlanning' },
+            findings: [{
+              id: 'no_intersection_in_configured_dataset',
+              text: 'No Zone 2 or Zone 3 intersection was identified in the configured dataset. That is not “no flood risk”.',
+            }],
+            limitations: ['Absence of Zone 2 or 3 is not “no flood risk”.'],
+          },
+        }}
+      />
+    );
+    openFold('Environmental evidence');
+    expect(screen.getByTestId('environment-domain-zone')).toHaveTextContent('not “no flood risk”');
+    expect(screen.getByTestId('environment-domain-findings')).toHaveTextContent('That is not “no flood risk”');
+    expect(screen.queryByText(/^No flood risk\.?$/i)).not.toBeInTheDocument();
+  });
+
   test('schools nearby is AREA CONTEXT and catchment stays NOT ASSESSED', () => {
     const { rerender } = render(
       <IntelligenceReport
@@ -992,6 +1106,7 @@ expect(screen.getByTestId('fact-flood')).not.toHaveTextContent('safe');
     expect(screen.getByTestId('decision-sensitivity')).toHaveTextContent('not a ranking');
     expect(screen.getByRole('link', { name: /Test purchase price/i })).toHaveAttribute('href', '#pi-what-if');
     expect(screen.getByTestId('metric-grossYield')).toHaveTextContent('6.6%');
+    expect(screen.getByTestId('metric-grossYield')).toHaveTextContent('Gross yield');
     expect(screen.getByTestId('metric-noi')).toHaveTextContent('Not assessed');
     expect(screen.getByTestId('metric-noi')).not.toHaveTextContent('£0');
     expect(screen.getByTestId('area-rental-demand-value')).toHaveTextContent("Landlord's market");
@@ -1054,6 +1169,31 @@ expect(screen.getByTestId('fact-flood')).not.toHaveTextContent('safe');
     expect(screen.getByTestId('decision-intelligence-findings-empty')).toBeInTheDocument();
     expect(screen.getByTestId('decision-intelligence-overview-source')).toHaveTextContent('AI paraphrase');
     expect(screen.getByTestId('decision-driver-interestRate')).toHaveTextContent('Not fully assessed');
+  });
+
+  test('market-rent-based gross yield is labelled and not shown as listing rent', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          investment: {
+            presented: {
+              grossYield: { available: true, value: 7.5, state: 'calculated', basis: 'MARKET_RENT' },
+              noi: notAssessed('costs missing'),
+              netYield: notAssessed('costs missing'),
+              monthlyCashFlow: notAssessed('finance missing'),
+              annualCashFlow: notAssessed('finance missing'),
+              dscr: notAssessed('finance missing'),
+            },
+            rentBasis: { kind: 'MARKET', marketSubstitutedForMissingListing: true },
+            expectedRentIsNotMarketRent: false,
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('metric-grossYield')).toHaveTextContent('Market-rent-based gross yield');
+    expect(screen.getByTestId('metric-grossYield')).toHaveTextContent('7.5%');
+    expect(screen.getByTestId('metric-grossYield')).not.toHaveTextContent('Listing rent');
   });
 });
 
@@ -1187,6 +1327,31 @@ describe('legacy heuristic retirement UI', () => {
     expect(screen.queryByText('What currently matters')).not.toBeInTheDocument();
   });
 
+  test('asset class is Not recorded on old snapshots and never defaults to Residential', () => {
+    render(<IntelligenceReport report={BASE_REPORT} />);
+    openFold('Property facts');
+    expect(screen.getByTestId('asset-classification-value')).toHaveTextContent('Not recorded');
+    expect(screen.queryByText('Residential')).not.toBeInTheDocument();
+  });
+
+  test('declared commercial class is shown and not treated as residential valuation copy', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          assetClassification: { assetClass: 'COMMERCIAL', state: 'DECLARED' },
+          residentialMethodology: {
+            mode: 'NOT_SUPPORTED_FOR_ASSET_CLASS',
+            note: 'Residential valuation and rental methodology is not valid for COMMERCIAL.',
+          },
+        }}
+      />
+    );
+    openFold('Property facts');
+    expect(screen.getByTestId('asset-classification-value')).toHaveTextContent('Commercial');
+    expect(screen.getByText(/not valid for COMMERCIAL/i)).toBeInTheDocument();
+  });
+
   test('malformed or missing report renders safely', () => {
     const { rerender } = render(<IntelligenceReport report={null} />);
     expect(screen.getByTestId('intelligence-report-empty')).toHaveTextContent('could not be displayed');
@@ -1217,5 +1382,195 @@ describe('legacy heuristic retirement UI', () => {
     );
     expect(screen.getAllByText('Not on file').length).toBeGreaterThan(0);
     expect(screen.queryByText('£0/mo')).not.toBeInTheDocument();
+  });
+
+  test('legal title evidence shows supplied/unverified/not assessed, never clean title', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          legalTitleDomain: {
+            status: 'PARTIAL',
+            assessment: {
+              state: 'INSUFFICIENT_EVIDENCE',
+              documentsPresent: true,
+              titleRegisterAvailable: true,
+              titlePlanAvailable: false,
+              liveLegalAssessmentAvailable: false,
+            },
+            documents: [{
+              documentId: 'd1',
+              documentType: 'TITLE_REGISTER',
+              verificationState: 'UNVERIFIED',
+              documentDate: '2020-01-01',
+              uploadedAt: '2026-08-30T00:00:00.000Z',
+            }],
+            findings: [{ id: 'title_register_supplied', text: 'Title register document supplied.' }],
+            limitations: ['This is not legal advice.'],
+            provenance: { source: 'legal-title-foundation' },
+          },
+        }}
+      />
+    );
+    openFold('Legal / title evidence');
+    expect(screen.getByTestId('legal-title-domain-state')).toHaveTextContent('Evidence supplied');
+    expect(screen.getByTestId('legal-title-documents')).toHaveTextContent('Unverified');
+    expect(screen.getByTestId('legal-title-documents')).toHaveTextContent('Not assessed');
+    expect(screen.getByTestId('legal-title-domain-findings')).toHaveTextContent('Title register document supplied.');
+    expect(screen.queryByText(/title clean|legal passed|no restrictions|development allowed/i)).not.toBeInTheDocument();
+  });
+
+  test('market evidence shows coverage and gaps, never £0 for missing prices', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          assetClassification: { assetClass: 'COMMERCIAL', state: 'DECLARED' },
+          marketDomain: {
+            status: 'PARTIAL',
+            assessment: {
+              state: 'ASSESSED',
+              coverage: {
+                transactionObservationCount: 2,
+                comparableCandidateCount: null,
+                sourceCoverage: ['ApplicationDatabase', 'PropertyData'],
+                missingEvidenceTypes: ['CLASS_SPECIFIC_TRANSACTIONS'],
+              },
+            },
+            evidence: [
+              {
+                factType: 'declaredUseAndClassification',
+                value: { assetClass: 'COMMERCIAL', declaredUse: 'office' },
+              },
+              { factType: 'listingAskingPrice', present: true, value: 500000 },
+              { factType: 'areaSalesMarketActivity', value: { band: 'balanced' } },
+            ],
+            findings: [{ id: 'asking_not_transaction', text: 'A listing asking price is present. It is not treated as an achieved sale.' }],
+            limitations: ['Asking price is not an achieved sale price.'],
+          },
+        }}
+      />
+    );
+    openFold('Market evidence');
+    expect(screen.getByTestId('market-domain-state')).toHaveTextContent('Assessed');
+    expect(screen.getByTestId('market-domain-envelope')).toHaveTextContent('£500,000');
+    expect(screen.getByTestId('market-domain-envelope')).toHaveTextContent('balanced');
+    expect(screen.getByTestId('market-domain-envelope')).toHaveTextContent('Not assessed');
+    expect(screen.getByTestId('market-domain-gaps')).toHaveTextContent('CLASS_SPECIFIC_TRANSACTIONS');
+    expect(screen.queryByText('£0')).not.toBeInTheDocument();
+    expect(screen.queryByText('N/A')).not.toBeInTheDocument();
+  });
+
+  test('official completed sale is distinct from asking price and area context', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          assetClassification: { assetClass: 'RESIDENTIAL', state: 'DECLARED' },
+          marketDomain: {
+            status: 'PARTIAL',
+            assessment: {
+              state: 'ASSESSED',
+              coverage: {
+                listingAskingPricePresent: true,
+                userReportedSubjectTransactionPresent: true,
+                subjectOfficialTransactionCount: 1,
+                areaOfficialTransactionCount: 2,
+                officialTransactionStatus: 'TRANSACTION_FOUND',
+                sourceGeography: 'England and Wales',
+                officialMatchMethod: 'EXACT_UPRN',
+                comparableCandidateCount: 0,
+                sourceCoverage: ['ApplicationDatabase', 'HMLR_PRICE_PAID_DATA'],
+                missingEvidenceTypes: [],
+              },
+            },
+            evidence: [
+              { factType: 'listingAskingPrice', present: true, value: 500000 },
+              { factType: 'userReportedSubjectTransaction', present: true, value: 180000 },
+              {
+                factType: 'officialSaleTransaction',
+                present: true,
+                value: {
+                  priceGbp: 325000,
+                  pricePresent: true,
+                  transferDate: '2021-06-15',
+                  matchMethod: 'EXACT_UPRN',
+                  sourceTransactionId: 'tx-1',
+                },
+              },
+              {
+                factType: 'officialAreaSaleTransactions',
+                value: { observationCount: 2, latestTransferDate: '2022-01-01', matchMethod: 'AREA_POSTCODE' },
+              },
+            ],
+            findings: [],
+            limitations: ['Asking price is not an achieved sale price.'],
+          },
+        }}
+      />
+    );
+    openFold('Market evidence');
+    expect(screen.getByTestId('official-sale-history')).toHaveTextContent('HM Land Registry');
+    expect(screen.getByTestId('official-sale-history')).toHaveTextContent('£325,000');
+    expect(screen.getByTestId('official-sale-history')).toHaveTextContent('15 Jun 2021');
+    expect(screen.getByTestId('official-sale-history')).toHaveTextContent('UPRN / exact subject');
+    expect(screen.getByTestId('official-area-sales')).toHaveTextContent('not the subject');
+    expect(screen.getByTestId('market-domain-envelope')).toHaveTextContent('£500,000');
+    expect(screen.getByTestId('market-domain-envelope')).toHaveTextContent('£180,000');
+    expect(screen.queryByText('£0')).not.toBeInTheDocument();
+  });
+
+  test('subject identity shows unresolved without claiming verified', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          identity: {
+            verificationState: 'UNRESOLVED',
+            identityState: 'UNRESOLVED',
+            paon: null,
+            uprn: null,
+          },
+          marketDomain: {
+            assessment: { coverage: {} },
+            evidence: [],
+            findings: [],
+            limitations: [],
+          },
+        }}
+      />
+    );
+    openFold('Market evidence');
+    expect(screen.getByTestId('subject-identity-status')).toHaveTextContent('Identity unresolved');
+    expect(screen.queryByText('Identity verified')).not.toBeInTheDocument();
+  });
+
+  test('subject identity shows recorded canonical address and UPRN without verified label', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          identity: {
+            verificationState: 'SOURCE_ASSERTED',
+            identityState: 'SOURCE_ASSERTED',
+            paon: '12',
+            postcode: 'B1 2UJ',
+            uprn: '1000123',
+            canonicalAddress: '12 High Street, B1 2UJ',
+          },
+          marketDomain: {
+            assessment: { coverage: {} },
+            evidence: [],
+            findings: [],
+            limitations: [],
+          },
+        }}
+      />
+    );
+    openFold('Market evidence');
+    expect(screen.getByTestId('subject-identity-status')).toHaveTextContent('Identity recorded');
+    expect(screen.getByTestId('subject-identity-uprn')).toHaveTextContent('1000123');
+    expect(screen.getByTestId('subject-identity-address')).toHaveTextContent('12 High Street, B1 2UJ');
+    expect(screen.queryByText('Identity verified')).not.toBeInTheDocument();
   });
 });

@@ -1459,6 +1459,17 @@ const UserDashboard = () => {
     loadDashboardData();
   };
 
+  const handleSaleOutcomeRecorded = (updated) => {
+    if (!updated?.id) return;
+    setProperties((prevProperties) =>
+      prevProperties.map((property) =>
+        property.id === updated.id
+          ? { ...property, ...updated }
+          : property
+      )
+    );
+  };
+
   // Custom handler for sidebar filter changes
   const handleSidebarFilterChange = (filterType, value) => {
     console.log(`🔄 Filter change: ${filterType} = ${value}`);
@@ -1972,6 +1983,7 @@ const UserDashboard = () => {
               propertyTypeOptions={propertyTypeOptions}
               statusOptions={statusOptions}
               handlePropertyDeleted={handlePropertyDeleted}
+              onSaleOutcomeRecorded={handleSaleOutcomeRecorded}
               isRadiusFiltering={isRadiusFiltering}
               isSearching={isSearching}
               totalCount={lastStableCount}

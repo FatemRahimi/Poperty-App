@@ -6,6 +6,41 @@
 
 const { ONCE_ONLY_EVENT_TYPES } = require('../../services/ai/listingLifecycleService');
 
+function splitSqlAssignments(text) {
+  const parts = [];
+  let current = '';
+  let depth = 0;
+  for (const ch of text) {
+    if (ch === '(') depth += 1;
+    if (ch === ')') depth = Math.max(0, depth - 1);
+    if (ch === ',' && depth === 0) {
+      if (current.trim()) parts.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  if (current.trim()) parts.push(current.trim());
+  return parts;
+}
+
+function applyPropertyUpdate(current, sql, params = []) {
+  const next = { ...current, updated_at: '2026-08-25T18:00:00.000Z' };
+  const match = String(sql).match(/SET\s+([\s\S]+?)\s+WHERE/i);
+  if (!match) return next;
+  splitSqlAssignments(match[1]).forEach((assign) => {
+    const bound = assign.match(/^(\w+)\s*=\s*\$(\d+)$/i);
+    if (bound) {
+      next[bound[1]] = params[Number(bound[2]) - 1];
+      return;
+    }
+    if (/^final_asking_price\s*=\s*COALESCE/i.test(assign)) {
+      next.final_asking_price = current.final_asking_price ?? current.price ?? null;
+    }
+  });
+  return next;
+}
+
 function createOutcomeStore(initial = []) {
   const properties = new Map(initial.map((row) => [Number(row.id), { ...row }]));
   const events = [];
@@ -58,23 +93,7 @@ function createOutcomeStore(initial = []) {
           const id = Number(params[params.length - 1]);
           const current = properties.get(id);
           if (!current) return { rows: [] };
-          const next = {
-            ...current,
-            status: params[0],
-            updated_at: '2026-08-25T18:00:00.000Z',
-          };
-          if (/sold_at =/.test(text)) next.sold_at = params[1];
-          if (/let_at =/.test(text)) next.let_at = params[1];
-          if (/under_offer_at =/.test(text)) next.under_offer_at = params[1];
-          if (/withdrawn_at =/.test(text)) next.withdrawn_at = params[1];
-          if (/achieved_price =/.test(text)) next.achieved_price = params[2];
-          if (/achieved_rent =/.test(text)) next.achieved_rent = params[2];
-          if (/final_asking_price =/.test(text)) {
-            next.final_asking_price = current.final_asking_price ?? current.price ?? null;
-          }
-          if (/approved_by =/.test(text)) {
-            next.approved_by = params[1];
-          }
+          const next = applyPropertyUpdate(current, text, params);
           properties.set(id, next);
           return { rows: [{ ...next }] };
         }
@@ -154,6 +173,7 @@ function loadPropertyRoutesWithStore(store) {
 }
 
 module.exports = {
+  applyPropertyUpdate,
   createOutcomeStore,
   installPgPoolStub,
   loadPropertyRoutesWithStore,

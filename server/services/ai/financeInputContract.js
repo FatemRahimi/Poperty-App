@@ -267,10 +267,396 @@ const METRIC_DEPENDENCIES = Object.freeze({
   dscr: Object.freeze(['noi', ...FINANCE_KEYS]),
 });
 
-function finiteNumber(value) {
-  if (value === undefined || value === null || value === '') return null;
+const NUMERIC_STATES = Object.freeze({
+  MISSING: 'MISSING',
+  EXPLICIT_ZERO: 'EXPLICIT_ZERO',
+  POSITIVE_VALUE: 'POSITIVE_VALUE',
+  INVALID: 'INVALID',
+});
+
+const FINANCE_SEMANTIC_VERSION = 'finance-semantic-1.0.0';
+
+const RENT_BASIS = Object.freeze({
+  LISTING: 'LISTING',
+  MARKET: 'MARKET',
+  SCENARIO: 'SCENARIO',
+  NONE: 'NONE',
+});
+
+const FINANCING_KIND = Object.freeze({
+  UNKNOWN: 'UNKNOWN',
+  EXPLICIT_MORTGAGE: 'EXPLICIT_MORTGAGE',
+  EXPLICIT_CASH: 'EXPLICIT_CASH',
+  DERIVED_MORTGAGE: 'DERIVED_MORTGAGE',
+  DERIVED_CASH: 'DERIVED_CASH',
+});
+
+/**
+ * Distinguishes missing, explicit zero, positive numeric, and invalid.
+ * Does not use truthiness. Empty string is missing, not zero and not invalid.
+ */
+function parseCanonicalNumber(value) {
+  if (value === undefined || value === null || value === '') {
+    return { state: NUMERIC_STATES.MISSING, value: null, raw: value };
+  }
+  if (typeof value === 'boolean' || Array.isArray(value) || (typeof value === 'object' && value !== null)) {
+    return { state: NUMERIC_STATES.INVALID, value: null, raw: value, reason: 'not_finite' };
+  }
   const n = Number(value);
-  return Number.isFinite(n) ? n : null;
+  if (!Number.isFinite(n)) {
+    return { state: NUMERIC_STATES.INVALID, value: null, raw: value, reason: 'not_finite' };
+  }
+  if (n === 0) {
+    return { state: NUMERIC_STATES.EXPLICIT_ZERO, value: 0, raw: value };
+  }
+  if (n > 0) {
+    return { state: NUMERIC_STATES.POSITIVE_VALUE, value: n, raw: value };
+  }
+  return { state: NUMERIC_STATES.INVALID, value: null, raw: value, reason: 'negative_not_accepted' };
+}
+
+function isNumericPresent(parsed) {
+  return parsed?.state === NUMERIC_STATES.EXPLICIT_ZERO || parsed?.state === NUMERIC_STATES.POSITIVE_VALUE;
+}
+
+function finiteNumber(value) {
+  return parseCanonicalNumber(value).value;
+}
+
+function classifyFinanceInputs(input = {}) {
+  const keys = [
+    'purchasePrice',
+    'expectedRent',
+    'annualRent',
+    'vacancyAssumption',
+    'maintenance',
+    'insurance',
+    'managementFee',
+    'serviceCharge',
+    'groundRent',
+    'taxes',
+    'otherExpenses',
+    'deposit',
+    'mortgageAmount',
+    'interestRate',
+    'mortgageTermYears',
+    'renovationCost',
+    'expectedAppreciation',
+    'holdingPeriod',
+  ];
+  const fields = {};
+  keys.forEach((key) => {
+    fields[key] = parseCanonicalNumber(input[key]);
+  });
+  return fields;
+}
+
+function describeFinancingState(fields) {
+  const mortgage = fields.mortgageAmount;
+  const price = fields.purchasePrice;
+  const deposit = fields.deposit;
+  if (isNumericPresent(mortgage)) {
+    return {
+      kind: mortgage.value === 0 ? FINANCING_KIND.EXPLICIT_CASH : FINANCING_KIND.EXPLICIT_MORTGAGE,
+      amount: mortgage.value,
+      inferredCashFromOmission: false,
+    };
+  }
+  if (price.state === NUMERIC_STATES.POSITIVE_VALUE && isNumericPresent(deposit)) {
+    const derived = Math.max(0, price.value - deposit.value);
+    return {
+      kind: derived === 0 ? FINANCING_KIND.DERIVED_CASH : FINANCING_KIND.DERIVED_MORTGAGE,
+      amount: derived,
+      inferredCashFromOmission: false,
+    };
+  }
+  return {
+    kind: FINANCING_KIND.UNKNOWN,
+    amount: null,
+    inferredCashFromOmission: false,
+  };
+}
+
+function operatingCostCompleteness(fields) {
+  const missing = [];
+  const invalid = [];
+  OPERATING_COST_KEYS.forEach((key) => {
+    const parsed = fields[key];
+    if (parsed.state === NUMERIC_STATES.MISSING) missing.push(key);
+    else if (parsed.state === NUMERIC_STATES.INVALID) invalid.push(key);
+  });
+  return {
+    complete: missing.length === 0 && invalid.length === 0,
+    missing,
+    invalid,
+  };
+}
+
+function financeInputCompleteness(fields) {
+  const missing = [];
+  const invalid = [];
+  FINANCE_KEYS.forEach((key) => {
+    const parsed = fields[key];
+    if (parsed.state === NUMERIC_STATES.MISSING) missing.push(key);
+    else if (parsed.state === NUMERIC_STATES.INVALID) invalid.push(key);
+    else if (key === 'mortgageTermYears' && parsed.state === NUMERIC_STATES.EXPLICIT_ZERO) {
+      invalid.push(key);
+    }
+  });
+  return {
+    complete: missing.length === 0 && invalid.length === 0,
+    missing,
+    invalid,
+  };
+}
+
+function resolveAnnualRent(fields) {
+  const monthly = fields.expectedRent;
+  const annual = fields.annualRent;
+  if (monthly.state === NUMERIC_STATES.POSITIVE_VALUE) {
+    return { assessed: true, value: monthly.value * 12, basis: 'expectedRent', missingInputs: [] };
+  }
+  if (annual.state === NUMERIC_STATES.POSITIVE_VALUE) {
+    return { assessed: true, value: annual.value, basis: 'annualRent', missingInputs: [] };
+  }
+  const missingInputs = [];
+  if (monthly.state === NUMERIC_STATES.EXPLICIT_ZERO || annual.state === NUMERIC_STATES.EXPLICIT_ZERO) {
+    missingInputs.push('expectedRent_zero_not_valid');
+  } else if (monthly.state === NUMERIC_STATES.INVALID || annual.state === NUMERIC_STATES.INVALID) {
+    missingInputs.push('expectedRent_invalid');
+  } else {
+    missingInputs.push('expectedRent');
+  }
+  return { assessed: false, value: null, basis: null, missingInputs };
+}
+
+function notAssessedMetric(missingInputs, reason) {
+  return { state: 'notAssessed', missingInputs, reason };
+}
+
+function assessedMetric(extra = {}) {
+  return { state: 'assessed', missingInputs: [], ...extra };
+}
+
+function assessFinanceMetrics(input = {}) {
+  const fields = classifyFinanceInputs(input);
+  const annualRent = resolveAnnualRent(fields);
+  const price = fields.purchasePrice;
+  const priceOk = price.state === NUMERIC_STATES.POSITIVE_VALUE;
+  const costs = operatingCostCompleteness(fields);
+  const finance = financeInputCompleteness(fields);
+  const financing = describeFinancingState(fields);
+  const vacancyPresent = isNumericPresent(fields.vacancyAssumption);
+  const ratePresent = isNumericPresent(fields.interestRate);
+  const termOk = fields.mortgageTermYears.state === NUMERIC_STATES.POSITIVE_VALUE;
+  const cashPurchase =
+    financing.kind === FINANCING_KIND.EXPLICIT_CASH || financing.kind === FINANCING_KIND.DERIVED_CASH;
+  const mortgageKnown = financing.kind !== FINANCING_KIND.UNKNOWN;
+  const debtServiceInputs = mortgageKnown && (cashPurchase || (ratePresent && termOk));
+
+  const annualRentMetric = annualRent.assessed
+    ? assessedMetric({ basis: annualRent.basis })
+    : notAssessedMetric(annualRent.missingInputs, 'Annual rent requires a valid positive rent basis.');
+
+  const vacancyAdjusted = annualRent.assessed && vacancyPresent
+    ? assessedMetric()
+    : notAssessedMetric(
+        [
+          ...(annualRent.assessed ? [] : annualRent.missingInputs),
+          ...(vacancyPresent ? [] : ['vacancyAssumption']),
+        ],
+        vacancyPresent
+          ? 'Vacancy-adjusted income requires a valid rent basis.'
+          : 'Missing vacancy is not 0% occupancy.'
+      );
+
+  const operatingCosts = costs.complete
+    ? assessedMetric({ completeness: 'COMPLETE_EVIDENCE' })
+    : notAssessedMetric(
+        [...costs.missing, ...costs.invalid],
+        costs.invalid.length
+          ? 'Operating costs include invalid values and are not treated as zero.'
+          : 'Missing operating costs are not a £0 cost assumption. Partial evidence is not complete.'
+      );
+
+  const noi = annualRent.assessed && costs.complete
+    ? assessedMetric()
+    : notAssessedMetric(
+        [
+          ...(annualRent.assessed ? [] : annualRent.missingInputs),
+          ...costs.missing,
+          ...costs.invalid,
+        ],
+        'NOI requires a valid rent basis and complete operating-cost evidence.'
+      );
+
+  const grossYield = annualRent.assessed && priceOk
+    ? assessedMetric()
+    : notAssessedMetric(
+        [
+          ...(annualRent.assessed ? [] : annualRent.missingInputs),
+          ...(priceOk ? [] : [price.state === NUMERIC_STATES.EXPLICIT_ZERO ? 'purchasePrice_zero_not_valid' : 'purchasePrice']),
+        ],
+        'Gross yield requires a valid purchase price and rent basis.'
+      );
+
+  const netYield = noi.state === 'assessed' && priceOk
+    ? assessedMetric()
+    : notAssessedMetric(
+        [
+          ...(noi.state === 'assessed' ? [] : noi.missingInputs),
+          ...(priceOk ? [] : ['purchasePrice']),
+        ],
+        'Net yield requires assessed NOI and a valid purchase price.'
+      );
+
+  const mortgagePayment = debtServiceInputs
+    ? assessedMetric({ financingKind: financing.kind })
+    : notAssessedMetric(
+        [
+          ...(mortgageKnown ? [] : ['mortgageAmount']),
+          ...(cashPurchase || ratePresent ? [] : ['interestRate']),
+          ...(cashPurchase || termOk ? [] : ['mortgageTermYears']),
+        ],
+        'Missing mortgage amount is not a cash purchase. Missing rate or term is not a zero-cost loan.'
+      );
+
+  const cashFlow =
+    noi.state === 'assessed' && finance.complete && mortgageKnown
+      ? assessedMetric({ financingKind: financing.kind })
+      : notAssessedMetric(
+          [
+            ...(noi.state === 'assessed' ? [] : noi.missingInputs),
+            ...finance.missing,
+            ...finance.invalid,
+            ...(mortgageKnown ? [] : ['financing_state']),
+          ],
+          'Cash flow requires assessed NOI and an explicit financing state. Omitted mortgage fields are not a cash buyer.'
+        );
+
+  const dscr =
+    noi.state === 'assessed' && finance.complete && mortgageKnown && !cashPurchase
+      ? assessedMetric({ financingKind: financing.kind })
+      : notAssessedMetric(
+          [
+            ...(noi.state === 'assessed' ? [] : noi.missingInputs),
+            ...finance.missing,
+            ...finance.invalid,
+            ...(mortgageKnown ? [] : ['financing_state']),
+            ...(cashPurchase ? ['no_debt_service'] : []),
+          ],
+          cashPurchase
+            ? 'DSCR is not assessed for an explicit cash purchase — there is no debt service.'
+            : 'DSCR requires assessed NOI and valid debt-service inputs.'
+        );
+
+  return {
+    version: FINANCE_SEMANTIC_VERSION,
+    fields,
+    financing,
+    annualRent: annualRentMetric,
+    vacancyAdjustedIncome: vacancyAdjusted,
+    operatingCosts,
+    grossYield,
+    noi,
+    netYield,
+    mortgagePayment,
+    cashFlow,
+    dscr,
+    annualRentValue: annualRent.value,
+    purchasePriceValue: priceOk ? price.value : null,
+  };
+}
+
+function resolveRentBasis({
+  listingMonthlyRent = null,
+  marketRent = null,
+  scenarioExpectedRent = null,
+} = {}) {
+  const listing = parseCanonicalNumber(listingMonthlyRent);
+  const market = parseCanonicalNumber(marketRent);
+  const scenario = parseCanonicalNumber(scenarioExpectedRent);
+  const listingUsable = listing.state === NUMERIC_STATES.POSITIVE_VALUE;
+  const marketUsable = market.state === NUMERIC_STATES.POSITIVE_VALUE;
+  const scenarioUsable = scenario.state === NUMERIC_STATES.POSITIVE_VALUE;
+
+  if (scenarioUsable) {
+    return {
+      kind: RENT_BASIS.SCENARIO,
+      selectedRent: scenario.value,
+      listingMonthlyRent: listingUsable ? listing.value : listing.state === NUMERIC_STATES.EXPLICIT_ZERO ? 0 : null,
+      marketRent: marketUsable ? market.value : null,
+      scenarioExpectedRent: scenario.value,
+      marketSubstitutedForMissingListing: false,
+      label: 'SCENARIO_RENT',
+      expectedRentIsNotMarketRent: true,
+      expectedRentIsNotListingRent: true,
+    };
+  }
+  if (listingUsable) {
+    return {
+      kind: RENT_BASIS.LISTING,
+      selectedRent: listing.value,
+      listingMonthlyRent: listing.value,
+      marketRent: marketUsable ? market.value : null,
+      scenarioExpectedRent: null,
+      marketSubstitutedForMissingListing: false,
+      label: 'LISTING_RENT',
+      expectedRentIsNotMarketRent: true,
+      expectedRentIsNotListingRent: false,
+    };
+  }
+  if (marketUsable) {
+    return {
+      kind: RENT_BASIS.MARKET,
+      selectedRent: market.value,
+      listingMonthlyRent: listing.state === NUMERIC_STATES.EXPLICIT_ZERO ? 0 : null,
+      marketRent: market.value,
+      scenarioExpectedRent: null,
+      marketSubstitutedForMissingListing: true,
+      label: 'MARKET_RENT',
+      expectedRentIsNotMarketRent: false,
+      expectedRentIsNotListingRent: true,
+    };
+  }
+  return {
+    kind: RENT_BASIS.NONE,
+    selectedRent: null,
+    listingMonthlyRent: listing.state === NUMERIC_STATES.EXPLICIT_ZERO ? 0 : null,
+    marketRent: null,
+    scenarioExpectedRent: null,
+    marketSubstitutedForMissingListing: false,
+    label: null,
+    expectedRentIsNotMarketRent: true,
+    expectedRentIsNotListingRent: true,
+  };
+}
+
+function resolvePurchasePriceBasis({ listingAskingPrice = null, scenarioPurchasePrice = null } = {}) {
+  const listing = parseCanonicalNumber(listingAskingPrice);
+  const scenario = parseCanonicalNumber(scenarioPurchasePrice);
+  if (scenario.state === NUMERIC_STATES.POSITIVE_VALUE) {
+    return {
+      kind: 'SCENARIO',
+      selectedPrice: scenario.value,
+      listingAskingPrice: listing.state === NUMERIC_STATES.POSITIVE_VALUE ? listing.value : null,
+      scenarioPurchasePrice: scenario.value,
+    };
+  }
+  if (listing.state === NUMERIC_STATES.POSITIVE_VALUE) {
+    return {
+      kind: 'LISTING',
+      selectedPrice: listing.value,
+      listingAskingPrice: listing.value,
+      scenarioPurchasePrice: null,
+    };
+  }
+  return {
+    kind: 'NONE',
+    selectedPrice: null,
+    listingAskingPrice: listing.state === NUMERIC_STATES.EXPLICIT_ZERO ? 0 : null,
+    scenarioPurchasePrice: null,
+  };
 }
 
 function unwrapEntry(raw) {
@@ -350,12 +736,15 @@ function parseField(key, raw) {
   if (raw === undefined || raw === null || raw === '') return missing;
 
   const entry = unwrapEntry(raw);
-  const originalValue = finiteNumber(entry.value);
-  if (originalValue == null) return missing;
-  if (originalValue < 0) {
-    return { ...missing, state: 'invalid', reason: 'negative_not_accepted' };
+  const parsed = parseCanonicalNumber(entry.value);
+  if (parsed.state === NUMERIC_STATES.MISSING) return missing;
+  if (parsed.state === NUMERIC_STATES.INVALID) {
+    return { ...missing, state: 'invalid', reason: parsed.reason || 'not_finite', invalid: true };
   }
-  if (originalValue === 0 && spec.zeroValid === false) return missing;
+  const originalValue = parsed.value;
+  if (originalValue === 0 && spec.zeroValid === false) {
+    return { ...missing, state: 'invalid', reason: 'zero_not_valid', invalid: true };
+  }
 
   if (spec.unit === 'percent' && originalValue > 100) {
     return { ...missing, state: 'invalid', reason: 'percent_out_of_range' };
@@ -814,11 +1203,18 @@ function buildFinanceRequestTransparency({
       role: field.role,
     }));
   const missing = Object.entries(fields)
-    .filter(([, field]) => !field.available)
+    .filter(([, field]) => !field.available && field.state !== 'invalid')
     .map(([key, field]) => ({
       key,
       state: field.state || 'notAssessed',
       reason: field.reason || 'missing',
+    }));
+  const invalid = Object.entries(fields)
+    .filter(([, field]) => field.state === 'invalid')
+    .map(([key, field]) => ({
+      key,
+      state: 'invalid',
+      reason: field.reason || 'invalid',
     }));
   const facts = propertyFacts?.facts || {};
   const costEvidence = presented?.costEvidence || null;
@@ -848,6 +1244,7 @@ function buildFinanceRequestTransparency({
     received,
     used,
     missing,
+    invalid,
     missingRequired: {
       operatingCosts: costEvidence?.missing || [],
       finance: financeEvidence?.missing || [],
@@ -910,6 +1307,7 @@ function buildFinanceRequestTransparency({
 
 module.exports = {
   FINANCE_INPUT_VERSION,
+  FINANCE_SEMANTIC_VERSION,
   FIELD_CONTRACT,
   ALIASES,
   LEGACY_FLAT_FREQUENCY,
@@ -917,7 +1315,16 @@ module.exports = {
   OPERATING_COST_KEYS,
   FINANCE_KEYS,
   METRIC_DEPENDENCIES,
+  NUMERIC_STATES,
+  RENT_BASIS,
+  FINANCING_KIND,
   ANALYSE_FINANCE_REQUEST_EXAMPLE,
+  parseCanonicalNumber,
+  isNumericPresent,
+  classifyFinanceInputs,
+  assessFinanceMetrics,
+  resolveRentBasis,
+  resolvePurchasePriceBasis,
   parseFinancePayload,
   parseField,
   parseAnalyseFinanceRequest,

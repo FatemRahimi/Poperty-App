@@ -44,7 +44,7 @@ function analysePortfolioProperty(property) {
     bedrooms: property.bedrooms,
     propertyType: property.property_type,
     mainImage: property.main_image,
-    grossYield: evidencedValue(metrics?.presented?.grossYield) ?? metrics?.grossYield ?? null,
+    grossYield: evidencedValue(metrics?.presented?.grossYield),
     netYield: evidencedValue(metrics?.presented?.netYield),
     annualCashFlow: evidencedValue(metrics?.presented?.annualCashFlow),
     netYieldState: metrics?.presented?.netYield?.state || null,

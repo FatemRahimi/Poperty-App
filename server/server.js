@@ -70,6 +70,15 @@ io.on('connection', (socket) => {
   } catch (err) {
     console.error('⚠️ Intelligence schema check failed:', err.message);
   }
+  try {
+    const { getPrivateEvidenceCapability } = require('./services/evidence/privateEvidenceConfig');
+    const evidence = getPrivateEvidenceCapability();
+    if (!evidence.ingestAvailable) {
+      console.warn('⚠️ Private evidence ingest unavailable. Property Intelligence continues without it.');
+    }
+  } catch {
+    console.warn('⚠️ Private evidence capability check failed. Property Intelligence continues.');
+  }
 
   server.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
