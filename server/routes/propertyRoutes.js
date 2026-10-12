@@ -15,6 +15,11 @@ const {
   updateSaleProperty,
   recordPropertyOutcome,
 } = require('../controllers/propertyController');
+const {
+  getPropertyIdentity,
+  getPropertyIdentityEvents,
+  putPropertyIdentity,
+} = require('../controllers/subjectIdentityController');
 const { 
   parseSearchQuery, 
   geocodeLocationEnhanced, 
@@ -146,6 +151,9 @@ router.put('/sale/update/:id', authenticateJWT, upload.fields([
   { name: 'epcDocument', maxCount: 1 }
 ]), handleMulterError, updateSaleProperty);
 router.get('/my-properties', authenticateJWT, getUserProperties);
+router.get('/:id/identity', authenticateJWT, getPropertyIdentity);
+router.get('/:id/identity/events', authenticateJWT, getPropertyIdentityEvents);
+router.put('/:id/identity', authenticateJWT, putPropertyIdentity);
 router.post('/:id/outcome', authenticateJWT, recordPropertyOutcome);
 router.delete('/:id', authenticateJWT, deleteProperty);
 

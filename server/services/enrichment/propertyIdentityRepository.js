@@ -2,6 +2,7 @@ const pool = require('../../models/db');
 const { buildAddressFromProperty, normalisePostcode } = require('../../utils/ukAddress');
 const { CANONICAL_IDENTITY_VERSION } = require('../../architecture/canonicalIdentity');
 const { extractCanonicalAddress } = require('../identity/canonicalAddress');
+const { listingFieldsRespectingDeclaration } = require('../identity/userDeclaredIdentity');
 
 async function findIdentityByPropertyId(propertyId) {
   const result = await pool.query(
@@ -24,15 +25,17 @@ async function recordIdentityEvent({
   uprn = null,
   paon = null,
   saon = null,
+  buildingName = null,
   source = null,
+  actorUserId = null,
   payload = {},
 } = {}) {
   if (!propertyId) return null;
   try {
     const result = await pool.query(
       `INSERT INTO property_identity_events
-        (property_id, identity_state, verification_state, uprn, paon, saon, source, payload)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        (property_id, identity_state, verification_state, uprn, paon, saon, building_name, source, actor_user_id, payload)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         propertyId,
@@ -41,7 +44,9 @@ async function recordIdentityEvent({
         uprn,
         paon,
         saon,
+        buildingName,
         source,
+        actorUserId || null,
         jsonValue(payload, {}),
       ]
     );
@@ -64,6 +69,7 @@ async function upsertIdentity({
   providerPayload = {},
   paon = null,
   saon = null,
+  buildingName = null,
   postcodeCompact = null,
   identityState = null,
   identitySource = null,
@@ -74,6 +80,8 @@ async function upsertIdentity({
   identityContractVersion = CANONICAL_IDENTITY_VERSION,
   identityLimitations = {},
   sourceAddress = {},
+  componentStates = {},
+  actorUserId = null,
   uprnMode = 'preserve',
 } = {}) {
   const uprnClear = uprnMode === 'clear';
@@ -84,11 +92,12 @@ async function upsertIdentity({
        match_confidence, match_method, provider, provider_payload,
        paon, saon, postcode_compact, identity_state, identity_source,
        evidence_source_type, verification_state, retrieved_at, uprn_retrieved_at,
-       identity_contract_version, identity_limitations, source_address, updated_at)
+       identity_contract_version, identity_limitations, source_address,
+       building_name, component_states, updated_at)
      VALUES (
        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb,
        $11, $12, $13, $14, $15, $16, $17, COALESCE($18::timestamptz, CURRENT_TIMESTAMP),
-       $19, $20, $21::jsonb, $22::jsonb, CURRENT_TIMESTAMP
+       $19, $20, $21::jsonb, $22::jsonb, $24, $25::jsonb, CURRENT_TIMESTAMP
      )
      ON CONFLICT (property_id) DO UPDATE SET
        uprn = CASE
@@ -119,6 +128,12 @@ async function upsertIdentity({
        identity_contract_version = COALESCE(EXCLUDED.identity_contract_version, property_identities.identity_contract_version),
        identity_limitations = EXCLUDED.identity_limitations,
        source_address = EXCLUDED.source_address,
+       building_name = COALESCE(EXCLUDED.building_name, property_identities.building_name),
+       component_states = CASE
+         WHEN EXCLUDED.component_states IS NULL OR EXCLUDED.component_states = '{}'::jsonb
+         THEN property_identities.component_states
+         ELSE EXCLUDED.component_states
+       END,
        updated_at = CURRENT_TIMESTAMP
      RETURNING *`,
     [
@@ -145,6 +160,8 @@ async function upsertIdentity({
       jsonValue(identityLimitations, {}),
       jsonValue(sourceAddress, {}),
       uprnMode,
+      buildingName || null,
+      jsonValue(componentStates, {}),
     ]
   );
   const row = result.rows[0];
@@ -155,7 +172,9 @@ async function upsertIdentity({
     uprn: row?.uprn || null,
     paon: row?.paon || paon,
     saon: row?.saon || saon,
+    buildingName: row?.building_name || buildingName,
     source: identitySource || provider,
+    actorUserId,
     payload: {
       matchMethod,
       uprnMode,
@@ -167,31 +186,48 @@ async function upsertIdentity({
 
 async function createListingFallbackIdentity(property) {
   const canonical = extractCanonicalAddress(property);
+  const existing = property.id ? await findIdentityByPropertyId(property.id) : null;
+  const merged = listingFieldsRespectingDeclaration(canonical, existing || {});
   return upsertIdentity({
     propertyId: property.id,
     uprn: null,
     uprnMode: 'preserve',
     normalizedAddress: canonical.canonicalAddress || buildAddressFromProperty(property),
-    postcode: canonical.postcode || normalisePostcode(property.zip_code || property.postcode) || null,
+    postcode: merged.postcode || canonical.postcode || normalisePostcode(property.zip_code || property.postcode) || null,
     latitude: property.latitude,
     longitude: property.longitude,
-    matchConfidence: canonical.paon && canonical.postcodeCompact ? 'medium' : 'low',
+    matchConfidence: (merged.paon || canonical.paon) && (merged.postcodeCompact || canonical.postcodeCompact) ? 'medium' : 'low',
     matchMethod: 'listing_fields',
-    provider: 'InternalListing',
-    providerPayload: { source: 'application_database' },
-    paon: canonical.paon,
-    saon: canonical.saon,
-    postcodeCompact: canonical.postcodeCompact,
-    identityState: canonical.identityState,
-    identitySource: 'InternalListing',
-    evidenceSourceType: canonical.evidenceSourceType,
-    verificationState: canonical.verificationState,
+    provider: existing?.provider || 'InternalListing',
+    providerPayload: existing?.provider_payload || { source: 'application_database' },
+    paon: merged.paon,
+    saon: merged.saon,
+    buildingName: merged.buildingName,
+    postcodeCompact: merged.postcodeCompact || canonical.postcodeCompact,
+    identityState: existing?.identity_state || canonical.identityState,
+    identitySource: existing?.identity_source || 'InternalListing',
+    evidenceSourceType: existing?.evidence_source_type || canonical.evidenceSourceType,
+    verificationState: existing?.verification_state || canonical.verificationState,
     retrievedAt: canonical.retrievedAt,
     identityLimitations: {
       notes: canonical.limitations,
     },
     sourceAddress: canonical.sourceAddress,
+    componentStates: merged.componentStates,
   });
+}
+
+async function listIdentityEvents(propertyId, { limit = 50 } = {}) {
+  const result = await pool.query(
+    `SELECT id, property_id, identity_state, verification_state, uprn, paon, saon,
+            building_name, source, actor_user_id, payload, created_at
+     FROM property_identity_events
+     WHERE property_id = $1
+     ORDER BY created_at DESC, id DESC
+     LIMIT $2`,
+    [propertyId, Math.min(Number(limit) || 50, 100)]
+  );
+  return result.rows;
 }
 
 async function findEnrichment(propertyId, enrichmentType, source) {
@@ -217,7 +253,7 @@ async function upsertEnrichment({
     `INSERT INTO property_enrichments
       (property_id, enrichment_type, source, payload, provenance, observed_at, expires_at, retrieved_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
-     ON CONFLICT (property_id, enrichment_type, source) DO UPDATE SET
+     ON CONFLICT (property_id, enrichment_type, source) WHERE (property_id IS NOT NULL) DO UPDATE SET
        payload = EXCLUDED.payload,
        provenance = EXCLUDED.provenance,
        observed_at = COALESCE(EXCLUDED.observed_at, property_enrichments.observed_at),
@@ -252,6 +288,7 @@ module.exports = {
   upsertIdentity,
   createListingFallbackIdentity,
   recordIdentityEvent,
+  listIdentityEvents,
   findEnrichment,
   upsertEnrichment,
   listEnrichmentsForProperty,

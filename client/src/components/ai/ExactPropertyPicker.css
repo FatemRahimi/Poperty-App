@@ -1,0 +1,248 @@
+.epp-root {
+  margin: 1.15rem 0 1.35rem;
+  padding: 1.15rem 1.2rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: rgba(15, 23, 42, 0.72);
+  scroll-margin-top: 5rem;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.epp-header {
+  margin-bottom: 0.95rem;
+}
+
+.epp-heading {
+  margin: 0 0 0.35rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.epp-heading-postcode {
+  font-weight: 600;
+  color: #bae6fd;
+}
+
+.epp-support {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #94a3b8;
+  line-height: 1.45;
+  max-width: 36rem;
+}
+
+.epp-group {
+  margin-top: 1rem;
+}
+
+.epp-group + .epp-group {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.epp-group-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.epp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-height: min(480px, 58vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+.epp-row {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  min-height: 64px;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  background: #0f1623;
+  color: #e2e8f0;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.epp-row:hover:not(:disabled) {
+  border-color: #64748b;
+  background: #1e293b;
+}
+
+.epp-row:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+.epp-row--selected {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  box-shadow: inset 3px 0 0 #38bdf8;
+}
+
+.epp-row:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.epp-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #1e293b;
+  flex-shrink: 0;
+}
+
+.epp-thumb--empty {
+  border: 1px dashed #334155;
+}
+
+.epp-thumb--uk {
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid #334155;
+  position: relative;
+}
+
+.epp-thumb--uk::after {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border-radius: 4px;
+  border: 1.5px solid #64748b;
+}
+
+.epp-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.epp-address {
+  font-size: 0.98rem;
+  font-weight: 650;
+  color: #f1f5f9;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+.epp-secondary {
+  font-size: 0.84rem;
+  color: #cbd5e1;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.epp-origin {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.epp-shell-badge {
+  display: inline-block;
+  padding: 0.08rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.12);
+  color: #fde68a;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.epp-row--shell {
+  border-color: rgba(251, 191, 36, 0.28);
+}
+
+.epp-thumb--shell::after {
+  border-style: dashed;
+  border-color: #fbbf24;
+}
+
+.epp-named-unit-warning,
+.epp-truncation-note {
+  margin: 0.65rem 0 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: #fde68a;
+  max-width: 100%;
+}
+
+.epp-truncation-note {
+  color: #cbd5e1;
+}
+
+.epp-secondary {
+  font-size: 0.84rem;
+  color: #cbd5e1;
+}
+
+.epp-origin {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.epp-uprn-secondary {
+  font-size: 0.72rem;
+  color: #64748b;
+  letter-spacing: 0.02em;
+}
+
+.epp-status {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #7dd3fc;
+}
+
+.epp-flat-hint {
+  margin: 0.65rem 0 0;
+  font-size: 0.84rem;
+  color: #94a3b8;
+}
+
+@media (max-width: 640px) {
+  .epp-root {
+    margin-left: 0;
+    margin-right: 0;
+    padding: 1rem 0.85rem 1.1rem;
+    border-radius: 12px;
+  }
+
+  .epp-list {
+    max-height: none;
+  }
+
+  .epp-row {
+    min-height: 72px;
+    padding: 0.95rem 0.85rem;
+  }
+
+  .epp-thumb {
+    width: 48px;
+    height: 48px;
+  }
+}

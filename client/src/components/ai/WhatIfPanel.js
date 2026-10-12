@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import FinanceScenarioForm from './FinanceScenarioForm';
 import { compareIntelligenceWhatIf } from '../../services/aiService';
 import {
@@ -9,6 +9,11 @@ import {
   humanFinanceError,
   completenessLabel,
 } from '../../Utils/financeScenario';
+import {
+  listingAskingWhatIfCopy,
+  listingRentWhatIfCopy,
+  reportHasListingProvenance,
+} from '../../Utils/letResultsDisplay';
 import './WhatIfPanel.css';
 
 const DIMENSION_LABELS = {
@@ -84,6 +89,7 @@ function listingPreviewFromSavedReport(report) {
     property_type: p.property_type,
     epc_rating: p.epc_rating,
     tenure: p.tenure,
+    source: p.source,
   };
   if (observed.serviceCharge?.available && observed.serviceCharge.value != null) {
     if (observed.serviceCharge.field === 'service_charge') {
@@ -118,14 +124,23 @@ export default function WhatIfPanel({
   subjectId,
   analysisId,
   baselinePayload = {},
+  listingSubject,
 }) {
+  const workspace = report?.decisionWorkspace;
+  const decisionJob = report?.residentialDecisionContext?.decisionJob || report?.decisionJob || workspace?.decisionJob;
+  const whatIfApplicable = workspace ? workspace.whatIfApplicable !== false : true;
+  const lockedProfile = workspace?.whatIfProfile || null;
   const [form, setForm] = useState({ ...EMPTY_FINANCE_SCENARIO });
-  const [profile, setProfile] = useState('landlord');
+  const [profile, setProfile] = useState(lockedProfile || 'landlord');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [lastSubmittedKey, setLastSubmittedKey] = useState(null);
+
+  useEffect(() => {
+    if (lockedProfile) setProfile(lockedProfile);
+  }, [lockedProfile]);
 
   const submittedKey = useMemo(
     () => `${profile}::${serializeFinanceScenario(form)}`,
@@ -134,6 +149,7 @@ export default function WhatIfPanel({
   const stale = Boolean(result) && lastSubmittedKey !== submittedKey;
   const savedMode = Boolean(analysisId);
   const listingPreview = savedMode ? listingPreviewFromSavedReport(report) : preview;
+  const hasListing = reportHasListingProvenance(report, { listingSubject, preview: listingPreview });
   const listingAsking =
     result?.listing?.askingPrice ??
     (savedMode
@@ -144,6 +160,14 @@ export default function WhatIfPanel({
     (savedMode
       ? report?.property?.monthly_rent
       : report?.property?.monthly_rent ?? preview?.monthly_rent);
+  const askingCopy = listingAskingWhatIfCopy(
+    hasListing,
+    listingAsking != null && listingAsking !== '' ? money(listingAsking) : null
+  );
+  const rentCopy = listingRentWhatIfCopy(
+    hasListing,
+    listingRent != null && listingRent !== '' ? `${money(listingRent)} pcm` : null
+  );
   const savedDate = formatSavedAnalysisDate(
     result?.baselineCreatedAt || result?.baselineEvidenceAsOf || report?.analysisDate || report?.evidenceAsOf
   );
@@ -216,13 +240,36 @@ export default function WhatIfPanel({
   const demand = result?.scenario?.decision?.dimensions?.demand;
   const explanation = result?.explanation;
 
+  if (!whatIfApplicable) {
+    return (
+      <section className="pi-whatif pi-whatif--exploration" id="pi-what-if" data-testid="whatif-panel">
+        <p className="pi-whatif-kicker">What-if scenario</p>
+        <h2>Exploration only</h2>
+        <p className="pi-whatif-lead" data-testid="whatif-not-applicable">
+          {decisionJob === 'SELL'
+            ? 'Seller scenarios are not assessed. What-if does not invent listing price, timing, or demand.'
+            : 'What-if is not applicable for this decision job.'}
+        </p>
+      </section>
+    );
+  }
+
   return (
-    <section className="pi-whatif" id="pi-what-if" data-testid="whatif-panel" aria-labelledby="pi-whatif-heading">
-      <h2 id="pi-whatif-heading">What-if comparison</h2>
+    <section className="pi-whatif pi-whatif--exploration" id="pi-what-if" data-testid="whatif-panel" aria-labelledby="pi-whatif-heading">
+      <p className="pi-whatif-kicker">What-if scenario</p>
+      <h2 id="pi-whatif-heading">Explore changes without rewriting this assessment</h2>
+      <div className="pi-whatif-separation" data-testid="whatif-current-vs-scenario">
+        <div>
+          <strong>Current assessment</strong>
+          <span>Saved / analysed baseline</span>
+        </div>
+        <div>
+          <strong>What-if scenario</strong>
+          <span>Your exploration only — not listing facts</span>
+        </div>
+      </div>
       <p className="pi-whatif-lead">
-        Compare this analysis against explicit scenario changes. The listing, property facts and saved
-        report stay as they are. Recalculation uses the same Property Intelligence engines — this page
-        does not invent yields, cash flow or scores.
+        Change scenario inputs to compare outcomes. The current assessment stays unchanged.
       </p>
 
       {savedMode && (
@@ -254,14 +301,18 @@ export default function WhatIfPanel({
       )}
 
       <div className="pi-whatif-facts" data-testid="whatif-facts">
-        <p className="pi-fin-evidence pi-fin-evidence--property" data-testid="whatif-listing-asking">
-          <span>FACT / BASELINE · Listing asking price</span>
-          <strong>{listingAsking != null && listingAsking !== '' ? money(listingAsking) : 'Not on file'}</strong>
-        </p>
-        <p className="pi-fin-evidence pi-fin-evidence--property" data-testid="whatif-listing-rent">
-          <span>FACT / BASELINE · Listing rent</span>
-          <strong>{listingRent != null && listingRent !== '' ? `${money(listingRent)} pcm` : 'Not on file'}</strong>
-        </p>
+        {askingCopy && (
+          <p className="pi-fin-evidence pi-fin-evidence--property" data-testid="whatif-listing-asking">
+            <span>{askingCopy.label}</span>
+            <strong>{askingCopy.value}</strong>
+          </p>
+        )}
+        {rentCopy && (
+          <p className="pi-fin-evidence pi-fin-evidence--property" data-testid="whatif-listing-rent">
+            <span>{rentCopy.label}</span>
+            <strong>{rentCopy.value}</strong>
+          </p>
+        )}
         {result && (
           <p className="pi-fin-evidence pi-fin-evidence--user">
             <span>SCENARIO INPUT · Your What-if purchase price</span>
@@ -272,6 +323,7 @@ export default function WhatIfPanel({
 
       <fieldset className="pi-whatif-profile">
         <legend>Personal Decision profile</legend>
+        {(!lockedProfile || lockedProfile === 'landlord') && (
         <label>
           <input
             type="radio"
@@ -282,6 +334,8 @@ export default function WhatIfPanel({
           />
           Landlord
         </label>
+        )}
+        {(!lockedProfile || lockedProfile === 'buyer_general') && (
         <label>
           <input
             type="radio"
@@ -292,6 +346,7 @@ export default function WhatIfPanel({
           />
           Buyer (general)
         </label>
+        )}
         {profile === 'buyer_general' && (
           <p className="pi-fin-hint">
             Buyer dimensions only change where this scenario legitimately affects them (for example
@@ -313,10 +368,12 @@ export default function WhatIfPanel({
         stale={stale}
         idPrefix="whatif-"
         testId="whatif-finance-form"
+        decisionJob={decisionJob}
         title="Your What-if scenario"
         intro="Temporary comparison only. Blank keeps the baseline analysis value. Typing 0 is an explicit zero for this scenario. This does not change the listing, property facts, or saved analysis."
         blankPlaceholder="Leave blank to keep the baseline"
         staleMessage="Recalculate scenario to apply these changes."
+        listingSubject={hasListing}
       />
 
       <button
@@ -362,7 +419,7 @@ export default function WhatIfPanel({
               testId="whatif-row-price"
             />
             <ComparisonRow
-              label="Expected / market rent"
+              label="Scenario rent input"
               before={rentCells.before}
               after={rentCells.after}
               change={rentCells.change}

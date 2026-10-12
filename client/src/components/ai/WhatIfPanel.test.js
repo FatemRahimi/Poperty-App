@@ -9,9 +9,9 @@ jest.mock('../../services/aiService', () => ({
   compareIntelligenceWhatIf: jest.fn(),
 }));
 
-const PREVIEW = { price: 200000, monthly_rent: 1000, service_charges: 100, ground_rent: 250 };
+const PREVIEW = { price: 200000, monthly_rent: 1000, service_charges: 100, ground_rent: 250, source: 'marketplace' };
 const REPORT = {
-  property: { price: 200000, monthly_rent: 1000 },
+  property: { price: 200000, monthly_rent: 1000, source: 'marketplace' },
   propertyFacts: { facts: {} },
   presented: {
     grossYield: { available: true, value: 6 },
@@ -183,7 +183,7 @@ describe('WhatIfPanel', () => {
       <WhatIfPanel
         preview={{ price: 185000, monthly_rent: 900 }}
         report={{
-          property: { price: 200000, monthly_rent: 1000 },
+          property: { price: 200000, monthly_rent: 1000, source: 'marketplace' },
           evidenceAsOf: '2026-08-14T10:00:00.000Z',
           analysisDate: '2026-08-14T10:00:00.000Z',
         }}
@@ -218,7 +218,7 @@ describe('WhatIfPanel', () => {
       <WhatIfPanel
         preview={{ price: 185000, monthly_rent: 900 }}
         report={{
-          property: { price: 200000, monthly_rent: 1000 },
+          property: { price: 200000, monthly_rent: 1000, source: 'marketplace' },
           evidenceAsOf: '2026-08-14T10:00:00.000Z',
         }}
         propertyId={1}
@@ -248,5 +248,55 @@ describe('WhatIfPanel', () => {
       <WhatIfPanel preview={PREVIEW} report={REPORT} propertyId={1} baselinePayload={{}} />
     );
     expect(screen.queryByTestId('whatif-saved-baseline-notice')).not.toBeInTheDocument();
+  });
+
+  test('LET What-if rent comparison is labelled as scenario input, not market/achievable rent', async () => {
+    render(
+      <WhatIfPanel
+        preview={PREVIEW}
+        report={{
+          ...REPORT,
+          residentialDecisionContext: { decisionJob: 'LET_INVEST' },
+          decisionWorkspace: { decisionJob: 'LET_INVEST', whatIfApplicable: true, whatIfProfile: 'landlord' },
+        }}
+        propertyId={1}
+        baselinePayload={{}}
+      />
+    );
+    await userEvent.click(screen.getByRole('button', { name: /compare scenario/i }));
+    expect(await screen.findByTestId('whatif-row-rent')).toHaveTextContent(/scenario rent input/i);
+    expect(screen.getByTestId('whatif-row-rent')).not.toHaveTextContent(/Expected \/ market rent/i);
+    expect(screen.getByTestId('whatif-result')).toHaveTextContent(/not updated property truth/i);
+  });
+
+  test('non-listing What-if does not invent listing asking or listing-rent missing labels', () => {
+    render(
+      <WhatIfPanel
+        preview={{ price: 110000, monthly_rent: null, source: 'external_lookup' }}
+        report={{
+          property: { price: 110000, source: 'external_lookup' },
+          accessContext: { relationship: 'external_lookup' },
+          financeRequest: { purchasePrice: { listingAskingPrice: 110000, scenarioPurchasePrice: 185000 } },
+        }}
+        listingSubject={false}
+        propertyId={null}
+        subjectId="uprn:100110469802"
+        baselinePayload={{}}
+      />
+    );
+    expect(screen.getByTestId('whatif-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('whatif-current-vs-scenario')).toBeInTheDocument();
+    expect(screen.queryByText(/FACT \/ BASELINE · Listing asking price/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Listing rent — Not on file/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('whatif-listing-asking')).not.toBeInTheDocument();
+  });
+
+  test('What-if remains a post-analysis hypothetical comparison, not canonical analysis', () => {
+    render(
+      <WhatIfPanel preview={PREVIEW} report={REPORT} propertyId={1} baselinePayload={{}} />
+    );
+    expect(screen.getByTestId('whatif-panel')).toHaveClass('pi-whatif--exploration');
+    expect(screen.getByText(/explore changes without rewriting this assessment/i)).toBeInTheDocument();
+    expect(screen.getByText(/your exploration only — not listing facts/i)).toBeInTheDocument();
   });
 });

@@ -511,6 +511,7 @@ asyncTest('canonical report exposes filled open-data attributes without LLM numb
     options: {
       skipExplanation: true,
       skipPostcodeMarket: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding: true,

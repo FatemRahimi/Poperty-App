@@ -26,6 +26,11 @@ const {
   parseAnalyseFinanceRequest,
   invalidFinanceHttpResponse,
 } = require('../services/ai/financeInputContract');
+const {
+  parseResidentialDecisionIntent,
+  stripDecisionIntentKeys,
+  invalidDecisionHttpResponse,
+} = require('../architecture/decisionContextContract');
 const { optimisePortfolio } = require('../services/ai/portfolioOptimiserService');
 const {
   lookupPropertyIntelligence,
@@ -62,8 +67,41 @@ if (typeof getSubjectPreview !== 'function') {
   );
 }
 
+function stripDeclaredInternalAreaKeys(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return body;
+  const out = { ...body };
+  delete out.declaredInternalArea;
+  delete out.declared_internal_area;
+  return out;
+}
+
 function resolveIntelligenceAnalyseOptions(body) {
-  return parseAnalyseFinanceRequest(body);
+  const intent = parseResidentialDecisionIntent(body || {});
+  if (!intent.ok) {
+    return { ok: false, decisionError: intent, errors: [] };
+  }
+  const rawBody = body || {};
+  const { parseDeclaredInternalArea } = require('../services/identity/internalAreaResolution');
+  const declared = parseDeclaredInternalArea(
+    rawBody.declaredInternalArea ?? rawBody.declared_internal_area
+  );
+  if (!declared.ok) {
+    return { ok: false, errors: [declared.error], options: {}, snapshot: null };
+  }
+  const parsed = parseAnalyseFinanceRequest(stripDeclaredInternalAreaKeys(stripDecisionIntentKeys(body)));
+  if (!parsed.ok) {
+    return parsed;
+  }
+  const options = { ...parsed.options, decisionJob: intent.job };
+  if (declared.value) {
+    options.declaredInternalArea = declared.value;
+  }
+  return {
+    ok: true,
+    options,
+    snapshot: parsed.snapshot,
+    decisionJob: intent.job,
+  };
 }
 
 async function saveAnalysis(args) {
@@ -166,6 +204,9 @@ const analysePropertyIntelligence = async (req, res) => {
     const propertyId = Number(req.params.propertyId);
     const parsed = resolveIntelligenceAnalyseOptions(req.body);
     if (!parsed.ok) {
+      if (parsed.decisionError) {
+        return res.status(400).json(invalidDecisionHttpResponse(parsed.decisionError));
+      }
       return res.status(400).json(invalidFinanceHttpResponse(parsed.errors));
     }
     const options = parsed.options;
@@ -188,6 +229,7 @@ const analysePropertyIntelligence = async (req, res) => {
         propertyId,
         options,
         finance: parsed.snapshot,
+        decisionJob: parsed.decisionJob,
         accessLevel: report.accessContext?.accessLevel,
       },
       output,
@@ -442,6 +484,9 @@ const analyseSubjectIntelligence = async (req, res) => {
     }
     const parsed = resolveIntelligenceAnalyseOptions(req.body);
     if (!parsed.ok) {
+      if (parsed.decisionError) {
+        return res.status(400).json(invalidDecisionHttpResponse(parsed.decisionError));
+      }
       return res.status(400).json(invalidFinanceHttpResponse(parsed.errors));
     }
     const options = parsed.options;
@@ -465,6 +510,7 @@ const analyseSubjectIntelligence = async (req, res) => {
         uprn: report.property.uprn,
         options,
         finance: parsed.snapshot,
+        decisionJob: parsed.decisionJob,
         accessLevel: report.accessContext?.accessLevel,
       },
       output,
@@ -506,6 +552,73 @@ const unlinkSubjectListing = async (req, res) => {
   } catch (error) {
     console.error('unlinkSubjectListing error:', error);
     res.status(500).json({ success: false, message: 'Failed to unlink listing' });
+  }
+};
+
+const putSubjectPropertyAttributes = async (req, res) => {
+  try {
+    const subjectId = Number(req.params.subjectId);
+    if (!Number.isInteger(subjectId) || subjectId <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid subject id.' });
+    }
+    const isAdmin = req.user.role === 'admin';
+    const {
+      saveUserReportedSubjectAttributes,
+    } = require('../services/identity/subjectPropertyAttributeService');
+    const result = await saveUserReportedSubjectAttributes({
+      subjectId,
+      userId: req.user.id,
+      body: req.body || {},
+      isAdmin,
+    });
+    if (!result.success) {
+      const status = result.code === 'FORBIDDEN' ? 403
+        : result.code === 'NOT_FOUND' ? 404
+          : 400;
+      return res.status(status).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    console.error('putSubjectPropertyAttributes error:', error);
+    res.status(500).json({ success: false, message: 'Failed to save subject attributes' });
+  }
+};
+
+const getSubjectPropertyAttributes = async (req, res) => {
+  try {
+    const subjectId = Number(req.params.subjectId);
+    const access = await assertSubjectPreviewAccess(req.user && req.user.id, subjectId);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+    const { findSubjectById } = require('../services/enrichment/intelligenceSubjectRepository');
+const {
+      resolveSubjectPropertyAttributes,
+      previewAvmReadinessFromPropertyContext,
+    } = require('../services/identity/subjectPropertyAttributeService');
+    const subject = await findSubjectById(subjectId);
+    if (!subject) {
+      return res.status(404).json({ success: false, message: 'Subject not found.' });
+    }
+    let listingProperty = null;
+    if (subject.property_id) {
+      const pool = require('../models/db');
+      const row = await pool.query(`SELECT * FROM properties WHERE id = $1`, [subject.property_id]);
+      listingProperty = row.rows[0] || null;
+    }
+    const attributes = resolveSubjectPropertyAttributes({ subject, listingProperty });
+    const propertyContext = req.query?.includeReadiness === '1' || req.query?.includeReadiness === 'true'
+      ? (listingProperty || null)
+      : null;
+    // Optional body-less readiness: only when listing-bound property supplies known facts.
+    // Subject-native readiness preview uses PUT with explicit propertyContext from the report.
+    const readiness = propertyContext
+      ? previewAvmReadinessFromPropertyContext({ propertyContext, resolved: attributes })
+      : null;
+    res.json({ success: true, subjectId, attributes, readiness });
+  } catch (error) {
+    console.error('getSubjectPropertyAttributes error:', error);
+    res.status(500).json({ success: false, message: 'Failed to load subject attributes' });
   }
 };
 
@@ -609,5 +722,7 @@ module.exports = {
   getSubjectAnalysisHistory,
   analyseSubjectIntelligence,
   unlinkSubjectListing,
+  putSubjectPropertyAttributes,
+  getSubjectPropertyAttributes,
   compareIntelligenceWhatIf,
 };

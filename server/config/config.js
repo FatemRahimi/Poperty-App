@@ -22,6 +22,7 @@ const config = {
     secret: process.env.SESSION_SECRET || process.env.JWT_SECRET,
     cookie: {
       secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
   }

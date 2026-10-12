@@ -10,6 +10,11 @@ import useSessionStorage from "../Utils/useSessionStorage";
 import { useAuth } from "../context/AuthContext";
 import ContactInformationSection from "../components/ContactInformationSection";
 import CustomFeaturesInput from "../components/CustomFeaturesInput";
+import CanonicalIdentityFields, {
+  emptyCanonicalIdentityForm,
+  appendCanonicalIdentityFields,
+  fetchCanonicalIdentity,
+} from "../components/CanonicalIdentityFields";
 
 const leaseTypeOptions = [
   { value: "FRI", label: "FRI (Full Repairing & Insuring)" },
@@ -176,6 +181,7 @@ const AddLease = () => {
         city: propertyData.city || "",
         region: propertyData.state || "",
         country: propertyData.country || "United Kingdom",
+        ...emptyCanonicalIdentityForm(),
         
         // Lease Details
         monthlyRent: propertyData.monthly_rent ? propertyData.monthly_rent.toString() : "",
@@ -313,6 +319,7 @@ const AddLease = () => {
       city: "",
       region: "",
       country: "United Kingdom",
+      ...emptyCanonicalIdentityForm(),
       monthlyRent: "",
       depositAmount: "",
       availableFrom: "",
@@ -380,6 +387,18 @@ const AddLease = () => {
   // Use different storage keys for new vs edit mode
   const storageKey = editMode ? `editLeaseForm_${propertyId}` : "addLeaseForm";
   const [formData, setFormData] = useSessionStorage(storageKey, getInitialFormData());
+
+  useEffect(() => {
+    if (!editMode || !propertyId) return undefined;
+    let cancelled = false;
+    fetchCanonicalIdentity(propertyId, localStorage.getItem('token'))
+      .then((identity) => {
+        if (cancelled) return;
+        setFormData((current) => ({ ...current, ...identity }));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [editMode, propertyId, setFormData]);
   
   const [photoFiles, setPhotoFiles] = useState([]);
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
@@ -814,6 +833,7 @@ const AddLease = () => {
       submitFormData.append('userEmail', user.email);
       submitFormData.append('userId', user.id);
       submitFormData.append('listingType', 'lease');
+      appendCanonicalIdentityFields(submitFormData, formData);
       
       // Handle status for approved properties being edited
       if (editMode && propertyData?.status === 'approved') {
@@ -893,6 +913,9 @@ const AddLease = () => {
       
       const result = await response.json();
       console.log(`✅ Lease Property ${editMode ? 'Updated' : 'Submitted'} Successfully:`, result);
+      if (result.identityConflict) {
+        window.alert('An identity conflict was recorded. Official UPRN evidence was not overwritten. This is not verification.');
+      }
       
       const successMessage = editMode 
         ? "Property updated successfully!" 
@@ -971,6 +994,14 @@ const AddLease = () => {
         <TextInput label="City*" name="city" value={formData.city} onChange={handleChange} placeholder="e.g., London" />
         <TextInput label="Postcode*" name="postcode" value={formData.postcode} onChange={handleChange} placeholder="e.g., SW1A 1AA" />
       </div>
+      <CanonicalIdentityFields
+        value={formData}
+        onChange={setFormData}
+        propertyType={formData.spaceType}
+        houseNumber={formData.houseNumber}
+        title={formData.spaceName}
+        landOrDevelopment={formData.spaceType === 'land'}
+      />
       
       <div className="form-row">
         <TextInput label="Country*" name="country" value={formData.country} onChange={handleChange} placeholder="e.g., United Kingdom" />

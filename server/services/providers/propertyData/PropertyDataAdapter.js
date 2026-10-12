@@ -14,7 +14,7 @@ const {
 } = require('./propertyTypeMapping');
 const { propertyIntelligenceConfig } = require('../../../config/propertyIntelligence.config');
 const { createProvenance } = require('../../../utils/provenance');
-const { buildPropertyDataSearchAddress, buildPropertyDataSearchAddressFromQuery, inferMatchConfidenceFromRank, normalizeIdentitySearchAddress } = require('../../../utils/ukAddress');
+const { buildPropertyDataSearchAddress, buildPropertyDataSearchAddressFromQuery, inferMatchConfidenceFromRank, normalizeIdentitySearchAddress, normalisePostcode } = require('../../../utils/ukAddress');
 const { selectUniqueUprnMatch } = require('../../../architecture/canonicalIdentity');
 const {
   buildCacheKey,
@@ -24,6 +24,12 @@ const {
 const { logProviderUsage } = require('../cache/usageLogger');
 const { coalesceCachedProviderRequest } = require('../cache/providerExecutionGuard');
 const { classifyProviderFailure, logProviderCostEvent } = require('../cache/providerCostProtection');
+const {
+  UPRNS_STRICT,
+  UPRNS_MAX_RESULTS,
+  mapUprnDiscoveryResponse,
+  creditsUsedFromProviderResponse,
+} = require('../../../utils/uprnDiscovery');
 
 const PROVIDER = 'propertydata';
 
@@ -222,6 +228,99 @@ class PropertyDataAdapter {
       cacheHit: result.cacheHit,
       creditsUsed: result.creditsUsed,
     };
+  }
+
+  /**
+   * Postcode UPRN discovery — discovery only, not subject confirmation.
+   * GET /uprns?key=&postcode=&strict=true&results=200
+   *
+   * Persistent cache is not used: /uprns licence retention is not established
+   * on the identity TTL. In-flight coalesce still applies.
+   */
+  async listUprnsInPostcode(postcode, context = {}) {
+    const pc = normalisePostcode(postcode);
+    if (!pc) {
+      return { success: false, message: 'Postcode required', provider: PROVIDER, rows: [] };
+    }
+
+    const params = {
+      postcode: pc,
+      strict: UPRNS_STRICT,
+      results: UPRNS_MAX_RESULTS,
+    };
+    const cacheKey = buildCacheKey(PROVIDER, 'uprns', params);
+    const started = Date.now();
+    const configuredCost = this.client.getEndpointCreditCost('uprns');
+
+    try {
+      const coalesced = await coalesceCachedProviderRequest({
+        cacheKey,
+        getCached: async () => null,
+        useSharedLock: true,
+        execute: () => this.client.request('uprns', params),
+        setCached: async () => {},
+      });
+
+      const data = coalesced.result;
+      const liveCost = Number(data?.api_calls_cost);
+      const creditsUsed = creditsUsedFromProviderResponse(data, configuredCost);
+      logProviderCostEvent({
+        event: 'request',
+        provider: PROVIDER,
+        endpoint: 'uprns',
+        outcome: coalesced.outcome,
+        userId: context.userId,
+      });
+      await logProviderUsage({
+        userId: context.userId,
+        propertyId: context.propertyId || null,
+        provider: PROVIDER,
+        endpoint: 'uprns',
+        cacheHit: false,
+        creditsUsed,
+        success: true,
+        latencyMs: Date.now() - started,
+      });
+
+      const mapped = mapUprnDiscoveryResponse(data);
+      return {
+        success: true,
+        provider: PROVIDER,
+        postcode: pc,
+        rows: mapped.rows,
+        potentiallyTruncated: mapped.potentiallyTruncated,
+        requestedResults: UPRNS_MAX_RESULTS,
+        returnedCount: mapped.returnedCount,
+        strict: true,
+        cacheHit: false,
+        persistentCacheUsed: false,
+        creditsUsed,
+        apiCallsCost: Number.isFinite(liveCost) ? liveCost : null,
+      };
+    } catch (error) {
+      const classified = classifyProviderFailure(error);
+      logProviderCostEvent({
+        event: 'provider_failure',
+        provider: PROVIDER,
+        endpoint: 'uprns',
+        outcome: classified.usageCode,
+        userId: context.userId,
+      });
+      await logProviderUsage({
+        userId: context.userId,
+        propertyId: context.propertyId || null,
+        provider: PROVIDER,
+        endpoint: 'uprns',
+        cacheHit: false,
+        creditsUsed: 0,
+        success: false,
+        errorMessage: classified.usageCode,
+        latencyMs: Date.now() - started,
+      });
+      const safe = new Error(classified.message);
+      safe.code = classified.code;
+      throw safe;
+    }
   }
 
   /**
@@ -440,11 +539,27 @@ class PropertyDataAdapter {
   async getSaleValuation(property, context = {}) {
     const request = buildValuationSaleRequest(property);
     if (!request.params || !request.canRequestAvm) {
+      const readiness = request.readiness || {};
+      const messageByReason = {
+        UNMAPPED_PROPERTY_TYPE:
+          'Property type was unavailable and was not defaulted to flat. Sale AVM skipped because PropertyData requires a mapped property_type.',
+        MISSING_POSTCODE:
+          'Insufficient property attributes for PropertyData sale valuation (postcode required).',
+        MISSING_INTERNAL_AREA:
+          'Insufficient property attributes for PropertyData sale valuation (postcode + internal_area >= 300 sqft required)',
+        MISSING_CONSTRUCTION_DATE:
+          'Insufficient property attributes for PropertyData sale valuation (construction_date required; build year / official age band unavailable and was not defaulted).',
+      };
+      const message =
+        messageByReason[readiness.reasonCode]
+        || (request.type?.available
+          ? 'Insufficient property attributes for PropertyData sale valuation (postcode + internal_area >= 300 sqft required)'
+          : 'Property type was unavailable and was not defaulted to flat. Sale AVM skipped because PropertyData requires a mapped property_type.');
       return {
         success: false,
-        message: request.type?.available
-          ? 'Insufficient property attributes for PropertyData sale valuation (postcode + internal_area >= 300 sqft required)'
-          : 'Property type was unavailable and was not defaulted to flat. Sale AVM skipped because PropertyData requires a mapped property_type.',
+        message,
+        readiness,
+        reasonCode: readiness.reasonCode || null,
         provider: PROVIDER,
         unavailable: request.unavailable,
         provenance: request.type?.provenance || request.construction?.provenance || null,

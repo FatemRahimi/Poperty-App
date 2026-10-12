@@ -65,6 +65,7 @@ function createCanonicalIdentity(input = {}) {
     postcodeCompact: nonempty(input.postcodeCompact),
     paon: nonempty(input.paon),
     saon: nonempty(input.saon),
+    buildingName: nonempty(input.buildingName),
     uprn,
     latitude: input.latitude == null || input.latitude === '' ? null : Number(input.latitude),
     longitude: input.longitude == null || input.longitude === '' ? null : Number(input.longitude),
@@ -89,10 +90,22 @@ function createCanonicalIdentity(input = {}) {
       || (nonempty(input.saon)
         ? IDENTITY_VERIFICATION_STATE.SOURCE_ASSERTED
         : IDENTITY_VERIFICATION_STATE.UNRESOLVED),
+    buildingNameVerificationState:
+      IDENTITY_VERIFICATION_STATE[input.buildingNameVerificationState]
+      || (nonempty(input.buildingName)
+        ? IDENTITY_VERIFICATION_STATE.SOURCE_ASSERTED
+        : IDENTITY_VERIFICATION_STATE.UNRESOLVED),
+    componentStates: input.componentStates && typeof input.componentStates === 'object'
+      ? input.componentStates
+      : {},
+    conflictStatus: nonempty(input.conflictStatus) || 'NONE',
+    userDeclaredIsNotVerified: true,
     limitations: Array.isArray(input.limitations) ? input.limitations : [],
     listingIsNotSubject: IDENTITY_NON_EQUIVALENCE.listingIsNotSubject,
     uprnIsNotTitleNumber: IDENTITY_NON_EQUIVALENCE.uprnIsNotTitleNumber,
     buildingIsNotUnit: IDENTITY_NON_EQUIVALENCE.buildingIsNotUnit,
+    propertyIsNotTitle: IDENTITY_NON_EQUIVALENCE.propertyIsNotTitle,
+    landIsNotBuilding: IDENTITY_NON_EQUIVALENCE.landIsNotBuilding,
     inferredIsNotVerified: verificationState !== IDENTITY_VERIFICATION_STATE.INFERRED
       ? true
       : verificationState !== IDENTITY_VERIFICATION_STATE.VERIFIED_EXACT,

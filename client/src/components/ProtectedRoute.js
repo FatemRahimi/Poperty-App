@@ -22,7 +22,8 @@ const ProtectedRoute = ({ children }) => {
 
   if (!isAuthenticated) {
     // Save the attempted URL for redirecting after login
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    const from = `${location.pathname}${location.search || ''}`;
+    return <Navigate to="/login" state={{ from }} replace />;
   }
 
   return children;

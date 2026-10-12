@@ -81,9 +81,138 @@ describe('FinanceScenarioForm', () => {
         }}
       />
     );
-    expect(screen.getByText(/market rent evidence/i)).toBeInTheDocument();
+    expect(screen.getByText(/area asking-rent evidence \(market/i)).toBeInTheDocument();
+    expect(screen.getByText(/not this property’s achievable/i)).toBeInTheDocument();
     expect(screen.getByText(/£1,050–£1,150 pcm/)).toBeInTheDocument();
     expect(screen.getByLabelText(/your expected monthly rent/i)).toHaveValue('');
+    expect(screen.queryByText(/^Recommended rent$/i)).not.toBeInTheDocument();
+  });
+
+  test('LET_INVEST defaults to Deal & rent and progressively discloses later stages', async () => {
+    function LetHarness() {
+      const [form, setForm] = useState({ ...EMPTY_FINANCE_SCENARIO });
+      const [section, setSection] = useState('property_rent');
+      return (
+        <FinanceScenarioForm
+          form={form}
+          onChange={setForm}
+          decisionJob="LET_INVEST"
+          expandedSection={section}
+          onExpandSection={setSection}
+          listingSubject
+          preview={{ price: 200000, monthly_rent: 1125 }}
+        />
+      );
+    }
+    render(<LetHarness />);
+    expect(screen.getByTestId('let-underwriting-unlock-guide')).toHaveTextContent(/not assessed/i);
+    expect(screen.getByTestId('let-stage-tab-property_rent')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('let-stage-tab-property_rent')).toHaveTextContent(/Current/i);
+    expect(screen.getByLabelText(/your purchase price/i)).toBeVisible();
+    expect(screen.getByText(/listing asking price/i)).toBeInTheDocument();
+    expect(screen.getByText(/not a valuation or fair value/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/your expected monthly rent/i)).toHaveValue('');
+    expect(screen.getByLabelText(/your purchase price/i)).toHaveValue('');
+    expect(screen.getByTestId('finance-section-property-rent')).not.toHaveAttribute('hidden');
+    expect(screen.getByTestId('finance-section-operating')).toHaveAttribute('hidden');
+    expect(screen.getByTestId('finance-section-financing')).toHaveAttribute('hidden');
+
+    await userEvent.click(screen.getByTestId('let-stage-tab-operating'));
+    expect(screen.getByTestId('let-stage-tab-operating')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('finance-section-operating')).not.toHaveAttribute('hidden');
+    expect(screen.getByLabelText(/^maintenance$/i)).toBeVisible();
+    expect(screen.getByTestId('finance-field-wrap-serviceCharge')).toBeInTheDocument();
+    expect(screen.getByTestId('finance-field-wrap-groundRent')).toBeInTheDocument();
+    expect(screen.getByTestId('finance-section-property-rent')).toHaveAttribute('hidden');
+
+    await userEvent.click(screen.getByTestId('let-stage-tab-financing'));
+    expect(screen.getByLabelText(/^deposit$/i)).toBeVisible();
+    expect(screen.getByLabelText(/mortgage amount/i)).toBeVisible();
+    expect(screen.getByLabelText(/mortgage term/i)).toHaveValue('');
+    expect(screen.getByTestId('finance-section-operating')).toHaveAttribute('hidden');
+    expect(screen.getByTestId('finance-section-financing')).not.toHaveAttribute('hidden');
+  });
+
+  test('LET operating-cost wraps exist when that stage is focused', () => {
+    render(
+      <FinanceScenarioForm
+        form={{ ...EMPTY_FINANCE_SCENARIO }}
+        onChange={() => {}}
+        decisionJob="LET_INVEST"
+        focusField="maintenance"
+      />
+    );
+    expect(screen.getByTestId('finance-field-wrap-maintenance')).toBeInTheDocument();
+    expect(screen.getByTestId('finance-field-wrap-insurance')).toBeInTheDocument();
+    expect(screen.getByTestId('finance-field-wrap-managementFee')).toBeInTheDocument();
+    expect(screen.getByTestId('finance-field-wrap-taxes')).toBeInTheDocument();
+    expect(screen.getByTestId('finance-field-wrap-serviceCharge')).toBeInTheDocument();
+    expect(screen.getByTestId('finance-field-wrap-groundRent')).toBeInTheDocument();
+  });
+
+  test('non-listing subject does not show listing-missing asking price', () => {
+    render(
+      <FinanceScenarioForm
+        form={{ ...EMPTY_FINANCE_SCENARIO }}
+        onChange={() => {}}
+        decisionJob="LET_INVEST"
+        listingSubject={false}
+        preview={{ address_display: '12 Acacia Avenue', source: 'external_lookup', uprn: '1' }}
+      />
+    );
+    expect(screen.queryByText(/listing asking price/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/listing asking price — not on file/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/your purchase price/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/your expected monthly rent/i)).toBeInTheDocument();
+  });
+
+  test('MARKET rent is area context, never achievable or recommended property rent', () => {
+    render(
+      <FinanceScenarioForm
+        form={{ ...EMPTY_FINANCE_SCENARIO }}
+        onChange={() => {}}
+        decisionJob="LET_INVEST"
+        listingSubject
+        preview={{ price: 200000, monthly_rent: 1125 }}
+        report={{
+          marketIntelligence: {
+            rent: { success: true, marketRange: { low: 1050, high: 1150 }, recommendedRent: 1100 },
+          },
+        }}
+      />
+    );
+    expect(screen.getByText(/area asking-rent evidence \(market/i)).toBeInTheDocument();
+    expect(screen.getByText(/area context/i)).toBeInTheDocument();
+    expect(screen.getByText(/not this property’s achievable or recommended rent/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^Recommended rent$/i)).not.toBeInTheDocument();
+  });
+
+  test('stage tabs are keyboard accessible and do not rely on colour alone', async () => {
+    render(
+      <FinanceScenarioForm
+        form={{ ...EMPTY_FINANCE_SCENARIO }}
+        onChange={() => {}}
+        decisionJob="LET_INVEST"
+        listingSubject
+      />
+    );
+    const deal = screen.getByTestId('let-stage-tab-property_rent');
+    deal.focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByTestId('let-stage-tab-operating')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('let-stage-tab-operating')).toHaveTextContent(/Current/i);
+  });
+
+
+  test('BUY does not show LET unlock guidance', () => {
+    render(
+      <FinanceScenarioForm
+        form={{ ...EMPTY_FINANCE_SCENARIO }}
+        onChange={() => {}}
+        decisionJob="BUY"
+      />
+    );
+    expect(screen.queryByTestId('let-underwriting-unlock-guide')).not.toBeInTheDocument();
   });
 
   test('stale results are identified after editing inputs', () => {
@@ -103,5 +232,34 @@ describe('FinanceScenarioForm', () => {
     expect(screen.getByText('£200,000')).toBeInTheDocument();
     expect(screen.queryByText('£0 pcm')).not.toBeInTheDocument();
     expect(screen.getAllByText('Not on file').length).toBeGreaterThan(0);
+  });
+
+  test('BUY hides landlord operating costs while keeping optional finance', () => {
+    render(
+      <div>
+        <FinanceScenarioForm
+          form={{ ...EMPTY_FINANCE_SCENARIO }}
+          onChange={() => {}}
+          decisionJob="BUY"
+        />
+      </div>
+    );
+    expect(screen.getByLabelText(/your purchase price/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/your expected monthly rent/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/vacancy assumption/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/^deposit$/i)).toBeInTheDocument();
+  });
+
+  test('SELL does not require finance or invented listing strategy inputs', () => {
+    render(
+      <FinanceScenarioForm
+        form={{ ...EMPTY_FINANCE_SCENARIO }}
+        onChange={() => {}}
+        decisionJob="SELL"
+      />
+    );
+    expect(screen.getByTestId('sell-finance-not-required')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/vacancy assumption/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/your purchase price/i)).not.toBeInTheDocument();
   });
 });

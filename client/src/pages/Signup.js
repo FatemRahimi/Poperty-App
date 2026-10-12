@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import "./Signup.css";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { resolveAuthReturnPath } from "../Utils/authReturnPath";
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency
 
 const Signup = () => {
@@ -14,8 +15,7 @@ const Signup = () => {
   const params = new URLSearchParams(location.search);
   const error = params.get('error');
 
-  // Get the redirect path from location state
-  const from = location.state?.from?.pathname || "/find";
+  const from = resolveAuthReturnPath(location.state?.from, "/find");
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -33,13 +33,13 @@ const Signup = () => {
       if (response.ok) {
         // Signup successful, redirect to login with success message AND preserve redirect path
         navigate('/login?signup=success', { 
-          state: { from: { pathname: from } } 
+          state: { from } 
         });
       } else {
         // If user already exists, redirect to login AND preserve redirect path
         if (data.error === 'User already exists') {
           navigate('/login?error=user_exists', { 
-            state: { from: { pathname: from } } 
+            state: { from } 
           });
         } else {
           setErrorMsg(data.error);
@@ -121,7 +121,7 @@ const Signup = () => {
             <p className="login-text mt-4">
               Already have an account? <Link 
                 to="/login" 
-                state={{ from: { pathname: from } }}
+                state={{ from }}
               >
                 Sign in
               </Link>

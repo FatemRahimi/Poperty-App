@@ -144,6 +144,7 @@ async function analyse(body = {}, listingOverrides = {}) {
     options: {
       skipExplanation: true,
       skipPostcodeMarket: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding: true,

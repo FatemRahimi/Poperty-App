@@ -87,6 +87,7 @@ async function assemble(extra = {}) {
     options: {
       skipExplanation: extra.skipExplanation !== false,
       skipPostcodeMarket: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding: true,

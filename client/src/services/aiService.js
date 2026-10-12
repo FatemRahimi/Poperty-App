@@ -229,6 +229,16 @@ export async function unlinkIntelligenceSubject(subjectId) {
   return data;
 }
 
+export async function getSubjectPropertyAttributes(subjectId) {
+  const { data } = await api.get(`/api/ai/intelligence/subjects/${subjectId}/attributes`);
+  return data;
+}
+
+export async function putSubjectPropertyAttributes(subjectId, payload) {
+  const { data } = await api.put(`/api/ai/intelligence/subjects/${subjectId}/attributes`, payload);
+  return data;
+}
+
 export async function analyseSubjectIntelligence(subjectId, options = {}) {
   const { data } = await api.post(`/api/ai/intelligence/subjects/${subjectId}/analyse`, options);
   return data;

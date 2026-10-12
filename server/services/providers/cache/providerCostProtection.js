@@ -9,11 +9,14 @@ const { propertyIntelligenceConfig } = require('../../../config/propertyIntellig
 const PROVIDER_LOOKUP_LIMIT = 'PROVIDER_LOOKUP_LIMIT';
 const LOOKUP_QUERY_INVALID = 'LOOKUP_QUERY_INVALID';
 const PROVIDER_TEMPORARILY_UNAVAILABLE = 'PROVIDER_TEMPORARILY_UNAVAILABLE';
+const PROVIDER_REQUEST_REJECTED = 'PROVIDER_REQUEST_REJECTED';
 
 const PUBLIC_MESSAGES = {
   [PROVIDER_LOOKUP_LIMIT]: 'Property lookup limit reached. Try again later.',
   [LOOKUP_QUERY_INVALID]: 'Enter at least 3 characters (address or postcode).',
   [PROVIDER_TEMPORARILY_UNAVAILABLE]: 'External property data is temporarily unavailable.',
+  [PROVIDER_REQUEST_REJECTED]:
+    'External property data request was rejected due to incomplete or invalid inputs.',
 };
 
 function logProviderCostEvent({
@@ -65,6 +68,15 @@ function classifyProviderFailure(error) {
       code: PROVIDER_TEMPORARILY_UNAVAILABLE,
       usageCode: 'not_configured',
       message: PUBLIC_MESSAGES[PROVIDER_TEMPORARILY_UNAVAILABLE],
+    };
+  }
+  // Live PropertyData 400 "Missing input: construction_date" is a request contract failure,
+  // not temporary provider downtime.
+  if (/\b400\b|missing input|invalid (?:parameter|param|request)|bad request/i.test(message)) {
+    return {
+      code: PROVIDER_REQUEST_REJECTED,
+      usageCode: 'request_contract',
+      message: PUBLIC_MESSAGES[PROVIDER_REQUEST_REJECTED],
     };
   }
   return {
@@ -153,6 +165,7 @@ module.exports = {
   PROVIDER_LOOKUP_LIMIT,
   LOOKUP_QUERY_INVALID,
   PROVIDER_TEMPORARILY_UNAVAILABLE,
+  PROVIDER_REQUEST_REJECTED,
   PUBLIC_MESSAGES,
   logProviderCostEvent,
   classifyProviderFailure,

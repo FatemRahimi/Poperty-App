@@ -4,7 +4,12 @@
 
 .ai-workspace {
   min-height: 100vh;
-  background: #0b0f17;
+  max-width: 100%;
+  overflow-x: clip;
+  background:
+    radial-gradient(1200px 480px at 12% -10%, rgba(56, 189, 248, 0.08), transparent 55%),
+    radial-gradient(900px 420px at 90% 0%, rgba(148, 163, 184, 0.06), transparent 50%),
+    #101722;
   color: #e8edf5;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   padding-top: 0;
@@ -87,8 +92,8 @@
 }
 
 .ai-workspace-sidebar {
-  background: #0f1623;
-  border-right: 1px solid #1f2937;
+  background: rgba(15, 22, 35, 0.92);
+  border-right: 1px solid rgba(148, 163, 184, 0.14);
   padding: 1.25rem 0.85rem 2rem;
   overflow-y: auto;
   position: sticky;
@@ -128,14 +133,38 @@
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.5rem 0.65rem;
-  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
   color: #94a3b8;
   text-decoration: none;
   font-size: 0.82rem;
   font-weight: 500;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.2rem;
   transition: background 0.15s, color 0.15s;
+  min-height: 44px;
+}
+
+.ai-nav-link-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.ai-nav-link-label {
+  line-height: 1.25;
+}
+
+.ai-nav-link-hint {
+  font-style: normal;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.01em;
+}
+
+.ai-nav-link.active .ai-nav-link-hint {
+  color: #7dd3fc;
 }
 
 .ai-nav-link svg {
@@ -175,28 +204,29 @@
 
 .ai-workspace-main {
   padding: 1.75rem 1.5rem 3rem;
-  background: #0b0f17;
+  background: transparent;
   min-width: 0;
 }
 
 .ai-page-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.35rem;
+  max-width: 52rem;
 }
 
 .ai-page-header h1 {
-  margin: 0 0 0.4rem;
-  font-size: 1.65rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  margin: 0 0 0.45rem;
+  font-size: clamp(1.55rem, 2.4vw, 1.9rem);
+  font-weight: 750;
+  letter-spacing: -0.03em;
   color: #f8fafc;
 }
 
 .ai-page-header p {
   margin: 0;
   color: #94a3b8;
-  font-size: 0.95rem;
-  max-width: 640px;
-  line-height: 1.55;
+  font-size: 1rem;
+  max-width: 40rem;
+  line-height: 1.5;
 }
 
 /* Intelligence cards */
@@ -289,11 +319,12 @@
 }
 
 .ai-panel {
-  background: #111827;
-  border: 1px solid #1f2937;
-  border-radius: 12px;
-  padding: 1.25rem;
+  background: rgba(17, 24, 39, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 16px;
+  padding: 1.35rem 1.4rem;
   margin-bottom: 1.25rem;
+  box-shadow: 0 12px 40px rgba(2, 6, 23, 0.28);
 }
 
 .ai-panel h2 {
@@ -785,6 +816,25 @@
 }
 
 @media (max-width: 768px) {
+  .ai-workspace-topbar {
+    gap: 0.4rem;
+    padding: 0 0.65rem;
+    min-width: 0;
+  }
+
+  .ai-workspace-home-link {
+    display: none;
+  }
+
+  .ai-credits-pill {
+    max-width: 7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.7rem;
+    padding: 0.28rem 0.5rem;
+  }
+
   .ai-sidebar-toggle {
     display: block;
   }

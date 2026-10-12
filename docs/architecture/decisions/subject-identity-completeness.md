@@ -25,7 +25,7 @@ The historical HMLR ledger is present (31,525,946 live transactions). Exact subj
 |---|---|
 | `VERIFIED_EXACT` | Reserved for exact official unique confirmation. Unused in this inventory backfill. |
 | `SOURCE_ASSERTED` | Listing fields or a unique licensed UPRN match. Not verified. |
-| `USER_DECLARED` | Explicit user identity input. Not implemented on the listing form in this phase. |
+| `USER_DECLARED` | Explicit owner/admin identity input on create/edit. First-party evidence. Never promoted to `VERIFIED_EXACT` because it was typed in a form. |
 | `INFERRED` | Must not be labelled verified. Not used to invent UPRN or merge units. |
 | `UNRESOLVED` | Insufficient or ambiguous identity. Valid. |
 
@@ -64,4 +64,28 @@ Manual audit of the one exact match (listing 63, PAON 15 / WV14 6BA vs HMLR 15 C
 
 ## Follow-on (2026-09-01)
 
-User-declared identity remains a valid later fallback. It is **not** the next implementation. Official MHCLG Energy Performance of Buildings (England and Wales) is the selected next source for unique UPRN + physical/energy evidence. See `physical-property-identity-source.md`. That source is **NOT_IMPLEMENTED**.
+Official MHCLG Energy Performance of Buildings (England and Wales) acquisition path is live (`official-epb-evidence-1.0.0`). Controlled 86-listing enrich 2026-09-01: unique attach 2/86; canonical UPRN 2/86; `UNRESOLVED_UNIT_IDENTITY` 24 (0 canonical SAON).
+
+## User-declared identity (2026-09-01)
+
+Owner/admin capture and edit of canonical PAON, SAON/unit, building name, and optional UPRN is implemented on the existing identity tables (migration `027`). It is **not** official verification.
+
+- Source/display address remains on `properties.*`. Canonical components live on `property_identities`.
+- User-entered components are `USER_DECLARED` / `USER_DECLARED` evidence. The client cannot inject `VERIFIED_EXACT`, `OFFICIAL`, `OFFICIAL_OPEN`, or provider provenance.
+- UPRN is optional, structurally validated (`1–12` digits, not all zeros), never derived, and never looked up from PropertyData on create/edit/analyse.
+- A user-declared UPRN that differs from an existing EPB/licensed UPRN records a conflict event and does not overwrite the official claim.
+- Building name is a separate column from SAON/unit. `12` is not `12A`. Flat 5 is not Flat 6.
+- Land and development sites may omit PAON/SAON/UPRN. Those gaps stay `UNRESOLVED` / not applicable; parcel and title identity are not invented.
+- Identity changes do not rewrite historical `ai_requests` snapshots.
+- Existing 86 listings were **not** auto-filled. Coverage improves only when an authorized user actually declares identity.
+- Future EPB/HMLR analyses may use improved canonical identity through the **existing** exact matchers. The EPB unit gate is unchanged: unit-like + no SAON remains unresolved.
+
+APIs (JWT; owner or admin; unauthorized → 404, not a public identity feed):
+
+- `GET /api/properties/:id/identity`
+- `GET /api/properties/:id/identity/events`
+- `PUT /api/properties/:id/identity`
+
+Create/update listing also accepts `identity_paon`, `identity_saon`, `identity_building_name`, `identity_uprn` without blocking listing persistence.
+
+See `physical-property-identity-source.md` and `official-epb-evidence.md`.

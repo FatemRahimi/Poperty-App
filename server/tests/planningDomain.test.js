@@ -131,6 +131,7 @@ async function analyse({ propertyOverrides = {}, planningStub, options = {} } = 
       skipExplanation: true,
       skipPostcodeMarket: true,
       skipFlood: true,
+      skipEpb: true,
       skipSchools: true,
       skipListedBuilding: true,
       skipConservationArea: true,
@@ -343,9 +344,10 @@ test('45. V1.1 tag unchanged', () => {
 });
 
 test('46. unrelated domains remain unwired', () => {
-  ['BUILDING_CONDITION', 'PROJECT_COST', 'DECISION', 'VALUATION'].forEach((id) => {
+  ['PROJECT_COST', 'DECISION', 'VALUATION'].forEach((id) => {
     assert.strictEqual(platformRegistry.getDomain(id).wiredIntoLiveAnalysis, false);
   });
+  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.LEGAL_TITLE).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.PLANNING).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.ENVIRONMENT).wiredIntoLiveAnalysis, true);

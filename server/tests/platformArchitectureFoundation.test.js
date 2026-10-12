@@ -421,9 +421,9 @@ test('DI V2 contribution cannot create domain facts', () => {
   assert.strictEqual(c.createsDomainFacts, false);
 });
 
-test('platform registry has no cycles and only MARKET, PLANNING, ENVIRONMENT, and LEGAL_TITLE are wired live', () => {
+test('platform registry has no cycles and MARKET, PLANNING, ENVIRONMENT, LEGAL_TITLE, and BUILDING_CONDITION are wired live', () => {
   platformRegistry.finalize();
-  const live = new Set([DOMAIN_ID.MARKET, DOMAIN_ID.PLANNING, DOMAIN_ID.ENVIRONMENT, DOMAIN_ID.LEGAL_TITLE]);
+  const live = new Set([DOMAIN_ID.MARKET, DOMAIN_ID.PLANNING, DOMAIN_ID.ENVIRONMENT, DOMAIN_ID.LEGAL_TITLE, DOMAIN_ID.BUILDING_CONDITION]);
   for (const id of platformRegistry.listDomainIds()) {
     assert.strictEqual(
       platformRegistry.getDomain(id).wiredIntoLiveAnalysis,

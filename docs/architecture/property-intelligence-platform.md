@@ -38,10 +38,10 @@ REQUEST
   → access / subject resolution
   → identity (listing / subject / canonical PAON/SAON / optional unique UPRN)
   → asset classification
-  → evidence retrieval (listing, official HMLR PPD query, PropertyData overlay, open data, private legal docs)
+  → evidence retrieval (listing, official HMLR PPD query, official MHCLG EPB, PropertyData overlay, open data, private legal docs)
   → residential methodology gate (valuation + rent)
-  → finance / confidence / Personal Decision / Decision Intelligence
-  → live domains: MARKET, PLANNING, ENVIRONMENT, LEGAL_TITLE
+  → finance / confidence / Personal Decision (job-routed) / Decision Intelligence (LET_INVEST) / residential decision workspace
+  → live domains: MARKET, PLANNING, ENVIRONMENT, LEGAL_TITLE, BUILDING_CONDITION (energy/physical only)
   → presentation
   → immutable AiRequest snapshot
 ```
@@ -74,10 +74,24 @@ Deterministic systems decide eligibility and arithmetic. LLMs may explain struct
 | --- | --- |
 | `implementation-status.md` | What is implemented today |
 | `roadmap.md` | NOW / NEXT / LATER / PARKED / BLOCKED |
+| `decisions/product-intelligence-review.md` | 2026-09-01 product/decision checkpoint; next capability was a residential decision workspace, not more empty domains |
+| `decisions/post-avm-product-value-review.md` | Post-AVM checkpoint; selected Official HMLR comparable assessment; AVM parked |
+| `decisions/post-comparable-decision-value-review.md` | Post-comparable checkpoint; next is BUY/SELL pack real-product validation (no new capability) |
+| `decisions/post-comparable-buy-sell-pack-validation.md` | BUY/SELL pack validation after comps v1.1; BUY/SELL not yet strong wedge; MARKET_CONTEXT potentially misleading in key tiles |
+| `decisions/market-context-presentation-integrity.md` | MARKET_CONTEXT demoted from assessed key styling to supporting context |
+| `decisions/let-invest-decision-coverage-next-gap-review.md` | LET wedge coverage checkpoint; next is minimal/partial/complete underwriting real-product validation |
+| `decisions/let-invest-underwriting-real-product-validation.md` | LET minimal/partial/complete validation; ready for limited GTM test |
+| `decisions/let-invest-limited-gtm-validation.md` | Limited real-user GTM protocol; results pending; no PMF |
+| `decisions/let-invest-pre-gtm-ui-ux-readiness-audit.md` | Pre-GTM UI audit; small presentation closure before facilitated users |
+| `decisions/let-invest-pre-gtm-usability-closure.md` | Presentation-only closure; facilitated validation can begin |
+| `decisions/let-invest-limited-gtm-participant-script.md` | Facilitator script for LET GTM sessions |
+| `decisions/let-invest-limited-gtm-results-template.json` | Session results template (empty pending) |
+| `decisions/residential-decision-workspace.md` | Implemented V1 workspace: BUY / LET_INVEST / SELL presentation of existing assessed intelligence |
 | `data-sources.md` | Live data sources and limits |
 | `decisions/cross-asset-market-data-acquisition.md` | Official HMLR PPD ingest decision and current implementation limits |
+| `decisions/physical-property-identity-source.md` | Official MHCLG EPB source decision |
+| `decisions/official-epb-evidence.md` | Implemented EPB acquisition, licensing, and identity semantics |
 | `v1.2-platform-foundation.md` | Historical kernel contract notes |
 | `v1.2-property-identity.md` | Classification and methodology gate; canonical subject identity notes |
 | `decisions/subject-identity-completeness.md` | Listing identity contract, unique UPRN gate, live coverage |
-| `decisions/physical-property-identity-source.md` | Next official source decision (MHCLG EPB). Not implemented. |
 | Domain `v1.2-*-foundation.md` files | Domain-specific contracts |

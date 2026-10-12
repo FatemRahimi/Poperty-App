@@ -5,22 +5,31 @@ Cursor recommendations and old phase labels are historical input only.
 
 ## NOW
 
-Canonical subject identity is **implemented**: contract `canonical-subject-identity-1.0.0`, listing-field PAON/postcode persistence, unique-UPRN gate, analyse uses persisted identity without paying PropertyData on every run. Official HMLR historical ledger remains **implemented and operationally validated** (31,525,946 live transactions, 1995–2026). Exact subject matching is still exact-only. After identity backfill, existing listings: **1 EXACT_CANONICAL_ADDRESS**, **0 EXACT_UPRN**, **48 AREA_POSTCODE**, **37 NO_TRANSACTIONS_FOUND**. UPRN coverage on listings is still 0. SAON coverage is 0. Residential PI, Planning, Environment, Legal-foundation, and PropertyData overlays remain. No specialised non-residential valuation.
+Residential decision workspace V1 (2026-09-01): Property Intelligence requires an explicit residential job (`BUY` / `LET_INVEST` / `SELL`) and presents existing assessed outputs as a decision pack. HTTP analyse no longer silently treats every analysis as a landlord decision. Landlord formulas stay frozen for `LET_INVEST`. See `decisions/residential-decision-workspace.md`.
+
+LET_INVEST underwriting input completion (2026-09-01): Workspace unresolved finance gaps link to progressive finance-form sections; complete user inputs unlock NOI / cash flow / DSCR where frozen methodology allows. Valuation safety unchanged. See `decisions/let-invest-underwriting-input-completion.md`.
+
+Valuation evidence pipeline correctness (2026-09-02): Fixed `property_enrichments` upsert ON CONFLICT vs partial unique index; shared property_type tokenisation; structured AVM readiness (`MISSING_INTERNAL_AREA`, etc.). After fix: enrichments persist and `sold_prices_statistics` components reach valuation engine on sale sample; **0/6** ASSESSED (methodology-correct). See `decisions/valuation-evidence-pipeline-correctness.md`.
+
+Property attribute evidence readiness — provenanced internal area (2026-09-02): Canonical internal-area contract; resolution from persisted EPB, listing fields, UPRN profile, optional user declaration; wired to `/valuation-sale` readiness without fabrication or methodology change. See `decisions/property-attribute-internal-area-readiness.md`.
+
+Listing internal-area capture (2026-09-02): Optional internal floor area + unit on AddList/AddRent create/edit; server-validated LISTING_SUPPLIED persistence feeding existing canonical resolver. See `decisions/listing-internal-area-capture.md`.
 
 ## NEXT
 
-**Official MHCLG Energy Performance of Buildings (England and Wales) acquisition — identity + physical/energy evidence. NOT IMPLEMENTED.**
+LET_INVEST pre-GTM usability closure (2026-09-09): Presentation-only fixes for rent-basis safety, LET unlock guidance, underwriting field focus, user-facing external-lookup errors, and early gross-yield orientation. Facilitated GTM may begin. See `decisions/let-invest-pre-gtm-usability-closure.md`.
 
-Decision: `docs/architecture/decisions/physical-property-identity-source.md`. Unique exact certificate match only. Persist OGL UPRN as `SOURCE_ASSERTED` / `OFFICIAL`, not `VERIFIED_EXACT`. Persist floor area, ratings, built form, construction age, and envelope/heating descriptions as energy/physical facts. EPC is not a survey and must not enter valuation.
+**Execute next:** **V1.2 — LET_INVEST Limited Real-User GTM Validation** (`decisions/let-invest-limited-gtm-validation.md`). Real-user results still PENDING. Do not start rental engine V2, DI V2, or valuation.
 
-Do not add fuzzy matching. Do not start commercial valuation, CRE procurement, ERV, GDV, or Phase 9.3. User-declared UPRN/PAON/SAON remains a later fallback. Controlled unique PropertyData UPRN (`enrich:listing-identity --paid-uprn`) remains an existing licensed fallback, not the next implementation.
+Prior audit: `decisions/let-invest-pre-gtm-ui-ux-readiness-audit.md`. Prior underwriting validation: `decisions/let-invest-underwriting-real-product-validation.md`. BUY/SELL remain parked. MARKET_CONTEXT presentation integrity remains closed.
 
-This is the single recommended next implementation. Do not start specialised valuation engines.
+Do not reopen BUY/SELL as the wedge. Do not add fuzzy matching. Do not loosen comparable v1.1 sufficiency. Controlled unique PropertyData UPRN (`enrich:listing-identity --paid-uprn`) remains an existing licensed fallback, not the next official source.
 
 ## LATER
 
-- Specialist commercial/industrial transaction and lease procurement (Kato Atlas and/or CoStar) after the official PPD layer exists
-- Specialised valuation family (commercial / industrial / agricultural / land) — only after a real methodology and evidence model exist
+- Bounded EPB re-acquisition for listings that actually have declared SAON (existing exact matcher only)
+- Specialist commercial/industrial transaction and lease procurement (Kato Atlas and/or CoStar) only after a real CRE methodology and evidence model exist
+- Specialised valuation family (commercial / industrial / agricultural / land) — only after authoritative methodology research
 - Income / occupancy / lease intelligence (not residential rent reused)
 - Finance presentation generalisation beyond BTL
 - Building condition intelligence after real inspection evidence
@@ -52,8 +61,8 @@ Identity + classification + methodology gate + Market evidence envelope
     → official HMLR Price Paid monthly ingest (validated)
         → historical PPD backfill (validated, yearly 1995–2026)
             → listing identity completeness (canonical PAON/SAON contract; UPRN unique-only)
-                → official MHCLG EPB (E&W) physical + unique UPRN evidence (DECIDED, not implemented)
-                → later user-declared UPRN/PAON/SAON fallback
+                → official MHCLG EPB (E&W) physical + unique UPRN evidence (live path evidenced 2026-09-01; unique attach 2/86; coverage limited by identity)
+                → user-declared UPRN/PAON/SAON/building capture (first-party; not verification)
                 → later specialist CRE source, then specialised valuation / income engines
 Legal live wiring
     → private evidence production (PARKED / blocked by infrastructure)

@@ -11,6 +11,11 @@ const {
 } = require('../../config/propertyIntelligence.config');
 const { buildSoldPriceFilters } = require('../providers/propertyData/propertyTypeMapping');
 const { applyPropertyDataEvidence } = require('../providers/propertyData/propertyDataEvidence');
+const { buildValuationSaleRequest } = require('../providers/propertyData/propertyTypeMapping');
+const {
+  resolveCanonicalInternalArea,
+  applyCanonicalInternalAreaToProperty,
+} = require('../identity/internalAreaResolution');
 const { getProviderRegistry } = require('../providers/ProviderRegistry');
 const { mergeSources, createProvenance } = require('../../utils/provenance');
 const { normalisePostcode, buildAddressFromProperty } = require('../../utils/ukAddress');
@@ -30,6 +35,7 @@ const {
 } = require('./intelligenceSubjectRepository');
 const { acquisitionFromContext } = require('../identity/marketAcquisitionPolicy');
 const { extractCanonicalAddress } = require('../identity/canonicalAddress');
+const { listingFieldsRespectingDeclaration } = require('../identity/userDeclaredIdentity');
 const {
   hasReusableUprn,
   uprnResolutionAlreadyAttempted,
@@ -103,6 +109,7 @@ async function findCanonicalSubject(property = {}, context = {}, deps = {}) {
 
 async function persistListingFields(property, existing, upsert) {
   const listing = extractCanonicalAddress(property);
+  const merged = listingFieldsRespectingDeclaration(listing, existing || {});
   const existingLimitations = existing?.identity_limitations || existing?.identityLimitations || {};
   const notes = typeof existingLimitations === 'object' && existingLimitations.notes
     ? existingLimitations.notes
@@ -117,22 +124,23 @@ async function persistListingFields(property, existing, upsert) {
     uprn: existing?.uprn || null,
     uprnMode: 'preserve',
     normalizedAddress: listing.canonicalAddress || existing?.normalized_address || existing?.normalizedAddress || buildAddressFromProperty(property),
-    postcode: listing.postcode || existing?.postcode || normalisePostcode(property.zip_code || property.postcode) || null,
+    postcode: merged.postcode || listing.postcode || existing?.postcode || normalisePostcode(property.zip_code || property.postcode) || null,
     latitude: existing?.latitude || property.latitude,
     longitude: existing?.longitude || property.longitude,
-    matchConfidence: existing?.match_confidence || existing?.matchConfidence || (listing.paon && listing.postcodeCompact ? 'medium' : 'low'),
+    matchConfidence: existing?.match_confidence || existing?.matchConfidence || (merged.paon && (merged.postcodeCompact || listing.postcodeCompact) ? 'medium' : 'low'),
     matchMethod: existing?.match_method || existing?.matchMethod || 'listing_fields',
     provider: existing?.provider || 'InternalListing',
     providerPayload: existing?.provider_payload || existing?.providerPayload || { source: 'application_database' },
-    paon: listing.paon,
-    saon: listing.saon,
-    postcodeCompact: listing.postcodeCompact || existing?.postcode_compact || existing?.postcodeCompact,
-    identityState: existing?.uprn ? IDENTITY_VERIFICATION_STATE.SOURCE_ASSERTED : listing.identityState,
+    paon: merged.paon,
+    saon: merged.saon,
+    buildingName: merged.buildingName,
+    postcodeCompact: merged.postcodeCompact || listing.postcodeCompact || existing?.postcode_compact || existing?.postcodeCompact,
+    identityState: existing?.identity_state || existing?.identityState || (existing?.uprn ? IDENTITY_VERIFICATION_STATE.SOURCE_ASSERTED : listing.identityState),
     identitySource: existing?.identity_source || existing?.identitySource || listing.identitySource,
     evidenceSourceType: existing?.evidence_source_type || existing?.evidenceSourceType || listing.evidenceSourceType,
-    verificationState: existing?.uprn
+    verificationState: existing?.verification_state || existing?.verificationState || (existing?.uprn
       ? IDENTITY_VERIFICATION_STATE.SOURCE_ASSERTED
-      : listing.verificationState,
+      : listing.verificationState),
     retrievedAt: existing?.retrieved_at || existing?.retrievedAt || listing.retrievedAt,
     uprnRetrievedAt: existing?.uprn_retrieved_at || existing?.uprnRetrievedAt || null,
     identityLimitations: {
@@ -140,6 +148,7 @@ async function persistListingFields(property, existing, upsert) {
       uprnResolutionAttempted: attempted,
     },
     sourceAddress: listing.sourceAddress,
+    componentStates: merged.componentStates,
   });
 }
 
@@ -162,6 +171,7 @@ async function resolvePropertyIdentity(property, context = {}) {
   const knownUprn = existing?.uprn || property.uprn || context.uprn || subject?.uprn || null;
   if (knownUprn) {
     const listing = extractCanonicalAddress(property);
+    const merged = listingFieldsRespectingDeclaration(listing, existing || {});
     const identity = await upsert({
       propertyId: property.id,
       uprn: String(knownUprn),
@@ -169,7 +179,7 @@ async function resolvePropertyIdentity(property, context = {}) {
       normalizedAddress:
         subject?.normalized_address || existing?.normalized_address || listing.canonicalAddress
         || buildAddressFromProperty(property),
-      postcode: listing.postcode || normalisePostcode(
+      postcode: merged.postcode || listing.postcode || normalisePostcode(
         property.zip_code || property.postcode || subject?.postcode || existing?.postcode
       ),
       latitude: subject?.latitude || existing?.latitude || property.latitude,
@@ -181,14 +191,16 @@ async function resolvePropertyIdentity(property, context = {}) {
         reusedFrom: subject ? 'intelligence_subject' : 'known_uprn',
         subjectId: subject?.id || context.subjectId || null,
       },
-      paon: listing.paon,
-      saon: listing.saon,
-      postcodeCompact: listing.postcodeCompact,
-      identityState: IDENTITY_VERIFICATION_STATE.SOURCE_ASSERTED,
+      paon: merged.paon,
+      saon: merged.saon,
+      buildingName: merged.buildingName,
+      postcodeCompact: merged.postcodeCompact || listing.postcodeCompact,
+      identityState: existing?.identity_state || IDENTITY_VERIFICATION_STATE.SOURCE_ASSERTED,
       identitySource: subject?.provider || existing?.identity_source || 'PropertyData',
-      evidenceSourceType: IDENTITY_EVIDENCE_SOURCE_TYPE.LICENSED_PROVIDER,
-      verificationState: IDENTITY_VERIFICATION_STATE.SOURCE_ASSERTED,
+      evidenceSourceType: existing?.evidence_source_type || IDENTITY_EVIDENCE_SOURCE_TYPE.LICENSED_PROVIDER,
+      verificationState: existing?.verification_state || IDENTITY_VERIFICATION_STATE.SOURCE_ASSERTED,
       sourceAddress: listing.sourceAddress,
+      componentStates: merged.componentStates,
       identityLimitations: {
         notes: listing.limitations,
         uprnResolutionAttempted: true,
@@ -482,17 +494,37 @@ async function enrichPropertyForIntelligence(property, context = {}) {
     }
   }
 
-  if (acquisition.fetchSaleValuation && marketProvider?.isAvailable() && property.category === 'sale') {
-    const avmProperty = applyPropertyDataEvidence(property, { enrichments, identity }).property;
+  // Listing path only — subject-native AVM uses executeSubjectNativeSaleValuation /
+  // enrichSubjectForIntelligence (subject_id persistence), not listing property.id FK.
+  if (acquisition.fetchSaleValuation && marketProvider?.isAvailable() && property.category === 'sale' && property.id) {
+    const areaResolution = await resolveCanonicalInternalArea({
+      property,
+      identity,
+      externalEnrichment: { enrichments, identity },
+      userDeclared: context.declaredInternalArea || null,
+      loadPersistedEpb: true,
+      deps,
+    });
+    const avmBaseProperty = applyCanonicalInternalAreaToProperty(property, areaResolution);
+    const avmProperty = applyPropertyDataEvidence(avmBaseProperty, { enrichments, identity }).property;
+    const avmReadiness = buildValuationSaleRequest(avmProperty);
     try {
-      const valResult = await fetchAndPersistEnrichment({
-        property,
-        enrichmentType: 'valuation_sale',
-        source: 'PropertyData',
-        ttlMs: propertyIntelligenceConfig.cacheTtl.valuation,
-        context: ctx,
-        fetchFn: () => marketProvider.getSaleValuation(avmProperty, ctx),
-      });
+      const valResult = avmReadiness.canRequestAvm
+        ? await fetchAndPersistEnrichment({
+            property,
+            enrichmentType: 'valuation_sale',
+            source: 'PropertyData',
+            ttlMs: propertyIntelligenceConfig.cacheTtl.valuation,
+            context: ctx,
+            fetchFn: () => marketProvider.getSaleValuation(avmProperty, ctx),
+          })
+        : {
+            success: false,
+            enrichmentType: 'valuation_sale',
+            source: 'PropertyData',
+            message: avmReadiness.readiness?.reasonCode || 'MISSING_INTERNAL_AREA',
+            readiness: avmReadiness.readiness,
+          };
       enrichments.valuation_sale = valResult;
       if (valResult.creditsUsed) totalCreditsUsed += valResult.creditsUsed;
       if (!valResult.success && valResult.message) {
@@ -525,9 +557,49 @@ async function enrichPropertyForIntelligence(property, context = {}) {
   };
 }
 
+/**
+ * Bounded late fetch when internal area becomes eligible after EPB/live resolution
+ * but enrichment already completed without valuation_sale.
+ */
+async function fetchSaleValuationIfEligible(property, externalEnrichment = {}, context = {}) {
+  const enrichments = { ...(externalEnrichment.enrichments || {}) };
+  if (enrichments.valuation_sale?.success) {
+    return { ...externalEnrichment, enrichments };
+  }
+  const deps = context.deps || {};
+  const registry = deps.getProviderRegistry ? deps.getProviderRegistry() : getProviderRegistry();
+  const marketProvider = deps.marketProvider || registry.getPrimaryMarketDataProvider();
+  if (!marketProvider?.isAvailable() || property.category !== 'sale' || !property.id) {
+    return { ...externalEnrichment, enrichments };
+  }
+  const identity = externalEnrichment.identity || extractCanonicalAddress(property);
+  const avmReadiness = buildValuationSaleRequest(property);
+  if (!avmReadiness.canRequestAvm) {
+    return { ...externalEnrichment, enrichments };
+  }
+  const ctx = { userId: context.userId, propertyId: property.id, deps };
+  const valResult = await fetchAndPersistEnrichment({
+    property,
+    enrichmentType: 'valuation_sale',
+    source: 'PropertyData',
+    ttlMs: propertyIntelligenceConfig.cacheTtl.valuation,
+    context: ctx,
+    fetchFn: () => marketProvider.getSaleValuation(property, ctx),
+  });
+  enrichments.valuation_sale = valResult;
+  return {
+    ...externalEnrichment,
+    enrichments,
+    totalCreditsUsed: (externalEnrichment.totalCreditsUsed || 0) + (valResult.creditsUsed || 0),
+    partial: externalEnrichment.partial || !valResult.success,
+  };
+}
+
 module.exports = {
   resolvePropertyIdentity,
   enrichPropertyForIntelligence,
+  fetchAndPersistEnrichment,
+  fetchSaleValuationIfEligible,
   findCanonicalSubject,
   reusedUprnProfileFromSubject,
   listEnrichmentsForProperty,

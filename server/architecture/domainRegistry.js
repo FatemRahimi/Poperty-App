@@ -263,10 +263,10 @@ function buildPlatformRegistry() {
     version: BUILDING_CONDITION_DOMAIN_VERSION,
     implementationStatus: IMPLEMENTATION_STATUS.PARTIAL,
     dependencies: [DOMAIN_ID.IDENTITY],
-    dataAccess: [DATA_ACCESS.USER_DOCUMENT, DATA_ACCESS.LICENSED_PROVIDER, DATA_ACCESS.DB_ONLY],
+    dataAccess: [DATA_ACCESS.USER_DOCUMENT, DATA_ACCESS.OPEN_DATA, DATA_ACCESS.DB_ONLY],
     mayIncurProviderCost: false,
     deterministicCalculations: true,
-    wiredIntoLiveAnalysis: false,
+    wiredIntoLiveAnalysis: true,
     supportedAssetClasses: capabilityMap({
       LAND: CAPABILITY.NOT_APPLICABLE,
       AGRICULTURAL: CAPABILITY.CONDITIONAL,

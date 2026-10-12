@@ -26,7 +26,8 @@
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #38bdf8;
+  color: #94a3b8;
+  font-weight: 700;
 }
 
 .pi-pc-header h3 {
@@ -43,12 +44,27 @@
 }
 
 .pi-pc-conf {
-  display: inline-block;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 10px;
   font-size: 0.72rem;
   font-weight: 600;
+  text-align: right;
+}
+
+.pi-pc-conf-scope {
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: 0;
+  opacity: 0.9;
+}
+
+.pi-pc-conf-level {
   text-transform: uppercase;
+  font-size: 0.78rem;
 }
 
 .pi-pc-conf--high { background: rgba(34, 197, 94, 0.2); color: #86efac; }
@@ -312,3 +328,102 @@
 .pi-pc-actions {
   margin-top: 0.65rem;
 }
+
+.pi-pc-panel--area-primary {
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.pi-pc-panel--secondary {
+  opacity: 0.92;
+  border-style: dashed;
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.pi-pc-lead {
+  margin: 0.45rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.pi-pc-sources-compact {
+  margin: 0.55rem 0 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.pi-pc-sources-compact span {
+  color: #cbd5e1;
+}
+
+.pi-pc-primary-cta {
+  margin: 0 0 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(14, 165, 233, 0.1);
+}
+
+.pi-pc-select-btn {
+  width: 100%;
+  min-height: 48px;
+  font-weight: 700 !important;
+}
+
+.pi-pc-select-fallback-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.pi-pc-cta-note {
+  margin: 0.65rem 0 0;
+}
+
+.pi-pc-summary-lead {
+  margin: 0.85rem 0 0.5rem;
+  color: #cbd5e1;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.pi-pc-metrics-disclosure {
+  margin: 0 0 0.75rem;
+}
+
+.pi-pc-metrics-disclosure > summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: #e2e8f0;
+  padding: 0.35rem 0;
+}
+
+.pi-pc-metrics-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pi-property-match-anchor {
+  scroll-margin-top: 5rem;
+}
+
+@media (max-width: 640px) {
+  .pi-pc-header {
+    flex-direction: column;
+  }
+
+  .pi-pc-conf {
+    align-items: flex-start;
+  }
+
+  .pi-pc-select-btn {
+    min-height: 48px;
+  }
+}
+

@@ -528,6 +528,7 @@ asyncTest('provider calls are not duplicated inside canonical assemble', async (
   const { calls } = await runCanonical(LISTING, {
     providerCallLog,
     skipPostcodeMarket: true,
+      skipEpb: true,
     depOverrides: {
       analyseRent: async () => ({ success: false, comparables: [] }),
       calculatePropertyValuation: async () => ({ success: false }),

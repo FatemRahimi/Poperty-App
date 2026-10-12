@@ -43,7 +43,7 @@ const AiWorkspaceLayout = ({ children, title, subtitle }) => {
             <span className="ai-credits-pill">Credits: {credits}</span>
           )}
           {!isAuthenticated && (
-            <Link to="/login" state={{ from: location.pathname }} className="ai-btn ai-btn-primary ai-btn-sm">
+            <Link to="/login" state={{ from: `${location.pathname}${location.search || ''}` }} className="ai-btn ai-btn-primary ai-btn-sm">
               Sign in
             </Link>
           )}
@@ -73,8 +73,13 @@ const AiWorkspaceLayout = ({ children, title, subtitle }) => {
                         to={item.to}
                         end={item.exact}
                         className={({ isActive }) => `ai-nav-link ${isActive ? 'active' : ''}`}
+                        title={item.hint || item.label}
                       >
-                        <Icon /> {item.label}
+                        <Icon />
+                        <span className="ai-nav-link-text">
+                          <span className="ai-nav-link-label">{item.label}</span>
+                          {item.hint ? <em className="ai-nav-link-hint">{item.hint}</em> : null}
+                        </span>
                       </NavLink>
                     </li>
                   );

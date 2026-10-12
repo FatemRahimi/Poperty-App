@@ -20,21 +20,19 @@ Status labels used here:
 
 ## Identity
 
-**Status:** `IMPLEMENTED_AND_EVIDENCED` for canonical subject identity contract `canonical-subject-identity-1.0.0`, listing-field PAON/SAON/postcode persistence, unique-UPRN resolution gate, and analyse wiring.  
-`IMPLEMENTED_BUT_LIMITED` for live inventory coverage.
+**Status:** `IMPLEMENTED_AND_EVIDENCED` for canonical subject identity contract `canonical-subject-identity-1.0.0`, listing-field PAON/SAON/postcode persistence, unique-UPRN resolution gate, analyse wiring, and **user-declared subject identity capture/edit** (`USER_DECLARED`, not `VERIFIED_EXACT`).  
+`IMPLEMENTED_BUT_LIMITED` for live inventory coverage (existing 86 listings were not auto-filled).
 
 Kinds remain in `identityModel.js`. Canonical identity extends them; it does not equate LISTING / SUBJECT / PROPERTY / BUILDING / UNIT / TITLE.  
-UPRN is strong addressable-property evidence and is not a title number.
+Source listing address on `properties.*` is not canonical identity. User declaration is not verification. UPRN is not a title number. Building identity is not unit identity. Identity changes affect **future** analyses only; historical `ai_requests` snapshots are not rewritten.
 
-Persistence: additive `property_identities` columns (migration `025`) plus `property_identity_events`. Source listing fields on `properties` are not rewritten.  
-Resolution: deterministic listing canonicalisation (trim, postcode, explicit PAON/SAON). PropertyData `/address-match-uprn` may persist a UPRN only when exactly one distinct candidate exists. Multiple candidates stay `UNRESOLVED`. Analyse does not pay for identity. Controlled CLI: `npm run enrich:listing-identity` (optional `--paid-uprn`).
+Persistence: additive `property_identities` columns (migrations `025` and `027` `building_name` / `component_states`) plus `property_identity_events` (actor on `027`). Source listing fields on `properties` are not rewritten.  
+Resolution: deterministic listing canonicalisation (trim, postcode, explicit PAON/SAON). Owner/admin may declare PAON, SAON/unit, building name, and optional UPRN. Client cannot inject `VERIFIED_EXACT`, `OFFICIAL`, or provider provenance. A user-declared UPRN that conflicts with an official/licensed UPRN is recorded as a conflict and is not silently overwritten. PropertyData `/address-match-uprn` may persist a UPRN only when exactly one distinct candidate exists. Multiple candidates stay `UNRESOLVED`. Analyse does not pay for identity. Create/edit does not call PropertyData. Controlled CLI: `npm run enrich:listing-identity` (optional `--paid-uprn`).
 
 Live inventory after listing-field backfill (86 properties): UPRN 0; PAON 79; SAON 0; `VERIFIED_EXACT` 0; `SOURCE_ASSERTED` 77; `UNRESOLVED` 9.  
 HMLR exact linkage after identity: `EXACT_UPRN` 0; `EXACT_CANONICAL_ADDRESS` 1; `AREA_POSTCODE` 48; `NO_TRANSACTIONS_FOUND` 37.
 
-Official MHCLG Energy Performance of Buildings open data is the **recommended next identity + physical evidence source**. Status: `NOT_IMPLEMENTED`. Decision: `docs/architecture/decisions/physical-property-identity-source.md`. Live EPB API coverage of the 86 listings was **NOT_TESTED** (no One Login bearer token).
-
-Tests: `server/tests/canonicalIdentity.test.js`, plus identity flags on the live report.
+Official MHCLG EPB (England & Wales) unique-certificate attachment can persist a `SOURCE_ASSERTED` / `OFFICIAL_OPEN` UPRN into the same identity tables. It is never `VERIFIED_EXACT`. Controlled live backfill measured 2026-09-01 against 86 listings: BEFORE UPRN 0/86; AFTER UPRN **2/86** (both `SOURCE_ASSERTED` / `OFFICIAL_OPEN` / `MHCLG_EPBD`). Unique attach 2; unresolved unit identity 24; no exact PAON match 51; insufficient identity 7; geography not established 2; source errors 0. HMLR `EXACT_UPRN` remains 0; `EXACT_CANONICAL_ADDRESS` remains 1. Missing token still returns `UNAVAILABLE_MISSING_CREDENTIAL` and must not be treated as assessed. Future analyses may reuse user-declared SAON through the **existing** exact EPB matcher (unit-like + SAON may unique-attach; unit-like + no SAON stays `UNRESOLVED_UNIT_IDENTITY`). Form submit does not mass-re-enrich EPB. Tests: `server/tests/mhclgEpb.test.js`, `server/tests/canonicalIdentity.test.js`, `server/tests/userDeclaredIdentity.test.js`.
 
 ## Asset classification
 
@@ -61,7 +59,8 @@ UNKNOWN may use versioned `legacy-residential-compatibility-1.0.0` without becom
 Specialised commercial / industrial / agricultural / land / development market or comparable methodology is `NOT_IMPLEMENTED` / `BLOCKED_BY_EVIDENCE`.
 
 Live `MARKET` envelope (`marketDomain.js`) records subject identity/use, listing asking price, user-reported last sale, **official HMLR Price Paid subject/area transactions when imported**, PropertyData area transaction observations, area sales/rental market activity (when fetched), coverage counts, provenance, and explicit gaps.  
-Transactions are not comparables. Area context is not a subject fact. Missing evidence is not zero.  
+**Bounded residential comparable assessment** (`official-hmlr-residential-comparable-assessment` **1.1.0**): HIGH = same postcode + type + ≤3y; ASSESSED only with ≥3 HIGH; otherwise MARKET_CONTEXT when relevant txs exist. Genuine cohort: **2/6 ASSESSED**, **4/6 MARKET_CONTEXT**, **0** false ASSESSED. Comparable stats from HIGH only when ASSESSED; local sold stats separately labelled. Not a valuation. BUY/SELL workspace tiles distinguish “Comparable sold evidence” vs “Local sold transaction context”.  
+Transactions are not comparables. Area context is not a subject fact. Missing evidence is not zero. Market context is not a defensible comparable assessment.  
 Acquisition uses `resolveMarketAcquisitionPolicy` before PropertyData AVM/rent/demand-rent.  
 Official HMLR Price Paid Data has a durable offline ingest path (`official_sale_transactions`, `official_sale_lookup_links`, `npm run import:hmlr-ppd`). Analyse queries the local table only; it does not download the national dataset. **Official yearly PPD files 1995–2026 have been imported** (31,525,946 live transactions; `IMPLEMENTED_AND_EVIDENCED` for the historical ledger). July 2026 UPRN/INSPIRE lookups remain **current-month only** (94,112 UPRN links; 77,051 INSPIRE-linked txs). Missing historical UPRN/INSPIRE is NOT AVAILABLE FROM THIS SOURCE, not “unregistered”. Matching is exact UPRN, then exact postcode+PAON(+SAON); postcode-only remains AREA_CONTEXT. One transaction may have multiple official INSPIRE IDs; all are persisted. After subject-identity completeness, existing listings: **0 EXACT_UPRN**, **1 EXACT_CANONICAL_ADDRESS** (was 0), **48 AREA_POSTCODE** (was 49), **37 NO_TRANSACTIONS_FOUND**. Matcher semantics were not relaxed. Remaining gap is listing UPRN/SAON/user-declared identity, not missing PPD.  
 Tests: `server/tests/crossAssetMarketEvidence.test.js`, `server/tests/officialSaleTransaction.test.js`.
@@ -108,9 +107,14 @@ Production private storage/scanner/backup remain unverified.
 
 ## Building condition
 
-**Status:** `FOUNDATION_ONLY`  
-Not wired into live analysis. Listing EPC / floor plan / photo ≠ survey.  
-Official MHCLG EPB certificates are **not integrated**. If later acquired, they enter as `ENERGY_EVIDENCE` / `PROPERTY_CHARACTERISTIC` only. They must not become condition scores, defects, remaining life, or CapEx.
+**Status:** `IMPLEMENTED_BUT_LIMITED` for official energy / physical certificate evidence.  
+Professional building condition remains `FOUNDATION_ONLY` / `NOT_ASSESSED`.
+
+`BUILDING_CONDITION` is wired live as energy and physical characteristics only (`ENERGY_EVIDENCE`, `PHYSICAL_FACT`, `PROPERTY_CHARACTERISTIC`). Official MHCLG EPB unique-subject attachment supplies those facts. EPC is not a survey. Potential ratings are modelled, not current fabric facts. Floor area, age band, and energy rating do not enter valuation, comparables, finance, PD, or DI.
+
+Live inventory EPB coverage measured 2026-09-01 (86 listings, live MHCLG API): unique attach **2/86**; certificates persisted 3 (one subject has two historical certificates); current energy rating 2; floor area 1; physical characteristics 1; canonical UPRN 2/86; `UNRESOLVED_UNIT_IDENTITY` 24; `NO_MATCH_FOUND` 51; `INSUFFICIENT_IDENTITY` 7; `GEOGRAPHY_NOT_ESTABLISHED` 2; source errors 0. Acquisition path is `IMPLEMENTED_AND_EVIDENCED`. Whole-stock / UK-wide coverage is `IMPLEMENTED_BUT_LIMITED`. Professional condition remains `NOT_ASSESSED`.
+
+Tests: `server/tests/mhclgEpb.test.js`, `server/tests/buildingConditionFoundation.test.js`.
 
 ## Maintenance / CapEx
 
@@ -142,8 +146,12 @@ Decision Intelligence V1 material findings from assessed evidence only. Not a fu
 
 ## Decision
 
-**Status:** `IMPLEMENTED_AND_EVIDENCED` for the current residential Personal Decision + DI V1 path.  
-Non-residential specialised decision methodology is `NOT_IMPLEMENTED`. PD/DI may still assemble from available finance/facts; they must not treat missing domains as adverse scores.
+**Status:** `IMPLEMENTED_AND_EVIDENCED` for residential Personal Decision + DI V1, and for **residential decision workspace V1** (`BUY` / `LET_INVEST` / `SELL` presentation of existing outputs).  
+Non-residential specialised decision methodology is `NOT_IMPLEMENTED`.  
+HOLD / REFINANCE / RENOVATE / DEVELOP / commercial occupation / portfolio jobs are `NOT_IMPLEMENTED` in this workspace.  
+PD/DI may still assemble from available finance/facts; they must not treat missing domains as adverse scores. DI V1 is landlord/BTL and is not presented as a universal Buy or Sell score.
+
+Contract: `architecture/decisionContextContract.js`, adapter `services/ai/residentialDecisionWorkspace.js`, HTTP job required in `intelligenceController.js`. Tests: `server/tests/residentialDecisionWorkspace.test.js`.
 
 ## Private evidence
 
@@ -191,7 +199,7 @@ Cells use the labels above. Rows are capabilities. Columns are asset classes.
 | LEGAL_TITLE | IMPLEMENTED_BUT_LIMITED | IMPLEMENTED_BUT_LIMITED | IMPLEMENTED_BUT_LIMITED | IMPLEMENTED_BUT_LIMITED | IMPLEMENTED_BUT_LIMITED | IMPLEMENTED_BUT_LIMITED | IMPLEMENTED_BUT_LIMITED | IMPLEMENTED_BUT_LIMITED |
 | PLANNING | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED |
 | ENVIRONMENT | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED | IMPLEMENTED_AND_EVIDENCED |
-| BUILDING_CONDITION | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY | NOT_APPLICABLE | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY |
+| BUILDING_CONDITION | IMPLEMENTED_BUT_LIMITED | IMPLEMENTED_BUT_LIMITED | IMPLEMENTED_BUT_LIMITED | IMPLEMENTED_BUT_LIMITED | NOT_APPLICABLE | IMPLEMENTED_BUT_LIMITED | IMPLEMENTED_BUT_LIMITED | IMPLEMENTED_BUT_LIMITED |
 | MAINTENANCE_CAPEX | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_APPLICABLE | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED |
 | DEVELOPMENT | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY |
 | PROJECT_COST | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY | FOUNDATION_ONLY |
@@ -216,10 +224,9 @@ Legal title is evidence-starved (`BLOCKED_BY_EVIDENCE`) on all classes until rea
 | Legal interpretation / HMLR title | `REGULATORY_OR_LICENSING` + `NO_DATA_SOURCE` |
 | Commercial / industrial / agricultural / land valuation | `NO_METHODOLOGY` |
 | Commercial income / ERV / lease income | `NO_METHODOLOGY` |
-| Building diagnosis / CapEx | `NO_DATA_SOURCE` + `NO_METHODOLOGY` |
-| Development GDV / residual / feasibility | `NO_METHODOLOGY` (also frozen) |
+| Building diagnosis / CapEx | `NO_DATA_SOURCE` + `NO_METHODOLOGY` (official EPC is energy/physical only) |
 | Outcome calibration / ML | `INSUFFICIENT_REAL_OUTCOMES` |
-| Building / development / project-cost live engines | `NO_RUNTIME_WIRING` (foundations exist) |
+| Development / project-cost live engines | `NO_RUNTIME_WIRING` (foundations exist) |
 | Cross-asset market **evidence** (non-residential) | Envelope live; class-specific transactions/comparables `NO_DATA_SOURCE` |
 | Specialised non-residential market/comparable methodology | `NO_METHODOLOGY` + current PropertyData is residential-oriented |
 

@@ -120,6 +120,7 @@ async function analyse(propertyOverrides = {}, options = {}) {
       skipConservationArea: true,
       skipArticle4: true,
       skipFlood: true,
+      skipEpb: true,
       asOf: '2026-08-30T00:00:00.000Z',
       deps: deps(),
       ...options,
@@ -398,8 +399,8 @@ test('47. kernel/domain registry remains valid', () => {
   assert.strictEqual(capabilityFor(DOMAIN_ID.VALUATION, ASSET_CLASS.COMMERCIAL), CAPABILITY.FUTURE);
 });
 
-test('48. only MARKET, PLANNING, ENVIRONMENT, and LEGAL_TITLE are wired live; future domains remain unwired', () => {
-  const live = new Set([DOMAIN_ID.MARKET, DOMAIN_ID.PLANNING, DOMAIN_ID.ENVIRONMENT, DOMAIN_ID.LEGAL_TITLE]);
+test('48. MARKET, PLANNING, ENVIRONMENT, LEGAL_TITLE, and BUILDING_CONDITION are wired live; future domains remain unwired', () => {
+  const live = new Set([DOMAIN_ID.MARKET, DOMAIN_ID.PLANNING, DOMAIN_ID.ENVIRONMENT, DOMAIN_ID.LEGAL_TITLE, DOMAIN_ID.BUILDING_CONDITION]);
   for (const id of platformRegistry.listDomainIds()) {
     assert.strictEqual(platformRegistry.getDomain(id).wiredIntoLiveAnalysis, live.has(id));
   }

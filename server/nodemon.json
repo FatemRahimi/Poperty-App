@@ -1,0 +1,5 @@
+{
+  "signal": "SIGTERM",
+  "delay": 400,
+  "watch": ["server.js", "app.js", "routes", "controllers", "services", "config", "middleware", "models", "utils", "architecture"]
+}

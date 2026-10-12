@@ -52,6 +52,11 @@ server/private-evidence/
 # Official HMLR bulk downloads (address data; do not commit)
 server/data/hmlr/
 
+# MHCLG EPB bulk CSV downloads and address-bearing audit dumps (do not commit)
+server/data/epb/
+**/mhclg-epb-audit*.json
+**/epb-backfill-audit*.json
+
 # Output of 'npm pack'
 *.tgz
 

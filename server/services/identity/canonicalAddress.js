@@ -11,7 +11,7 @@ const {
   createCanonicalIdentity,
 } = require('../../architecture/canonicalIdentity');
 
-const UNIT_PREFIX = /^(flat|apartment|appartment|apt|unit|studio|penthouse|room)\s+(.+)$/i;
+const UNIT_PREFIX = /^(flat|apartment|appartment|apt|unit|studio|penthouse|room|suite|maisonette)\s+(.+)$/i;
 const POSTCODE_RE = /^[A-Z]{1,2}\d[A-Z0-9]?\s*\d[A-Z]{2}$/i;
 const HOUSE_TOKEN = /^(\d+[A-Z]?)$/i;
 const HOUSE_RANGE = /^(\d+)\s*[-–—]\s*(\d+[A-Z]?)$/i;
@@ -66,7 +66,7 @@ function extractFromAddressLine(line) {
     return { paon: `${range[1]}-${range[2]}`, saon: null, ambiguous: false };
   }
 
-  const unitFirst = text.match(/^(flat|apartment|appartment|apt|unit)\s+([^,]+)/i);
+  const unitFirst = text.match(/^(flat|apartment|appartment|apt|unit|suite|maisonette)\s+([^,]+)/i);
   if (unitFirst) {
     return { paon: null, saon: `${unitFirst[1]} ${unitFirst[2]}`.trim(), ambiguous: false };
   }
@@ -207,6 +207,7 @@ function exactAddressKeysEqual(left, right) {
 module.exports = {
   sourceTrim,
   compactPostcode,
+  canonicalHouseToken,
   extractCanonicalAddress,
   extractFromAddressLine,
   exactAddressKeysEqual,

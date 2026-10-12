@@ -337,6 +337,7 @@ asyncTest('canonical report exposes propertyFacts without a second engine', asyn
     options: {
       skipExplanation: true,
       skipPostcodeMarket: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding: true,

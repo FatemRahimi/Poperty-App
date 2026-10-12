@@ -129,6 +129,7 @@ async function analyse({ propertyOverrides = {}, floodStub, planningStub, option
     options: {
       skipExplanation: true,
       skipPostcodeMarket: true,
+      skipEpb: true,
       skipSchools: true,
       skipListedBuilding: true,
       skipConservationArea: true,
@@ -266,12 +267,13 @@ test('27-28. UNKNOWN works and environment does not classify the asset', () => {
   assert.strictEqual(assetClassUnchanged, ASSET_CLASS.UNKNOWN);
 });
 
-test('29-31. PLANNING and ENVIRONMENT wired; others remain unwired', () => {
+test('29-31. PLANNING, ENVIRONMENT, LEGAL_TITLE, and BUILDING_CONDITION wired; others remain unwired', () => {
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.PLANNING).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.ENVIRONMENT).wiredIntoLiveAnalysis, true);
-  ['BUILDING_CONDITION', 'PROJECT_COST', 'DECISION', 'VALUATION'].forEach((id) => {
+  ['PROJECT_COST', 'DECISION', 'VALUATION'].forEach((id) => {
     assert.strictEqual(platformRegistry.getDomain(id).wiredIntoLiveAnalysis, false);
   });
+  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.LEGAL_TITLE).wiredIntoLiveAnalysis, true);
 });
 
@@ -369,9 +371,10 @@ asyncTest('20 + 35-39. PI assembles; valuation/rent isolation; both domains pres
   const report = await analyse({ floodStub: async () => zoneFact(3) });
   assert.strictEqual(report.environmentDomain.domain, 'ENVIRONMENT');
   assert.strictEqual(report.planningDomain.domain, 'PLANNING');
-  assert.strictEqual(report.domains.domains.length, 4);
+  assert.strictEqual(report.domains.domains.length, 5);
   assert.ok(report.domains.byId.LEGAL_TITLE);
   assert.ok(report.domains.byId.MARKET);
+  assert.ok(report.domains.byId.BUILDING_CONDITION);
   assert.ok(report.legalTitleDomain);
   assert.strictEqual(report.marketIntelligence.sale.centralEstimate, 195000);
   assert.strictEqual(report.marketIntelligence.rent.recommendedRent, 1100);

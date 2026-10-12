@@ -119,6 +119,7 @@ async function assembleReport({ property = listing(), listedStub, floodStub, ski
     options: {
       skipExplanation: true,
       skipPostcodeMarket: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding,

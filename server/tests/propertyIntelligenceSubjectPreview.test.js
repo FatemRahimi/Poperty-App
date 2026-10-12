@@ -195,12 +195,20 @@ test('preview response contract remains the fields the client renders', () => {
   assert.ok(preview.includes('linkedListing'));
   assert.ok(preview.includes('accessContext'));
   const page = readClient('pages/ai/PropertyIntelligence.js');
+  const display = readClient('Utils/exactPropertyPickerDisplay.js');
+  const facts = readClient('Utils/propertyFactsDisplay.js');
+  const readiness = readClient('Utils/analysisReadiness.js');
+  const workspace = readClient('Utils/letWorkspaceDisplay.js');
   assert.ok(page.includes('setPreview(data.property)'));
   assert.ok(page.includes('setLinkedListing(data.linkedListing'));
   assert.ok(page.includes('setAccessContext(data.accessContext'));
-  assert.ok(page.includes('preview.title'));
-  assert.ok(page.includes('preview.bedrooms'));
-  assert.ok(page.includes('preview.price'));
+  assert.ok(display.includes('preview.title') || page.includes('preview.title'));
+  assert.ok(facts.includes('preview.bedrooms') || page.includes('preview.bedrooms'));
+  assert.ok(
+    page.includes('preview.price')
+    || readiness.includes('preview?.price')
+    || workspace.includes('preview?.price')
+  );
 });
 
 test('client only fetches preview on subject select, deep link, or unlink — not history or render loops', () => {

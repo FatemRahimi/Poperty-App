@@ -22,12 +22,16 @@ const legalEvidenceTypes = require('./legalEvidenceTypes');
 const domainApplicability = require('./domainApplicability');
 const officialSaleTransaction = require('./officialSaleTransaction');
 const canonicalIdentity = require('./canonicalIdentity');
+const epbEvidenceContract = require('./epbEvidenceContract');
+const decisionContextContract = require('./decisionContextContract');
 
 module.exports = {
   ...versions,
   ...assetClassification,
   ...identityModel,
   ...canonicalIdentity,
+  ...epbEvidenceContract,
+  ...decisionContextContract,
   ...units,
   ...evidenceContract,
   ...assessmentStates,

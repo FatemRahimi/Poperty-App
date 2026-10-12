@@ -17,6 +17,7 @@ const {
   lookupQueryInvalid,
   PROVIDER_LOOKUP_LIMIT,
   PROVIDER_TEMPORARILY_UNAVAILABLE,
+  PROVIDER_REQUEST_REJECTED,
   LOOKUP_QUERY_INVALID,
 } = require('../services/providers/cache/providerCostProtection');
 const {
@@ -360,6 +361,15 @@ async function run() {
       assert.ok(!/api[_-]?key/i.test(row.message));
       assert.ok(!/PropertyData HTTP/.test(row.message));
     });
+  });
+
+  await test('missing-input / HTTP 400 contract failures are not temporary downtime', () => {
+    const missing = classifyProviderFailure(new Error('Missing input: construction_date'));
+    const http400 = classifyProviderFailure(new Error('PropertyData HTTP 400'));
+    assert.strictEqual(missing.code, PROVIDER_REQUEST_REJECTED);
+    assert.strictEqual(missing.usageCode, 'request_contract');
+    assert.strictEqual(http400.code, PROVIDER_REQUEST_REJECTED);
+    assert.ok(!/temporarily unavailable/i.test(missing.message));
   });
 
   await test('quota rejects further expensive executions without calling provider', async () => {

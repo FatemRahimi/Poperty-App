@@ -1,9 +1,9 @@
 # Decision: Official physical property and identity evidence source
 
-**Status:** DECIDED — source selected, **NOT_IMPLEMENTED**.  
+**Status:** DECIDED. Acquisition path `IMPLEMENTED_AND_EVIDENCED`. Live inventory coverage `IMPLEMENTED_BUT_LIMITED` (unique attach 2/86).  
 **Date / retrieval:** 2026-09-01  
-**Phase:** V1.2 official physical-property and identity evidence source decision  
-**Contract impact:** none in this phase (research / design only)
+**Phase:** V1.2 official physical-property and identity evidence source decision; acquisition adopted after review of the unauthorized draft.  
+**Contract impact:** `official-epb-evidence-1.0.0`; BUILDING_CONDITION wired for energy/physical evidence only
 
 This extends the shared Property Intelligence Kernel. It does not create a parallel identity system, does not implement an adapter, and does not change valuation, HMLR matching, outcomes, or private-evidence production.
 
@@ -28,7 +28,7 @@ MHCLG EPB is the only investigated official/open source that can, in one acquisi
 1. supply an **OGL UPRN** when present on a uniquely matched certificate, and
 2. supply **official physical / energy facts** that already fit `ENERGY_EVIDENCE` / `PROPERTY_CHARACTERISTIC` without pretending a survey occurred.
 
-OS Open UPRN cannot map listing addresses to UPRNs. PropertyData `/address-match-uprn` already exists as a unique-only licensed matcher but is paid, 60-day current-cache constrained, and does not replace official physical evidence. User-declared identity remains a later fallback, not the next automation.
+OS Open UPRN cannot map listing addresses to UPRNs. PropertyData `/address-match-uprn` already exists as a unique-only licensed matcher but is paid, 60-day current-cache constrained, and does not replace official physical evidence. User-declared identity is now a first-party capture/edit path; it is not official verification and is not treated as an address gazetteer.
 
 ## Official primary sources (retrieved 2026-09-01)
 
@@ -176,7 +176,7 @@ Safe BUILDING_CONDITION / property-fact classes:
 | AddressBase / OS Places / OS GB Address | Rejected | New paid address provider. Forbidden this phase. |
 | PropertyData `/address-match-uprn` as next implementation | Rejected as next source | Already licensed and unique-only gated. Paid (10 credits). 60-day current cache. Identity-only, not official physical facts. Remain controlled CLI fallback. |
 | HMLR PPD / UPRN-INSPIRE lookups / INSPIRE polygons | Rejected as next source | Ledger already ingested. Lookups are current-month. Polygons are indicative freehold extent, not address-to-UPRN and not construction facts. |
-| User-declared UPRN/PAON/SAON UI | Deferred | Useful fallback/manual correction. Do not automate identity by asking the user first while an official source can. |
+| User-declared UPRN/PAON/SAON UI | Implemented (capture/edit) | First-party `USER_DECLARED` evidence on the existing identity tables. Not official verification. Does not weaken EPB matching. Existing inventory is not auto-filled. |
 | Scottish EPC extracts | Deferred | Separate register, quarterly bulk, address licence split. Current inventory postcodes are England/Wales. |
 | Northern Ireland EPC | Deferred | No equivalent official open API evidenced in this audit. |
 | VO NDR | Already rejected | Restricted purpose; RV ≠ value. |
@@ -229,9 +229,11 @@ Analyse or controlled enrich trigger
 
 86 properties; 84 postcode (all England/Wales by postcode-area heuristic; 0 Scotland; 0 NI); 79 PAON; 0 SAON; 0 UPRN; 77 SOURCE_ASSERTED; 9 UNRESOLVED; 54 listing-asserted EPC ratings; 12 listing floor-area values; 21 listings look like flats/units; `asset_classifications` has 0 rows.
 
-Live EPB API match rate: **NOT_TESTED** — no GOV.UK One Login bearer token in this environment.  
+Live EPB API match rate (86 listings, 2026-09-01): unique attach **2**; `UNRESOLVED_UNIT_IDENTITY` **24**; `NO_MATCH_FOUND` **51**; `INSUFFICIENT_IDENTITY` **7**; `GEOGRAPHY_NOT_ESTABLISHED` **2**; source errors **0**. Canonical UPRN **2/86**. HMLR `EXACT_UPRN` still 0.  
 Live PropertyData UPRN: **NOT_TESTED** — key present; not executed (no uncontrolled spend). Expected upper bound if later used: 86 × 10 = 860 credits, unique-only, persisted so not re-paid.
 
 ## Implementation status of this source
 
-`NOT_IMPLEMENTED`. Do not mark IMPLEMENTED.
+Adapter, persistence, unique exact attach, UPRN enrichment, Building-domain energy/physical activation, snapshot, and UI are implemented. Live API diagnostic and controlled 86-listing enrich completed 2026-09-01. Acquisition path is `IMPLEMENTED_AND_EVIDENCED`. Whole-stock coverage remains `IMPLEMENTED_BUT_LIMITED` (2 unique attaches; 24 unit listings refused without SAON).
+
+See `docs/architecture/decisions/official-epb-evidence.md`.

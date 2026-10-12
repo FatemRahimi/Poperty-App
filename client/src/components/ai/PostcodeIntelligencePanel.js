@@ -4,44 +4,101 @@ import './PostcodeIntelligence.css';
 const fmt = (n) => (n != null && !Number.isNaN(Number(n)) ? `£${Number(n).toLocaleString()}` : '—');
 const fmtPct = (n) => (n != null ? `${n}%` : '—');
 
-function ConfidenceBadge({ confidence }) {
+const SOURCE_LABELS = {
+  PropertyData: 'PropertyData',
+  propertydata: 'PropertyData',
+  HM_Land_Registry: 'HM Land Registry',
+  'HM Land Registry': 'HM Land Registry',
+  hmlr: 'HM Land Registry',
+  Marketplace: 'Marketplace',
+  marketplace: 'Marketplace',
+};
+
+/** Unique human-readable source labels — no repeated provider noise. */
+export function uniqueAreaSources(dataSources = []) {
+  const seen = new Set();
+  const out = [];
+  (dataSources || []).forEach((raw) => {
+    if (raw == null || raw === '') return;
+    const key = String(raw).trim();
+    const label = SOURCE_LABELS[key] || key.replace(/_/g, ' ');
+    const dedupe = label.toLowerCase();
+    if (seen.has(dedupe)) return;
+    seen.add(dedupe);
+    out.push(label);
+  });
+  const preferred = ['HM Land Registry', 'PropertyData', 'Marketplace'];
+  return out.sort((a, b) => {
+    const ai = preferred.indexOf(a);
+    const bi = preferred.indexOf(b);
+    const ao = ai === -1 ? 99 : ai;
+    const bo = bi === -1 ? 99 : bi;
+    return ao - bo || a.localeCompare(b);
+  });
+}
+
+export function areaSoldPriceLabel() {
+  return 'Typical local sold price';
+}
+
+function ConfidenceBadge({ confidence, scoped = false }) {
   if (!confidence?.level) return null;
-  // "Not assessed" contains a space, which would emit two CSS classes.
   const slug = confidence.level.toLowerCase().replace(/\s+/g, '-');
   return (
     <span
       className={`pi-pc-conf pi-pc-conf--${slug}`}
       title={confidence.note || confidence.summary || confidence.unassessedReason}
+      data-testid={scoped ? 'area-evidence-strength-badge' : undefined}
     >
-      {confidence.level}
+      {scoped ? (
+        <>
+          <span className="pi-pc-conf-scope">Area evidence strength</span>
+          <span className="pi-pc-conf-level">{confidence.level}</span>
+        </>
+      ) : (
+        confidence.level
+      )}
     </span>
   );
 }
 
-/** Renders the provenance every postcode metric carries. */
 function Provenance({ metric }) {
   if (!metric) return null;
   const bits = [];
-  if (metric.source) bits.push(metric.source.replace(/_/g, ' '));
-  if (metric.underlyingSource) bits.push(metric.underlyingSource);
+  if (metric.source) bits.push(SOURCE_LABELS[metric.source] || metric.source.replace(/_/g, ' '));
+  if (metric.underlyingSource) {
+    bits.push(SOURCE_LABELS[metric.underlyingSource] || metric.underlyingSource.replace(/_/g, ' '));
+  }
   if (metric.sampleSize != null) {
     bits.push(`${metric.sampleSize} record${metric.sampleSize === 1 ? '' : 's'}`);
   }
   if (metric.observationPeriod) bits.push(metric.observationPeriod);
-  if (metric.confidence?.level) bits.push(`${metric.confidence.level} confidence`);
+  if (metric.confidence?.level) bits.push(`Area evidence: ${metric.confidence.level}`);
   if (!bits.length) return null;
+
+  const uniqueBits = [];
+  const seen = new Set();
+  bits.forEach((b) => {
+    const k = b.toLowerCase();
+    if (seen.has(k)) return;
+    seen.add(k);
+    uniqueBits.push(b);
+  });
 
   return (
     <p className="pi-pc-source">
-      {bits.join(' · ')}
+      {uniqueBits.join(' · ')}
       {metric.sparseEvidence && <span className="pi-pc-sparse"> Limited evidence</span>}
     </p>
   );
 }
 
-function SnapshotTile({ label, value, hint, source, metric }) {
+function SnapshotTile({ label, value, hint, source, metric, testId }) {
   return (
-    <div className={`pi-pc-snapshot-tile ${metric?.sparseEvidence ? 'pi-pc-snapshot-tile--sparse' : ''}`}>
+    <div
+      className={`pi-pc-snapshot-tile ${metric?.sparseEvidence ? 'pi-pc-snapshot-tile--sparse' : ''}`}
+      data-testid={testId}
+    >
       <small>{label}</small>
       <strong>{value}</strong>
       {hint && <span className="pi-pc-hint">{hint}</span>}
@@ -64,8 +121,9 @@ function SegmentYieldRow({ segment }) {
       <div>
         <strong>{segment.label}</strong>
         <p className="pi-pc-hint">
-          {segment.typicalValue?.available && `Typical value ${fmt(segment.typicalValue.value)}`}
-          {segment.typicalRent?.available && ` · Rent ${fmt(segment.typicalRent.value)}/mo`}
+          {segment.typicalValue?.available &&
+            `${areaSoldPriceLabel()} ${fmt(segment.typicalValue.value)}`}
+          {segment.typicalRent?.available && ` · Typical local asking rent ${fmt(segment.typicalRent.value)}/mo`}
         </p>
         <p className="pi-pc-hint">
           {y.saleSampleSize} sale · {y.rentSampleSize} rental record
@@ -75,17 +133,17 @@ function SegmentYieldRow({ segment }) {
       </div>
       <div className="pi-pc-segment-yield">
         <strong>{fmtPct(y.grossYieldPercent)}</strong>
-        <small>gross yield</small>
+        <small>area gross yield</small>
         {y.confidence && <ConfidenceBadge confidence={y.confidence} />}
       </div>
     </div>
   );
 }
 
-function ExpandableSection({ title, children, defaultOpen = false }) {
+function ExpandableSection({ title, children, defaultOpen = false, testId }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className={`pi-pc-expand ${open ? 'open' : ''}`}>
+    <div className={`pi-pc-expand ${open ? 'open' : ''}`} data-testid={testId}>
       <button type="button" className="pi-pc-expand-head" onClick={() => setOpen(!open)}>
         {title}
         <span aria-hidden>{open ? '−' : '+'}</span>
@@ -97,20 +155,24 @@ function ExpandableSection({ title, children, defaultOpen = false }) {
 
 function OverviewTab({ data }) {
   const snap = data.snapshot || {};
+  const shortLead =
+    'Local sold prices, asking rents and listings for this postcode — not a valuation of a specific property.';
   return (
     <div className="pi-pc-tab-panel">
       <div className="pi-pc-snapshot-grid">
         <SnapshotTile
-          label="Typical value"
+          label={areaSoldPriceLabel()}
           value={snap.typicalValue?.available ? fmt(snap.typicalValue.value) : '—'}
-          hint={snap.typicalValue?.label}
+          hint={snap.typicalValue?.label || 'Area sold-price context'}
           metric={snap.typicalValue}
+          testId="area-typical-sold-price"
         />
         <SnapshotTile
-          label="Typical rent"
+          label="Typical local asking rent"
           value={snap.typicalRent?.available ? `${fmt(snap.typicalRent.value)}/mo` : '—'}
-          hint={snap.typicalRent?.label}
+          hint={snap.typicalRent?.label || 'Area asking-rent context — not achievable property rent'}
           metric={snap.typicalRent}
+          testId="area-typical-asking-rent"
         />
         <SnapshotTile
           label="Indicative area yield"
@@ -125,7 +187,7 @@ function OverviewTab({ data }) {
         <SnapshotTile
           label="Market evidence"
           value={snap.marketEvidenceCount ?? '—'}
-          hint="Records counted"
+          hint="Area records counted"
         />
         <SnapshotTile
           label="Listing supply"
@@ -134,9 +196,10 @@ function OverviewTab({ data }) {
           source="Marketplace only"
         />
         <SnapshotTile
-          label="Confidence"
+          label="Area evidence strength"
           value={snap.confidence?.level || data.confidence?.level || '—'}
-          hint={snap.confidence?.summary || data.confidence?.summary}
+          hint={snap.confidence?.summary || data.confidence?.summary || 'Of area market evidence only'}
+          testId="area-evidence-strength-tile"
         />
       </div>
 
@@ -147,10 +210,15 @@ function OverviewTab({ data }) {
         </div>
       )}
 
+      <p className="pi-pc-summary-lead" data-testid="area-market-summary-lead">
+        {shortLead}
+      </p>
       {data.marketSummary && (
-        <ExpandableSection title="Market summary" defaultOpen>
+        <ExpandableSection title="More area detail" defaultOpen={false} testId="area-market-summary-detail">
           <p className="pi-pc-summary">{data.marketSummary}</p>
-          <p className="pi-pc-hint">Summary from calculated evidence ({data.marketSummarySource || 'template'}).</p>
+          <p className="pi-pc-hint">
+            Area demand is not property-specific demand. Area asking rent is not achievable property rent.
+          </p>
         </ExpandableSection>
       )}
 
@@ -172,7 +240,7 @@ function OverviewTab({ data }) {
       )}
 
       {snap.pricePerSqft?.available && (
-        <ExpandableSection title="Typical £/sq ft">
+        <ExpandableSection title="Typical area £/sq ft">
           <p>
             <strong>{fmt(snap.pricePerSqft.average)}</strong>/sq ft
           </p>
@@ -217,7 +285,7 @@ function SalesTab({ sales, externalAvailable }) {
     <div className="pi-pc-tab-panel">
       {sales.external?.soldPrices && (
         <div className="pi-pc-evidence-block">
-          <h4>External sold prices</h4>
+          <h4>External sold prices (area)</h4>
           <p>
             Average: <strong>{fmt(sales.external.soldPrices.average)}</strong>
             {sales.external.soldPrices.sampleSize != null && (
@@ -236,7 +304,7 @@ function SalesTab({ sales, externalAvailable }) {
       )}
       {sales.internal?.askingPrices?.sampleSize > 0 && (
         <div className="pi-pc-evidence-block">
-          <h4>Marketplace asking prices</h4>
+          <h4>Marketplace asking prices (area)</h4>
           <p>
             Median <strong>{fmt(sales.internal.askingPrices.median)}</strong>
             {' · '}
@@ -265,13 +333,19 @@ function SalesTab({ sales, externalAvailable }) {
 
 function RentalTab({ rental }) {
   if (!rental?.available) {
-    return <p className="pi-pc-muted">{rental?.internal?.sampleSize === 0 ? 'No rental listings on our platform in this postcode.' : 'Insufficient rental evidence.'}</p>;
+    return (
+      <p className="pi-pc-muted">
+        {rental?.internal?.sampleSize === 0
+          ? 'No rental listings on our platform in this postcode.'
+          : 'Insufficient rental evidence.'}
+      </p>
+    );
   }
   const r = rental.internal;
   return (
     <div className="pi-pc-tab-panel">
       <p>
-        Typical rent: <strong>{fmt(r.medianMonthly)}/mo</strong>
+        Typical local asking rent: <strong>{fmt(r.medianMonthly)}/mo</strong>
         {r.range?.low != null && (
           <span className="pi-pc-hint">
             {' '}
@@ -279,7 +353,10 @@ function RentalTab({ rental }) {
           </span>
         )}
       </p>
-      <p className="pi-pc-hint">Based on {r.sampleSize} marketplace rental listing{r.sampleSize === 1 ? '' : 's'}.</p>
+      <p className="pi-pc-hint">
+        Based on {r.sampleSize} marketplace rental listing{r.sampleSize === 1 ? '' : 's'}. Area asking rent is
+        not achievable property rent.
+      </p>
       <Provenance metric={r} />
       {r.bySegment?.length > 0 && (
         <ExpandableSection title="Rent by property segment" defaultOpen>
@@ -300,6 +377,9 @@ function RentalTab({ rental }) {
 function InvestmentTab({ investment, lease }) {
   return (
     <div className="pi-pc-tab-panel">
+      <p className="pi-pc-hint" data-testid="area-yield-tab-note">
+        Area yield indicators only — not a Let / Invest property assessment.
+      </p>
       {investment?.indicativeAreaYield?.available && (
         <div className="pi-pc-yield-banner">
           <small>{investment.indicativeAreaYield.label}</small>
@@ -346,78 +426,139 @@ function InvestmentTab({ investment, lease }) {
 }
 
 const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'sales', label: 'Sales' },
-  { id: 'rental', label: 'Rental' },
-  { id: 'investment', label: 'Investment' },
+  { id: 'overview', label: 'Area overview' },
+  { id: 'sales', label: 'Area sales' },
+  { id: 'rental', label: 'Area rental' },
+  { id: 'investment', label: 'Area yield' },
 ];
 
-export default function PostcodeIntelligencePanel({ intelligence, compact = false }) {
+/**
+ * @param {'primary' | 'secondary'} mode
+ *   primary = postcode-only (no exact property selected)
+ *   secondary = exact property already selected / compact report embed
+ */
+export default function PostcodeIntelligencePanel({
+  intelligence,
+  compact = false,
+  mode = 'primary',
+  hasExactMatches = false,
+  onSelectProperty = null,
+}) {
   const [tab, setTab] = useState('overview');
   if (!intelligence?.success) return null;
 
+  const postcode = intelligence.postcode || '';
+  const isPrimary = mode === 'primary' && !compact;
+  const sources = uniqueAreaSources(intelligence.dataSources);
+  const selectLabel = postcode
+    ? `Select a property in ${postcode}`
+    : 'Select a property';
+
   return (
-    <section className={`pi-pc-panel ${compact ? 'pi-pc-panel--compact' : ''}`} aria-label="Postcode property intelligence">
-      <header className="pi-pc-header">
+    <section
+      className={`pi-pc-panel ${compact || !isPrimary ? 'pi-pc-panel--secondary' : ''} ${
+        compact ? 'pi-pc-panel--compact' : ''
+      } ${isPrimary ? 'pi-pc-panel--area-primary' : ''}`}
+      aria-label={isPrimary ? `Area context ${postcode}` : 'Area market context'}
+      data-testid="area-context-panel"
+      data-mode={isPrimary ? 'area-context' : 'area-secondary'}
+    >
+      <header className="pi-pc-header" data-testid="area-context-header">
         <div>
-          <p className="pi-pc-kicker">Market context · Postcode</p>
-          <h3>{intelligence.title || intelligence.postcode}</h3>
-          <p className="pi-pc-meta">
-            Updated {new Date(intelligence.retrievedAt).toLocaleString()}
-            {intelligence.dataSources?.length > 0 && (
-              <> · Sources: {intelligence.dataSources.join(', ')}</>
-            )}
+          <p className="pi-pc-kicker" data-testid="area-context-kicker">
+            Area context{postcode ? ` — ${postcode}` : ''}
           </p>
-          {intelligence.layerNote && <p className="pi-pc-meta">{intelligence.layerNote}</p>}
+          <h3 data-testid="area-context-title">
+            {isPrimary
+              ? `${postcode || 'This postcode'} — local market snapshot`
+              : intelligence.title || postcode || 'Area market snapshot'}
+          </h3>
+          <p className="pi-pc-lead" data-testid="area-context-lead">
+            Local market snapshot — not a specific property.
+          </p>
+          {sources.length > 0 && (
+            <p className="pi-pc-sources-compact" data-testid="area-sources-compact">
+              Sources ({sources.length})
+              <span> {sources.join(' · ')}</span>
+            </p>
+          )}
         </div>
-        <ConfidenceBadge confidence={intelligence.confidence} />
+        {(intelligence.confidence?.level || intelligence.snapshot?.confidence?.level) && (
+          <ConfidenceBadge
+            confidence={intelligence.confidence || intelligence.snapshot?.confidence}
+            scoped
+          />
+        )}
       </header>
 
-      <div className="pi-pc-tabs" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.id}
-            className={`pi-pc-tab ${tab === t.id ? 'active' : ''}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {isPrimary && (
+        <div className="pi-pc-primary-cta" data-testid="area-select-property-cta">
+          {hasExactMatches && typeof onSelectProperty === 'function' ? (
+            <button type="button" className="ai-btn ai-btn-primary pi-pc-select-btn" onClick={onSelectProperty}>
+              {selectLabel}
+            </button>
+          ) : (
+            <div className="pi-pc-select-fallback" role="status">
+              <p className="pi-pc-select-fallback-title">{selectLabel}</p>
+              <p className="pi-pc-hint">
+                No exact property match yet. Refine the address above, or browse platform listings below.
+              </p>
+            </div>
+          )}
+          <p className="pi-pc-hint pi-pc-cta-note">
+            Individual Property Intelligence starts only after you choose an exact property — not from this
+            area snapshot.
+          </p>
+        </div>
+      )}
 
-      <div className="pi-pc-tab-content" role="tabpanel">
-        {tab === 'overview' && <OverviewTab data={intelligence} />}
-        {tab === 'sales' && <SalesTab sales={intelligence.sales} externalAvailable={intelligence.externalAvailable} />}
-        {tab === 'rental' && <RentalTab rental={intelligence.rental} />}
-        {tab === 'investment' && <InvestmentTab investment={intelligence.investment} lease={intelligence.lease} />}
-      </div>
+      <details className="pi-pc-metrics-disclosure" open={isPrimary} data-testid="area-metrics-disclosure">
+        <summary>{isPrimary ? 'Area snapshot metrics' : 'Show area snapshot'}</summary>
+        <div className="pi-pc-tabs" role="tablist" aria-label="Area context views">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              className={`pi-pc-tab ${tab === t.id ? 'active' : ''}`}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="pi-pc-tab-content" role="tabpanel">
+          {tab === 'overview' && <OverviewTab data={intelligence} />}
+          {tab === 'sales' && (
+            <SalesTab sales={intelligence.sales} externalAvailable={intelligence.externalAvailable} />
+          )}
+          {tab === 'rental' && <RentalTab rental={intelligence.rental} />}
+          {tab === 'investment' && (
+            <InvestmentTab investment={intelligence.investment} lease={intelligence.lease} />
+          )}
+        </div>
+      </details>
 
       <footer className="pi-pc-methodology">
-        <strong>Sources &amp; methodology</strong>
-        <p>{intelligence.methodology?.summary}</p>
-        <ul className="pi-pc-list">
-          {(intelligence.disclaimers || []).map((d) => (
-            <li key={d}>{d}</li>
-          ))}
-        </ul>
-      </footer>
-
-      <div className="pi-pc-actions">
-        {intelligence.personalisationHints?.length > 0 && (
-          <div className="pi-pc-hints-grid">
-            {intelligence.personalisationHints.map((h) => (
-              <div key={h.role} className="pi-pc-role-hint">
-                <strong>{h.label}</strong>
-                <p>{h.action}</p>
-              </div>
+        <ExpandableSection title="Sources & limitations" defaultOpen={false}>
+          <p>{intelligence.methodology?.summary}</p>
+          <ul className="pi-pc-list">
+            {(intelligence.disclaimers || []).map((d) => (
+              <li key={d}>{d}</li>
             ))}
-          </div>
-        )}
-        <p className="pi-pc-hint">Select a property below for individual property intelligence.</p>
-      </div>
+            <li>Area context is not Individual Property Intelligence.</li>
+            <li>Area asking rent is not achievable property rent.</li>
+            <li>Area demand is not property-specific tenant demand.</li>
+          </ul>
+          {sources.length > 0 && (
+            <p className="pi-pc-sources-compact" data-testid="area-sources-footer">
+              Sources ({sources.length}): {sources.join(' · ')}
+            </p>
+          )}
+        </ExpandableSection>
+      </footer>
     </section>
   );
 }

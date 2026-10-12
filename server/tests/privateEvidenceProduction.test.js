@@ -476,8 +476,8 @@ test('41. Legal semantics unchanged', () => {
   assert.ok(envelope.limitations.some((row) => /UPLOAD != AUTHENTICITY/i.test(row)));
 });
 
-test('42-44. Building Condition, Development, Project Cost remain unwired', () => {
-  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, false);
+test('42-44. Development and Project Cost remain unwired; Building Condition is energy/physical only', () => {
+  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.DEVELOPMENT).wiredIntoLiveAnalysis, false);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.PROJECT_COST).wiredIntoLiveAnalysis, false);
 });

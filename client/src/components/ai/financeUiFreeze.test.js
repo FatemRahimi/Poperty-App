@@ -9,10 +9,12 @@ describe('finance UI freeze', () => {
   test('frontend performs no finance arithmetic', () => {
     const files = [
       '../../Utils/financeScenario.js',
-      '../../Utils/assessedMetricDisplay.js',
-      './FinanceScenarioForm.js',
+    '../../Utils/assessedMetricDisplay.js',
+    '../../Utils/letResultsDisplay.js',
+    './FinanceScenarioForm.js',
       './WhatIfPanel.js',
       './IntelligenceReport.js',
+      './LetInvestResultsPanel.js',
       './InvestmentResultView.js',
       './RentResultView.js',
       './PortfolioResultView.js',
@@ -55,10 +57,21 @@ describe('finance UI freeze', () => {
     const src = read('../../pages/ai/PropertyIntelligence.js');
     expect(src).toMatch(/savedIntelligenceReportFromRow/);
     expect(src).toMatch(/fetchPropertyAnalysisById/);
-    expect(src).toMatch(/IntelligenceReport report=\{report\}/);
+    // Canonical report still drives IntelligenceReport (props may be multiline).
+    expect(src).toMatch(/<IntelligenceReport[\s\S]*?report=\{report\}/);
     expect(src).toMatch(/WhatIfPanel/);
     expect(src.indexOf('<IntelligenceReport')).toBeLessThan(src.indexOf('<WhatIfPanel'));
+    // Gate: PI report renders from analyse/saved report — not from What-if completion.
     expect(src).toMatch(/report && !loading && !report\.insufficientData/);
+    const gateIdx = src.indexOf('report && !loading && !report.insufficientData');
+    const reportIdx = src.indexOf('<IntelligenceReport', gateIdx);
+    const whatIfIdx = src.indexOf('<WhatIfPanel', gateIdx);
+    expect(gateIdx).toBeGreaterThanOrEqual(0);
+    expect(reportIdx).toBeGreaterThan(gateIdx);
+    expect(whatIfIdx).toBeGreaterThan(reportIdx);
+    // What-if must remain optional: gate must not require a What-if / scenario result.
+    const gateLine = src.slice(gateIdx, gateIdx + 120);
+    expect(gateLine).not.toMatch(/whatIf|what-if|scenarioResult|whatIfResult/i);
     expect(read('./WhatIfPanel.js')).toMatch(/id="pi-what-if"/);
   });
 
@@ -96,7 +109,7 @@ describe('finance UI freeze', () => {
     const src = read('../../pages/ai/PropertyIntelligence.js');
     expect(src).not.toMatch(/Identifying opportunities/);
     expect(src).not.toMatch(/Analysing risks/);
-    expect(src).toMatch(/Calculating landlord fit/);
+    expect(src).toMatch(/Assembling decision workspace/);
   });
 
   test('frontend does not consume externalIntelligence', () => {

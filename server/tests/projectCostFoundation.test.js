@@ -351,7 +351,7 @@ test('35-40 + 41-45. live domains and foundations unchanged', () => {
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.PLANNING).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.ENVIRONMENT).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.LEGAL_TITLE).wiredIntoLiveAnalysis, true);
-  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, false);
+  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.DEVELOPMENT).wiredIntoLiveAnalysis, false);
   assert.strictEqual(LEGAL_TITLE_DOMAIN_VERSION, 'legal-title-domain-0.1.0');
   assert.strictEqual(BUILDING_CONDITION_DOMAIN_VERSION, 'building-condition-domain-0.1.0');
@@ -553,6 +553,7 @@ asyncTest('35-40 + 60-61. live PI, finance, What-if, outcomes unchanged', async 
       skipExplanation: true,
       skipPostcodeMarket: true,
       skipFlood: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding: true,

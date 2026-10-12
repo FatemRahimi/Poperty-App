@@ -2,6 +2,10 @@
   margin-top: 1rem;
   display: grid;
   gap: 0.9rem;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .pi-fin-intro h3 {
@@ -31,12 +35,49 @@
 
 .pi-fin-section {
   margin: 0;
-  padding: 0.9rem 1rem 1rem;
-  border: 1px solid #1f2937;
-  border-radius: 12px;
-  background: #0b0f17;
+  padding: 1rem 1.05rem 1.1rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background: rgba(11, 15, 23, 0.55);
   display: grid;
   gap: 0.75rem;
+}
+
+.pi-fin-unlock-guide {
+  margin: 0;
+  padding: 0.8rem 0.95rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.pi-fin-unlock-guide-lead {
+  margin: 0 0 0.45rem;
+  color: #e2e8f0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.pi-fin-unlock-guide ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.pi-fin-unlock-guide li + li {
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .pi-fin-unlock-guide {
+    padding: 0.7rem 0.75rem;
+  }
+
+  .pi-fin-unlock-guide ul {
+    padding-left: 1rem;
+  }
 }
 
 .pi-fin-section legend {
@@ -48,10 +89,107 @@
   color: #7dd3fc;
 }
 
-.pi-fin-field {
+.pi-fin-field-wrap--focus {
+  padding: 0.35rem;
+  border-radius: 10px;
+  outline: 2px solid rgba(125, 211, 252, 0.55);
+  background: rgba(14, 165, 233, 0.08);
+}
+
+.pi-fin-section--collapsed {
+  display: none;
+}
+
+.pi-fin-evidence p {
   display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+}
+
+.pi-fin-evidence-note {
+  margin: 0.25rem 0 0 !important;
+  width: 100%;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.pi-fin-stage-tabs {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.pi-fin-stage-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.85);
+  color: #e2e8f0;
+  font: inherit;
+  min-height: 44px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.pi-fin-stage-tab:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.85);
+  outline-offset: 2px;
+}
+
+.pi-fin-stage-tab.is-active {
+  border-color: #38bdf8;
+  background: rgba(14, 165, 233, 0.12);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35);
+}
+
+.pi-fin-stage-tab-check {
+  flex: 0 0 auto;
+  width: 1rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.pi-fin-stage-tab.is-active .pi-fin-stage-tab-check {
+  color: #7dd3fc;
+}
+
+.pi-fin-stage-tab-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.pi-fin-stage-tab-current {
+  margin-left: auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+
+.pi-fin-stage-guidance {
+  margin: 0.65rem 0 0;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+@media (min-width: 720px) {
+  .pi-fin-stage-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .pi-fin-field > label {
@@ -129,6 +267,24 @@
   color: #e2e8f0;
 }
 
+.pi-fin-evidence p {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+  width: 100%;
+}
+
+.pi-fin-evidence-note {
+  margin: 0.25rem 0 0;
+  width: 100%;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
 .pi-fin-evidence--property {
   border-left: 3px solid #38bdf8;
 }
@@ -168,5 +324,13 @@
 
   .pi-fin-money select {
     width: 100%;
+  }
+
+  .pi-fin-stage-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .pi-fin-section {
+    padding: 0.85rem 0.8rem 0.95rem;
   }
 }

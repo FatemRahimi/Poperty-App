@@ -32,11 +32,19 @@ const {
   logProviderCostEvent,
   PROVIDER_LOOKUP_LIMIT,
 } = require('../providers/cache/providerCostProtection');
-const { linkSubjectToMarketplaceListing, getListingSummaryById } = require('./listingUprnLinkService');
+const {
+  linkSubjectToMarketplaceListing,
+  getListingSummaryById,
+  resolveAuthoritativeLinkedListing,
+} = require('./listingUprnLinkService');
 const { getPostcodeMarketIntelligence } = require('./postcodeMarketIntelligenceService');
 const { parseUprnProfile } = require('../providers/propertyData/propertyDataParsers');
 const { applyPropertyDataEvidence } = require('../providers/propertyData/propertyDataEvidence');
-const { buildSoldPriceFilters } = require('../providers/propertyData/propertyTypeMapping');
+const {
+  buildSoldPriceFilters,
+  buildValuationSaleRequest,
+} = require('../providers/propertyData/propertyTypeMapping');
+const { isSubjectNativeValuationContext } = require('./subjectNativeSaleValuation');
 const { acquisitionFromContext } = require('../identity/marketAcquisitionPolicy');
 const { mergeSources, createProvenance } = require('../../utils/provenance');
 const { reusedUprnProfileFromSubject } = require('../enrichment/propertyEnrichmentService');
@@ -45,6 +53,14 @@ const {
   POSTCODE_INTEL_UNAVAILABLE_PUBLIC,
   UPRN_PROFILE_FAILED_PUBLIC,
 } = require('./propertyIntelligenceProduction');
+const {
+  UPRNS_MAX_RESULTS,
+  mergeMatcherAndDiscovery,
+  rankDiscoveryRows,
+  shouldSuppressShellAsExactUnit,
+  isPostcodeOnlyQuery,
+  queryLooksLikeNamedUnit,
+} = require('../../utils/uprnDiscovery');
 
 function profileToAttributes(profileData) {
   const parsed = parseUprnProfile(profileData);
@@ -77,21 +93,22 @@ function buildSyntheticPropertyFromSubject(subject) {
   const postcode = subject.postcode || extractPostcodeFromAddress(subject.normalized_address);
   const city = parseCityFromAddress(subject.normalized_address);
   const sqft = attrs.square_feet || parsed.internalArea || null;
+  // Asking / estimate price: never seed from historical last sold (temporal leakage firewall).
   const price =
-    attrs.current_sale_estimate ||
-    parsed.currentSaleEstimate ||
-    attrs.last_sold_price ||
-    parsed.lastSoldPrice ||
-    null;
+    attrs.current_sale_estimate
+    || parsed.currentSaleEstimate
+    || null;
   const lastSoldDate = attrs.last_sold_date || parsed.lastSoldDate || null;
 
   return {
     id: null,
     subjectId: subject.id,
+    valuationExecutionMode: 'subject_native',
     uprn: subject.uprn,
     title: subject.normalized_address,
     description: '',
-    category: 'sale',
+    // Listing workflow category is not fabricated as identity for subjects.
+    category: null,
     property_type: attrs.property_type || parsed.propertyType || null,
     // Subjects are not classified as residential by default. UNKNOWN is valid.
     property_category: null,
@@ -240,14 +257,27 @@ async function enrichSubjectForIntelligence(subject, property, userId, deps = {}
     normalized_address: subject.normalized_address,
     postcode: subject.postcode,
     provider: subject.provider,
+    subjectId: subject.id,
   };
-  const avmProperty = applyPropertyDataEvidence(property, { enrichments, identity }).property;
+  const avmBase = {
+    ...property,
+    id: null,
+    subjectId: subject.id,
+    valuationExecutionMode: 'subject_native',
+    category: null,
+    price: null,
+    last_sold_price: null,
+    last_sold_date: null,
+    sold_date: null,
+  };
+  const avmProperty = applyPropertyDataEvidence(avmBase, { enrichments, identity }).property;
+  const avmReadiness = buildValuationSaleRequest(avmProperty);
 
   if (
     acquisition.fetchSaleValuation
     && marketProvider?.isAvailable()
-    && avmProperty.square_feet >= 300
-    && postcode
+    && isSubjectNativeValuationContext(avmProperty)
+    && avmReadiness.canRequestAvm
   ) {
     await fetchAndPersist('valuation_sale', 'getSaleValuation', 'valuation', () =>
       marketProvider.getSaleValuation(avmProperty, ctx)
@@ -286,7 +316,16 @@ function buildExternalMatchRow(m) {
     latitude: m.latitude,
     longitude: m.longitude,
     matchConfidence: m.matchConfidence,
+    classificationCode: m.classificationCode || null,
     classificationCodeDesc: m.classificationCodeDesc,
+    addressParts: m.addressParts || null,
+    secondary: m.secondary || m.addressParts?.secondary || null,
+    primary: m.primary || m.addressParts?.primary || null,
+    street: m.street || m.addressParts?.street || null,
+    kind: m.kind || null,
+    source: m.source || null,
+    matcherHit: Boolean(m.matcherHit),
+    exactUnitUnconfirmed: Boolean(m.exactUnitUnconfirmed),
   };
 }
 
@@ -298,10 +337,16 @@ async function lookupPropertyIntelligence(query, userId, deps = {}) {
 
   const searchMine = deps.searchUserProperties || searchUserProperties;
   const searchBrowse = deps.searchPublicPropertiesForIntelligence || searchPublicPropertiesForIntelligence;
-  const [internalMine, internalBrowse] = await Promise.all([
-    userId ? searchMine(userId, q) : [],
-    searchBrowse(q, { limit: 40 }),
-  ]);
+  let internalMine = [];
+  let internalBrowse = [];
+  try {
+    [internalMine, internalBrowse] = await Promise.all([
+      userId ? searchMine(userId, q) : [],
+      searchBrowse(q, { limit: 40 }),
+    ]);
+  } catch (err) {
+    logIntelligenceFailure('lookupPropertyIntelligence.internal', err);
+  }
 
   const internalIds = new Set(internalMine.map((p) => p.id));
   const internal = [
@@ -374,10 +419,11 @@ async function lookupPropertyIntelligence(query, userId, deps = {}) {
     };
   }
 
-  const registry = getProviderRegistry();
+  const registry = deps.getProviderRegistry ? deps.getProviderRegistry() : getProviderRegistry();
   const provider = deps.identityProvider || registry.getPrimaryIdentityProvider();
   const postcode = extractPostcodeFromAddress(q);
   const searchAddress = normalizeIdentitySearchAddress(q);
+  const postcodeOnly = isPostcodeOnlyQuery(q, postcode);
   const syntheticProperty = {
     address_line1: q,
     zip_code: postcode,
@@ -386,16 +432,111 @@ async function lookupPropertyIntelligence(query, userId, deps = {}) {
     searchAddress,
   };
 
-  let externalMatches = [];
+  const resolveIdentity =
+    deps.resolveIdentity || ((property, ctx) => provider.resolveIdentity(property, ctx));
+  const listUprnsInPostcode =
+    typeof deps.listUprnsInPostcode === 'function'
+      ? deps.listUprnsInPostcode
+      : !deps.resolveIdentity && provider && typeof provider.listUprnsInPostcode === 'function'
+        ? (pc, ctx) => provider.listUprnsInPostcode(pc, ctx)
+        : null;
+
+  let matcherRows = [];
   let lastSearchAddress = searchAddress;
-  try {
-    const resolveIdentity = deps.resolveIdentity || ((property, ctx) => provider.resolveIdentity(property, ctx));
+  let matcherError = null;
+  let discovery = { success: true, skipped: true, rows: [], potentiallyTruncated: false };
+  let discoveryError = null;
+
+  const runMatcher = async () => {
+    if (postcodeOnly) return;
     const resolved = await resolveIdentity(syntheticProperty, {
       userId,
       propertyId: null,
     });
+    lastSearchAddress = resolved.address || searchAddress;
+    const uniqueRow =
+      resolved.success && resolved.uprn
+        ? {
+            uprn: String(resolved.uprn),
+            address: resolved.address || q,
+            latitude: resolved.latitude,
+            longitude: resolved.longitude,
+            matchConfidence: resolved.matchConfidence,
+            classificationCode: resolved.classificationCode || null,
+            classificationCodeDesc: resolved.classificationCodeDesc,
+          }
+        : null;
+    if (uniqueRow) {
+      if (shouldSuppressShellAsExactUnit(q, uniqueRow)) {
+        matcherRows.push({
+          ...uniqueRow,
+          matchConfidence: 'low',
+          kind: 'shell',
+          exactUnitUnconfirmed: true,
+          source: 'address_match',
+        });
+      } else {
+        matcherRows.push(uniqueRow);
+      }
+    }
+    (resolved.alternativeMatches || []).forEach((m, i) => {
+      if (m.uprn && !matcherRows.some((e) => String(e.uprn) === String(m.uprn))) {
+        matcherRows.push({
+          uprn: String(m.uprn),
+          address: m.address || q,
+          latitude: m.latitude ?? m.lat,
+          longitude: m.longitude ?? m.lng,
+          matchConfidence: inferMatchConfidenceFromRank(
+            i + 1,
+            (resolved.alternativeMatches?.length || 0) + 1
+          ),
+          classificationCode: m.classificationCode || null,
+          classificationCodeDesc: m.classificationCodeDesc,
+          source: 'address_match',
+        });
+      }
+    });
+  };
 
-    if (!resolved.success && !postcode) {
+  const runDiscovery = async () => {
+    if (!postcode || typeof listUprnsInPostcode !== 'function') return;
+    const listed = await listUprnsInPostcode(postcode, { userId, propertyId: null });
+    discovery = listed && typeof listed === 'object' ? listed : { success: false, rows: [] };
+  };
+
+  try {
+    await Promise.all([
+      runMatcher().catch((err) => {
+        matcherError = err;
+      }),
+      runDiscovery().catch((err) => {
+        discoveryError = err;
+      }),
+    ]);
+  } catch (err) {
+    matcherError = matcherError || err;
+  }
+
+  if (!matcherRows.length && !(discovery.rows || []).length) {
+    const failErr = discoveryError || matcherError;
+    if (failErr) {
+      logIntelligenceFailure('lookupPropertyIntelligence.external', failErr);
+      const classified = classifyProviderFailure(failErr);
+      return {
+        ...basePayload,
+        normalizedSearch: { searchAddress, postcode },
+        external: {
+          available: true,
+          matches: [],
+          code: classified.code,
+          discoveryFailed: Boolean(discoveryError),
+          message: internal.length
+            ? `${internal.length} listing${internal.length === 1 ? '' : 's'} on our platform. External lookup failed — you can still analyse a platform listing above.`
+            : classified.message,
+        },
+      };
+    }
+    if (!postcode) {
       return {
         ...basePayload,
         normalizedSearch: { searchAddress, postcode: null },
@@ -408,51 +549,48 @@ async function lookupPropertyIntelligence(query, userId, deps = {}) {
         },
       };
     }
-
-    lastSearchAddress = resolved.address || searchAddress;
-
-    if (resolved.success && resolved.uprn) {
-      externalMatches.push({
-        uprn: resolved.uprn,
-        address: resolved.address || q,
-        latitude: resolved.latitude,
-        longitude: resolved.longitude,
-        matchConfidence: resolved.matchConfidence,
-        classificationCodeDesc: resolved.classificationCodeDesc,
-      });
-    }
-
-    (resolved.alternativeMatches || []).forEach((m, i) => {
-      if (m.uprn && !externalMatches.some((e) => e.uprn === String(m.uprn))) {
-        externalMatches.push({
-          uprn: String(m.uprn),
-          address: m.address || q,
-          latitude: m.latitude ?? m.lat,
-          longitude: m.longitude ?? m.lng,
-          matchConfidence: inferMatchConfidenceFromRank(i + 1, (resolved.alternativeMatches?.length || 0) + 1),
-          classificationCodeDesc: m.classificationCodeDesc,
-        });
-      }
-    });
-  } catch (err) {
-    logIntelligenceFailure('lookupPropertyIntelligence.external', err);
-    const classified = classifyProviderFailure(err);
-    return {
-      ...basePayload,
-      normalizedSearch: { searchAddress, postcode },
-      external: {
-        available: true,
-        matches: [],
-        code: classified.code,
-        message: internal.length
-          ? `${internal.length} listing${internal.length === 1 ? '' : 's'} on our platform. External lookup failed — you can still analyse a platform listing above.`
-          : classified.message,
-      },
-    };
+  } else if (discoveryError) {
+    logIntelligenceFailure('lookupPropertyIntelligence.uprns', discoveryError);
+  } else if (matcherError) {
+    logIntelligenceFailure('lookupPropertyIntelligence.external', matcherError);
   }
 
-  const externalSlice = externalMatches.slice(0, 8);
-  const externalRows = externalSlice.map(buildExternalMatchRow);
+  const merged = mergeMatcherAndDiscovery({
+    query: q,
+    matcherRows,
+    discoveryRows: discovery.rows || [],
+  });
+  const namedUnitUnconfirmed =
+    matcherRows.some((row) => row.exactUnitUnconfirmed)
+    || (queryLooksLikeNamedUnit(q) && merged.some((row) => row.kind === 'shell'));
+  if (namedUnitUnconfirmed) {
+    merged.forEach((row) => {
+      if (row.exactUnitUnconfirmed || row.kind === 'shell') {
+        row.exactUnitUnconfirmed = row.exactUnitUnconfirmed || queryLooksLikeNamedUnit(q);
+      }
+    });
+  }
+  const ranked = rankDiscoveryRows(merged, q, postcode).slice(0, UPRNS_MAX_RESULTS);
+  const externalRows = ranked.map(buildExternalMatchRow);
+  const potentiallyTruncated = Boolean(discovery.potentiallyTruncated);
+
+  let message;
+  if (ranked.length) {
+    message = `${ranked.length} UK address${ranked.length === 1 ? '' : 'es'} found — select the exact property.`;
+    if (potentiallyTruncated) {
+      message += ' Results may be incomplete because the provider returned its maximum page size.';
+    }
+    if (namedUnitUnconfirmed) {
+      message +=
+        ' The named unit was not confirmed. A building/shell is not that named flat — choose a returned address.';
+    }
+  } else if (internal.length) {
+    message = `${internal.length} listing${internal.length === 1 ? '' : 's'} on our platform. No additional UK address match for "${lastSearchAddress}".`;
+  } else if (postcode) {
+    message = `No UK address match for "${lastSearchAddress}". Check flat number, building name spelling, and postcode (parsed as ${postcode}).`;
+  } else {
+    message = 'No UK address match — include a valid UK postcode.';
+  }
 
   return {
     ...basePayload,
@@ -460,14 +598,14 @@ async function lookupPropertyIntelligence(query, userId, deps = {}) {
     normalizedSearch: { searchAddress: lastSearchAddress, postcode },
     external: {
       available: true,
-      matches: externalSlice,
-      message: externalSlice.length
-        ? `${externalSlice.length} additional UK propert${externalSlice.length === 1 ? 'y' : 'ies'} via PropertyData`
-        : internal.length
-          ? `${internal.length} listing${internal.length === 1 ? '' : 's'} on our platform. No additional UPRN match for "${lastSearchAddress}".`
-          : postcode
-            ? `No UPRN match for "${lastSearchAddress}". Check flat number, building name spelling, and postcode (parsed as ${postcode}).`
-            : 'No UPRN match — include a valid UK postcode.',
+      matches: ranked,
+      potentiallyTruncated,
+      requestedResults: discovery.requestedResults || UPRNS_MAX_RESULTS,
+      returnedCount: ranked.length,
+      namedUnitUnconfirmed,
+      postcodeOnly,
+      discoveryUsed: Boolean(postcode && listUprnsInPostcode && !discovery.skipped),
+      message,
     },
   };
 }
@@ -511,7 +649,10 @@ async function finishResolvedSubject({
     postcode,
     latitude: profile.latitude ?? profile.lat ?? subject?.latitude ?? null,
     longitude: profile.longitude ?? profile.lng ?? subject?.longitude ?? null,
-    propertyId: linkResult.listing?.id || subject?.property_id || null,
+    // Only UPRN-backed linkage may persist property_id. Do not write
+    // postcode_address matches. Passing null leaves any historical FK in place
+    // (COALESCE); analysis fail-safe ignores unsafe FKs.
+    propertyId: linkResult.linked ? linkResult.listing.id : null,
     attributes: attrs,
     profileSnapshot: profile && Object.keys(profile).length ? profile : {},
     matchConfidence,
@@ -538,7 +679,7 @@ async function finishResolvedSubject({
       source: 'PropertyData',
       uprn: uprnStr,
       subjectId: saved.id,
-      linkedPropertyId: linkResult.listing?.id || null,
+      linkedPropertyId: linkResult.linked ? linkResult.listing.id : null,
     },
     providerExecution,
     creditsUsed,
@@ -594,7 +735,7 @@ async function resolveExternalSubject({
         source: existing.provider || 'PropertyData',
         uprn: uprnStr,
         subjectId: existing.id,
-        linkedPropertyId: linkResult.listing?.id || existing.property_id || null,
+        linkedPropertyId: linkResult.linked ? linkResult.listing.id : null,
       },
       providerExecution: 'reused_subject',
       creditsUsed: 0,
@@ -689,9 +830,10 @@ async function getSubjectPreview(subjectId) {
     return { success: false, message: SUBJECT_PREVIEW_NOT_FOUND_PUBLIC };
   }
 
+  const authoritative = await resolveAuthoritativeLinkedListing(subject);
   let linkedListing = null;
-  if (subject.property_id) {
-    linkedListing = await getListingSummaryById(subject.property_id);
+  if (authoritative.linked && authoritative.listing?.id) {
+    linkedListing = await getListingSummaryById(authoritative.listing.id);
   }
 
   return {
@@ -705,7 +847,7 @@ async function getSubjectPreview(subjectId) {
       source: subject.provider || 'PropertyData',
       uprn: subject.uprn,
       subjectId: subject.id,
-      linkedPropertyId: subject.property_id || linkedListing?.id || null,
+      linkedPropertyId: linkedListing?.id || null,
     },
   };
 }

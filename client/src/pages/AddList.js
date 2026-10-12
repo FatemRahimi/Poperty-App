@@ -8,6 +8,11 @@ import useSessionStorage from "../Utils/useSessionStorage";
 import "../styles/CrossBrowserReset.css";
 import ContactInformationSection from "../components/ContactInformationSection";
 import CustomFeaturesInput from "../components/CustomFeaturesInput";
+import CanonicalIdentityFields, {
+  emptyCanonicalIdentityForm,
+  appendCanonicalIdentityFields,
+  fetchCanonicalIdentity,
+} from "../components/CanonicalIdentityFields";
 
 // Property Type Options
 const propertyTypeOptions = [
@@ -226,6 +231,7 @@ const AddList = () => {
         country: src.country || "United Kingdom",
         region: src.region || src.state || "",
         postcode: src.postcode || src.zip_code || "",
+        ...emptyCanonicalIdentityForm(),
         localAuthority: src.local_authority || src.localAuthority || "",
         nearestTransportLinks: src.nearest_transport_links || src.nearestTransportLinks || "",
 
@@ -288,6 +294,7 @@ const AddList = () => {
       country: "United Kingdom",
       region: "",
       postcode: "",
+      ...emptyCanonicalIdentityForm(),
       localAuthority: "",
       nearestTransportLinks: "",
       askingPrice: "",
@@ -322,6 +329,18 @@ const AddList = () => {
   // Use session-backed state like AddRent
   const storageKey = editMode ? `editSaleForm_${propertyId}` : 'addListForm';
   const [formData, setFormData] = useSessionStorage(storageKey, getInitialFormData());
+
+  useEffect(() => {
+    if (!editMode || !propertyId) return undefined;
+    let cancelled = false;
+    fetchCanonicalIdentity(propertyId, localStorage.getItem('token'))
+      .then((identity) => {
+        if (cancelled) return;
+        setFormData((current) => ({ ...current, ...identity }));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [editMode, propertyId, setFormData]);
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("token");
@@ -596,6 +615,7 @@ const AddList = () => {
         formDataToSend.append('streetAddress', addr1);
       }
       if (formData.postcode) formDataToSend.append('zip_code', formData.postcode);
+      appendCanonicalIdentityFields(formDataToSend, formData);
       if (formData.region) formDataToSend.append('state', formData.region);
       if (formData.country) formDataToSend.append('country', formData.country);
       // Price mapping for sale
@@ -606,7 +626,7 @@ const AddList = () => {
       const isLand = isLandProperty(formData.propertyType);
       
       // Add all form fields (exclude duplicates we explicitly mapped)
-      const skipKeys = new Set(['category','title','propertyTitle','description','short_description','shortDescription','property_type','propertyType','address_line1','streetAddress','zip_code','postcode','state','region','country','price','askingPrice','hasGarden','hasParking','hasBalconyTerrace','isNewBuild','isChainFree','isRecentlyRenovated','hasAccessibleAccess','customFeatures','bedrooms','bathrooms','receptionRooms']);
+      const skipKeys = new Set(['category','title','propertyTitle','description','short_description','shortDescription','property_type','propertyType','address_line1','streetAddress','zip_code','postcode','state','region','country','price','askingPrice','hasGarden','hasParking','hasBalconyTerrace','isNewBuild','isChainFree','isRecentlyRenovated','hasAccessibleAccess','customFeatures','bedrooms','bathrooms','receptionRooms','identityPaon','identitySaon','identityBuildingName','identityUprn','identityConflict','floorArea','floorAreaUnit']);
       Object.keys(formData).forEach(key => {
         if (!skipKeys.has(key) && formData[key] !== undefined && formData[key] !== null && formData[key] !== '') {
           formDataToSend.append(key, formData[key]);
@@ -648,6 +668,13 @@ const AddList = () => {
       formDataToSend.append('apartment_size', formData.apartmentSize || '');
       formDataToSend.append('floor_number', formData.floorNumber || '');
       formDataToSend.append('virtual_tour_link', formData.virtualTourLink || '');
+
+      if (formData.floorArea) {
+        formDataToSend.append('floor_area', formData.floorArea);
+        formDataToSend.append('floor_area_unit', formData.floorAreaUnit || 'sq_m');
+      } else if (editMode) {
+        formDataToSend.append('clearInternalArea', 'true');
+      }
       
       // Ensure category & type mapping for backend (single source of truth)
       formDataToSend.append('category', 'sale');
@@ -708,6 +735,9 @@ const AddList = () => {
       
       const data = await response.json();
       console.log('✅ Response data:', data);
+      if (data.identityConflict) {
+        window.alert('An identity conflict was recorded. Official UPRN evidence was not overwritten. This is not verification.');
+      }
       
       if (data.success) {
         setSubmitStatus('success');
@@ -886,6 +916,33 @@ const AddList = () => {
           </div>
         )}
         
+        {shouldShowResidentialFields() && (
+          <div className="form-row">
+            <TextInput
+              label="Internal floor area"
+              name="floorArea"
+              type="number"
+              value={formData.floorArea}
+              onChange={handleChange}
+              min="0"
+              step="any"
+              placeholder="Optional"
+            />
+            <SelectInput
+              label="Unit"
+              name="floorAreaUnit"
+              value={formData.floorAreaUnit}
+              onChange={handleChange}
+              options={floorAreaUnitOptions}
+            />
+          </div>
+        )}
+        {shouldShowResidentialFields() && (
+          <p className="form-tip" style={{ marginTop: '-0.5rem', marginBottom: '1rem' }}>
+            Providing the internal floor area may improve available property analysis. This is optional and should match reliable property documentation.
+          </p>
+        )}
+        
         {/* Tenure and EPC Rating */}
         <div className="form-row">
           <SelectInput
@@ -977,6 +1034,14 @@ const AddList = () => {
             placeholder="SW1A 1AA"
           />
         </div>
+        <CanonicalIdentityFields
+          value={formData}
+          onChange={setFormData}
+          propertyType={formData.propertyType}
+          houseNumber={formData.houseNumber}
+          title={formData.propertyTitle}
+          landOrDevelopment={isLandProperty(formData.propertyType)}
+        />
         
         {/* Row 4: Local Authority & Transport Links */}
         <div className="form-row">

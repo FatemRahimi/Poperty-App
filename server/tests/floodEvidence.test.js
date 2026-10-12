@@ -497,6 +497,7 @@ asyncTest('flood does not change valuation, rent, or financialEngine outputs', a
   const withoutFlood = await assembleReport({
     property: listing({ ...COORDS, monthly_rent: 1100 }),
     skipFlood: true,
+      skipEpb: true,
   });
   assert.strictEqual(withFlood.marketIntelligence.sale.centralEstimate, withoutFlood.marketIntelligence.sale.centralEstimate);
   assert.strictEqual(withFlood.marketIntelligence.rent.recommendedRent, withoutFlood.marketIntelligence.rent.recommendedRent);

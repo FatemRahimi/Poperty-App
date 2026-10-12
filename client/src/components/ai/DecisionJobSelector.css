@@ -1,0 +1,146 @@
+.pi-job-selector {
+  margin: 1rem 0 1.15rem;
+  padding: 0.95rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.65);
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.pi-job-selector-heading {
+  margin: 0 0 0.3rem;
+  font-size: 1.05rem;
+  font-weight: 750;
+  color: #f8fafc;
+}
+
+.pi-job-selector-lead {
+  margin: 0 0 0.75rem;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.pi-job-selector-grid {
+  display: grid;
+  gap: 0.55rem;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 720px) {
+  .pi-job-selector-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.pi-job-option {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  text-align: left;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.85);
+  cursor: pointer;
+  color: #e2e8f0;
+  min-height: 44px;
+  position: relative;
+  font: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.pi-job-option:hover:not(:disabled) {
+  border-color: rgba(125, 211, 252, 0.45);
+}
+
+.pi-job-option:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pi-job-option:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.85);
+  outline-offset: 2px;
+}
+
+.pi-job-option-check {
+  flex: 0 0 auto;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.12rem;
+  border-radius: 999px;
+  border: 2px solid #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: transparent;
+  line-height: 1;
+}
+
+.pi-job-option-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.pi-job-option-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  line-height: 1.25;
+}
+
+.pi-job-option-hint {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #94a3b8;
+}
+
+.pi-job-option-selected-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+
+.pi-job-option--selected {
+  border-color: #38bdf8;
+  background: rgba(14, 165, 233, 0.12);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35);
+}
+
+.pi-job-option--selected .pi-job-option-check {
+  border-color: #38bdf8;
+  background: #7dd3fc;
+}
+
+.pi-job-option--selected .pi-job-option-label {
+  color: #e0f2fe;
+}
+
+@media (max-width: 640px) {
+  .pi-job-selector-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pi-job-option {
+    min-height: 44px;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+}

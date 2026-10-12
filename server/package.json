@@ -19,7 +19,8 @@
     "migrate:addlist": "node scripts/migrate-addlist-fields.js",
     "migrate:intelligence": "node scripts/migrate-intelligence-schema.js",
     "import:hmlr-ppd": "node scripts/import-hmlr-price-paid.js",
-    "enrich:listing-identity": "node scripts/enrich-listing-identity.js"
+    "enrich:listing-identity": "node scripts/enrich-listing-identity.js",
+    "enrich:epb": "node scripts/enrich-epb-evidence.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

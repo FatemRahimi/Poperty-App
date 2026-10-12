@@ -1,4 +1,5 @@
 const pool = require('../../models/db');
+const { excludeKnownPracticeInventory } = require('../../config/practiceInventory');
 const {
   rankSaleComparables,
   weightedMedianValue,
@@ -43,7 +44,7 @@ async function fetchSaleComparables(criteria = {}) {
   `;
 
   const result = await pool.query(sql, params);
-  return result.rows.map((r) => ({ ...r, source: 'application_database' }));
+  return excludeKnownPracticeInventory(result.rows).map((r) => ({ ...r, source: 'application_database' }));
 }
 
 async function analyseSaleComparables(property) {

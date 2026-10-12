@@ -1,0 +1,71 @@
+.pi-readiness {
+  margin: 0.85rem 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  background: rgba(14, 22, 36, 0.8);
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.pi-readiness-heading {
+  margin: 0 0 0.55rem;
+  font-size: 0.92rem;
+  color: #e2e8f0;
+}
+
+.pi-readiness-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pi-readiness-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.9fr) auto 1.4fr;
+  gap: 0.45rem 0.75rem;
+  align-items: baseline;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  background: #0f1623;
+}
+
+.pi-readiness-label {
+  font-weight: 650;
+  color: #f1f5f9;
+  font-size: 0.88rem;
+}
+
+.pi-readiness-status {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.pi-readiness-row--ready .pi-readiness-status {
+  color: #6ee7b7;
+}
+
+.pi-readiness-row--needs .pi-readiness-status {
+  color: #fbbf24;
+}
+
+.pi-readiness-detail {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+@media (max-width: 640px) {
+  .pi-readiness-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .pi-readiness-detail {
+    grid-column: 1 / -1;
+  }
+}

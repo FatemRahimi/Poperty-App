@@ -190,7 +190,7 @@ test('27-30. live and foundation domains unchanged', () => {
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.PLANNING).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.ENVIRONMENT).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.LEGAL_TITLE).wiredIntoLiveAnalysis, true);
-  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, false);
+  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.DEVELOPMENT).wiredIntoLiveAnalysis, false);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.DEVELOPMENT).implementationStatus, 'PARTIAL');
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.DEVELOPMENT).mayIncurProviderCost, false);
@@ -430,6 +430,7 @@ asyncTest('31-37 + 52-53. live PI, What-if, and buildRisks unchanged', async () 
       skipExplanation: true,
       skipPostcodeMarket: true,
       skipFlood: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding: true,

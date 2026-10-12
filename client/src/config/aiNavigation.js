@@ -22,8 +22,18 @@ export const AI_NAV = [
   {
     group: 'Analyse',
     items: [
-      { to: '/ai-services/property-intelligence', label: 'Property Intelligence', icon: FaBrain },
-      { to: '/ai-services/investment-analyst', label: 'Investment Analyst', icon: FaChartLine },
+      {
+        to: '/ai-services/property-intelligence',
+        label: 'Property Intelligence',
+        icon: FaBrain,
+        hint: 'Property-specific',
+      },
+      {
+        to: '/ai-services/investment-analyst',
+        label: 'Investment Analyst',
+        icon: FaChartLine,
+        hint: 'Numbers only',
+      },
       { to: '/ai-services/rent-intelligence', label: 'Rent Intelligence', icon: FaPoundSign },
       { to: '/ai-services/portfolio-optimiser', label: 'Portfolio Optimiser', icon: FaBriefcase },
     ],
@@ -46,6 +56,6 @@ export const AI_NAV = [
 ];
 
 export const AI_PLATFORM_TAGLINE =
-  'Evidence-first property intelligence for UK listings.';
+  'Property-specific intelligence for UK decisions.';
 
 export const AI_PRODUCT_NAME = 'Property Intelligence';

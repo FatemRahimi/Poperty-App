@@ -84,7 +84,7 @@ test('1. BUILDING_CONDITION domain ID stable', () => {
   assert.strictEqual(DOMAIN_ID.BUILDING_CONDITION, 'BUILDING_CONDITION');
   assert.strictEqual(BUILDING_CONDITION_DOMAIN_VERSION, 'building-condition-domain-0.1.0');
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).version, BUILDING_CONDITION_DOMAIN_VERSION);
-  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, false);
+  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).implementationStatus, 'PARTIAL');
 });
 
@@ -256,11 +256,11 @@ test('22-24. no condition score, cost, or capex invented', () => {
   );
 });
 
-test('31-33. PLANNING, ENVIRONMENT, LEGAL_TITLE live; BUILDING_CONDITION remains unwired', () => {
+test('31-33. PLANNING, ENVIRONMENT, LEGAL_TITLE, BUILDING_CONDITION live for energy/physical evidence', () => {
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.PLANNING).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.ENVIRONMENT).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.LEGAL_TITLE).wiredIntoLiveAnalysis, true);
-  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, false);
+  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, true);
   assert.strictEqual(LEGAL_TITLE_DOMAIN_VERSION, 'legal-title-domain-0.1.0');
   const legal = adaptLegalTitleFoundation({ identity: identity() });
   assert.strictEqual(legal.envelope.assessment.liveLegalAssessmentAvailable, false);
@@ -374,7 +374,7 @@ test('defect record requires observed issue and is not a diagnosis', () => {
   assert.ok(defect.limitations.join(' ').includes('Not a structural diagnosis'));
 });
 
-test('live domains compose without BUILDING_CONDITION', () => {
+test('live domains compose with BUILDING_CONDITION energy evidence', () => {
   const planning = adaptPlanningDomain({
     planningEvidence: assessedPlanning({
       subjectApplications: [],
@@ -398,6 +398,12 @@ test('live domains compose without BUILDING_CONDITION', () => {
   const live = composeLiveDomainEnvelopes([planning, environment]);
   assert.strictEqual(live.domains.length, 2);
   assert.strictEqual(live.byId.BUILDING_CONDITION, undefined);
+  const building = adaptBuildingConditionFoundation({ identity: identity() }).envelope;
+  const withBuilding = composeLiveDomainEnvelopes([planning, environment, building]);
+  assert.strictEqual(withBuilding.domains.length, 3);
+  assert.ok(withBuilding.byId.BUILDING_CONDITION);
+  assert.strictEqual(withBuilding.byId.BUILDING_CONDITION.assessment.professionalBuildingConditionAssessed, false);
+  assert.strictEqual(withBuilding.byId.BUILDING_CONDITION.assessment.epcIsNotConditionSurvey, true);
 });
 
 test('malformed adapter input degrades', () => {
@@ -446,6 +452,7 @@ asyncTest('25-30 + 47-48. live PI unchanged', async () => {
       skipExplanation: true,
       skipPostcodeMarket: true,
       skipFlood: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding: true,
@@ -469,15 +476,16 @@ asyncTest('25-30 + 47-48. live PI unchanged', async () => {
     },
   });
   assert.strictEqual(report.success, true);
-  assert.strictEqual(report.buildingConditionDomain, undefined);
+  assert.ok(report.buildingConditionDomain);
+  assert.strictEqual(report.buildingConditionDomain.assessment.professionalBuildingConditionAssessed, false);
+  assert.strictEqual(report.buildingConditionDomain.assessment.epcIsNotConditionSurvey, true);
   assert.ok(report.planningDomain);
   assert.ok(report.environmentDomain);
   assert.ok(report.legalTitleDomain);
-  assert.strictEqual(report.buildingConditionDomain, undefined);
   assert.strictEqual(report.marketIntelligence.sale.centralEstimate, 195000);
   assert.strictEqual(report.marketIntelligence.rent.recommendedRent, 1100);
   const engine = read('../services/ai/propertyIntelligenceEngine.js');
-  assert.ok(!engine.includes('adaptBuildingConditionFoundation'));
+  assert.ok(engine.includes('attachBuildingConditionFoundation'));
   assert.ok(engine.includes('buildRisks('));
   const scoring = read('../services/ai/propertyScoring.js');
   assert.ok(scoring.includes('buildRisks') || scoring.includes('risks'));

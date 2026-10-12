@@ -21,6 +21,8 @@ const MIGRATION_FILES = [
   '023_official_sale_transactions.sql',
   '024_official_sale_lookup_links.sql',
   '025_canonical_subject_identity.sql',
+  '026_official_epb_certificates.sql',
+  '027_user_declared_subject_identity.sql',
 ];
 
 async function columnExists(table, column) {
@@ -70,6 +72,8 @@ async function ensureIntelligenceSchema() {
   const needsOfficialSales = !(await tableExists('official_sale_transactions'));
   const needsOfficialSaleLinks = !(await tableExists('official_sale_lookup_links'));
   const needsCanonicalIdentity = !(await columnExists('property_identities', 'paon'));
+  const needsOfficialEpb = !(await tableExists('official_epb_certificates'));
+  const needsUserDeclaredIdentity = !(await columnExists('property_identities', 'building_name'));
 
   if (
     !needsSubjectId &&
@@ -85,7 +89,9 @@ async function ensureIntelligenceSchema() {
     !needsEvidenceHardening &&
     !needsOfficialSales &&
     !needsOfficialSaleLinks &&
-    !needsCanonicalIdentity
+    !needsCanonicalIdentity &&
+    !needsOfficialEpb &&
+    !needsUserDeclaredIdentity
   ) {
     return { applied: false, ok: true };
   }
@@ -136,6 +142,20 @@ async function ensureIntelligenceSchema() {
       await applySql('025_canonical_subject_identity.sql');
     } catch (err) {
       console.error('❌ Canonical subject identity schema could not be applied:', err.message);
+    }
+  }
+  if (needsOfficialEpb) {
+    try {
+      await applySql('026_official_epb_certificates.sql');
+    } catch (err) {
+      console.error('❌ Official EPB evidence schema could not be applied:', err.message);
+    }
+  }
+  if (needsUserDeclaredIdentity) {
+    try {
+      await applySql('027_user_declared_subject_identity.sql');
+    } catch (err) {
+      console.error('❌ User-declared subject identity schema could not be applied:', err.message);
     }
   }
 

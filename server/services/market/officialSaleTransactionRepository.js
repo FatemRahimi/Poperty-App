@@ -180,6 +180,44 @@ function createMemoryOfficialSaleStore() {
         .sort((a, b) => String(b.transfer_date || '').localeCompare(String(a.transfer_date || '')))
         .slice(0, limit);
     },
+    async findComparableCandidates({
+      postcodeCompact,
+      postcodeDistrict: district,
+      propertyTypeCode,
+      asOf,
+      limit = 80,
+      mode = 'postcode',
+    } = {}) {
+      const asOfStr = asOf ? String(asOf).slice(0, 10) : null;
+      let rows = [...byId.values()].filter((row) => row.live !== false);
+      if (propertyTypeCode) {
+        rows = rows.filter((row) => row.property_type_code === propertyTypeCode);
+      }
+      if (asOfStr) {
+        rows = rows.filter((row) => row.transfer_date && String(row.transfer_date).slice(0, 10) <= asOfStr);
+      }
+      if (mode === 'postcode') {
+        if (!postcodeCompact) return [];
+        rows = rows.filter((row) => row.postcode_compact === postcodeCompact);
+      } else if (mode === 'district') {
+        const d = district || (postcodeCompact && postcodeCompact.length > 3
+          ? postcodeCompact.slice(0, -3)
+          : null);
+        if (!d) return [];
+        // Outward-code equality (compact without last 3 inward chars), not bare prefix
+        // (prefix 'PE1' would otherwise pull PE10–PE19).
+        rows = rows.filter((row) => {
+          if (!row.postcode_compact || row.postcode_compact === postcodeCompact) return false;
+          const outward = row.postcode_compact.length > 3
+            ? row.postcode_compact.slice(0, -3)
+            : row.postcode_compact;
+          return outward === d;
+        });
+      }
+      return rows
+        .sort((a, b) => String(b.transfer_date || '').localeCompare(String(a.transfer_date || '')))
+        .slice(0, limit);
+    },
     snapshot() {
       return [...byId.values()];
     },
@@ -443,6 +481,57 @@ function createPostgresOfficialSaleStore(db = pool) {
          ORDER BY transfer_date DESC NULLS LAST
          LIMIT $2`,
         [postcodeCompact, limit]
+      );
+      return store.attachLookupIds(result.rows);
+    },
+    /**
+     * Bounded comparable-candidate retrieval (index-aware).
+     * mode=postcode: exact postcode_compact (idx_official_sale_tx_postcode)
+     * mode=district: left-anchored district prefix, excludes exact postcode rows
+     */
+    async findComparableCandidates({
+      postcodeCompact,
+      postcodeDistrict: district,
+      propertyTypeCode,
+      asOf,
+      limit = 80,
+      mode = 'postcode',
+    } = {}) {
+      const asOfStr = asOf ? String(asOf).slice(0, 10) : null;
+      const lim = Math.min(Math.max(Number(limit) || 80, 1), 200);
+
+      if (mode === 'postcode') {
+        if (!postcodeCompact) return [];
+        const result = await db.query(
+          `SELECT * FROM official_sale_transactions
+           WHERE live
+             AND postcode_compact = $1
+             AND ($2::text IS NULL OR property_type_code = $2)
+             AND ($3::date IS NULL OR transfer_date <= $3::date)
+           ORDER BY transfer_date DESC NULLS LAST
+           LIMIT $4`,
+          [postcodeCompact, propertyTypeCode || null, asOfStr, lim]
+        );
+        return store.attachLookupIds(result.rows);
+      }
+
+      const d = district || (postcodeCompact && postcodeCompact.length > 3
+        ? postcodeCompact.slice(0, -3)
+        : null);
+      if (!d) return [];
+      // LIKE keeps idx_official_sale_tx_postcode usable; LEFT(...) enforces true outward code
+      // so PE1 does not consume the LIMIT with PE10–PE19.
+      const result = await db.query(
+        `SELECT * FROM official_sale_transactions
+         WHERE live
+           AND postcode_compact LIKE $1
+           AND LEFT(postcode_compact, GREATEST(LENGTH(postcode_compact) - 3, 0)) = $2
+           AND ($3::text IS NULL OR postcode_compact <> $3)
+           AND ($4::text IS NULL OR property_type_code = $4)
+           AND ($5::date IS NULL OR transfer_date <= $5::date)
+         ORDER BY transfer_date DESC NULLS LAST
+         LIMIT $6`,
+        [`${d}%`, d, postcodeCompact || null, propertyTypeCode || null, asOfStr, lim]
       );
       return store.attachLookupIds(result.rows);
     },

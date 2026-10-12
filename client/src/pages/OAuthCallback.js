@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { resolveAuthReturnPath } from '../Utils/authReturnPath';
 
 const OAuthCallback = () => {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ const OAuthCallback = () => {
         const params = new URLSearchParams(location.search);
         const userData = params.get('user');
         const token = params.get('token');
-        const redirectTo = params.get('redirectTo') || '/find';
+        const redirectTo = resolveAuthReturnPath(params.get('redirectTo'), '/find');
         
         if (userData && token) {
           try {

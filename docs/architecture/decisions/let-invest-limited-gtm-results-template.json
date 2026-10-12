@@ -1,0 +1,127 @@
+{
+  "protocol": "let-invest-limited-gtm-validation",
+  "protocolVersion": "1.0.0",
+  "status": "REAL-USER_RESULTS_PENDING",
+  "pmfClaimed": false,
+  "cohort": {
+    "minUseful": 5,
+    "target": 8,
+    "hardCap": 12,
+    "completedSessions": 0
+  },
+  "aggregateInterpretation": {
+    "code": null,
+    "codes": {
+      "A": "CURRENT_WEDGE_VALIDATED_ENOUGH_TO_CONTINUE_GTM_TESTING",
+      "B": "INPUT_EXPERIENCE_DOMINANT_BLOCKER",
+      "C": "RENTAL_EVIDENCE_DOMINANT_BLOCKER",
+      "D": "DECISION_SYNTHESIS_DOMINANT_BLOCKER",
+      "E": "REAL_PROPERTY_OPERATING_MODEL_DOMINANT_BLOCKER",
+      "F": "CURRENT_LET_WEDGE_NOT_STRONG_ENOUGH"
+    },
+    "notes": "Fill only after >=5 sessions or early-stop. Do not move thresholds post-hoc."
+  },
+  "sessions": [],
+  "sessionSchemaExample": {
+    "participantId": "P1",
+    "date": "YYYY-MM-DD",
+    "facilitator": "",
+    "participantType": "landlord|btl_investor|other",
+    "propertyPath": "A_OWN_LISTING|B_SELF_ENTERED|C_PRACTICE_INVENTORY",
+    "practiceInventorySubject": false,
+    "propertyId": null,
+    "analysisIds": [],
+    "rentBasisObserved": "LISTING|MARKET|SCENARIO|UNKNOWN|NONE",
+    "funnel": {
+      "STARTED_ANALYSIS": false,
+      "RENT_BASIS_AVAILABLE": false,
+      "PURCHASE_PRICE_AVAILABLE": false,
+      "GROSS_YIELD_REACHED": false,
+      "UNDERWRITING_STARTED": false,
+      "OPERATING_INPUTS_COMPLETE": false,
+      "FINANCE_INPUTS_COMPLETE": false,
+      "NOI_ASSESSED": false,
+      "CASHFLOW_ASSESSED": false,
+      "DSCR_ASSESSED": false,
+      "LANDLORD_PD_ASSESSED": false,
+      "WHAT_IF_USED": false,
+      "ANALYSIS_COMPLETED": false,
+      "farthestStage": null,
+      "abandonmentStage": null,
+      "abandonmentReasonCode": null,
+      "abandonmentReasonText": null
+    },
+    "comprehension": {
+      "marketRentNotAchievable": "PASS|FAIL|PARTIAL|NA",
+      "priceNotFairValue": "PASS|FAIL|PARTIAL|NA",
+      "userInputNotFact": "PASS|FAIL|PARTIAL|NA",
+      "whatIfNotCanonical": "PASS|FAIL|PARTIAL|NA",
+      "grossYieldNotCompleteUw": "PASS|FAIL|PARTIAL|NA",
+      "notAssessedNotZero": "PASS|FAIL|PARTIAL|NA",
+      "marketOverreadObserved": false
+    },
+    "inputBurden": {
+      "expectedRent": "OK|DONT_KNOW_YET|DONT_UNDERSTAND|TOO_MUCH_EFFORT|PLATFORM_SHOULD_KNOW|NA",
+      "vacancy": "OK|DONT_KNOW_YET|DONT_UNDERSTAND|TOO_MUCH_EFFORT|PLATFORM_SHOULD_KNOW|NA",
+      "maintenance": "OK|DONT_KNOW_YET|DONT_UNDERSTAND|TOO_MUCH_EFFORT|PLATFORM_SHOULD_KNOW|NA",
+      "insurance": "OK|DONT_KNOW_YET|DONT_UNDERSTAND|TOO_MUCH_EFFORT|PLATFORM_SHOULD_KNOW|NA",
+      "management": "OK|DONT_KNOW_YET|DONT_UNDERSTAND|TOO_MUCH_EFFORT|PLATFORM_SHOULD_KNOW|NA",
+      "serviceCharge": "OK|DONT_KNOW_YET|DONT_UNDERSTAND|TOO_MUCH_EFFORT|PLATFORM_SHOULD_KNOW|NA",
+      "groundRent": "OK|DONT_KNOW_YET|DONT_UNDERSTAND|TOO_MUCH_EFFORT|PLATFORM_SHOULD_KNOW|NA",
+      "taxes": "OK|DONT_KNOW_YET|DONT_UNDERSTAND|TOO_MUCH_EFFORT|PLATFORM_SHOULD_KNOW|NA",
+      "deposit": "OK|DONT_KNOW_YET|DONT_UNDERSTAND|TOO_MUCH_EFFORT|PLATFORM_SHOULD_KNOW|NA",
+      "mortgageAmount": "OK|DONT_KNOW_YET|DONT_UNDERSTAND|TOO_MUCH_EFFORT|PLATFORM_SHOULD_KNOW|NA",
+      "interestRate": "OK|DONT_KNOW_YET|DONT_UNDERSTAND|TOO_MUCH_EFFORT|PLATFORM_SHOULD_KNOW|NA",
+      "mortgageTerm": "OK|DONT_KNOW_YET|DONT_UNDERSTAND|TOO_MUCH_EFFORT|PLATFORM_SHOULD_KNOW|NA"
+    },
+    "outputValue": {
+      "grossYield": "HIGH_VALUE|UNDERSTOOD_LOW_VALUE|IGNORED|CONFUSING|MISLEADING|NA",
+      "noi": "HIGH_VALUE|UNDERSTOOD_LOW_VALUE|IGNORED|CONFUSING|MISLEADING|NA",
+      "netYield": "HIGH_VALUE|UNDERSTOOD_LOW_VALUE|IGNORED|CONFUSING|MISLEADING|NA",
+      "cashFlow": "HIGH_VALUE|UNDERSTOOD_LOW_VALUE|IGNORED|CONFUSING|MISLEADING|NA",
+      "dscr": "HIGH_VALUE|UNDERSTOOD_LOW_VALUE|IGNORED|CONFUSING|MISLEADING|NA",
+      "landlordPd": "HIGH_VALUE|UNDERSTOOD_LOW_VALUE|IGNORED|CONFUSING|MISLEADING|NA",
+      "diFindings": "HIGH_VALUE|UNDERSTOOD_LOW_VALUE|IGNORED|CONFUSING|MISLEADING|NA",
+      "unresolvedDependencies": "HIGH_VALUE|UNDERSTOOD_LOW_VALUE|IGNORED|CONFUSING|MISLEADING|NA",
+      "investigationPriorities": "HIGH_VALUE|UNDERSTOOD_LOW_VALUE|IGNORED|CONFUSING|MISLEADING|NA",
+      "sensitivity": "HIGH_VALUE|UNDERSTOOD_LOW_VALUE|IGNORED|CONFUSING|MISLEADING|NA",
+      "whatIf": "HIGH_VALUE|UNDERSTOOD_LOW_VALUE|IGNORED|CONFUSING|MISLEADING|NA"
+    },
+    "decisionValue": {
+      "saveTime": "YES|NO|UNSURE",
+      "avoidExpensiveMistake": "YES|NO|UNSURE",
+      "identifyQuestion": "YES|NO|UNSURE",
+      "understandSensitivity": "YES|NO|UNSURE",
+      "compareAssumptions": "YES|NO|UNSURE",
+      "changeOrConfirmNextAction": "YES|NO|UNSURE",
+      "nextActionText": null
+    },
+    "returnUse": {
+      "interest": false,
+      "intentToReuse": false,
+      "actualReuse": false,
+      "why": null
+    },
+    "biggestBlocker": null,
+    "trustedMost": null,
+    "trustedLeast": null,
+    "confusingConcepts": [],
+    "missingInformation": [],
+    "notes": null,
+    "privacy": {
+      "noRawProviderPayloads": true,
+      "noFullFinanceDump": true
+    }
+  },
+  "questionsOnlyRealUsersCanAnswer": [
+    "Can they understand what the product does?",
+    "Can they analyse a property they genuinely care about?",
+    "Can they complete required underwriting inputs?",
+    "Do they distinguish FACT vs MARKET EVIDENCE vs USER ASSUMPTION?",
+    "Do they understand MARKET rent is not guaranteed achievable rent?",
+    "Do they reach the complete underwriting pack?",
+    "Do outputs affect investigation or decision process?",
+    "Which missing capability actually blocks value?",
+    "Would they use the workflow again (intent / reuse)?"
+  ]
+}

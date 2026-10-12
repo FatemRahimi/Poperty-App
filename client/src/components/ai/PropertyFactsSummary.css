@@ -1,0 +1,159 @@
+.pi-facts-summary {
+  margin: 0 0 1.15rem;
+  padding: 0.9rem 1rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.pi-facts-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.pi-facts-heading {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.pi-facts-edit-toggle {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.pi-facts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.pi-fact-row {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 34%) 1fr;
+  gap: 0.55rem 0.85rem;
+  align-items: baseline;
+  padding: 0.48rem 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.pi-fact-label {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.pi-fact-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+  min-width: 0;
+}
+
+.pi-fact-value {
+  font-size: 0.95rem;
+  color: #e2e8f0;
+  font-weight: 650;
+  word-break: break-word;
+}
+
+.pi-fact-row--unknown .pi-fact-value {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.pi-fact-provenance {
+  font-size: 0.72rem;
+  color: #7dd3fc;
+  font-weight: 500;
+}
+
+.pi-facts-footnote {
+  margin: 0.65rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.pi-facts-edit {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.pi-facts-edit-lead {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.pi-facts-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.pi-facts-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+.pi-facts-edit-field--wide {
+  grid-column: 1 / -1;
+}
+
+.pi-facts-edit-field input,
+.pi-facts-edit-field select {
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.9rem;
+}
+
+.pi-facts-edit-error {
+  color: #fca5a5;
+  font-size: 0.84rem;
+  margin: 0 0 0.5rem;
+}
+
+.pi-facts-edit-ok {
+  color: #86efac;
+  font-size: 0.84rem;
+  margin: 0 0 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .pi-facts-header-row {
+    flex-wrap: wrap;
+  }
+
+  .pi-facts-edit-toggle {
+    width: 100%;
+  }
+
+  .pi-fact-row {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+    padding: 0.55rem 0;
+  }
+
+  .pi-facts-edit-grid {
+    grid-template-columns: 1fr;
+  }
+}

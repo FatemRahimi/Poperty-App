@@ -1,8 +1,15 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 
+function resolveAuthApiBaseUrl() {
+  if (process.env.REACT_APP_BACKEND_URL) return process.env.REACT_APP_BACKEND_URL;
+  // CRA dev proxy (package.json) forwards /api/* when baseURL is empty.
+  if (process.env.NODE_ENV === 'development') return '';
+  return 'http://localhost:5050';
+}
+
 // Configure axios defaults
-axios.defaults.baseURL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050';
+axios.defaults.baseURL = resolveAuthApiBaseUrl();
 axios.defaults.withCredentials = true;
 
 const AuthContext = createContext();
@@ -128,11 +135,11 @@ export const AuthProvider = ({ children }) => {
         return false;
       }
       
-      // Update state and wait for it to complete
-      await new Promise(resolve => {
-        setUser(userData);
-        setIsAuthenticated(true);
-        resolve();
+      setUser(userData);
+      setIsAuthenticated(true);
+      // Let React commit auth state before callers navigate to protected routes.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
       });
       
       // Verify the state was updated

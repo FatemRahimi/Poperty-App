@@ -63,6 +63,10 @@ function listing(overrides = {}) {
     bedrooms: 2,
     bathrooms: 1,
     square_feet: 700,
+    year_built: 1950,
+    has_garden: true,
+    parking_spaces: 1,
+    finish_quality: 'average',
     price: 250000,
     ...overrides,
   };
@@ -423,6 +427,7 @@ async function run() {
     assert.deepStrictEqual(propertyIntelligenceConfig.providerProtection.expensiveEndpoints, [
       'address-match-uprn',
       'uprn',
+      'uprns',
     ]);
   });
 

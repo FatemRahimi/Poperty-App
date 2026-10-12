@@ -26,17 +26,17 @@ const FLAGSHIP_TOOLS = [
   {
     icon: FaBrain,
     title: 'Property Intelligence',
-    desc: 'Full evidence-based analysis — valuation, rent, investment, risks and recommendations.',
+    desc: 'Choose a UK property, decide Buy / Let / Invest / Sell, then see evidence-backed intelligence.',
     to: '/ai-services/property-intelligence',
-    tag: 'Flagship',
+    tag: 'Property-specific',
     primary: true,
   },
   {
     icon: FaChartLine,
     title: 'Investment Analyst',
-    desc: 'Scenarios, sensitivity tables and transparent yield metrics.',
+    desc: 'Numbers-only calculator — no property subject or Decision Workspace.',
     to: '/ai-services/investment-analyst',
-    tag: 'Quant',
+    tag: 'Calculator',
   },
   {
     icon: FaBriefcase,
@@ -102,7 +102,7 @@ const AiHub = () => {
   return (
     <AiWorkspaceLayout
       title={AI_PRODUCT_NAME}
-      subtitle="Evidence-first analysis for UK property — select a tool or continue a recent report."
+      subtitle="Start with Property Intelligence for a specific UK property. Other tools are specialised helpers."
     >
       <div className="ai-hub">
         {isAuthenticated && !loading && (

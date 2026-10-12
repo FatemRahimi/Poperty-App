@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import "./Login.css"; // Reusing the same CSS
 import { useAuth } from "../context/AuthContext";
+import { googleAuthStartUrl, resolveAuthReturnPath } from "../Utils/authReturnPath";
 import "../styles/CrossBrowserReset.css"; // Cross-browser consistency // Assuming you have AuthContext
 
 const Login = () => {
@@ -13,11 +14,11 @@ const Login = () => {
     const [urlMessages, setUrlMessages] = useState({ error: null, success: null });
     const navigate = useNavigate();
     const location = useLocation();
-    const { login, isAuthenticated } = useAuth(); // Fixed typo in comment
+    const { login, isAuthenticated, loading: authLoading } = useAuth();
     
 
-    // Get the redirect path from location state or default to /find
-    const from = location.state?.from?.pathname || "/find";
+    // Property Intelligence / ProtectedRoute pass a string path; signup passes { pathname }.
+    const from = resolveAuthReturnPath(location.state?.from, "/find");
 
     useEffect(() => {
         // Read URL parameters for errors and success messages
@@ -46,12 +47,12 @@ const Login = () => {
     }, [location.search]);
 
     useEffect(() => {
-        // Redirect if already authenticated
-        if (isAuthenticated || (localStorage.getItem('token') && localStorage.getItem('user'))) {
-            const redirectPath = location.state?.from || '/dashboard';
-            navigate(redirectPath, { replace: true });
-        }
-    }, [isAuthenticated, navigate, location]);
+        // Only redirect after auth bootstrap — stale localStorage must not bounce users away.
+        if (authLoading) return;
+        if (!isAuthenticated) return;
+        const redirectPath = resolveAuthReturnPath(location.state?.from, '/dashboard');
+        navigate(redirectPath, { replace: true });
+    }, [isAuthenticated, authLoading, navigate, location.state?.from]);
 
     // Real-time validation
     const validateField = (name, value) => {
@@ -153,13 +154,29 @@ const Login = () => {
                 credentials: 'include',
             });
             
-            const data = await response.json();
-            
+            let data = {};
+            try {
+                data = await response.json();
+            } catch {
+                setErrors({
+                    general:
+                        response.status >= 500
+                            ? 'Sign-in service is temporarily unavailable. Check that the backend is running, then try again.'
+                            : 'Unexpected response from the server. Please try again.',
+                });
+                setIsLoading(false);
+                return;
+            }
+
             if (response.ok) {
-                // Login successful
-                login(data.user, data.token); // Update auth context with user data and token
-                
-                // Redirect to the page user was trying to access
+                const sessionSaved = await login(data.user, data.token);
+                if (!sessionSaved) {
+                    setErrors({
+                        general: 'Sign-in succeeded but your session could not be saved. Check browser storage and try again.',
+                    });
+                    setIsLoading(false);
+                    return;
+                }
                 navigate(from, { replace: true });
             } else {
                 // Handle different types of errors
@@ -182,18 +199,19 @@ const Login = () => {
                 setIsLoading(false);
             }
         } catch (err) {
-            setErrors({ general: 'Network error. Please check your connection and try again.' });
+            setErrors({
+                general:
+                    'Cannot reach the sign-in service. Start the app with npm run dev from the project root (client on :3000, API on :5050), then try again.',
+            });
             setIsLoading(false);
         }
     };
 
     // Google OAuth login
     const handleGoogleLogin = () => {
+        const returnPath = resolveAuthReturnPath(location.state?.from, '/find');
         dismissUrlMessages();
-        const from = location.state?.from || '/find';
-        // Use the backend URL from environment variable or default
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5050';
-        window.location.href = `${backendUrl}/api/auth/google?redirectTo=${encodeURIComponent(from)}`;
+        window.location.href = googleAuthStartUrl(returnPath);
     };
 
     const getInputClassName = (fieldName) => {
@@ -289,7 +307,7 @@ const Login = () => {
                                         <div className="error-action mt-2">
                                             <Link 
                                                 to="/signup" 
-                                                state={{ from: location.state?.from || { pathname: from } }}
+                                                state={{ from }}
                                                 className="signup-suggestion-btn"
                                             >
                                                 Create an account instead
@@ -354,7 +372,7 @@ const Login = () => {
                         <p className="login-text mt-4">
                             Don't have an account? <Link 
                                 to="/signup" 
-                                state={{ from: location.state?.from || { pathname: from } }}
+                                state={{ from }}
                             >
                                 Sign up
                             </Link>

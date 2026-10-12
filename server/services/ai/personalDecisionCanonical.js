@@ -156,6 +156,68 @@ function scorePublicLandlordPersonalDecision(input = {}) {
   return publicLandlordPersonalDecision(scoreCanonicalLandlordDecision(input));
 }
 
+function scoreCanonicalBuyerGeneralDecision({
+  property,
+  finance = {},
+  intelligence = {},
+  asOf,
+  preferences = {},
+} = {}) {
+  return scorePersonalDecision({
+    profile: 'buyer_general',
+    property: propertyWithFinanceScenario(property, finance),
+    preferences,
+    intelligence,
+    finance,
+    asOf,
+  });
+}
+
+function publicBuyerGeneralPersonalDecision(decision) {
+  if (!decision) return null;
+  const dimensions = {};
+  Object.entries(decision.dimensions || {}).forEach(([key, value]) => {
+    dimensions[key] = {
+      key: value.key || key,
+      weight: value.weight,
+      available: Boolean(value.available),
+      score: value.available ? value.score : null,
+      state: value.state || (value.available ? 'assessed' : 'notAssessed'),
+      evidence: value.evidence || [],
+      unavailableReason: value.available ? null : value.unavailableReason || null,
+    };
+  });
+  return {
+    profile: 'buyer_general',
+    available: Boolean(decision.available),
+    state: decision.available ? 'assessed' : 'notAssessed',
+    score: Number.isFinite(decision.score) ? decision.score : null,
+    outcome: decision.outcome || null,
+    decision: decision.decision || null,
+    decisionStrength: decision.decisionStrength || 'none',
+    dimensions,
+    notAssessed: decision.notAssessed || [],
+    coverage: decision.coverage || null,
+    constraintFailures: decision.constraintFailures || [],
+    explanation: decision.deterministicExplanation || null,
+    model: decision.model || null,
+    confidence: decision.confidence || null,
+    unavailableReason: decision.unavailableReason || null,
+    assessedAt: decision.assessedAt || null,
+    marketContext: decision.marketContext || null,
+    scoreLabel: 'Owner-occupier fit',
+    role: 'buyer_general_fit',
+    notPurchaseAdvice: true,
+    notInvestmentQualityScore: true,
+    notABuyScore: true,
+    notConfidence: true,
+  };
+}
+
+function scorePublicBuyerGeneralPersonalDecision(input = {}) {
+  return publicBuyerGeneralPersonalDecision(scoreCanonicalBuyerGeneralDecision(input));
+}
+
 module.exports = {
   numericFinanceValue,
   propertyWithFinanceScenario,
@@ -164,4 +226,7 @@ module.exports = {
   scoreCanonicalLandlordDecision,
   publicLandlordPersonalDecision,
   scorePublicLandlordPersonalDecision,
+  scoreCanonicalBuyerGeneralDecision,
+  publicBuyerGeneralPersonalDecision,
+  scorePublicBuyerGeneralPersonalDecision,
 };

@@ -12,6 +12,11 @@ import useSessionStorage from "../Utils/useSessionStorage";
 import { useAuth } from "../context/AuthContext";
 import ContactInformationSection from "../components/ContactInformationSection";
 import CustomFeaturesInput from "../components/CustomFeaturesInput";
+import CanonicalIdentityFields, {
+  emptyCanonicalIdentityForm,
+  appendCanonicalIdentityFields,
+  fetchCanonicalIdentity,
+} from "../components/CanonicalIdentityFields";
 
 // Property type options
 const propertyTypeOptions = [
@@ -33,6 +38,11 @@ const propertyTypeOptions = [
   { value: "student-halls", label: "Student Halls" },
   { value: "house-share", label: "House Share" },
   { value: "retirement-home", label: "Retirement Home" }
+];
+
+const floorAreaUnitOptions = [
+  { value: "sq_m", label: "Square metres" },
+  { value: "sq_ft", label: "Square feet" },
 ];
 
 // Bedroom options
@@ -300,6 +310,7 @@ const AddRent = () => {
         city: propertyData.city || "",
         region: propertyData.state || "",
         country: propertyData.country || "United Kingdom",
+        ...emptyCanonicalIdentityForm(),
         
         // Property Features
         garden: propertyData.has_garden || false,
@@ -337,6 +348,8 @@ const AddRent = () => {
         layoutFileUrl: propertyData.layout_file_url || "",
         apartmentSize: propertyData.apartment_size || "",
         floorNumber: propertyData.floor_number || "",
+        floorArea: (propertyData.floor_area ?? propertyData.square_feet ?? "").toString(),
+        floorAreaUnit: propertyData.floor_area_unit || (propertyData.square_feet ? "sq_ft" : "sq_m"),
         
         // Custom Features
         customFeatures: propertyData.custom_features ? (() => {
@@ -404,6 +417,7 @@ const AddRent = () => {
       city: "",
       region: "",
       country: "",
+      ...emptyCanonicalIdentityForm(),
       garden: false,
       parking: false,
       balconyTerrace: false,
@@ -425,6 +439,8 @@ const AddRent = () => {
       layoutFileUrl: "",
       apartmentSize: "",
       floorNumber: "",
+      floorArea: "",
+      floorAreaUnit: "sq_m",
       
       // Custom Features
       customFeatures: [],
@@ -469,6 +485,18 @@ const AddRent = () => {
   const [epcDocumentFile, setEpcDocumentFile] = useState(null);
   const [existingEpcUrl, setExistingEpcUrl] = useState("");
   const [existingEpcName, setExistingEpcName] = useState("");
+
+  useEffect(() => {
+    if (!editMode || !propertyData?.id) return undefined;
+    let cancelled = false;
+    fetchCanonicalIdentity(propertyData.id, localStorage.getItem('token'))
+      .then((identity) => {
+        if (cancelled) return;
+        setFormData((current) => ({ ...current, ...identity }));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [editMode, propertyData?.id, setFormData]);
 
   // Load existing property images if in edit mode
   useEffect(() => {
@@ -1196,6 +1224,15 @@ const AddRent = () => {
         custom_features: JSON.stringify(formData.customFeatures || []),
         customFeatures: JSON.stringify(formData.customFeatures || [])
       };
+
+      if (formData.floorArea) {
+        fieldMapping.floor_area = formData.floorArea;
+        fieldMapping.floorArea = formData.floorArea;
+        fieldMapping.floor_area_unit = formData.floorAreaUnit || 'sq_m';
+        fieldMapping.floorAreaUnit = formData.floorAreaUnit || 'sq_m';
+      } else if (editMode) {
+        fieldMapping.clearInternalArea = 'true';
+      }
       
       // Add all mapped fields to FormData
       Object.keys(fieldMapping).forEach(key => {
@@ -1218,6 +1255,7 @@ const AddRent = () => {
       submitFormData.append('userEmail', user.email);
       submitFormData.append('userId', user.id);
       submitFormData.append('listingType', 'rent');
+      appendCanonicalIdentityFields(submitFormData, formData);
       
       // Handle status for approved properties being edited
       if (editMode && propertyData?.status === 'approved') {
@@ -1335,6 +1373,9 @@ const AddRent = () => {
       
       const result = await response.json();
       console.log(`✅ Rent Property ${editMode ? 'Updated' : 'Submitted'} Successfully:`, result);
+      if (result.identityConflict) {
+        window.alert('An identity conflict was recorded. Official UPRN evidence was not overwritten. This is not verification.');
+      }
       
       // Submit advisor profile if user has advisor data
       if (formData.isAdvisor && (formData.companyName || formData.fullName)) {
@@ -1481,6 +1522,29 @@ const AddRent = () => {
                 required
               />
             </div>
+
+            <div className="form-row">
+              <TextInput
+                label="Internal floor area"
+                name="floorArea"
+                type="number"
+                value={formData.floorArea}
+                onChange={handleChange}
+                min="0"
+                step="any"
+                placeholder="Optional"
+              />
+              <SelectInput
+                label="Unit"
+                name="floorAreaUnit"
+                value={formData.floorAreaUnit}
+                onChange={handleChange}
+                options={floorAreaUnitOptions}
+              />
+            </div>
+            <p className="form-tip" style={{ marginTop: '-0.5rem', marginBottom: '1rem' }}>
+              Providing the internal floor area may improve available property analysis. This is optional and should match reliable property documentation.
+            </p>
             
             {/* Row 2: Bathrooms, Furnished Status, Weekly Rent */}
             <div className="form-row three-cols">
@@ -1667,6 +1731,14 @@ const AddRent = () => {
                 required
               />
             </div>
+            <CanonicalIdentityFields
+              value={formData}
+              onChange={setFormData}
+              propertyType={formData.propertyType}
+              houseNumber={formData.houseNumber}
+              title={formData.propertyTitle}
+              landOrDevelopment={formData.propertyType === 'land'}
+            />
             
             {/* Address Validation Message */}
             {addressValidationError && (

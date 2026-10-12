@@ -17,17 +17,11 @@ const {
   persistListingClassificationFromSubmission,
 } = require('../services/identity/assetClassificationService');
 const {
-  persistListingCanonicalIdentity,
-} = require('../services/identity/canonicalIdentityService');
-
-async function persistListingIdentitySafely(property) {
-  if (!property?.id) return;
-  try {
-    await persistListingCanonicalIdentity(property);
-  } catch (err) {
-    console.error('Listing identity persist failed (property not blocked):', err.message);
-  }
-}
+  persistListingIdentitySafely,
+} = require('./subjectIdentityController');
+const {
+  parseListingInternalAreaInput,
+} = require('../services/identity/listingInternalAreaCapture');
 
 async function persistSubmittedClassification(client, property, body, userId) {
   if (!property?.id) return;
@@ -503,6 +497,20 @@ const submitProperty = async (req, res) => {
     const bedrooms_converted = convertBedrooms(bedrooms);
     const year_built_converted = convertYearBuilt(year_built_mapped);
 
+    const internalAreaParsed = parseListingInternalAreaInput(req.body, { mode: 'create' });
+    if (!internalAreaParsed.ok) {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(400).json({
+        success: false,
+        message: internalAreaParsed.error.message,
+        field: internalAreaParsed.error.field,
+      });
+    }
+    const floor_area_mapped = internalAreaParsed.fields?.floor_area ?? null;
+    const square_feet_mapped = internalAreaParsed.fields?.square_feet ?? null;
+    const floor_area_unit_mapped = internalAreaParsed.fields?.floor_area_unit ?? null;
+
     // Debug logging for property submission
     console.log('🔍 Property submission debug:');
     console.log('📋 Raw request body keys:', Object.keys(req.body));
@@ -585,7 +593,7 @@ const submitProperty = async (req, res) => {
     const valuesArray = [
       user_id, title, description, category_mapped, property_type_mapped, property_category,
       address_line1_mapped, address_line2, city, state_mapped, zip_code_mapped, country || 'USA',
-      bedrooms_converted, bathrooms_converted, square_feet, lot_size, year_built_converted,
+      bedrooms_converted, bathrooms_converted, square_feet_mapped, floor_area_mapped, floor_area_unit_mapped, lot_size, year_built_converted,
       price_mapped, weekly_rent_mapped, monthly_rent_mapped, lease_term_mapped, deposit_amount_mapped,
       parking_spaces || 0, has_garage || false, has_pool || false, 
       has_garden || false, furnished_mapped || false, pets_allowed || false,
@@ -619,7 +627,7 @@ const submitProperty = async (req, res) => {
       `INSERT INTO properties (
         user_id, title, description, category, property_type, property_category,
         address_line1, address_line2, city, state, zip_code, country,
-        bedrooms, bathrooms, square_feet, lot_size, year_built,
+        bedrooms, bathrooms, square_feet, floor_area, floor_area_unit, lot_size, year_built,
         price, weekly_rent, monthly_rent, lease_term, deposit_amount,
         parking_spaces, has_garage, has_pool, has_garden, furnished, pets_allowed,
         student_housing, availability_date, contact_name, contact_phone, contact_email, property_consultant, slug,
@@ -642,7 +650,7 @@ const submitProperty = async (req, res) => {
         $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36,
         $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59,
         $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74, $75, $76, $77, $78, $79, $80, $81, $82, $83, $84, $85, $86,
-        $87, $88, $89, $90, $91
+        $87, $88, $89, $90, $91, $92, $93
       ) RETURNING *`,
       valuesArray
     );
@@ -774,7 +782,10 @@ const submitProperty = async (req, res) => {
     await collectAfterCreate(client, { property, actorUserId: user_id });
 
     await client.query('COMMIT');
-    persistListingIdentitySafely(property).catch(() => {});
+    const identityPersist = await persistListingIdentitySafely(property, {
+      body: req.body,
+      actorUserId: user_id,
+    });
 
     // Get user details for email
     const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [user_id]);
@@ -856,7 +867,9 @@ const submitProperty = async (req, res) => {
         title: property.title,
         status: property.status,
         slug: property.slug
-      }
+      },
+      identityConflict: identityPersist?.conflict === true,
+      userDeclaredIsNotVerified: true,
     });
 
   } catch (error) {
@@ -1811,32 +1824,26 @@ const updateProperty = async (req, res) => {
     const insurance_responsibility_mapped = insurance_responsibility || insuranceResponsibility || existingProperty.insurance_responsibility || '';
     const rent_review_frequency_mapped = rent_review_frequency || rentReviewFrequency || existingProperty.rent_review_frequency || null;
 
-    // NEW: Floor area mapping - compute square_feet from floorArea + unit if provided
-    const rawFloorArea = req.body.square_feet || req.body.squareFeet || req.body.floor_area || req.body.floorArea;
-    let square_feet_mapped = existingProperty.square_feet;
-    if (rawFloorArea !== undefined && rawFloorArea !== null && rawFloorArea !== '') {
-      const areaVal = parseFloat(rawFloorArea);
-      const unit = (floor_area_unit_mapped || '').toLowerCase();
-      if (!isNaN(areaVal)) {
-        // Validate reasonable floor area bounds
-        if (unit === 'sq_m' || unit === 'sqm' || unit === 'm2') {
-          // For square meters: reasonable range 1-50,000 sq_m
-          if (areaVal > 0 && areaVal <= 50000) {
-            square_feet_mapped = Math.round(areaVal * 10.7639);
-          } else {
-            console.warn(`⚠️ Invalid floor area in sq_m: ${areaVal}, keeping existing: ${existingProperty.square_feet}`);
-            square_feet_mapped = existingProperty.square_feet;
-          }
-        } else {
-          // For square feet: reasonable range 1-500,000 sq_ft
-          if (areaVal > 0 && areaVal <= 500000) {
-            square_feet_mapped = Math.round(areaVal);
-          } else {
-            console.warn(`⚠️ Invalid floor area in sq_ft: ${areaVal}, keeping existing: ${existingProperty.square_feet}`);
-            square_feet_mapped = existingProperty.square_feet;
-          }
-        }
-      }
+    const internalAreaParsed = parseListingInternalAreaInput(req.body, {
+      mode: 'edit',
+      existing: existingProperty,
+    });
+    if (!internalAreaParsed.ok) {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(400).json({
+        success: false,
+        message: internalAreaParsed.error.message,
+        field: internalAreaParsed.error.field,
+      });
+    }
+    let floor_area_mapped = existingProperty.floor_area ?? null;
+    let square_feet_mapped = existingProperty.square_feet ?? null;
+    let floor_area_unit_resolved = existingProperty.floor_area_unit ?? floor_area_unit_mapped ?? null;
+    if (internalAreaParsed.cleared || internalAreaParsed.fields) {
+      floor_area_mapped = internalAreaParsed.fields.floor_area;
+      square_feet_mapped = internalAreaParsed.fields.square_feet;
+      floor_area_unit_resolved = internalAreaParsed.fields.floor_area_unit;
     }
 
     // Geocode location for all properties
@@ -1923,8 +1930,7 @@ const updateProperty = async (req, res) => {
     console.log('Raw squareFeet from req.body:', req.body.squareFeet);
     console.log('Raw floor_area from req.body:', req.body.floor_area);
     console.log('Raw floorArea from req.body:', req.body.floorArea);
-    console.log('rawFloorArea:', rawFloorArea);
-    console.log('floor_area_unit_mapped:', floor_area_unit_mapped);
+    console.log('floor_area_unit_resolved:', floor_area_unit_resolved);
     console.log('square_feet_mapped:', square_feet_mapped, typeof square_feet_mapped);
     console.log('Existing square_feet:', existingProperty.square_feet);
 
@@ -1952,8 +1958,9 @@ const updateProperty = async (req, res) => {
       opening_hours_mapped, is_multiple_tenancy_mapped, break_clause_mapped, deposit_required_mapped,
       disability_access_mapped, signage_allowed_mapped, utilities_mapped_update, security_mapped_update,
       // NEW: Additional fields for Sale properties
-      tenure_mapped, service_charges_mapped, ground_rent_mapped, price_type_mapped, floor_area_unit_mapped,
+      tenure_mapped, service_charges_mapped, ground_rent_mapped, price_type_mapped, floor_area_unit_resolved,
       is_new_build_mapped, is_chain_free_mapped, is_recently_renovated_mapped, has_balcony_terrace_mapped, has_accessible_access_mapped,
+      floor_area_mapped,
       parseInt(id), parseInt(user_id)
     ];
 
@@ -1989,9 +1996,10 @@ const updateProperty = async (req, res) => {
         disability_access = $81, signage_allowed = $82, utilities = $83, security = $84,
         tenure = $85, service_charges = $86, ground_rent = $87, price_type = $88, floor_area_unit = $89,
         is_new_build = $90, is_chain_free = $91, is_recently_renovated = $92, has_balcony_terrace = $93, has_accessible_access = $94,
+        floor_area = $95,
         original_asking_price = COALESCE(original_asking_price, $17),
         final_asking_price = $17
-       WHERE id = $95 AND user_id = $96
+       WHERE id = $96 AND user_id = $97
        RETURNING *`,
       params
     );
@@ -2333,7 +2341,10 @@ const updateProperty = async (req, res) => {
     }
 
     await client.query('COMMIT');
-    persistListingIdentitySafely(property).catch(() => {});
+    const identityPersist = await persistListingIdentitySafely(property, {
+      body: req.body,
+      actorUserId: user_id,
+    });
 
     // 🔧 SOCKET.IO: Send real-time notification to admin about property update
     const io = req.app.get('io');
@@ -2359,7 +2370,9 @@ const updateProperty = async (req, res) => {
         title: property.title,
         status: property.status,
         slug: property.slug
-      }
+      },
+      identityConflict: identityPersist?.conflict === true,
+      userDeclaredIsNotVerified: true,
     });
 
   } catch (error) {

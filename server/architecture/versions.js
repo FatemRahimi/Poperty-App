@@ -21,6 +21,8 @@ const DOMAIN_APPLICABILITY_VERSION = 'domain-applicability-1.0.0';
 const MARKET_DOMAIN_VERSION = 'market-domain-1.0.0';
 const OFFICIAL_SALE_TRANSACTION_VERSION = 'official-sale-transaction-1.0.0';
 const CANONICAL_IDENTITY_VERSION = 'canonical-subject-identity-1.0.0';
+const OFFICIAL_EPB_EVIDENCE_VERSION = 'official-epb-evidence-1.0.0';
+const RESIDENTIAL_DECISION_CONTEXT_VERSION = 'residential-decision-context-1.0.0';
 
 /** Frozen historical versions — do not rename or reuse. */
 const FROZEN_PRODUCTION_VERSIONS = Object.freeze({
@@ -55,5 +57,7 @@ module.exports = {
   MARKET_DOMAIN_VERSION,
   OFFICIAL_SALE_TRANSACTION_VERSION,
   CANONICAL_IDENTITY_VERSION,
+  OFFICIAL_EPB_EVIDENCE_VERSION,
+  RESIDENTIAL_DECISION_CONTEXT_VERSION,
   FROZEN_PRODUCTION_VERSIONS,
 };

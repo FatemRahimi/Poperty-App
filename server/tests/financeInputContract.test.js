@@ -299,6 +299,7 @@ asyncTest('canonical report consumes the finance contract without a second engin
     options: {
       skipExplanation: true,
       skipPostcodeMarket: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding: true,

@@ -97,8 +97,23 @@
 }
 
 .ai-hub-card.primary {
-  border-color: rgba(56, 189, 248, 0.35);
-  background: linear-gradient(160deg, #111827 0%, #0c1929 100%);
+  border-color: rgba(56, 189, 248, 0.45);
+  background: linear-gradient(160deg, #0f1b2d 0%, #0c1929 100%);
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.35);
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 900px) {
+  .ai-hub-flagship-grid {
+    grid-template-columns: 1.35fr 1fr 1fr;
+  }
+
+  .ai-hub-card.primary {
+    grid-column: auto;
+    grid-row: span 2;
+    min-height: 100%;
+    justify-content: center;
+  }
 }
 
 .ai-hub-card-tag {

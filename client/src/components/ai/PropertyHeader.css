@@ -1,0 +1,81 @@
+.pi-property-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  margin: 0 0 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.72);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pi-property-header--compact {
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.pi-property-header--sticky {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 20;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.35);
+}
+
+.pi-property-header-origin {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+
+.pi-property-header-kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.pi-property-header-evidence {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #7dd3fc;
+}
+
+.pi-property-header-address {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.pi-property-header--compact .pi-property-header-address {
+  font-size: 0.98rem;
+}
+
+.pi-property-header-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .pi-property-header {
+    flex-wrap: wrap;
+  }
+
+  .pi-change-property-btn {
+    width: 100%;
+  }
+}

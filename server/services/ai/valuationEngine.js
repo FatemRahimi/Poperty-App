@@ -6,6 +6,7 @@
 const { createProvenance, wrapValue } = require('../../utils/provenance');
 const { assessConfidence } = require('./confidenceEngine');
 const { analyseSaleComparables } = require('./saleIntelligenceService');
+const { isSubjectNativeValuationContext } = require('./subjectNativeSaleValuation');
 const {
   parseValuationSaleResponse,
   parseSoldPricesStats,
@@ -235,8 +236,11 @@ async function calculatePropertyValuation(property, externalEnrichment = null, o
   const askingPrice = parsePositiveMoney(property.price);
   const components = [];
   const externalTransactions = [];
+  const subjectNative = isSubjectNativeValuationContext(property);
 
-  if (property.category !== 'sale' && askingPrice == null) {
+  // Listing path: sale category or asking price (unchanged).
+  // Subject-native path: may assess from provider evidence without fabricating a listing/asking price.
+  if (property.category !== 'sale' && askingPrice == null && !subjectNative) {
     return {
       success: false,
       message: 'Sale valuation requires a property listed for sale with an asking price.',

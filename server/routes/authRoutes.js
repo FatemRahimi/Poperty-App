@@ -6,6 +6,36 @@ const { signup, login, adminLogin, forgotPassword, resetPassword, getAdminStats,
 const { adminSecurityMiddleware } = require('../middleware/adminSecurity');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { safeFrontendPath } = require('../utils/safeFrontendPath');
+
+function readOAuthRedirectTo(req) {
+  let fromState = '';
+  try {
+    const state = JSON.parse(req.query.state || '{}');
+    fromState = state.redirectTo || '';
+  } catch (error) {
+    fromState = '';
+  }
+  return safeFrontendPath(
+    req.session?.oauthRedirectTo || fromState,
+    config.frontend.defaultRedirectPath
+  );
+}
+
+function startGoogleOAuth(req, res, next) {
+  const redirectTo = safeFrontendPath(
+    req.query.redirectTo,
+    config.frontend.defaultRedirectPath
+  );
+  req.session.oauthRedirectTo = redirectTo;
+  req.session.save((err) => {
+    if (err) return next(err);
+    passport.authenticate('google', {
+      scope: ['profile', 'email'],
+      state: JSON.stringify({ redirectTo }),
+    })(req, res, next);
+  });
+}
 
 // Regular authentication routes
 router.post("/signup", signup);
@@ -17,13 +47,7 @@ router.post("/reset-password", resetPassword);
 router.post("/admin-login", adminSecurityMiddleware, adminLogin);
 
 // Google authentication routes
-router.get('/google', (req, res, next) => {
-  const redirectTo = req.query.redirectTo || config.frontend.defaultRedirectPath;
-  passport.authenticate('google', { 
-    scope: ['profile', 'email'],
-    state: JSON.stringify({ redirectTo })
-  })(req, res, next);
-});
+router.get('/google', startGoogleOAuth);
 
 router.get('/google/callback',
   passport.authenticate('google', { 
@@ -31,9 +55,8 @@ router.get('/google/callback',
   }),
   function(req, res) {
     try {
-      // Get the redirect path from the state parameter
-      const state = JSON.parse(req.query.state || '{}');
-      const redirectPath = state.redirectTo || config.frontend.defaultRedirectPath;
+      const redirectPath = readOAuthRedirectTo(req);
+      if (req.session) delete req.session.oauthRedirectTo;
       
       // Create a JWT token
       const token = jwt.sign(
@@ -59,7 +82,7 @@ router.get('/google/callback',
       };
       
       // Ensure the redirect path starts with a slash
-      const finalRedirectPath = redirectPath.startsWith('/') ? redirectPath : `/${redirectPath}`;
+      const finalRedirectPath = safeFrontendPath(redirectPath, config.frontend.defaultRedirectPath);
       
       // Redirect to frontend with token and user data
       res.redirect(

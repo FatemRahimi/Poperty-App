@@ -3,6 +3,12 @@ import { FaPrint, FaFileDownload } from 'react-icons/fa';
 import './IntelligenceReport.css';
 import PostcodeIntelligencePanel from './PostcodeIntelligencePanel';
 import { formatAssetClassLabel, formatClassificationStateLabel } from '../../Utils/assetClassificationDisplay';
+import { assessmentLabel } from '../../Utils/decisionWorkspaceDisplay';
+import { causeLabel, UNDERWRITING_SECTIONS } from '../../Utils/underwritingInputDisplay';
+import SubjectAttributeCompletionPanel from './SubjectAttributeCompletionPanel';
+import LetInvestResultsPanel from './LetInvestResultsPanel';
+import { fitCoverage, reportHasListingProvenance } from '../../Utils/letResultsDisplay';
+import { legalTitleProvenanceLabel } from '../../Utils/legalEvidenceDisplay';
 
 const fmt = (n) => (n != null && !Number.isNaN(Number(n)) ? `£${Number(n).toLocaleString()}` : '—');
 const fmtPct = (n) => (n != null ? `${n}%` : '—');
@@ -1063,7 +1069,12 @@ function LegalTitleEvidenceSection({ report }) {
         <div><span>Title plan</span>{envelope.assessment?.titlePlanAvailable ? 'Evidence supplied' : 'Not supplied'}</div>
         <div><span>Verification</span>Unverified</div>
         <div><span>Contents</span>Not assessed</div>
-        <div><span>Source</span>{envelope.provenance?.source || 'User-supplied private evidence'}</div>
+        <div>
+          <span>Source</span>
+          <span data-testid="legal-title-domain-source">
+            {legalTitleProvenanceLabel(envelope.provenance?.source)}
+          </span>
+        </div>
       </div>
       {documents.length > 0 && (
         <ul data-testid="legal-title-documents">
@@ -1085,6 +1096,124 @@ function LegalTitleEvidenceSection({ report }) {
       )}
       {Array.isArray(envelope.limitations) && envelope.limitations.length > 0 && (
         <p className="pi-muted" data-testid="legal-title-domain-limitations">
+          {envelope.limitations.join(' ')}
+        </p>
+      )}
+    </ReportSection>
+  );
+}
+
+function energyPhysicalStateLabel(envelope, epb) {
+  const status = epb?.attachmentStatus || epb?.status || envelope?.assessment?.attachmentStatus;
+  if (status === 'SOURCE_OUTSIDE_GEOGRAPHY' || envelope?.assessment?.sourceOutsideGeography) {
+    return 'Source outside geography';
+  }
+  if (status === 'GEOGRAPHY_NOT_ESTABLISHED' || envelope?.assessment?.geographyNotEstablished) {
+    return 'Geography not established';
+  }
+  if (status === 'UNRESOLVED_UNIT_IDENTITY' || envelope?.assessment?.unresolvedUnitIdentity) {
+    return 'Not attached — unit identity unresolved';
+  }
+  if (status === 'UNRESOLVED_IDENTITY' || envelope?.assessment?.unresolvedIdentity) {
+    return 'Not attached — subject identity unresolved';
+  }
+  if (status === 'NO_MATCH_FOUND' || envelope?.assessment?.noMatchFound) {
+    return 'No exact match found';
+  }
+  if (status === 'SOURCE_ERROR' || status === 'UNAVAILABLE_MISSING_CREDENTIAL') {
+    return 'Unavailable';
+  }
+  if (envelope?.assessment?.energyPhysicalEvidenceAssessed || status === 'UNIQUE_ATTACH' || status === 'REUSED') {
+    return 'Energy / physical evidence assessed';
+  }
+  return 'Not assessed';
+}
+
+function formatFloorAreaSqm(value) {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return String(value);
+  return `${n} m²`;
+}
+
+function EnergyPhysicalEvidenceSection({ report }) {
+  const envelope = report?.buildingConditionDomain;
+  const epb = report?.epbEvidence;
+  if (!envelope && !epb) return null;
+  const domainLabel = energyPhysicalStateLabel(envelope, epb);
+  const current = epb?.current || {};
+  const attached = Boolean(envelope?.assessment?.energyPhysicalEvidenceAssessed)
+    || epb?.attachmentStatus === 'UNIQUE_ATTACH'
+    || epb?.attachmentStatus === 'REUSED';
+  return (
+    <ReportSection
+      title="Energy & physical evidence"
+      badge={domainLabel}
+      defaultOpen={false}
+    >
+      <p className="pi-muted">
+        Official EPC is energy and physical certificate evidence. It is not a building survey
+        and is not an investment recommendation.
+      </p>
+      <div className="pi-snapshot-grid" data-testid="energy-physical-evidence">
+        <div>
+          <span>Official EPC</span>
+          <span data-testid="epb-attachment-status">{domainLabel}</span>
+        </div>
+        {attached && current.energyRating ? (
+          <div>
+            <span>Energy rating</span>
+            <span data-testid="epb-energy-rating">{current.energyRating}</span>
+          </div>
+        ) : null}
+        {attached && formatFloorAreaSqm(current.floorAreaSqm) ? (
+          <div>
+            <span>Floor area</span>
+            <span data-testid="epb-floor-area">{formatFloorAreaSqm(current.floorAreaSqm)}</span>
+          </div>
+        ) : null}
+        {attached && current.builtForm ? (
+          <div>
+            <span>Built form</span>
+            <span data-testid="epb-built-form">{current.builtForm}</span>
+          </div>
+        ) : null}
+        {attached && current.constructionAgeBand ? (
+          <div>
+            <span>Age band</span>
+            <span data-testid="epb-age-band">{current.constructionAgeBand}</span>
+          </div>
+        ) : null}
+        {attached && (epb?.inspectionDate || current.inspectionDate) ? (
+          <div>
+            <span>Inspection date</span>
+            {new Date(epb.inspectionDate || current.inspectionDate).toLocaleDateString('en-GB')}
+          </div>
+        ) : null}
+        <div>
+          <span>Source</span>
+          {epb?.source || envelope?.provenance?.source || 'MHCLG EPB'}
+        </div>
+        <div>
+          <span>Building condition</span>
+          <span data-testid="epb-condition-not-survey">Not assessed by EPC</span>
+        </div>
+      </div>
+      {attached && current.potentialEnergyRating ? (
+        <p className="pi-muted" data-testid="epb-potential-modelled">
+          Potential rating {current.potentialEnergyRating} is a modelled improvement, not a guaranteed upgrade
+          and not a current property fact.
+        </p>
+      ) : null}
+      {Array.isArray(envelope?.findings) && envelope.findings.length > 0 && (
+        <ul data-testid="building-condition-findings">
+          {envelope.findings.map((row) => (
+            <li key={row.id || row.text}>{row.text}</li>
+          ))}
+        </ul>
+      )}
+      {Array.isArray(envelope?.limitations) && envelope.limitations.length > 0 && (
+        <p className="pi-muted" data-testid="building-condition-limitations">
           {envelope.limitations.join(' ')}
         </p>
       )}
@@ -1267,7 +1396,7 @@ function AssetClassRow({ report }) {
   );
 }
 
-function PropertyFactsSection({ report }) {
+function PropertyFactsSection({ report, defaultOpen = true }) {
   const facts = report?.propertyFacts?.facts;
   const lease = report?.propertyFacts?.implications?.leaseRemaining;
   if (!facts) {
@@ -1291,7 +1420,7 @@ function PropertyFactsSection({ report }) {
     );
   }
   return (
-    <ReportSection title="Property facts" badge="Canonical evidence" defaultOpen>
+      <ReportSection title="Property facts" badge="Canonical evidence" defaultOpen={defaultOpen}>
       <p className="pi-muted">
         Facts are what was observed on this property. Not assessed means the source did not supply
         the field — it is not zero, false, or a score.
@@ -1492,7 +1621,7 @@ function EvidenceCard({ title, meta, reasons, score, source }) {
   );
 }
 
-function FinanceTransparency({ financeRequest, presented }) {
+function FinanceTransparency({ financeRequest, presented, hasListing = false }) {
   if (!financeRequest) return null;
   const operating = financeRequest.operatingCostCompleteness || presented?.costEvidence?.completeness;
   const finance = financeRequest.financeCompleteness || presented?.financeEvidence?.completeness;
@@ -1518,12 +1647,14 @@ function FinanceTransparency({ financeRequest, presented }) {
           <strong>{completenessCopy(finance)}</strong>
         </div>
       </div>
-      {purchase && (
+      {purchase && (hasListing || purchase.scenarioPurchasePrice != null) && (
         <ul className="pi-trust-list">
-          <li>
-            <span className="pi-trust-tag pi-trust-tag--property">Property evidence</span>
-            Listing asking price {fmt(purchase.listingAskingPrice)}
-          </li>
+          {hasListing && (
+            <li>
+              <span className="pi-trust-tag pi-trust-tag--property">Property evidence</span>
+              Listing asking price {fmt(purchase.listingAskingPrice)}
+            </li>
+          )}
           {purchase.scenarioPurchasePrice != null && (
             <li>
               <span className="pi-trust-tag pi-trust-tag--user">Entered by you</span>
@@ -1534,21 +1665,16 @@ function FinanceTransparency({ financeRequest, presented }) {
       )}
       {expected && (
         <ul className="pi-trust-list">
-          {expected.listingMonthlyRent != null && expected.listingMonthlyRent !== '' ? (
+          {hasListing && expected.listingMonthlyRent != null && expected.listingMonthlyRent !== '' ? (
             <li>
               <span className="pi-trust-tag pi-trust-tag--property">Property evidence</span>
               Listing rent {fmt(expected.listingMonthlyRent)} pcm
             </li>
-          ) : (
-            <li>
-              <span className="pi-trust-tag pi-trust-tag--property">Property evidence</span>
-              Listing rent not on file
-            </li>
-          )}
+          ) : null}
           {expected.marketRentEvidence != null && (
             <li>
               <span className="pi-trust-tag pi-trust-tag--market">Market evidence</span>
-              Market rent {fmt(expected.marketRentEvidence)} pcm
+              Area asking-rent context {fmt(expected.marketRentEvidence)} pcm
             </li>
           )}
           {expected.scenarioInput != null && (
@@ -1632,8 +1758,8 @@ function FinanceTransparency({ financeRequest, presented }) {
   );
 }
 
-function DecisionIntelligenceSection({ intelligence }) {
-  if (!intelligence) return null;
+function DecisionIntelligenceSection({ intelligence, omitFindings = false, omitVerify = false, omitOverview = false }) {
+  if (!intelligence || intelligence.applicable === false || intelligence.notApplicable) return null;
   const findings = Array.isArray(intelligence.materialFindings)
     ? intelligence.materialFindings
     : [];
@@ -1705,7 +1831,7 @@ function DecisionIntelligenceSection({ intelligence }) {
   };
   return (
     <div className="pi-decision-stack" data-testid="decision-intelligence">
-      {intelligence.explanation?.overview && (
+      {!omitOverview && intelligence.explanation?.overview && (
         <div className="pi-di-overview" data-testid="decision-intelligence-overview">
           <em className="pi-fact-meta" data-testid="decision-intelligence-overview-source">
             {intelligence.explanation.source === 'openai'
@@ -1715,6 +1841,7 @@ function DecisionIntelligenceSection({ intelligence }) {
           <p data-testid="decision-intelligence-overview-text">{intelligence.explanation.overview}</p>
         </div>
       )}
+      {!omitFindings && (
       <section className="pi-decision-block" data-testid="decision-matters" aria-labelledby="pi-matters-heading">
         <h2 id="pi-matters-heading" className="pi-block-heading">What currently matters</h2>
         <p className="pi-muted">Assessed evidence only. These cards are the auditable findings, not an AI ranking.</p>
@@ -1748,7 +1875,9 @@ function DecisionIntelligenceSection({ intelligence }) {
           </p>
         )}
       </section>
+      )}
 
+      {!omitVerify && (
       <section className="pi-decision-block" data-testid="decision-verify" aria-labelledby="pi-verify-heading">
         <h2 id="pi-verify-heading" className="pi-block-heading">What to verify next</h2>
         <p className="pi-muted">To strengthen this analysis, the next useful information would be the items below. These are not purchase instructions.</p>
@@ -1808,6 +1937,7 @@ function DecisionIntelligenceSection({ intelligence }) {
           </details>
         )}
       </section>
+      )}
 
       <section className="pi-decision-block" data-testid="decision-sensitivity" aria-labelledby="pi-sensitivity-heading">
         <h2 id="pi-sensitivity-heading" className="pi-block-heading">What can change this result</h2>
@@ -1890,9 +2020,9 @@ function LandlordDecisionSection({ decision }) {
   return (
     <div className="pi-landlord" data-testid="landlord-personal-decision">
       <p className="pi-muted">
-        {decision.scoreLabel || 'Landlord fit score'} — how well this property fits the landlord
-        scenario used for this analysis. It is not confidence, not a purchase recommendation, and
-        not financial advice.
+        {decision.scoreLabel || 'Personal Decision'} — how well this property fits the selected
+        {decision.profile === 'buyer_general' ? ' owner-occupier' : ' landlord'} scenario used for
+        this analysis. It is not confidence, not a purchase recommendation, and not financial advice.
       </p>
       <div className="pi-metric-grid">
         <div
@@ -1994,6 +2124,12 @@ const DIMENSION_TITLES = {
   dscr: 'DSCR',
   risk: 'Rental risk',
   demand: 'Property-specific tenant demand',
+  affordability: 'Affordability',
+  location: 'Location',
+  space: 'Space',
+  priceFairness: 'Price fairness',
+  lifestyle: 'Lifestyle',
+  transport: 'Transport',
 };
 
 function formatAnalysisDate(value) {
@@ -2002,7 +2138,396 @@ function formatAnalysisDate(value) {
   return Number.isNaN(parsed.getTime()) ? 'Date not recorded' : parsed.toLocaleString();
 }
 
-export default function IntelligenceReport({ report }) {
+function AssessmentBadge({ state }) {
+  const label = assessmentLabel(state);
+  const cls = String(state || 'NOT_ASSESSED').toLowerCase().replace(/_/g, '-');
+  return (
+    <span className={`pi-assess-badge pi-assess-badge--${cls}`} data-testid="assessment-state">
+      {label}
+    </span>
+  );
+}
+
+function formatWorkspaceValue(item) {
+  if (item?.kind === 'marketTransactionContext') {
+    // Supporting orientation figures only — never fall through to a bare "Assessed".
+    if (item.value != null && item.value !== '') return String(item.value);
+    return 'Not assessed';
+  }
+  if (!item?.available) return 'Not assessed';
+  if (item.kind === 'valuation') return fmt(item.value);
+  if (item.kind === 'personalDecision' && item.value != null) return `${item.value}/100`;
+  if (item.id === 'grossYield') return fmtPct(item.value);
+  if (item.id === 'noi' || item.id === 'annualCashFlow') return fmt(item.value);
+  if (item.id === 'dscr') return String(item.value);
+  if (item.kind === 'comparableSoldEvidence' && item.value != null) return String(item.value);
+  if (item.value != null && item.value !== '') return String(item.value);
+  return 'Assessed';
+}
+
+function deeperLetUnderwritingIncomplete(keyItems = []) {
+  return ['noi', 'annualCashFlow', 'dscr', 'landlord_fit'].some((id) => {
+    const row = keyItems.find((item) => item.id === id);
+    return row && !row.available;
+  });
+}
+
+function formatWorkspaceMetricLabel(item, { earlyGrossYield = false } = {}) {
+  if (item?.id === 'grossYield' && earlyGrossYield && item?.available) {
+    return 'Gross yield (early orientation)';
+  }
+  return item?.label;
+}
+
+function workspaceTileClassName(item, { earlyGrossYield = false } = {}) {
+  if (item?.kind === 'marketTransactionContext' || item?.presentationRole === 'supporting_context') {
+    return 'pi-metric-tile pi-metric-tile--context';
+  }
+  if (item?.id === 'grossYield' && earlyGrossYield && item?.available) {
+    return 'pi-metric-tile pi-metric-tile--assessed pi-metric-tile--orientation';
+  }
+  return `pi-metric-tile ${item?.available ? 'pi-metric-tile--assessed' : 'pi-metric-tile--missing'}`;
+}
+
+function ListingAttributeAction({ row, item, onEditListing }) {
+  const target = row || item;
+  if (!target?.isListingAttribute || target?.resolutionAction !== 'edit_listing' || !onEditListing) {
+    return null;
+  }
+  return (
+    <button
+      type="button"
+      className="pi-workspace-input-btn"
+      data-testid={`listing-edit-${target.listingAttributeKey || target.id || 'internal_area'}`}
+      onClick={onEditListing}
+    >
+      Edit listing to add internal floor area
+    </button>
+  );
+}
+
+function SubjectAttributeHint({ row }) {
+  if (!row?.isSubjectAttribute) return null;
+  const finish = row.providerRequestOnly === true;
+  return (
+    <p className="pi-muted" data-testid={`subject-attr-hint-${row.id}`}>
+      {finish
+        ? 'Provide an interior-finish rating as a subjective valuation input (not an official survey).'
+        : 'Complete this property fact for the analysis subject (user-reported — not official verification).'}
+    </p>
+  );
+}
+
+function DecisionWorkspacePanel({ report, workspace, onFocusUnderwritingInput = null, onEditListing = null }) {
+  const job = workspace.decisionJob;
+  const key = Array.isArray(workspace.keyIntelligence) ? workspace.keyIntelligence : [];
+  const unresolved = Array.isArray(workspace.unresolved) ? workspace.unresolved : [];
+  const missingInputs = workspace.missingUnderwritingInputs?.items || [];
+  const userInputGaps = missingInputs.filter((row) => row.cause === 'MISSING_USER_INPUT' && row.inputKey);
+  const platformGaps = missingInputs.filter((row) => row.cause === 'MISSING_PLATFORM_EVIDENCE');
+  const nextActions = Array.isArray(workspace.nextActions) ? workspace.nextActions : [];
+  const findings = Array.isArray(workspace.findings) ? workspace.findings : [];
+  const optionalInvestment = Array.isArray(workspace.optionalInvestmentView)
+    ? workspace.optionalInvestmentView
+    : [];
+  const contextEvidence = Array.isArray(workspace.contextEvidence) ? workspace.contextEvidence : [];
+  const legacy = Boolean(workspace.legacySnapshot || workspace.unspecifiedCompatibility);
+  const rentBasis = report?.investment?.presented?.rentBasis;
+  const earlyGrossYield = job === 'LET_INVEST' && deeperLetUnderwritingIncomplete(key);
+
+  return (
+    <div className="pi-decision-workspace" data-testid="decision-workspace">
+      <section className="pi-workspace-context pi-workspace-decision" data-testid="decision-context">
+        <p className="pi-report-kicker">Property decision</p>
+        <h2 data-testid="decision-context-headline">
+          {workspace.copy?.headline || 'You are assessing this property'}
+        </h2>
+        {workspace.copy?.notAdvice ? (
+          <p className="pi-muted pi-workspace-one-liner">{workspace.copy.notAdvice}</p>
+        ) : null}
+        {legacy && (
+          <p className="pi-muted" data-testid="legacy-decision-compatibility">
+            This saved analysis did not store an explicit Buy or Sell job. It is shown as Let / Invest
+            compatibility and is not reinterpreted as Buy or Sell.
+          </p>
+        )}
+      </section>
+
+      <section className="pi-workspace-block pi-workspace-signals" data-testid="key-intelligence">
+        <h3>Key signals</h3>
+        <div className="pi-metric-grid">
+          {key.map((item) => (
+            <div
+              key={item.id}
+              className={workspaceTileClassName(item, { earlyGrossYield })}
+              data-testid={`workspace-metric-${item.id}`}
+            >
+              <small>{formatWorkspaceMetricLabel(item, { earlyGrossYield })}</small>
+              <strong>{formatWorkspaceValue(item)}</strong>
+              <AssessmentBadge state={item.state} />
+              {item.id === 'grossYield' && earlyGrossYield && item.available && (
+                <em data-testid="gross-yield-orientation-note">
+                  Early orientation only — not a complete investment assessment while NOI, cash flow,
+                  DSCR or landlord fit remain not assessed.
+                </em>
+              )}
+              {!item.available && item.isUserInput && (
+                <span className="pi-workspace-cause" data-testid={`workspace-cause-${item.id}`}>
+                  {causeLabel('MISSING_USER_INPUT')}
+                </span>
+              )}
+              {!item.available && item.isPlatformEvidence && (
+                <span className="pi-workspace-cause pi-workspace-cause--platform" data-testid={`workspace-cause-${item.id}`}>
+                  {causeLabel('MISSING_PLATFORM_EVIDENCE')}
+                </span>
+              )}
+              {!item.available && item.isListingAttribute && (
+                <span className="pi-workspace-cause pi-workspace-cause--listing" data-testid={`workspace-cause-${item.id}`}>
+                  {causeLabel('MISSING_LISTING_ATTRIBUTE')}
+                </span>
+              )}
+              {!item.available && item.howToResolve && <em>{item.howToResolve}</em>}
+              {!item.available && item.isUserInput && onFocusUnderwritingInput && item.resolutionInputKeys?.length > 0 && (
+                <button
+                  type="button"
+                  className="pi-workspace-input-btn"
+                  data-testid={`workspace-complete-input-${item.id}`}
+                  onClick={() => onFocusUnderwritingInput(item.resolutionInputKeys[0])}
+                >
+                  Add your input
+                </button>
+              )}
+              {!item.available && <ListingAttributeAction item={item} onEditListing={onEditListing} />}
+            </div>
+          ))}
+        </div>
+        {job === 'LET_INVEST' && rentBasis?.label && (
+          <div className="pi-rent-basis-callout" data-testid="rent-basis-disclosure">
+            <strong>Rent basis for yield metrics:</strong>{' '}
+            {rentBasis.kind === 'MARKET'
+              ? 'MARKET — area asking-rent context'
+              : rentBasis.kind === 'LISTING'
+                ? 'LISTING — listing-supplied rent'
+                : rentBasis.kind === 'SCENARIO'
+                  ? 'SCENARIO — your rent assumption'
+                  : rentBasis.label}
+            {rentBasis.marketSubstitutedForMissingListing
+              ? '. Area MARKET evidence was used where listing rent is missing — not property-specific achievable or recommended rent.'
+              : rentBasis.kind === 'MARKET'
+                ? '. This is not property-specific achievable or recommended rent.'
+                : '.'}
+          </div>
+        )}
+        {optionalInvestment.length > 0 && (
+          <div data-testid="optional-investment-view">
+            <h4 className="pi-subheading">Optional investment view</h4>
+            <p className="pi-muted">Not a Buy conclusion. Shown only because these metrics were already assessed.</p>
+            <div className="pi-metric-grid">
+              {optionalInvestment.map((item) => (
+                <div key={item.id} className="pi-metric-tile pi-metric-tile--assessed" data-testid={`workspace-optional-${item.id}`}>
+                  <small>{item.label}</small>
+                  <strong>{formatWorkspaceValue(item)}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {job === 'BUY' && (
+          <p className="pi-muted" data-testid="buy-no-landlord-conclusion">
+            Landlord yield, cash flow and landlord fit are not Buy conclusions.
+          </p>
+        )}
+        {job === 'SELL' && (
+          <p className="pi-muted" data-testid="sell-no-invented-methodology">
+            Optimal listing price, days to sell, buyer demand and chain probability are not assessed.
+          </p>
+        )}
+        {job === 'LET_INVEST' && (
+          <p className="pi-muted" data-testid="let-invest-landlord-methodology">
+            Missing vacancy, opex or mortgage inputs stay not assessed.
+          </p>
+        )}
+        {report.personalDecision?.profile === 'buyer_general' && (
+          <details className="pi-workspace-pd" data-testid="buyer-personal-decision-details">
+            <summary>Owner-occupier dimensions</summary>
+            <LandlordDecisionSection decision={report.personalDecision} />
+          </details>
+        )}
+        {report.personalDecision?.profile === 'landlord' && job === 'LET_INVEST' && (
+          <details className="pi-workspace-pd" data-testid="landlord-personal-decision-details">
+            <summary>Landlord dimensions</summary>
+            <LandlordDecisionSection decision={report.personalDecision} />
+          </details>
+        )}
+      </section>
+
+      {job === 'LET_INVEST' && userInputGaps.length > 0 && (
+        <section className="pi-workspace-block pi-workspace-improve" data-testid="missing-underwriting-inputs">
+          <h3>Improve this assessment</h3>
+          <p className="pi-muted">
+            Scenario assumptions only — blank means unknown. Recalculate after you add inputs.
+          </p>
+          <ul className="pi-workspace-underwriting">
+            {userInputGaps.map((row) => (
+              <li key={row.id} data-testid={`underwriting-input-${row.inputKey}`}>
+                <div className="pi-workspace-underwriting-head">
+                  <strong>{row.label}</strong>
+                  <span className="pi-workspace-cause">{causeLabel(row.cause)}</span>
+                </div>
+                {row.unlockLabels?.length > 0 && (
+                  <p className="pi-muted">Unlocks: {row.unlockLabels.join(', ')}</p>
+                )}
+                {row.detail && <p>{row.detail}</p>}
+                {UNDERWRITING_SECTIONS[row.section] && (
+                  <p className="pi-muted">Section: {UNDERWRITING_SECTIONS[row.section]}</p>
+                )}
+                {onFocusUnderwritingInput && row.inputKey && (
+                  <button
+                    type="button"
+                    className="pi-workspace-input-btn"
+                    data-testid={`underwriting-focus-${row.inputKey}`}
+                    onClick={() => onFocusUnderwritingInput(row.inputKey)}
+                  >
+                    Add {row.label}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {job === 'LET_INVEST' && platformGaps.length > 0 && (
+        <details className="pi-workspace-block pi-workspace-disclosure" data-testid="platform-evidence-gaps">
+          <summary>Platform evidence gaps</summary>
+          <p className="pi-muted">These cannot be resolved by entering finance assumptions.</p>
+          <ul className="pi-workspace-underwriting">
+            {platformGaps.map((row) => (
+              <li key={row.id} data-testid={`platform-gap-${row.id}`}>
+                <strong>{row.label}</strong>
+                <span className="pi-workspace-cause pi-workspace-cause--platform">
+                  {causeLabel(row.cause)}
+                </span>
+                {row.detail && <p className="pi-muted">{row.detail}</p>}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      <SubjectAttributeCompletionPanel report={report} unresolved={unresolved} />
+
+      <details className="pi-workspace-block pi-workspace-disclosure" data-testid="workspace-unresolved">
+        <summary>What is unresolved</summary>
+        {unresolved.length === 0 ? (
+          <p className="pi-muted">No material unresolved items were listed for this job.</p>
+        ) : (
+          <ul className="pi-workspace-unresolved">
+            {unresolved.map((row) => (
+              <li key={row.id || row.label} data-testid={`unresolved-${row.id}`}>
+                <div>
+                  <strong>{row.label || row.whatIsMissing || row.title}</strong>
+                  <AssessmentBadge state={row.state || 'NOT_ASSESSED'} />
+                </div>
+                {row.whyItMatters && <p>{row.whyItMatters}</p>}
+                {row.howToResolve && <p className="pi-muted">{row.howToResolve}</p>}
+                {row.cause && (
+                  <span className="pi-workspace-cause" data-testid={`unresolved-cause-${row.id}`}>
+                    {causeLabel(row.cause)}
+                  </span>
+                )}
+                {row.inputKey && onFocusUnderwritingInput && (
+                  <button
+                    type="button"
+                    className="pi-workspace-input-btn"
+                    data-testid={`unresolved-focus-${row.inputKey}`}
+                    onClick={() => onFocusUnderwritingInput(row.inputKey)}
+                  >
+                    Add {row.label || row.whatIsMissing}
+                  </button>
+                )}
+                <ListingAttributeAction row={row} onEditListing={onEditListing} />
+                <SubjectAttributeHint row={row} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </details>
+
+      {findings.length > 0 && (
+        <section className="pi-workspace-block" data-testid="workspace-findings">
+          <h3>Why it matters</h3>
+          <ul>
+            {findings.map((row) => (
+              <li key={row.id || row.title}>{row.title || row.text}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {nextActions.length > 0 && (
+        <section className="pi-workspace-block" data-testid="workspace-next-actions">
+          <h3>What to investigate next</h3>
+          <ul>
+            {nextActions.map((row) => (
+              <li key={row.id || row.title}>
+                <strong>{row.title || row.label}</strong>
+                {row.howToResolve || row.whyItMatters ? (
+                  <p className="pi-muted">{row.howToResolve || row.whyItMatters}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {contextEvidence.length > 0 && (
+        <details className="pi-workspace-block pi-workspace-disclosure" data-testid="workspace-context-evidence">
+          <summary>Supporting evidence snapshot</summary>
+          <p className="pi-muted">Evidence supports the decision. Full source packs remain below.</p>
+          <div className="pi-metric-grid">
+            {contextEvidence.map((item) => {
+              const isMarketContext = item.kind === 'marketTransactionContext'
+                || item.presentationRole === 'supporting_context';
+              return (
+                <div
+                  key={item.id}
+                  className={workspaceTileClassName(item)}
+                  data-testid={`workspace-evidence-${item.id}`}
+                >
+                  <small>{item.label}</small>
+                  <strong>
+                    {isMarketContext
+                      ? formatWorkspaceValue(item)
+                      : (item.available ? 'Assessed' : 'Not assessed')}
+                  </strong>
+                  <AssessmentBadge state={item.state} />
+                  {isMarketContext && (
+                    <em data-testid={`workspace-evidence-disclaimer-${item.id}`}>
+                      Orientation only — not comparable sold evidence, not subject value, not asking-price judgement.
+                    </em>
+                  )}
+                  {!isMarketContext && !item.available && item.howToResolve && <em>{item.howToResolve}</em>}
+                  {isMarketContext && item.howToResolve && (
+                    <em className="pi-muted">{item.howToResolve}</em>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
+export default function IntelligenceReport({
+  report,
+  onFocusUnderwritingInput = null,
+  onEditListing = null,
+  listingSubject,
+  snapshotView = false,
+}) {
   if (!report || typeof report !== 'object') {
     return (
       <div className="pi-report" data-testid="intelligence-report-empty">
@@ -2019,6 +2544,18 @@ export default function IntelligenceReport({ report }) {
   const areaDemand = report.marketIntelligence?.areaRentalDemand;
   const personalDecision = report.personalDecision;
   const fitAssessed = Boolean(personalDecision?.available && personalDecision?.score != null);
+  const workspace = report.decisionWorkspace;
+  const decisionJob = report.residentialDecisionContext?.decisionJob
+    || report.decisionJob
+    || workspace?.decisionJob
+    || null;
+  const useWorkspace = Boolean(workspace && decisionJob);
+  const letDecisionFirst = useWorkspace && decisionJob === 'LET_INVEST';
+  const hasListing = reportHasListingProvenance(report, { listingSubject });
+  const coverage = fitCoverage(report);
+  const showLandlordHero = !useWorkspace || decisionJob === 'LET_INVEST';
+  const showDecisionIntelligence = !useWorkspace
+    || workspace.decisionIntelligenceApplicable === true;
 
   const positionClass = pricePosition?.position
     ? pricePosition.position.replace(/_/g, '-')
@@ -2036,44 +2573,62 @@ export default function IntelligenceReport({ report }) {
         </button>
         <span className="pi-export-hint"><FaFileDownload /> Use &quot;Save as PDF&quot; in the print dialog</span>
       </div>
-      <header className="pi-report-hero">
+      <header className={`pi-report-hero${letDecisionFirst ? ' pi-report-hero--let' : ''}`}>
         <div className="pi-report-hero-copy">
-          <p className="pi-report-kicker">Current analysis</p>
-          <h2>{report.property?.title}</h2>
+          <p className="pi-report-kicker">
+            {letDecisionFirst ? 'LET / INVEST assessment' : 'Current assessment'}
+          </p>
+          <h2>
+            {letDecisionFirst
+              ? 'Investment assessment'
+              : (report.property?.title || 'Property intelligence')}
+          </h2>
           <p className="pi-report-address">{report.property?.address}</p>
           <p className="pi-report-date">
-            {formatAnalysisDate(report.analysisDate)} · {report.modelVersion || 'v2'}
+            {formatAnalysisDate(report.analysisDate)}
             {report.accessContext?.accessLevel === 'public_intelligence' && ' · Market view'}
             {report.accessContext?.accessLevel === 'professional_intelligence' && ' · Professional view'}
           </p>
-          <div className="pi-report-labels">
-            {Object.entries(report.labels || {})
-              .filter(([, v]) => v !== null && v !== undefined && v !== '')
-              .map(([k, v]) => (
-                <span key={k} className="pi-chip">{v}</span>
-              ))}
-          </div>
+          {snapshotView && (
+            <p className="pi-snapshot-banner" data-testid="historical-snapshot-banner" role="status">
+              Saved snapshot from {formatAnalysisDate(report.analysisDate)}. This is historical
+              analysis — not a newly generated result.
+            </p>
+          )}
+          {!letDecisionFirst && (
+            <div className="pi-report-labels">
+              {Object.entries(report.labels || {})
+                .filter(([, v]) => v !== null && v !== undefined && v !== '')
+                .map(([k, v]) => (
+                  <span key={k} className="pi-chip">{v}</span>
+                ))}
+            </div>
+          )}
         </div>
         <div className="pi-report-hero-status">
-          <div className="pi-report-hero-fit" data-testid="hero-landlord-fit">
-            <small>Landlord fit</small>
-            <strong>{fitAssessed ? `${personalDecision.score}/100` : 'Not assessed'}</strong>
-            <span>Decision state — not purchase advice</span>
-          </div>
+          {showLandlordHero ? (
+            <div className="pi-report-hero-fit" data-testid="hero-landlord-fit">
+              <small>Landlord fit</small>
+              <strong>{fitAssessed ? `${personalDecision.score}/100` : 'Not assessed'}</strong>
+              <span>Decision state — not purchase advice, not confidence</span>
+              {coverage.coverageLabel && (
+                <span data-testid="hero-fit-coverage">
+                  {coverage.coverageLabel}
+                  {coverage.partial ? ' — not all dimensions were assessed' : ''}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="pi-report-hero-fit" data-testid="hero-decision-job">
+              <small>Decision</small>
+              <strong>{decisionJob === 'BUY' ? 'Buy' : decisionJob === 'SELL' ? 'Sell' : decisionJob}</strong>
+              <span>User intent — not a property fact</span>
+            </div>
+          )}
           <div className="pi-report-hero-score" data-testid="hero-evidence-strength">
             <small>Evidence strength</small>
             <strong>{report.confidence?.level || 'Not assessed'}</strong>
             <span>Not the fit score</span>
-            {report.scores?.coverage && (
-              <span>
-                {report.scores.coverage.componentsScored} of {report.scores.coverage.componentsTotal} dimensions assessed
-              </span>
-            )}
-            {report.dataQuality?.level && (
-              <em className={`pi-confidence pi-confidence-${confidenceClass(report.dataQuality.level)}`}>
-                {report.dataQuality.level} data quality
-              </em>
-            )}
             {report.confidenceProvenance?.legacy && (
               <em className="pi-confidence pi-confidence-none">
                 Earlier confidence model
@@ -2086,6 +2641,24 @@ export default function IntelligenceReport({ report }) {
         </div>
       </header>
 
+      {useWorkspace ? (
+        letDecisionFirst ? (
+          <LetInvestResultsPanel
+            report={report}
+            workspace={workspace}
+            listingSubject={listingSubject}
+            onFocusUnderwritingInput={onFocusUnderwritingInput}
+            onEditListing={onEditListing}
+          />
+        ) : (
+          <DecisionWorkspacePanel
+            report={report}
+            workspace={workspace}
+            onFocusUnderwritingInput={onFocusUnderwritingInput}
+            onEditListing={onEditListing}
+          />
+        )
+      ) : (
       <section
         className="pi-decision-overview"
         data-testid="decision-overview"
@@ -2118,15 +2691,26 @@ export default function IntelligenceReport({ report }) {
           </p>
         </div>
       </section>
+      )}
 
-      <DecisionIntelligenceSection intelligence={report.decisionIntelligence} />
+      {showDecisionIntelligence && !letDecisionFirst && (
+        <DecisionIntelligenceSection
+          intelligence={report.decisionIntelligence}
+        />
+      )}
 
-      <ReportSection title="Financial and market evidence" badge="Calculated from this scenario" defaultOpen>
+      <ReportSection
+        title="Supporting evidence — financial and market"
+        badge="Calculated from this scenario"
+        defaultOpen={!useWorkspace}
+      >
         <p className="pi-muted">
           Gross yield can be assessed while NOI stays not assessed. Unavailable metrics are not £0 or 0%.
         </p>
         <div className="pi-hero-metrics">
-          <MetricTile label="Listing asking price" value={fmt(report.snapshot?.price ?? report.property?.price)} hint="FACT" />
+          {hasListing && (
+            <MetricTile label="Listing asking price" value={fmt(report.snapshot?.price ?? report.property?.price)} hint="FACT" />
+          )}
           {sale?.success && (
             <MetricTile
               label="Valuation"
@@ -2141,6 +2725,7 @@ export default function IntelligenceReport({ report }) {
               hint="USER SCENARIO"
             />
           )}
+          {hasListing && (
           <MetricTile
             label="Listing rent"
             value={
@@ -2150,6 +2735,7 @@ export default function IntelligenceReport({ report }) {
             }
             hint="FACT"
           />
+          )}
         </div>
         {(sale?.success || pricePosition?.success) && (
           <div className={`pi-price-banner pi-price-banner--${positionClass || 'neutral'}`}>
@@ -2181,6 +2767,7 @@ export default function IntelligenceReport({ report }) {
               <FinanceTransparency
                 financeRequest={inv.financeRequest || report.financeRequest}
                 presented={inv.presented}
+                hasListing={hasListing}
               />
             ) : null}
             {inv.presented ? (
@@ -2270,11 +2857,12 @@ export default function IntelligenceReport({ report }) {
       <ReportSection
         title="Rent intelligence"
         badge={rent?.success ? `${rent.confidenceLevel || rent.confidenceAssessment?.level || '—'} confidence` : 'Limited data'}
-        defaultOpen={Boolean(rent?.success)}
+        defaultOpen={!useWorkspace && Boolean(rent?.success)}
       >
         {rent?.success ? (
           <>
             <div className="pi-metric-grid">
+              {hasListing && (
               <MetricTile
                 label="Listing rent"
                 value={
@@ -2286,15 +2874,16 @@ export default function IntelligenceReport({ report }) {
                 }
                 hint="FACT"
               />
+              )}
               <MetricTile
-                label="Market rent evidence"
+                label="Area asking-rent context"
                 value={`${fmt(rent.marketRange?.low)}–${fmt(rent.marketRange?.high)}`}
-                hint="AREA CONTEXT"
+                hint="AREA CONTEXT — not this property’s achievable rent"
               />
               <MetricTile
-                label="Recommended rent"
+                label="Area asking-rent model estimate"
                 value={fmt(rent.recommendedRent)}
-                hint="MODEL ESTIMATE — not your scenario"
+                hint="AREA CONTEXT — not a property-specific achievable or recommended rent"
               />
               {report.financeRequest?.expectedRent?.scenarioInput != null && (
                 <MetricTile
@@ -2331,9 +2920,10 @@ export default function IntelligenceReport({ report }) {
           landlord-fit scores, legal restrictions, or valuation penalties.
         </p>
         <MarketEvidenceSection report={report} />
-        <PropertyFactsSection report={report} />
+        <PropertyFactsSection report={report} defaultOpen={!useWorkspace} />
         <PlanningDevelopmentSection report={report} />
         <EnvironmentEvidenceSection report={report} />
+        <EnergyPhysicalEvidenceSection report={report} />
         <LegalTitleEvidenceSection report={report} />
         <SchoolsEducationSection report={report} />
         <ListedBuildingSection report={report} />
@@ -2399,6 +2989,7 @@ export default function IntelligenceReport({ report }) {
                 <PostcodeIntelligencePanel
                   intelligence={report.marketIntelligence.postcodeIntelligence}
                   compact
+                  mode="secondary"
                 />
               )}
             </>

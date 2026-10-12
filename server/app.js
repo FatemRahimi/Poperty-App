@@ -1,4 +1,4 @@
-require("dotenv").config(); // Load environment variables FIRST
+require("./config/loadEnv"); // Load server/.env regardless of process.cwd()
 const express = require("express");
 const cors = require("cors");
 const session = require('express-session');
@@ -35,6 +35,14 @@ const app = express();
     console.warn('ℹ️  GOOGLE_CALLBACK_URL not set. Using default:', inferred);
   }
 
+  const clientUrl = process.env.CLIENT_URL || `http://localhost:${process.env.CLIENT_PORT || 3000}`;
+  console.log(`🌐 Frontend redirect base (Google OAuth return): ${clientUrl}`);
+  if (/localhost:3001\b/.test(clientUrl) && String(process.env.PORT || '5050') === '5050') {
+    console.warn(
+      '⚠️  CLIENT_URL points at :3001. CRA usually runs on :3000 — Google login will redirect to a dead port after auth.'
+    );
+  }
+
   if (!process.env.SESSION_SECRET && !process.env.JWT_SECRET) {
     console.warn('⚠️  Neither SESSION_SECRET nor JWT_SECRET is set. Sessions/JWT may be insecure.');
   }
@@ -48,9 +56,17 @@ const app = express();
   }
 })();
 
-// CORS configuration
+// CORS configuration — allow configured frontend + common local ports
+const corsOrigins = Array.from(new Set([
+  process.env.CLIENT_URL,
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3001',
+].filter(Boolean)));
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: corsOrigins,
   credentials: true
 }));
 

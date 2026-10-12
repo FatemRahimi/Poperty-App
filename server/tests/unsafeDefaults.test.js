@@ -151,11 +151,40 @@ test('PropertyData request params omit unavailable optional fields', () => {
     square_feet: 900,
     property_type: 'Terraced',
   });
-  assert.strictEqual(missingYear.canRequestAvm, true);
-  assert.strictEqual(missingYear.params.property_type, 'terraced_house');
-  assertOmitted(missingYear.params, 'construction_date');
-  assert.ok(!JSON.stringify(missingYear.params).includes('1914_2000'));
+  assert.strictEqual(missingYear.canRequestAvm, false);
+  assert.strictEqual(missingYear.params, null);
+  assert.strictEqual(missingYear.readiness.reasonCode, 'MISSING_CONSTRUCTION_DATE');
   assert.strictEqual(missingYear.unavailable.construction_date.state, 'notAssessed');
+
+  const withAgeBand = buildValuationSaleRequest({
+    zip_code: 'M1 1AA',
+    square_feet: 900,
+    property_type: 'Terraced',
+    construction_age_band: 'England and Wales: 1930-1949',
+    bedrooms: 3,
+    bathrooms: 1,
+    has_garden: true,
+    parking_spaces: 1,
+    finish_quality: 'average',
+  });
+  assert.strictEqual(withAgeBand.canRequestAvm, true);
+  assert.strictEqual(withAgeBand.params.construction_date, '1914_2000');
+
+  // Boundary-crossing official period (1996-2002) must NOT midpoint-map.
+  const crossingBand = buildValuationSaleRequest({
+    zip_code: 'M1 1AA',
+    square_feet: 900,
+    property_type: 'Terraced',
+    construction_age_band: '1996-2002',
+    bedrooms: 3,
+    bathrooms: 1,
+    has_garden: true,
+    parking_spaces: 1,
+    finish_quality: 'average',
+  });
+  assert.strictEqual(crossingBand.canRequestAvm, false);
+  assert.strictEqual(crossingBand.readiness.reasonCode, 'MISSING_CONSTRUCTION_DATE');
+  assert.strictEqual(crossingBand.params, null);
 
   const missingType = buildValuationSaleRequest({
     zip_code: 'M1 1AA',

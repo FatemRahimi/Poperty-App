@@ -104,6 +104,7 @@ async function analyse(propertyOverrides = {}, options = {}) {
       skipConservationArea: true,
       skipArticle4: true,
       skipFlood: true,
+      skipEpb: true,
       asOf: '2026-08-30T00:00:00.000Z',
       deps: deps(),
       ...options,
@@ -263,7 +264,7 @@ test('36. snapshot immutability helper unchanged', () => {
 test('37. capability status does not claim foundation as implemented', () => {
   const view = evaluatePlatformApplicability({ assetClass: ASSET_CLASS.RESIDENTIAL });
   assert.strictEqual(view.domains.MARKET.wiredIntoLiveAnalysis, true);
-  assert.strictEqual(view.domains.BUILDING_CONDITION.wiredIntoLiveAnalysis, false);
+  assert.strictEqual(view.domains.BUILDING_CONDITION.wiredIntoLiveAnalysis, true);
   assert.strictEqual(view.domains.DEVELOPMENT.wiredIntoLiveAnalysis, false);
   assert.strictEqual(view.domains.PROJECT_COST.wiredIntoLiveAnalysis, false);
   assert.ok(view.domains.BUILDING_CONDITION.implementationStatus === 'PARTIAL'

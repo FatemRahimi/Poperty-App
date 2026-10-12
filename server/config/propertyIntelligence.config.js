@@ -3,6 +3,8 @@
  * All secrets remain in process.env — never expose provider keys to the client.
  */
 
+require('./loadEnv');
+
 const parseBool = (val, defaultValue = false) => {
   if (val === undefined || val === null || val === '') return defaultValue;
   return ['1', 'true', 'yes', 'on'].includes(String(val).toLowerCase());
@@ -72,6 +74,22 @@ const propertyIntelligenceConfig = {
       timeoutMs: parseIntEnv(process.env.ARTICLE_4_TIMEOUT_MS, 15000),
       baseUrl: process.env.ARTICLE_4_BASE_URL || 'https://www.planning.data.gov.uk',
     },
+    mhclgEpb: {
+      enabled: parseBool(process.env.MHCLG_EPB_ENABLED, true),
+      bearerToken: process.env.MHCLG_EPB_BEARER_TOKEN || process.env.EPB_API_TOKEN || '',
+      baseUrl:
+        process.env.MHCLG_EPB_BASE_URL
+        || 'https://api.get-energy-performance-data.communities.gov.uk',
+      timeoutMs: parseIntEnv(process.env.MHCLG_EPB_TIMEOUT_MS, 15000),
+      maxRetries: parseIntEnv(process.env.MHCLG_EPB_MAX_RETRIES, 1),
+      pageSize: parseIntEnv(process.env.MHCLG_EPB_PAGE_SIZE, 100),
+      maxCandidates: parseIntEnv(process.env.MHCLG_EPB_MAX_CANDIDATES, 500),
+      maxSearchPages: parseIntEnv(process.env.MHCLG_EPB_MAX_SEARCH_PAGES, 5),
+      refreshTtlMs: parseIntEnv(
+        process.env.MHCLG_EPB_REFRESH_TTL_MS,
+        30 * 24 * 60 * 60 * 1000
+      ),
+    },
   },
 
   /**
@@ -80,7 +98,7 @@ const propertyIntelligenceConfig = {
    */
   providerProtection: {
     minLookupQueryLength: parseIntEnv(process.env.PROVIDER_LOOKUP_MIN_QUERY_LENGTH, 3),
-    expensiveEndpoints: ['address-match-uprn', 'uprn'],
+    expensiveEndpoints: ['address-match-uprn', 'uprn', 'uprns'],
     maxPaidExecutionsPerUserHour: parseIntEnv(
       process.env.PROVIDER_PAID_EXECUTIONS_PER_USER_HOUR,
       40
@@ -109,6 +127,7 @@ const propertyIntelligenceConfig = {
     listedBuilding: parseIntEnv(process.env.CACHE_TTL_LISTED_BUILDING_MS, 30 * 24 * 60 * 60 * 1000),
     conservationArea: parseIntEnv(process.env.CACHE_TTL_CONSERVATION_AREA_MS, 30 * 24 * 60 * 60 * 1000),
     article4: parseIntEnv(process.env.CACHE_TTL_ARTICLE_4_MS, 30 * 24 * 60 * 60 * 1000),
+    epb: parseIntEnv(process.env.CACHE_TTL_EPB_MS, 30 * 24 * 60 * 60 * 1000),
   },
 
   /**
@@ -143,7 +162,7 @@ const propertyIntelligenceConfig = {
       demand: 1,
       'demand-rent': 1,
       'valuation-rent': 1,
-      uprns: 1,
+      uprns: 6,
     },
   },
 };

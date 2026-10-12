@@ -326,6 +326,7 @@ asyncTest('canonical report exposes operating-cost evidence without a second eng
     options: {
       skipExplanation: true,
       skipPostcodeMarket: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding: true,

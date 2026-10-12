@@ -247,7 +247,7 @@ asyncTest('legitimate access reaches analysis; guessed id does not', async () =>
     const ctrl = require('../controllers/intelligenceController');
     const allowed = mockRes();
     await ctrl.analyseSubjectIntelligence(
-      { params: { subjectId: '42' }, user: { id: 7 }, body: {} },
+      { params: { subjectId: '42' }, user: { id: 7 }, body: { decisionJob: 'LET_INVEST' } },
       allowed
     );
     assert.strictEqual(allowed.statusCode, 200);

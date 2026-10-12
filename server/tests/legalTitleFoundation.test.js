@@ -493,6 +493,7 @@ asyncTest('36-42. live PI includes LEGAL_TITLE envelope; valuation/rent isolatio
       skipExplanation: true,
       skipPostcodeMarket: true,
       skipFlood: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding: true,

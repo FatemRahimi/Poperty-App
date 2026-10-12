@@ -45,6 +45,10 @@ function listing(overrides = {}) {
     bedrooms: 2,
     bathrooms: 1,
     square_feet: 700,
+    year_built: 1950,
+    has_garden: true,
+    parking_spaces: 1,
+    finish_quality: 'average',
     ...overrides,
   };
 }
@@ -110,6 +114,7 @@ async function analyse(propertyOverrides = {}, options = {}) {
       skipConservationArea: true,
       skipArticle4: true,
       skipFlood: true,
+      skipEpb: true,
       skipOfficialSales: true,
       asOf: '2026-08-31T00:00:00.000Z',
       deps: deps(),

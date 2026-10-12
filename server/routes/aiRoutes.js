@@ -33,6 +33,8 @@ const {
   getSubjectAnalysisHistory,
   analyseSubjectIntelligence,
   unlinkSubjectListing,
+  putSubjectPropertyAttributes,
+  getSubjectPropertyAttributes,
   compareIntelligenceWhatIf,
 } = require('../controllers/intelligenceController');
 const {
@@ -110,6 +112,8 @@ router.get('/intelligence/subjects/recent', authenticateAI, getRecentSubjectLook
 router.post('/intelligence/subjects/resolve', authenticateAI, requireCredits, resolveIntelligenceSubject);
 router.get('/intelligence/subjects/:subjectId/preview', authenticateAI, getSubjectPreviewEndpoint);
 router.get('/intelligence/subjects/:subjectId/history', authenticateAI, getSubjectAnalysisHistory);
+router.get('/intelligence/subjects/:subjectId/attributes', authenticateAI, getSubjectPropertyAttributes);
+router.put('/intelligence/subjects/:subjectId/attributes', authenticateAI, putSubjectPropertyAttributes);
 router.post(
   '/intelligence/subjects/:subjectId/analyse',
   authenticateAI,

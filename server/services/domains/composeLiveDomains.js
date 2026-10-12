@@ -10,6 +10,7 @@ const LIVE_DOMAIN_ORDER = Object.freeze({
   [DOMAIN_ID.PLANNING]: 2,
   [DOMAIN_ID.ENVIRONMENT]: 3,
   [DOMAIN_ID.LEGAL_TITLE]: 4,
+  [DOMAIN_ID.BUILDING_CONDITION]: 5,
 });
 
 function composeLiveDomainEnvelopes(envelopes = []) {

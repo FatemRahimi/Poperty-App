@@ -84,5 +84,5 @@ Commercial / industrial / agricultural / land / development sale value; ERV; pas
 - **Licensing (re-checked 2026-08-31):** PPD HMLR fields OGL v3.0 with Crown attribution. Address/PAF: personal/non-commercial or display for residential property price information services; other address uses need Royal Mail (`LICENSING_REVIEW_REQUIRED`). UPRN lookup: HMLR OGL + OS OGL attribution. INSPIRE lookup: HMLR OGL; using it with PPD addresses remains subject to PPD address conditions.
 - **What it does NOT assess:** commercial/industrial/agricultural/land/development valuation; ERV; GDV; title; ownership; legal extent; Scotland/NI subject prices; sales absent from the imported slice.
 
-Next remaining evidence gap after subject identity completeness: **user-declared UPRN/PAON/SAON/building/unit on listing create/edit**. Not CRE valuation. Not fuzzy identity.
+Next remaining evidence gap after user-declared identity capture: **bounded EPB re-acquisition** for listings that now have SAON/PAON, using the existing exact matcher. Not CRE valuation. Not fuzzy identity. Do not auto-fill the inventory.
 

@@ -6,6 +6,8 @@
 const pool = require('../../models/db');
 const { PUBLIC_LISTING_SELECT } = require('./propertyIntelligenceAccess');
 const { normalisePostcode, extractPostcodeFromAddress } = require('../../utils/ukAddress');
+const { isSafeIntegerPropertyIdQuery } = require('../../utils/uprnDiscovery');
+const { excludeKnownPracticeInventory } = require('../../config/practiceInventory');
 
 let propertyIdentitiesAvailable = null;
 
@@ -111,10 +113,12 @@ async function searchPublicPropertiesForIntelligence(query = '', { limit = 40 } 
        LIMIT $1`,
       [cap]
     );
-    return result.rows.map((r) => mapSearchRow(r, 'browse', 'low'));
+    return excludeKnownPracticeInventory(result.rows).map((r) => mapSearchRow(r, 'browse', 'low'));
   }
 
-  if (/^\d+$/.test(q)) {
+  // 10–12 digit identity-looking strings must not bind to integer properties.id
+  // (Postgres integer overflow 22003 → HTTP 500). They are not auto-confirmed UPRNs.
+  if (isSafeIntegerPropertyIdQuery(q)) {
     const byId = await pool.query(
       `SELECT ${select}
        ${from}
@@ -122,7 +126,7 @@ async function searchPublicPropertiesForIntelligence(query = '', { limit = 40 } 
       [Number(q)]
     );
     if (byId.rows[0]) {
-      return [mapSearchRow(byId.rows[0], 'property_id', 'high')];
+      return excludeKnownPracticeInventory([mapSearchRow(byId.rows[0], 'property_id', 'high')]);
     }
   }
 
@@ -136,7 +140,7 @@ async function searchPublicPropertiesForIntelligence(query = '', { limit = 40 } 
       [uprnCandidate]
     );
     if (byUprn.rows[0]) {
-      return [mapSearchRow(byUprn.rows[0], 'uprn', 'high')];
+      return excludeKnownPracticeInventory([mapSearchRow(byUprn.rows[0], 'uprn', 'high')]);
     }
   }
 
@@ -201,7 +205,7 @@ async function searchPublicPropertiesForIntelligence(query = '', { limit = 40 } 
     rows = fallback.rows.map((r) => mapSearchRow(r, 'postcode_area', 'low'));
   }
 
-  return rows;
+  return excludeKnownPracticeInventory(rows);
 }
 
 module.exports = {
@@ -210,4 +214,5 @@ module.exports = {
   addressTokens,
   scoreAddressMatch,
   mapSearchRow,
+  isSafeIntegerPropertyIdQuery,
 };

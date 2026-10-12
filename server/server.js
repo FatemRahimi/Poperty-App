@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("./config/loadEnv");
 const http = require('http');
 const { Server } = require('socket.io');
 const app = require('./app');
@@ -12,7 +12,11 @@ const server = http.createServer(app);
 // Create Socket.IO server
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000", // ✅ your React app
+    origin: [
+      process.env.CLIENT_URL,
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+    ].filter(Boolean),
     credentials: true
   }
 });
@@ -80,8 +84,28 @@ io.on('connection', (socket) => {
     console.warn('⚠️ Private evidence capability check failed. Property Intelligence continues.');
   }
 
+  server.on('error', (err) => {
+    if (err && err.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use. Another API process is still running.`);
+      console.error('   Stop the other process, then restart (Windows: netstat -ano | findstr :5050).');
+      process.exit(1);
+    }
+    throw err;
+  });
+
   server.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🔌 Socket.IO server ready for real-time updates`);
   });
 })();
+
+function shutdownServer(signal) {
+  console.log(`\n${signal} received — closing HTTP server on port ${PORT}…`);
+  server.close(() => {
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 8000).unref();
+}
+
+process.once('SIGINT', () => shutdownServer('SIGINT'));
+process.once('SIGTERM', () => shutdownServer('SIGTERM'));

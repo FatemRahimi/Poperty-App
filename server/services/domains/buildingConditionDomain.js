@@ -1,24 +1,27 @@
 /**
- * Building & Condition foundation adapter.
- * Reports evidence completeness and adjacent energy/layout facts only.
+ * Building & Condition adapter.
+ * Official EPC may activate ENERGY_EVIDENCE / PHYSICAL_CHARACTERISTICS only.
  * Does not inspect, diagnose, cost, or score condition.
- * Not wired into live analysis.
  */
 
 const {
   createDomainEnvelope,
   createDecisionContribution,
+  createEvidence,
   DOMAIN_ID,
   DOMAIN_STATUS,
   KERNEL_ASSESSMENT,
   BUILDING_CONDITION_DOMAIN_VERSION,
   ASSET_CLASS,
   SOURCE_TYPE,
+  EVIDENCE_CLASS,
   createComponentRef,
   INSPECTION_COMPLETENESS,
   BUILDING_EVIDENCE_CLASS,
   ADJACENT_NOT_CONDITION,
   CONDITION_VOCABULARY,
+  EPB_ATTACHMENT,
+  EPB_SOURCE,
 } = require('../../architecture');
 const { subjectRefFromIdentity } = require('./subjectRef');
 
@@ -35,6 +38,7 @@ const ENVELOPE_LIMITATIONS = Object.freeze([
   'buildRisks is a legacy heuristic register, not canonical condition evidence.',
   'Condition is time-sensitive. Old evidence is not current condition.',
   'This is not a building survey, structural advice, insurance assessment, or cost estimate.',
+  'ENERGY / PHYSICAL EVIDENCE ASSESSED does not mean professional building condition was assessed.',
 ]);
 
 function factAvailable(fact) {
@@ -43,6 +47,120 @@ function factAvailable(fact) {
 
 function landWithoutBuilding(assetClass, hasBuildingEvidence) {
   return assetClass === ASSET_CLASS.LAND && !hasBuildingEvidence;
+}
+
+function readEpb(epbEvidence) {
+  if (!epbEvidence) return null;
+  return epbEvidence.client || epbEvidence;
+}
+
+function epbEnergyEvidence(epb, subjectRef) {
+  const current = epb?.current || {};
+  const evidence = [];
+  const push = (factType, value, buildingClass, extras = {}) => {
+    if (value == null || value === '') return;
+    evidence.push(createEvidence({
+      domain: DOMAIN_ID.BUILDING_CONDITION,
+      subjectRef,
+      factType,
+      classification: extras.classification || EVIDENCE_CLASS.FACT,
+      sourceType: SOURCE_TYPE.OFFICIAL,
+      provenance: {
+        source: EPB_SOURCE,
+        certificateNumber: epb.certificateNumber || null,
+        licence: 'OGL-v3.0',
+      },
+      value,
+      unit: extras.unit || null,
+      retrievedAt: epb.retrievedAt || null,
+      evidenceAsOf: epb.inspectionDate || epb.lodgementDate || epb.retrievedAt || null,
+      sourceRecordId: epb.certificateNumber || null,
+      assessmentState: 'assessed',
+      sharedPropertyEvidence: true,
+      authoritative: false,
+      limitations: extras.limitations || ['Official EPC field. Not a condition survey.'],
+    }));
+    evidence[evidence.length - 1].buildingEvidenceClass = buildingClass;
+    evidence[evidence.length - 1].epcIsNotSurvey = true;
+  };
+  push('currentEnergyRating', current.energyRating, BUILDING_EVIDENCE_CLASS.ENERGY_EVIDENCE);
+  push(
+    'potentialEnergyRating',
+    current.potentialEnergyRating,
+    BUILDING_EVIDENCE_CLASS.ENERGY_EVIDENCE,
+    {
+      classification: EVIDENCE_CLASS.INFERENCE,
+      limitations: ['Modelled improvement potential. Not a current fabric fact and not a guaranteed improvement.'],
+    }
+  );
+  push(
+    'totalFloorArea',
+    current.floorAreaSqm,
+    BUILDING_EVIDENCE_CLASS.PHYSICAL_FACT,
+    { unit: 'SQM' }
+  );
+  push('builtForm', current.builtForm, BUILDING_EVIDENCE_CLASS.PROPERTY_CHARACTERISTIC);
+  push('constructionAgeBand', current.constructionAgeBand, BUILDING_EVIDENCE_CLASS.PROPERTY_CHARACTERISTIC);
+  push('epcPropertyType', current.propertyType, BUILDING_EVIDENCE_CLASS.PROPERTY_CHARACTERISTIC, {
+    limitations: ['EPC property type is source evidence, not platform asset classification.'],
+  });
+  return evidence;
+}
+
+function mapEpbStatus(epb) {
+  const status = epb?.attachmentStatus || epb?.status;
+  if (status === EPB_ATTACHMENT.UNIQUE_ATTACH || status === EPB_ATTACHMENT.REUSED) {
+    return {
+      domainStatus: DOMAIN_STATUS.PARTIAL,
+      assessment: KERNEL_ASSESSMENT.ASSESSED,
+      energyPhysicalEvidenceAssessed: true,
+    };
+  }
+  if (status === EPB_ATTACHMENT.SOURCE_OUTSIDE_GEOGRAPHY) {
+    return {
+      domainStatus: DOMAIN_STATUS.NOT_ASSESSED,
+      assessment: KERNEL_ASSESSMENT.NOT_APPLICABLE,
+      energyPhysicalEvidenceAssessed: false,
+      sourceOutsideGeography: true,
+    };
+  }
+  if (status === EPB_ATTACHMENT.SOURCE_ERROR || status === EPB_ATTACHMENT.UNAVAILABLE_MISSING_CREDENTIAL) {
+    return {
+      domainStatus: DOMAIN_STATUS.UNAVAILABLE,
+      assessment: KERNEL_ASSESSMENT.UNAVAILABLE,
+      energyPhysicalEvidenceAssessed: false,
+    };
+  }
+  if (status === EPB_ATTACHMENT.UNRESOLVED_IDENTITY || status === EPB_ATTACHMENT.UNRESOLVED_UNIT_IDENTITY) {
+    return {
+      domainStatus: DOMAIN_STATUS.NOT_ASSESSED,
+      assessment: KERNEL_ASSESSMENT.INSUFFICIENT_EVIDENCE,
+      energyPhysicalEvidenceAssessed: false,
+      unresolvedIdentity: true,
+      unresolvedUnitIdentity: status === EPB_ATTACHMENT.UNRESOLVED_UNIT_IDENTITY,
+    };
+  }
+  if (status === EPB_ATTACHMENT.GEOGRAPHY_NOT_ESTABLISHED) {
+    return {
+      domainStatus: DOMAIN_STATUS.NOT_ASSESSED,
+      assessment: KERNEL_ASSESSMENT.NOT_ASSESSED,
+      energyPhysicalEvidenceAssessed: false,
+      geographyNotEstablished: true,
+    };
+  }
+  if (status === EPB_ATTACHMENT.NO_MATCH_FOUND) {
+    return {
+      domainStatus: DOMAIN_STATUS.NOT_ASSESSED,
+      assessment: KERNEL_ASSESSMENT.NOT_ASSESSED,
+      energyPhysicalEvidenceAssessed: false,
+      noMatchFound: true,
+    };
+  }
+  return {
+    domainStatus: DOMAIN_STATUS.NOT_ASSESSED,
+    assessment: KERNEL_ASSESSMENT.NOT_ASSESSED,
+    energyPhysicalEvidenceAssessed: false,
+  };
 }
 
 function adaptBuildingConditionFoundation({
@@ -54,6 +172,7 @@ function adaptBuildingConditionFoundation({
   assetClassification = null,
   analysisAt = null,
   hasBuildingOnSite = null,
+  epbEvidence = null,
 } = {}) {
   const subjectRef = subjectRefFromIdentity(identity);
   const assetClass = assetClassification?.assetClass || ASSET_CLASS.UNKNOWN;
@@ -61,17 +180,20 @@ function adaptBuildingConditionFoundation({
   const docs = Array.isArray(documents) ? documents : [];
   const observed = Array.isArray(inspections) ? inspections : [];
   const defectRecords = Array.isArray(defects) ? defects : [];
+  const epb = readEpb(epbEvidence);
+  const epbMapped = mapEpbStatus(epb);
 
   const professionalSurvey = docs.some((doc) => doc.professionalDocument === true);
-  const epcPresent = factAvailable(facts.epcRating);
+  const epcPresent = factAvailable(facts.epcRating) || epbMapped.energyPhysicalEvidenceAssessed;
   const floorPlanPresent = docs.some((doc) => doc.documentType === 'FLOOR_PLAN')
     || Boolean(propertyFacts?.documents?.floorPlan);
   const hasBuildingEvidence = hasBuildingOnSite === true
     || professionalSurvey
     || observed.length > 0
+    || epbMapped.energyPhysicalEvidenceAssessed
     || assetClass !== ASSET_CLASS.LAND;
 
-  if (landWithoutBuilding(assetClass, hasBuildingOnSite === true || professionalSurvey || observed.length > 0)) {
+  if (landWithoutBuilding(assetClass, hasBuildingOnSite === true || professionalSurvey || observed.length > 0 || epbMapped.energyPhysicalEvidenceAssessed)) {
     const envelope = createDomainEnvelope({
       domain: DOMAIN_ID.BUILDING_CONDITION,
       version: BUILDING_CONDITION_DOMAIN_VERSION,
@@ -90,6 +212,8 @@ function adaptBuildingConditionFoundation({
         inspectionCompleteness: INSPECTION_COMPLETENESS.NOT_INSPECTED,
         conditionVocabulary: CONDITION_VOCABULARY.UNKNOWN,
         professionalSurveyAvailable: false,
+        professionalBuildingConditionAssessed: false,
+        energyPhysicalEvidenceAssessed: false,
         epcIsNotConditionSurvey: true,
         buildRisksIsNotConditionEvidence: true,
         remainingTermOrCostPublished: false,
@@ -107,7 +231,7 @@ function adaptBuildingConditionFoundation({
         adapter: BUILDING_CONDITION_DOMAIN_VERSION,
         wrapsExistingEvidence: true,
         noAdditionalProviderCall: true,
-        wiredIntoLiveAnalysis: false,
+        wiredIntoLiveAnalysis: true,
       },
     });
     return {
@@ -131,13 +255,47 @@ function adaptBuildingConditionFoundation({
   } else {
     findings.push({
       id: 'no_professional_condition_evidence',
-      text: 'No professional condition evidence is available. Building condition has not been inspected.',
+      text: 'PROFESSIONAL BUILDING CONDITION NOT ASSESSED. No professional condition evidence is available. Building condition has not been inspected.',
     });
   }
-  if (epcPresent) {
+  if (epbMapped.energyPhysicalEvidenceAssessed) {
+    findings.push({
+      id: 'energy_physical_evidence_assessed',
+      text: 'ENERGY / PHYSICAL EVIDENCE ASSESSED from official MHCLG EPB. EPC is not a survey.',
+    });
+  } else if (factAvailable(facts.epcRating)) {
     findings.push({
       id: 'epc_is_not_condition',
       text: `EPC ${facts.epcRating.value} is available but does not constitute a condition assessment.`,
+    });
+  }
+  if (epbMapped.sourceOutsideGeography) {
+    findings.push({
+      id: 'epb_source_outside_geography',
+      text: 'Official EPC source covers England and Wales only. Missing evidence here is source geography, not a property conclusion.',
+    });
+  }
+  if (epbMapped.unresolvedUnitIdentity) {
+    findings.push({
+      id: 'epb_unresolved_unit_identity',
+      text: 'Official EPC evidence was not attached — unit identity unresolved. A building-level certificate was not used as flat evidence.',
+    });
+  } else if (epbMapped.unresolvedIdentity) {
+    findings.push({
+      id: 'epb_unresolved_identity',
+      text: 'Official EPC evidence was not attached — subject identity unresolved.',
+    });
+  }
+  if (epbMapped.geographyNotEstablished) {
+    findings.push({
+      id: 'epb_geography_not_established',
+      text: 'Official EPC was not assessed because geography could not be established. That is not evidence the property has no EPC.',
+    });
+  }
+  if (epbMapped.noMatchFound) {
+    findings.push({
+      id: 'epb_no_match_found',
+      text: 'No exact official EPC match was found. That is not evidence the property has no EPC or is exempt.',
     });
   }
   if (floorPlanPresent) {
@@ -198,7 +356,19 @@ function adaptBuildingConditionFoundation({
     ? INSPECTION_COMPLETENESS.PARTIALLY_INSPECTED
     : INSPECTION_COMPLETENESS.NOT_INSPECTED;
 
+  const energyEvidence = epbMapped.energyPhysicalEvidenceAssessed
+    ? epbEnergyEvidence(epb, subjectRef)
+    : [];
   const roofRef = createComponentRef({ category: 'ROOF' });
+  const status = professionalSurvey || observed.length || defectRecords.length || epbMapped.energyPhysicalEvidenceAssessed
+    ? (epbMapped.energyPhysicalEvidenceAssessed && !professionalSurvey ? DOMAIN_STATUS.PARTIAL : DOMAIN_STATUS.PARTIAL)
+    : epbMapped.domainStatus || DOMAIN_STATUS.NOT_ASSESSED;
+  const assessmentState = professionalSurvey || observed.length
+    ? KERNEL_ASSESSMENT.INSUFFICIENT_EVIDENCE
+    : (epbMapped.energyPhysicalEvidenceAssessed
+      ? KERNEL_ASSESSMENT.ASSESSED
+      : epbMapped.assessment || KERNEL_ASSESSMENT.NOT_ASSESSED);
+
   const envelope = createDomainEnvelope({
     domain: DOMAIN_ID.BUILDING_CONDITION,
     version: BUILDING_CONDITION_DOMAIN_VERSION,
@@ -209,21 +379,21 @@ function adaptBuildingConditionFoundation({
       unitIsNotBuilding: true,
       components: [roofRef],
     },
-    status: professionalSurvey || observed.length || defectRecords.length
-      ? DOMAIN_STATUS.PARTIAL
-      : DOMAIN_STATUS.NOT_ASSESSED,
-    evidenceAsOf: analysisAt || null,
+    status,
+    evidenceAsOf: epb?.inspectionDate || analysisAt || null,
     analysisAt: analysisAt || null,
     assessment: {
-      state: professionalSurvey || observed.length
-        ? KERNEL_ASSESSMENT.INSUFFICIENT_EVIDENCE
-        : KERNEL_ASSESSMENT.NOT_ASSESSED,
-      scope: 'building_condition_foundation',
+      state: assessmentState,
+      scope: epbMapped.energyPhysicalEvidenceAssessed
+        ? 'energy_physical_evidence'
+        : 'building_condition_foundation',
       liveConditionAssessmentAvailable: false,
       inspectionCompleteness: completeness,
       roofCompleteness: INSPECTION_COMPLETENESS.NOT_INSPECTED,
       conditionVocabulary: CONDITION_VOCABULARY.UNKNOWN,
       professionalSurveyAvailable: professionalSurvey,
+      professionalBuildingConditionAssessed: false,
+      energyPhysicalEvidenceAssessed: epbMapped.energyPhysicalEvidenceAssessed,
       epcIsNotConditionSurvey: true,
       floorPlanIsNotConditionEvidence: true,
       photoIsNotProfessionalInspection: true,
@@ -232,19 +402,24 @@ function adaptBuildingConditionFoundation({
       adjacentClassification: ADJACENT_NOT_CONDITION,
       remainingTermOrCostPublished: false,
       residentialComponentModelForced: false,
+      sourceOutsideGeography: Boolean(epbMapped.sourceOutsideGeography),
+      unresolvedIdentity: Boolean(epbMapped.unresolvedIdentity),
+      noMatchFound: Boolean(epbMapped.noMatchFound),
+      attachmentStatus: epb?.attachmentStatus || epb?.status || null,
     },
     findings,
-    evidence: observed,
+    evidence: [...observed, ...energyEvidence],
     limitations: ENVELOPE_LIMITATIONS,
     unresolvedDependencies,
     investigationPriorities,
     provenance: {
-      source: 'building-condition-foundation',
+      source: epbMapped.energyPhysicalEvidenceAssessed ? EPB_SOURCE : 'building-condition-foundation',
       adapter: BUILDING_CONDITION_DOMAIN_VERSION,
       wrapsExistingEvidence: true,
-      noAdditionalProviderCall: true,
-      wiredIntoLiveAnalysis: false,
+      noAdditionalProviderCall: !epb,
+      wiredIntoLiveAnalysis: true,
       buildRisksPromoted: false,
+      epcIsNotSurvey: true,
     },
   });
 
@@ -266,7 +441,7 @@ function adaptBuildingConditionFoundation({
 
 function attachBuildingConditionFoundation(args) {
   try {
-    const adapted = adaptBuildingConditionFoundation(args);
+    const adapted = adaptBuildingConditionFoundation(args || {});
     return {
       buildingConditionDomain: adapted.envelope,
       buildingConditionContribution: adapted.contribution,
@@ -280,6 +455,8 @@ function attachBuildingConditionFoundation(args) {
         assessment: {
           state: KERNEL_ASSESSMENT.NOT_ASSESSED,
           liveConditionAssessmentAvailable: false,
+          professionalBuildingConditionAssessed: false,
+          epcIsNotConditionSurvey: true,
         },
         limitations: ENVELOPE_LIMITATIONS,
         findings: [{

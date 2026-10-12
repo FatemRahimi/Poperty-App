@@ -18,6 +18,7 @@ const {
   propertyWithFinanceScenario,
   intelligenceFromCanonicalReport,
 } = require('./personalDecisionCanonical');
+const { DECISION_JOB } = require('../../architecture/decisionContextContract');
 const {
   cloneJson,
   resolveSavedWhatIfBaseline,
@@ -537,6 +538,14 @@ function toPublicWhatIfHttp(result, access) {
   };
 }
 
+function decisionJobFromStoredItem(item) {
+  const output = parseJsonMaybe(item?.output_data || item?.outputData);
+  return output.residentialDecisionContext?.decisionJob
+    || output.decisionJob
+    || output.decisionWorkspace?.decisionJob
+    || null;
+}
+
 function intelligenceFromStoredAnalysis(item) {
   const output = parseJsonMaybe(item?.output_data || item?.outputData);
   const report = Object.keys(output).length ? output : item?.marketIntelligence ? item : {};
@@ -594,6 +603,25 @@ function prepareIntelligenceWhatIfRun({ parsed, liveProperty, storedItem = null 
         status: 400,
         success: false,
         ...resolved,
+      };
+    }
+    const job = decisionJobFromStoredItem(storedItem);
+    if (job === DECISION_JOB.SELL) {
+      return {
+        ok: false,
+        status: 400,
+        success: false,
+        code: 'WHAT_IF_NOT_APPLICABLE',
+        message: 'Seller scenarios are not assessed. What-if does not invent listing-price or demand scenarios.',
+      };
+    }
+    if (job === DECISION_JOB.BUY && parsed.profile === 'landlord') {
+      return {
+        ok: false,
+        status: 400,
+        success: false,
+        code: 'PROFILE_NOT_APPLICABLE_TO_JOB',
+        message: 'Landlord What-if is not a Buy conclusion.',
       };
     }
     return {

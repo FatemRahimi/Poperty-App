@@ -73,7 +73,7 @@ const InvestmentAnalyst = () => {
   return (
     <AiWorkspaceLayout
       title="AI Investment Analyst"
-      subtitle="Evaluate opportunities with documented formulas, three scenarios, sensitivity analysis and a transparent investment score."
+      subtitle="Numbers-only calculator — not a property-specific intelligence workflow. For a specific UK property, use Property Intelligence."
     >
       {error && <div className="ai-alert ai-alert-error">{error}</div>}
 

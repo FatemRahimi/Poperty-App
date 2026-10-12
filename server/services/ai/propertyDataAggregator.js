@@ -6,6 +6,8 @@ const {
 } = require('./propertyIntelligenceAccess');
 const { normalisePostcode, extractPostcodeFromAddress } = require('../../utils/ukAddress');
 const { searchPublicPropertiesForIntelligence } = require('./propertyIntelligenceSearch');
+const { isSafeIntegerPropertyIdQuery } = require('../../utils/uprnDiscovery');
+const { excludeKnownPracticeInventory } = require('../../config/practiceInventory');
 
 function buildAddress(p) {
   const parts = [
@@ -113,7 +115,7 @@ function mapListRow(p) {
 function appendSearchFilter(q, params, filter) {
   if (!q) return filter;
 
-  if (/^\d+$/.test(q)) {
+  if (isSafeIntegerPropertyIdQuery(q)) {
     params.push(Number(q));
     const idIdx = params.length;
     params.push(`%${q}%`);
@@ -180,7 +182,7 @@ async function fetchApprovedListingsByIds(ids = []) {
      ORDER BY p.updated_at DESC NULLS LAST`,
     [validIds]
   );
-  return result.rows.map(mapListRow);
+  return excludeKnownPracticeInventory(result.rows).map(mapListRow);
 }
 
 function toListingNumber(value) {
@@ -208,4 +210,5 @@ module.exports = {
   buildAddress,
   toListingNumber,
   getMonthlyRent,
+  appendSearchFilter,
 };

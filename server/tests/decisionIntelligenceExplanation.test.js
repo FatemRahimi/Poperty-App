@@ -341,6 +341,7 @@ asyncTest('explanation failure does not fail Property Intelligence analysis', as
       skipConservationArea: true,
       skipArticle4: true,
       skipFlood: true,
+      skipEpb: true,
       asOf: ASOF,
       deps: {
         analyseRent: async () => ({
@@ -387,6 +388,7 @@ asyncTest('saved snapshot pins explanation and old reports without it remain usa
       skipConservationArea: true,
       skipArticle4: true,
       skipFlood: true,
+      skipEpb: true,
       asOf: ASOF,
       deps: {
         analyseRent: async () => ({
@@ -423,6 +425,7 @@ asyncTest('saved snapshot pins explanation and old reports without it remain usa
       skipConservationArea: true,
       skipArticle4: true,
       skipFlood: true,
+      skipEpb: true,
       asOf: ASOF,
       deps: {
         analyseRent: async () => ({

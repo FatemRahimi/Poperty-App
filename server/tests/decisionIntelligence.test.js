@@ -891,6 +891,7 @@ async function assembleReport({ extraOptions = {}, property = listing({ latitude
       skipConservationArea: true,
       skipArticle4: true,
       skipFlood: true,
+      skipEpb: true,
       asOf: ASOF,
       deps: {
         analyseRent: async () => ({
@@ -938,7 +939,8 @@ asyncTest('canonical report exposes decisionIntelligence without changing valuat
 });
 
 asyncTest('context evidence does not alter Personal Decision', async () => {
-  const without = await assembleReport({ extraOptions: { skipFlood: true, skipArticle4: true } });
+  const without = await assembleReport({ extraOptions: { skipFlood: true,
+      skipEpb: true, skipArticle4: true } });
   const withFlood = await assembleReport({
     extraOptions: {
       skipFlood: false,

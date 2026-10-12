@@ -1,9 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   archiveLegalEvidence,
   fetchLegalEvidence,
   uploadLegalEvidence,
 } from '../../services/aiService';
+import {
+  LEGAL_EVIDENCE_EMPTY_COPY,
+  LEGAL_EVIDENCE_LOAD_STATE,
+  LEGAL_EVIDENCE_LOADING_COPY,
+  LEGAL_EVIDENCE_UNAVAILABLE_COPY,
+  legalEvidenceCompactStatus,
+} from '../../Utils/legalEvidenceDisplay';
 
 const DOCUMENT_TYPES = [
   'TITLE_REGISTER',
@@ -28,6 +35,7 @@ export default function LegalTitleEvidencePanel({
   enabled,
 }) {
   const [documents, setDocuments] = useState([]);
+  const [loadState, setLoadState] = useState(LEGAL_EVIDENCE_LOAD_STATE.IDLE);
   const [documentType, setDocumentType] = useState('UNKNOWN');
   const [sourceType, setSourceType] = useState('USER_UPLOADED_PRIVATE_DOCUMENT');
   const [titleNumber, setTitleNumber] = useState('');
@@ -35,27 +43,58 @@ export default function LegalTitleEvidencePanel({
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const requestSeqRef = useRef(0);
 
   const canLoad = enabled && (propertyId || subjectId);
 
   async function reload() {
     if (!canLoad) return;
-    const data = await fetchLegalEvidence({ propertyId, subjectId });
-    setDocuments(data.documents || []);
+    const requestId = ++requestSeqRef.current;
+    setLoadState(LEGAL_EVIDENCE_LOAD_STATE.LOADING);
+    setError('');
+    try {
+      const data = await fetchLegalEvidence({ propertyId, subjectId });
+      if (requestSeqRef.current !== requestId) return;
+      const docs = Array.isArray(data?.documents) ? data.documents : [];
+      setDocuments(docs);
+      setLoadState(
+        docs.length > 0
+          ? LEGAL_EVIDENCE_LOAD_STATE.AVAILABLE
+          : LEGAL_EVIDENCE_LOAD_STATE.EMPTY
+      );
+    } catch {
+      if (requestSeqRef.current !== requestId) return;
+      setDocuments([]);
+      setLoadState(LEGAL_EVIDENCE_LOAD_STATE.UNAVAILABLE);
+    }
   }
 
   useEffect(() => {
-    let cancelled = false;
+    requestSeqRef.current += 1;
+    const requestId = requestSeqRef.current;
+    setDocuments([]);
+    setError('');
     if (!canLoad) {
-      setDocuments([]);
+      setLoadState(LEGAL_EVIDENCE_LOAD_STATE.IDLE);
       return undefined;
     }
+    let cancelled = false;
+    setLoadState(LEGAL_EVIDENCE_LOAD_STATE.LOADING);
     fetchLegalEvidence({ propertyId, subjectId })
       .then((data) => {
-        if (!cancelled) setDocuments(data.documents || []);
+        if (cancelled || requestSeqRef.current !== requestId) return;
+        const docs = Array.isArray(data?.documents) ? data.documents : [];
+        setDocuments(docs);
+        setLoadState(
+          docs.length > 0
+            ? LEGAL_EVIDENCE_LOAD_STATE.AVAILABLE
+            : LEGAL_EVIDENCE_LOAD_STATE.EMPTY
+        );
       })
       .catch(() => {
-        if (!cancelled) setDocuments([]);
+        if (cancelled || requestSeqRef.current !== requestId) return;
+        setDocuments([]);
+        setLoadState(LEGAL_EVIDENCE_LOAD_STATE.UNAVAILABLE);
       });
     return () => {
       cancelled = true;
@@ -63,6 +102,11 @@ export default function LegalTitleEvidencePanel({
   }, [canLoad, propertyId, subjectId]);
 
   if (!enabled) return null;
+
+  const compactStatus = legalEvidenceCompactStatus({
+    loadState,
+    documentCount: documents.length,
+  });
 
   async function handleUpload(event) {
     event.preventDefault();
@@ -106,85 +150,119 @@ export default function LegalTitleEvidencePanel({
   }
 
   return (
-    <div className="pi-legal-evidence-panel" data-testid="legal-title-evidence-panel">
-      <h3 className="pi-subheading">Legal / title evidence</h3>
-      <p className="pi-muted">
-        Add a private title register, title plan, lease, or other legal document. The file stays
-        private. Uploading it does not verify authenticity or prove a clean title.
-      </p>
-      <form onSubmit={handleUpload} className="pi-legal-evidence-form">
-        <label>
-          Document type
-          <select value={documentType} onChange={(e) => setDocumentType(e.target.value)}>
-            {DOCUMENT_TYPES.map((type) => (
-              <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
+    <details
+      className="pi-optional-legal"
+      data-testid="optional-legal-evidence"
+    >
+      <summary>
+        Optional legal / title evidence
+        {compactStatus ? (
+          <span className="pi-optional-legal-status" data-testid="legal-evidence-compact-status">
+            {` · ${compactStatus}`}
+          </span>
+        ) : null}
+      </summary>
+      <div
+        className="pi-legal-evidence-panel"
+        data-testid="legal-title-evidence-panel"
+        data-load-state={loadState}
+        aria-busy={loadState === LEGAL_EVIDENCE_LOAD_STATE.LOADING}
+      >
+        <p className="pi-muted pi-legal-evidence-intro">
+          Add a private title register, title plan, lease, or other legal document. The file stays
+          private. Uploading it does not verify authenticity or prove a clean title.
+        </p>
+        <form onSubmit={handleUpload} className="pi-legal-evidence-form">
+          <label>
+            Document type
+            <select value={documentType} onChange={(e) => setDocumentType(e.target.value)}>
+              {DOCUMENT_TYPES.map((type) => (
+                <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Source
+            <select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>
+              {SOURCE_TYPES.map((row) => (
+                <option key={row.value} value={row.value}>{row.label}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Title number (optional)
+            <input
+              type="text"
+              value={titleNumber}
+              onChange={(e) => setTitleNumber(e.target.value)}
+              placeholder="Do not use a UPRN"
+            />
+          </label>
+          <label>
+            Document date (optional)
+            <input
+              type="date"
+              value={documentDate}
+              onChange={(e) => setDocumentDate(e.target.value)}
+            />
+          </label>
+          <label>
+            File
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
+          </label>
+          <button type="submit" className="ai-btn ai-btn-ghost" disabled={busy}>
+            {busy ? 'Saving…' : 'Add document'}
+          </button>
+        </form>
+        {error && <p className="pi-muted" data-testid="legal-evidence-error">{error}</p>}
+        {loadState === LEGAL_EVIDENCE_LOAD_STATE.LOADING && (
+          <p className="pi-muted pi-legal-evidence-status" data-testid="legal-evidence-status">
+            {LEGAL_EVIDENCE_LOADING_COPY}
+          </p>
+        )}
+        {loadState === LEGAL_EVIDENCE_LOAD_STATE.UNAVAILABLE && (
+          <div className="pi-legal-evidence-status" data-testid="legal-evidence-status">
+            <p className="pi-muted">{LEGAL_EVIDENCE_UNAVAILABLE_COPY}</p>
+            <button
+              type="button"
+              className="ai-btn ai-btn-ghost"
+              data-testid="legal-evidence-retry"
+              onClick={reload}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+        {loadState === LEGAL_EVIDENCE_LOAD_STATE.EMPTY && (
+          <p className="pi-muted pi-legal-evidence-status" data-testid="legal-evidence-status">
+            {LEGAL_EVIDENCE_EMPTY_COPY}
+          </p>
+        )}
+        {loadState === LEGAL_EVIDENCE_LOAD_STATE.AVAILABLE && (
+          <ul data-testid="legal-evidence-list">
+            {documents.map((doc) => (
+              <li key={doc.documentId}>
+                <strong>{doc.documentType}</strong>
+                {' · User supplied · Unverified · Not assessed'}
+                {doc.documentDate ? ` · Document date ${doc.documentDate}` : ''}
+                {doc.uploadedAt ? ` · Uploaded ${new Date(doc.uploadedAt).toLocaleDateString('en-GB')}` : ''}
+                <button
+                  type="button"
+                  className="ai-btn ai-btn-ghost"
+                  disabled={busy}
+                  onClick={() => handleArchive(doc.documentId)}
+                >
+                  Archive
+                </button>
+              </li>
             ))}
-          </select>
-        </label>
-        <label>
-          Source
-          <select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>
-            {SOURCE_TYPES.map((row) => (
-              <option key={row.value} value={row.value}>{row.label}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Title number (optional)
-          <input
-            type="text"
-            value={titleNumber}
-            onChange={(e) => setTitleNumber(e.target.value)}
-            placeholder="Do not use a UPRN"
-          />
-        </label>
-        <label>
-          Document date (optional)
-          <input
-            type="date"
-            value={documentDate}
-            onChange={(e) => setDocumentDate(e.target.value)}
-          />
-        </label>
-        <label>
-          File
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-          />
-        </label>
-        <button type="submit" className="ai-btn ai-btn-ghost" disabled={busy}>
-          {busy ? 'Saving…' : 'Add document'}
-        </button>
-      </form>
-      {error && <p className="pi-muted" data-testid="legal-evidence-error">{error}</p>}
-      {documents.length === 0 ? (
-        <p className="pi-muted">No private legal evidence supplied yet.</p>
-      ) : (
-        <ul data-testid="legal-evidence-list">
-          {documents.map((doc) => (
-            <li key={doc.documentId}>
-              <strong>{doc.documentType}</strong>
-              {' · Evidence supplied · '}
-              {doc.verificationState === 'USER_DECLARED' ? 'User declared' : 'Unverified'}
-              {' · Not assessed'}
-              {doc.documentDate ? ` · Document date ${doc.documentDate}` : ''}
-              {doc.uploadedAt ? ` · Uploaded ${new Date(doc.uploadedAt).toLocaleDateString('en-GB')}` : ''}
-              {' · '}
-              {doc.sourceType?.replace(/_/g, ' ')}
-              <button
-                type="button"
-                className="ai-btn ai-btn-ghost"
-                disabled={busy}
-                onClick={() => handleArchive(doc.documentId)}
-              >
-                Archive
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+          </ul>
+        )}
+      </div>
+    </details>
   );
 }

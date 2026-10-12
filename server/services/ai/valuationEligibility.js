@@ -11,6 +11,7 @@ const {
   parsePositiveMoney,
   isAskingListingMethod,
 } = require('./valuationIntegrity');
+const { canonicalPropertyTypeToken } = require('../../utils/canonicalPropertyType');
 
 const METHOD_FAMILY = {
   valuation_sale_avm: 'PROVIDER_MODEL',
@@ -53,35 +54,6 @@ function classifyEvidenceDate(raw, asOf = Date.now()) {
     iso: typeof raw === 'string' ? raw : parsed.toISOString(),
     reason: null,
   };
-}
-
-/**
- * Recover a single type token. Ambiguous multi-value shapes stay unknown.
- * Does not write back to the catalogue.
- */
-function canonicalPropertyTypeToken(value) {
-  if (value == null || value === '') return null;
-  if (Array.isArray(value)) {
-    const tokens = [
-      ...new Set(value.map((v) => String(v).toLowerCase().trim()).filter(Boolean)),
-    ];
-    return tokens.length === 1 ? tokens[0] : null;
-  }
-  const text = String(value).trim();
-  const pgArray = text.match(/^\{([\s\S]*)\}$/);
-  if (pgArray) {
-    const tokens = [
-      ...new Set(
-        pgArray[1]
-          .split(',')
-          .map((part) => part.trim().replace(/^"|"$/g, '').toLowerCase())
-          .filter(Boolean)
-      ),
-    ];
-    return tokens.length === 1 ? tokens[0] : null;
-  }
-  const norm = text.toLowerCase().trim();
-  return norm || null;
 }
 
 function typesAreExactMatch(a, b) {

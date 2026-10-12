@@ -1,5 +1,11 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
+
+jest.mock('../../services/aiService', () => ({
+  getSubjectPropertyAttributes: jest.fn(async () => ({ success: true, attributes: {} })),
+  putSubjectPropertyAttributes: jest.fn(async () => ({ success: true, attributes: {} })),
+}));
+
 import IntelligenceReport from './IntelligenceReport';
 
 function openFold(title) {
@@ -25,6 +31,7 @@ const BASE_REPORT = {
     address: '1 Test Street',
     price: 200000,
     monthly_rent: 1125,
+    source: 'marketplace',
   },
   snapshot: { price: 200000, rent: 1125 },
   propertyFacts: {
@@ -120,7 +127,8 @@ describe('IntelligenceReport finance rendering', () => {
     expect(screen.getAllByText(/listing asking price/i).length).toBeGreaterThan(0);
     expect(screen.getByText('Your purchase scenario')).toBeInTheDocument();
     expect(screen.getByText('Your expected rent')).toBeInTheDocument();
-    expect(screen.getAllByText(/market rent evidence/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/area asking-rent context/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Market rent £/i)).not.toBeInTheDocument();
   });
 
   test('complete operating and finance metrics render backend values only', () => {
@@ -1414,10 +1422,13 @@ describe('legacy heuristic retirement UI', () => {
     );
     openFold('Legal / title evidence');
     expect(screen.getByTestId('legal-title-domain-state')).toHaveTextContent('Evidence supplied');
+    expect(screen.getByTestId('legal-title-domain-source')).toHaveTextContent('User-supplied private evidence');
+    expect(screen.getByTestId('legal-title-domain-source')).not.toHaveTextContent('legal-title-foundation');
     expect(screen.getByTestId('legal-title-documents')).toHaveTextContent('Unverified');
     expect(screen.getByTestId('legal-title-documents')).toHaveTextContent('Not assessed');
     expect(screen.getByTestId('legal-title-domain-findings')).toHaveTextContent('Title register document supplied.');
     expect(screen.queryByText(/title clean|legal passed|no restrictions|development allowed/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('legal-title-foundation')).not.toBeInTheDocument();
   });
 
   test('market evidence shows coverage and gaps, never £0 for missing prices', () => {
@@ -1573,4 +1584,540 @@ describe('legacy heuristic retirement UI', () => {
     expect(screen.getByTestId('subject-identity-address')).toHaveTextContent('12 High Street, B1 2UJ');
     expect(screen.queryByText('Identity verified')).not.toBeInTheDocument();
   });
+
+  test('official EPC energy evidence is compact and not an investment colour', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          epbEvidence: {
+            attachmentStatus: 'UNIQUE_ATTACH',
+            source: 'MHCLG EPB',
+            inspectionDate: '2022-03-01',
+            current: {
+              energyRating: 'C',
+              floorAreaSqm: 74,
+              builtForm: 'Mid-terrace',
+              constructionAgeBand: '1996-2002',
+              potentialEnergyRating: 'B',
+            },
+          },
+          buildingConditionDomain: {
+            assessment: {
+              energyPhysicalEvidenceAssessed: true,
+              professionalBuildingConditionAssessed: false,
+              epcIsNotConditionSurvey: true,
+            },
+            findings: [{ id: 'energy', text: 'ENERGY / PHYSICAL EVIDENCE ASSESSED from official MHCLG EPB. EPC is not a survey.' }],
+            limitations: ['An EPC is energy evidence, not a structural or condition survey.'],
+          },
+        }}
+      />
+    );
+    openFold('Energy & physical evidence');
+    expect(screen.getByTestId('epb-energy-rating')).toHaveTextContent('C');
+    expect(screen.getByTestId('epb-floor-area')).toHaveTextContent('74 m²');
+    expect(screen.getByTestId('epb-built-form')).toHaveTextContent('Mid-terrace');
+    expect(screen.getByTestId('epb-age-band')).toHaveTextContent('1996-2002');
+    expect(screen.getByTestId('epb-condition-not-survey')).toHaveTextContent('Not assessed by EPC');
+    expect(screen.getByTestId('epb-potential-modelled')).toHaveTextContent('modelled improvement');
+    expect(screen.getByText(/not an investment recommendation/i)).toBeInTheDocument();
+    expect(screen.getByTestId('epb-energy-rating')).not.toHaveClass('positive', 'negative', 'recommend');
+    expect(screen.queryByText(/\bbuy now\b|\bsell now\b/i)).not.toBeInTheDocument();
+  });
+
+  test('unresolved EPC identity does not claim no energy data', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          epbEvidence: { attachmentStatus: 'UNRESOLVED_IDENTITY', source: 'MHCLG EPB' },
+          buildingConditionDomain: {
+            assessment: { unresolvedIdentity: true, professionalBuildingConditionAssessed: false },
+            findings: [{ id: 'unresolved', text: 'Official EPC evidence was not attached — subject identity unresolved.' }],
+            limitations: [],
+          },
+        }}
+      />
+    );
+    openFold('Energy & physical evidence');
+    expect(screen.getByTestId('epb-attachment-status')).toHaveTextContent('subject identity unresolved');
+    expect(screen.queryByTestId('epb-energy-rating')).not.toBeInTheDocument();
+    expect(screen.queryByText(/no EPC/i)).not.toBeInTheDocument();
+  });
+
+  test('unresolved unit identity does not attach building EPC facts', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          epbEvidence: { attachmentStatus: 'UNRESOLVED_UNIT_IDENTITY', source: 'MHCLG EPB' },
+          buildingConditionDomain: {
+            assessment: { unresolvedUnitIdentity: true, professionalBuildingConditionAssessed: false },
+            findings: [{ id: 'unresolved-unit', text: 'Official EPC evidence was not attached — unit identity unresolved.' }],
+            limitations: [],
+          },
+        }}
+      />
+    );
+    openFold('Energy & physical evidence');
+    expect(screen.getByTestId('epb-attachment-status')).toHaveTextContent('unit identity unresolved');
+    expect(screen.queryByTestId('epb-energy-rating')).not.toBeInTheDocument();
+  });
 });
+
+function workspaceReport(job, extra = {}) {
+  return {
+    ...BASE_REPORT,
+    decisionJob: job,
+    residentialDecisionContext: {
+      contractVersion: 'residential-decision-context-1.0.0',
+      decisionJob: job,
+      provenance: { source: 'USER_SELECTED', userIntent: true, notPropertyFact: true },
+    },
+    decisionWorkspace: {
+      decisionJob: job,
+      keyIntelligence: [
+        {
+          id: 'valuation_range',
+          label: 'Residential valuation range',
+          kind: 'valuation',
+          state: 'ASSESSED',
+          available: true,
+          value: 190000,
+        },
+        {
+          id: 'price_position',
+          label: 'Asking-price position',
+          kind: 'pricePosition',
+          state: 'NOT_ASSESSED',
+          available: false,
+          howToResolve: 'Price position is not assessed without a defensible valuation and asking price.',
+          whyItMatters: 'Compares asking price to the assessed valuation range.',
+        },
+      ],
+      unresolved: [
+        {
+          id: 'price_position',
+          label: 'Asking-price position',
+          state: 'NOT_ASSESSED',
+          whyItMatters: 'Compares asking price to the assessed valuation range.',
+          howToResolve: 'Price position is not assessed without a defensible valuation and asking price.',
+        },
+      ],
+      nextActions: [],
+      findings: [],
+      contextEvidence: [
+        { id: 'planning', label: 'Planning evidence', state: 'NOT_ASSESSED', available: false },
+      ],
+      optionalInvestmentView: [],
+      copy: {
+        headline: `You are assessing this property to ${job === 'LET_INVEST' ? 'LET / INVEST' : job}`,
+        notAdvice: 'Not advice.',
+      },
+      decisionIntelligenceApplicable: job === 'LET_INVEST',
+      whatIfApplicable: job !== 'SELL',
+      ...extra,
+    },
+    personalDecision: extra.personalDecision,
+    decisionIntelligence: extra.decisionIntelligence,
+  };
+}
+
+describe('IntelligenceReport residential decision workspace', () => {
+  test('BUY workspace does not present landlord conclusions as buyer conclusions', () => {
+    render(
+      <IntelligenceReport
+        report={workspaceReport('BUY', {
+          keyIntelligence: [
+            {
+              id: 'valuation_range',
+              label: 'Residential valuation range',
+              kind: 'valuation',
+              state: 'ASSESSED',
+              available: true,
+              value: 190000,
+            },
+            {
+              id: 'buyer_general_fit',
+              label: 'Owner-occupier fit',
+              kind: 'personalDecision',
+              state: 'NOT_ASSESSED',
+              available: false,
+              howToResolve: 'Many owner-occupier dimensions stay not assessed until preferences exist.',
+            },
+          ],
+          personalDecision: {
+            profile: 'buyer_general',
+            available: false,
+            score: null,
+            notABuyScore: true,
+            scoreLabel: 'Owner-occupier fit',
+            dimensions: {
+              affordability: { available: false, state: 'notAssessed', unavailableReason: 'No budget supplied' },
+            },
+          },
+          decisionIntelligence: { applicable: false, notApplicable: true },
+        })}
+      />
+    );
+    expect(screen.getByTestId('decision-workspace')).toBeInTheDocument();
+    expect(screen.getByTestId('decision-context-headline')).toHaveTextContent('BUY');
+    expect(screen.getByTestId('buy-no-landlord-conclusion')).toBeInTheDocument();
+    expect(screen.queryByTestId('hero-landlord-fit')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('decision-intelligence')).not.toBeInTheDocument();
+    expect(screen.queryByText(/BUY SCORE/i)).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('assessment-state').length).toBeGreaterThan(0);
+  });
+
+  test('LET_INVEST workspace shows missing underwriting inputs with focus actions', () => {
+    const onFocus = jest.fn();
+    render(
+      <IntelligenceReport
+        report={workspaceReport('LET_INVEST', {
+          missingUnderwritingInputs: {
+            items: [
+              {
+                id: 'underwriting_input_vacancyAssumption',
+                inputKey: 'vacancyAssumption',
+                label: 'Vacancy assumption',
+                cause: 'MISSING_USER_INPUT',
+                section: 'operating',
+                unlockLabels: ['NOI', 'Annual cash flow'],
+                detail: 'Vacancy was not supplied.',
+              },
+            ],
+          },
+          keyIntelligence: [
+            {
+              id: 'noi',
+              label: 'NOI',
+              state: 'NOT_ASSESSED',
+              available: false,
+              isUserInput: true,
+              resolutionInputKeys: ['vacancyAssumption'],
+              howToResolve: 'Requires complete operating-cost inputs.',
+            },
+          ],
+        })}
+        onFocusUnderwritingInput={onFocus}
+      />
+    );
+    expect(screen.getByTestId('missing-underwriting-inputs')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('underwriting-focus-vacancyAssumption'));
+    expect(onFocus).toHaveBeenCalledWith('vacancyAssumption');
+  });
+
+  test('LET_INVEST workspace keeps landlord methodology visible', () => {
+    render(
+      <IntelligenceReport
+        report={workspaceReport('LET_INVEST', {
+          keyIntelligence: [
+            {
+              id: 'landlord_fit',
+              label: 'Landlord fit',
+              kind: 'personalDecision',
+              state: 'ASSESSED',
+              available: true,
+              value: 71,
+            },
+            {
+              id: 'noi',
+              label: 'NOI',
+              kind: 'metric',
+              state: 'NOT_ASSESSED',
+              available: false,
+              howToResolve: 'Requires complete operating-cost inputs.',
+            },
+          ],
+          personalDecision: {
+            profile: 'landlord',
+            available: true,
+            score: 71,
+            scoreLabel: 'Landlord fit score',
+            dimensions: {},
+          },
+          decisionIntelligence: {
+            engine: 'decisionIntelligence',
+            materialFindings: [{ id: 'finding_gross_yield', title: 'Gross yield is an assessed landlord-fit driver' }],
+            investigationPriorities: [],
+            unresolvedDependencies: [],
+            sensitivityDrivers: [],
+          },
+        })}
+      />
+    );
+    expect(screen.getByTestId('let-invest-landlord-methodology')).toBeInTheDocument();
+    expect(screen.getByTestId('hero-landlord-fit')).toHaveTextContent('71/100');
+    expect(screen.getByTestId('workspace-metric-noi')).toHaveTextContent('Not assessed');
+    expect(screen.getByTestId('workspace-metric-noi')).not.toHaveTextContent('£0');
+  });
+
+  test('SELL workspace does not invent sell methodology', () => {
+    render(
+      <IntelligenceReport
+        report={workspaceReport('SELL', {
+          decisionIntelligence: { applicable: false, notApplicable: true },
+          personalDecision: { available: false, notASellScore: true, score: null },
+        })}
+      />
+    );
+    expect(screen.getByTestId('sell-no-invented-methodology')).toBeInTheDocument();
+    expect(screen.queryByText(/optimal listing price/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('decision-intelligence')).not.toBeInTheDocument();
+    expect(screen.queryByText(/SELL SCORE/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId('hero-decision-job')).toHaveTextContent('Sell');
+  });
+
+  test('legacy reports without a workspace stay readable as the original landlord report', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...BASE_REPORT,
+          personalDecision: {
+            profile: 'landlord',
+            available: true,
+            score: 71,
+            scoreLabel: 'Landlord fit score',
+            dimensions: {},
+          },
+        }}
+      />
+    );
+    expect(screen.queryByTestId('decision-workspace')).not.toBeInTheDocument();
+    expect(screen.getByTestId('hero-landlord-fit')).toHaveTextContent('71/100');
+    expect(screen.getByTestId('decision-overview')).toBeInTheDocument();
+  });
+
+  test('missing internal area shows listing edit action in workspace', () => {
+    const onEditListing = jest.fn();
+    render(
+      <IntelligenceReport
+        report={workspaceReport('BUY', {
+          property: { id: 155, category: 'sale' },
+          keyIntelligence: [
+            {
+              id: 'valuation_range',
+              label: 'Residential valuation range',
+              kind: 'valuation',
+              state: 'NOT_ASSESSED',
+              available: false,
+              howToResolve: 'Internal floor area is not recorded for this listing.',
+              isListingAttribute: true,
+              resolutionAction: 'edit_listing',
+              listingAttributeKey: 'internal_area',
+              cause: 'MISSING_LISTING_ATTRIBUTE',
+            },
+          ],
+          unresolved: [
+            {
+              id: 'internal_floor_area',
+              label: 'Internal floor area',
+              state: 'NOT_ASSESSED',
+              howToResolve: 'Internal floor area is not recorded for this listing.',
+              isListingAttribute: true,
+              resolutionAction: 'edit_listing',
+              listingAttributeKey: 'internal_area',
+              cause: 'MISSING_LISTING_ATTRIBUTE',
+            },
+          ],
+        })}
+        onEditListing={onEditListing}
+      />
+    );
+    const buttons = screen.getAllByTestId('listing-edit-internal_area');
+    expect(buttons.length).toBeGreaterThanOrEqual(1);
+    fireEvent.click(buttons[0]);
+    expect(onEditListing).toHaveBeenCalled();
+    expect(screen.getByTestId('unresolved-internal_floor_area')).toBeInTheDocument();
+  });
+
+  test('MARKET_CONTEXT local sold figures use supporting context styling, not assessed key intelligence', () => {
+    const { container } = render(
+      <IntelligenceReport
+        report={workspaceReport('BUY', {
+          keyIntelligence: [
+            {
+              id: 'valuation_range',
+              label: 'Residential valuation range',
+              kind: 'valuation',
+              state: 'NOT_ASSESSED',
+              available: false,
+              howToResolve: 'No property-specific valuation assessed.',
+            },
+            {
+              id: 'comparable_sold_evidence',
+              label: 'Comparable sold evidence',
+              kind: 'comparableSoldEvidence',
+              state: 'INSUFFICIENT_EVIDENCE',
+              available: false,
+              value: null,
+              howToResolve: 'Defensible comparable sufficiency was not met.',
+              whyItMatters: 'Local sold transaction context may appear under supporting evidence.',
+              notDefensibleComparable: true,
+              notAskingPriceJudgement: true,
+            },
+          ],
+          contextEvidence: [
+            {
+              id: 'local_sold_transaction_context',
+              label: 'Local sold transaction context',
+              kind: 'marketTransactionContext',
+              presentationRole: 'supporting_context',
+              state: 'INSUFFICIENT_EVIDENCE',
+              available: true,
+              value: '£310,000–£1,000,000 (median £430,000)',
+              howToResolve: 'Found 0 HIGH comparable(s). Volume of district sales is market context only.',
+              notValuation: true,
+              notDefensibleComparable: true,
+              notAskingPriceJudgement: true,
+            },
+            { id: 'planning', label: 'Planning evidence', state: 'NOT_ASSESSED', available: false },
+          ],
+        })}
+      />
+    );
+
+    const keyComp = screen.getByTestId('workspace-metric-comparable_sold_evidence');
+    expect(keyComp).toHaveClass('pi-metric-tile--missing');
+    expect(keyComp).not.toHaveClass('pi-metric-tile--assessed');
+    expect(keyComp).not.toHaveClass('pi-metric-tile--context');
+    expect(keyComp.querySelector('strong')).toHaveTextContent('Not assessed');
+    expect(keyComp.textContent).not.toMatch(/£310/);
+
+    const support = screen.getByTestId('workspace-evidence-local_sold_transaction_context');
+    expect(support).toHaveClass('pi-metric-tile--context');
+    expect(support).not.toHaveClass('pi-metric-tile--assessed');
+    expect(support.querySelector('small')).toHaveTextContent('Local sold transaction context');
+    expect(support.querySelector('strong')).toHaveTextContent('£310,000–£1,000,000 (median £430,000)');
+    expect(screen.getByTestId('workspace-evidence-disclaimer-local_sold_transaction_context'))
+      .toHaveTextContent(/not comparable sold evidence/i);
+    expect(support.textContent).toMatch(/not subject value/i);
+    expect(support.textContent).toMatch(/not asking-price judgement/i);
+    expect(container.textContent).not.toMatch(/underpriced|overpriced|recommended offer|fair value estimate/i);
+  });
+
+  test('ASSESSED comparable sold evidence remains a distinct key intelligence tile', () => {
+    render(
+      <IntelligenceReport
+        report={workspaceReport('SELL', {
+          keyIntelligence: [
+            {
+              id: 'comparable_sold_evidence',
+              label: 'Comparable sold evidence',
+              kind: 'comparableSoldEvidence',
+              state: 'ASSESSED',
+              available: true,
+              value: '£510,000–£740,000 (median £570,000)',
+              notValuation: true,
+            },
+          ],
+          contextEvidence: [
+            { id: 'planning', label: 'Planning evidence', state: 'NOT_ASSESSED', available: false },
+          ],
+        })}
+      />
+    );
+    const tile = screen.getByTestId('workspace-metric-comparable_sold_evidence');
+    expect(tile).toHaveClass('pi-metric-tile--assessed');
+    expect(tile).not.toHaveClass('pi-metric-tile--context');
+    expect(tile.querySelector('small')).toHaveTextContent('Comparable sold evidence');
+    expect(tile.querySelector('strong')).toHaveTextContent('£510,000–£740,000 (median £570,000)');
+    expect(screen.queryByTestId('workspace-evidence-local_sold_transaction_context')).not.toBeInTheDocument();
+  });
+
+  test('LET_INVEST workspace does not gain MARKET_CONTEXT sold-context key tiles from this closure', () => {
+    render(
+      <IntelligenceReport
+        report={workspaceReport('LET_INVEST', {
+          keyIntelligence: [
+            {
+              id: 'grossYield',
+              label: 'Gross yield',
+              kind: 'metric',
+              state: 'ASSESSED',
+              available: true,
+              value: 0.06,
+            },
+          ],
+          contextEvidence: [
+            { id: 'planning', label: 'Planning evidence', state: 'NOT_ASSESSED', available: false },
+          ],
+          decisionIntelligenceApplicable: true,
+        })}
+      />
+    );
+    expect(screen.queryByTestId('workspace-metric-comparable_sold_evidence')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('workspace-evidence-local_sold_transaction_context')).not.toBeInTheDocument();
+    expect(screen.getByTestId('workspace-metric-grossYield')).toBeInTheDocument();
+    expect(screen.queryByTestId('gross-yield-orientation-note')).not.toBeInTheDocument();
+  });
+
+  test('LET_INVEST labels MARKET rent basis as area asking context, not achievable rent', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...workspaceReport('LET_INVEST', {
+            keyIntelligence: [
+              {
+                id: 'grossYield',
+                label: 'Gross yield',
+                state: 'ASSESSED',
+                available: true,
+                value: 0.05,
+              },
+              {
+                id: 'noi',
+                label: 'NOI',
+                state: 'NOT_ASSESSED',
+                available: false,
+              },
+            ],
+          }),
+          investment: {
+            presented: {
+              rentBasis: {
+                kind: 'MARKET',
+                label: 'MARKET_RENT',
+                marketSubstitutedForMissingListing: true,
+              },
+              grossYield: { available: true, value: 5 },
+            },
+          },
+        }}
+      />
+    );
+    const disclosure = screen.getByTestId('rent-basis-disclosure');
+    expect(disclosure).toHaveTextContent(/MARKET — area asking-rent context/i);
+    expect(disclosure).toHaveTextContent(/not property-specific achievable or recommended rent/i);
+    expect(disclosure).not.toHaveTextContent(/will achieve/i);
+    expect(screen.getByTestId('gross-yield-orientation-note')).toHaveTextContent(/early orientation/i);
+    expect(screen.getByTestId('workspace-metric-grossYield')).toHaveClass('pi-metric-tile--orientation');
+    expect(screen.getByTestId('workspace-metric-grossYield').querySelector('small')).toHaveTextContent(
+      /early orientation/i
+    );
+  });
+
+  test('LET rent intelligence does not label model estimate as recommended rent', () => {
+    render(
+      <IntelligenceReport
+        report={{
+          ...workspaceReport('LET_INVEST', { keyIntelligence: [] }),
+          marketIntelligence: {
+            rent: {
+              success: true,
+              currentRent: 1000,
+              marketRange: { low: 950, high: 1100 },
+              recommendedRent: 1050,
+            },
+          },
+        }}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /rent intelligence/i }));
+    expect(screen.getByText(/area asking-rent model estimate/i)).toBeInTheDocument();
+    expect(screen.getByText(/not a property-specific achievable or recommended rent/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^Recommended rent$/i)).not.toBeInTheDocument();
+  });
+});
+

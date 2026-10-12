@@ -132,6 +132,7 @@ async function assemble(extra = {}) {
       skipConservationArea: true,
       skipArticle4: true,
       skipFlood: true,
+      skipEpb: true,
       asOf: ASOF,
       deps: deps(),
       ...(extra.options || {}),

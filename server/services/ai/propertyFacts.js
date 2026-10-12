@@ -35,13 +35,13 @@ const SOURCE_PRECEDENCE = Object.freeze({
   askingRent: Object.freeze(['InternalListing']),
   listingIdentity: Object.freeze(['InternalListing']),
   uprn: Object.freeze(['property_identities', 'PropertyData_uprn']),
-  epcRating: Object.freeze(['InternalListing', 'PropertyData_uprn']),
-  epcScore: Object.freeze(['PropertyData_uprn_aligned_to_selected_rating']),
-  epcCertificateNumber: Object.freeze(['PropertyData_uprn_aligned_to_selected_rating']),
-  floorArea: Object.freeze(['InternalListing', 'PropertyData_uprn']),
+  epcRating: Object.freeze(['MHCLG_EPBD', 'InternalListing', 'PropertyData_uprn']),
+  epcScore: Object.freeze(['MHCLG_EPBD', 'PropertyData_uprn_aligned_to_selected_rating']),
+  epcCertificateNumber: Object.freeze(['MHCLG_EPBD', 'PropertyData_uprn_aligned_to_selected_rating']),
+  floorArea: Object.freeze(['MHCLG_EPBD', 'InternalListing', 'PropertyData_uprn']),
   yearBuilt: Object.freeze(['InternalListing', 'PropertyData_uprn']),
-  constructionAgeBand: Object.freeze(['PropertyData_uprn']),
-  propertyType: Object.freeze(['InternalListing', 'PropertyData_uprn']),
+  constructionAgeBand: Object.freeze(['MHCLG_EPBD', 'PropertyData_uprn']),
+  propertyType: Object.freeze(['InternalListing', 'PropertyData_uprn', 'MHCLG_EPBD']),
   bedrooms: Object.freeze(['InternalListing', 'PropertyData_uprn']),
   bathrooms: Object.freeze(['InternalListing', 'PropertyData_uprn']),
   tenure: Object.freeze(['InternalListing', 'PropertyData_registeredLeases']),
@@ -140,7 +140,7 @@ const DEPENDENCY_MODEL = Object.freeze({
     note: 'Article 4 direction-area membership is report/context evidence only. Point-in-polygon membership is geographic only and is not a restriction schedule, permission outcome, valuation adjustment, or Personal Decision input. Restricted permitted-development rights stay notAssessed. Unknown remains notAssessed, not “not in an Article 4 area”.',
   },
   note:
-    'Causal usage documentation only. New facts in this phase are report/context evidence unless an existing scorer already consumed the listing field.',
+    'Causal usage documentation only. New facts in this phase are report/context evidence unless an existing scorer already consumed the listing field. Official EPB floor area, age band, and energy rating are not valuation inputs.',
 });
 
 function emptyFact(field, extras = {}) {
@@ -392,6 +392,40 @@ function unavailableSourceFact(field, note) {
   });
 }
 
+function fromOfficialEpb(field, value, extras = {}) {
+  if (!present(value)) {
+    return emptyFact(field, extras);
+  }
+  return {
+    ...emptyFact(field, extras),
+    available: true,
+    value,
+    state: extras.state || 'observed',
+    trust: extras.trust || TRUST.observed,
+    source: 'MHCLG_EPBD',
+    provider: 'MHCLG_EPBD',
+    method: extras.method || 'official_epc_unique_attach',
+    retrievedAt: extras.retrievedAt || null,
+    observedAt: extras.observedAt || extras.inspectionDate || null,
+    scoringActivated: false,
+    official: true,
+    epcIsNotSurvey: true,
+  };
+}
+
+function preferOfficial(officialFact, fallbackFact) {
+  if (officialFact?.available) return officialFact;
+  return fallbackFact;
+}
+
+function officialEpbClient(epbEvidence) {
+  if (!epbEvidence) return null;
+  const snapshot = epbEvidence.client || epbEvidence;
+  const status = snapshot.attachmentStatus || snapshot.status;
+  if (status !== 'UNIQUE_ATTACH' && status !== 'REUSED') return null;
+  return snapshot;
+}
+
 function assemblePropertyFacts({
   property = {},
   evidence = null,
@@ -403,6 +437,7 @@ function assemblePropertyFacts({
   listedBuildingEvidence = null,
   conservationAreaEvidence = null,
   article4Evidence = null,
+  epbEvidence = null,
 } = {}) {
   const fields = evidence?.fields || {};
   const conflicts = evidence?.conflicts || [];
@@ -411,25 +446,59 @@ function assemblePropertyFacts({
   const amenities = listingObservedAmenities(property);
   const matchBasis = evidence?.identity?.propertyLevelMatch ? 'uprn' : evidence?.identity?.matchBasis || null;
   const selectedLease = selectedRegisteredLease(evidence?.registeredLeases);
+  const officialEpb = officialEpbClient(epbEvidence);
+  const officialCurrent = officialEpb?.current || {};
+  const officialMeta = {
+    retrievedAt: officialEpb?.retrievedAt || null,
+    inspectionDate: officialEpb?.inspectionDate || null,
+  };
 
-  const epcRating = listingFallback(
-    fromOverlay('epcRating', fields.epc_rating, conflicts, { inferredFromAgeOrType: false }),
-    'epcRating',
-    property.epc_rating,
-    { inferredFromAgeOrType: false }
+  const epcRating = preferOfficial(
+    fromOfficialEpb('epcRating', officialCurrent.energyRating, {
+      ...officialMeta,
+      inferredFromAgeOrType: false,
+      officialEnergyEvidence: true,
+    }),
+    listingFallback(
+      fromOverlay('epcRating', fields.epc_rating, conflicts, { inferredFromAgeOrType: false }),
+      'epcRating',
+      property.epc_rating,
+      { inferredFromAgeOrType: false }
+    )
   );
   const epcScore = fromOverlay('epcScore', fields.epc_score, conflicts, {
     inferred: false,
     alignedToSelectedRating: Boolean(fields.epc_score?.available),
   });
-  const epcCertificateNumber = fromOverlay(
-    'epcCertificateNumber',
-    fields.epc_certificate_number,
-    conflicts
+  const epcCertificateNumber = preferOfficial(
+    fromOfficialEpb('epcCertificateNumber', officialEpb?.certificateNumber, officialMeta),
+    fromOverlay(
+      'epcCertificateNumber',
+      fields.epc_certificate_number,
+      conflicts
+    )
   );
-  const epcCertificateDate = emptyFact('epcCertificateDate', {
-    note: 'EPC lodgement/expiry date is not present in verified listing or /uprn payloads.',
-  });
+  const epcCertificateDate = preferOfficial(
+    fromOfficialEpb('epcCertificateDate', officialEpb?.inspectionDate || officialEpb?.lodgementDate, {
+      ...officialMeta,
+      note: 'Official inspection/lodgement date from MHCLG EPB.',
+    }),
+    emptyFact('epcCertificateDate', {
+      note: 'EPC lodgement/expiry date is not present in verified listing or /uprn payloads.',
+    })
+  );
+  const epcPotentialRating = fromOfficialEpb(
+    'epcPotentialRating',
+    officialCurrent.potentialEnergyRating,
+    {
+      ...officialMeta,
+      state: 'inferred',
+      trust: TRUST.estimated,
+      modelledImprovement: true,
+      note: 'Modelled improvement potential. Not a current property fact and not a guaranteed improvement.',
+    }
+  );
+  const builtForm = fromOfficialEpb('builtForm', officialCurrent.builtForm, officialMeta);
 
   const tenure = listingFallback(
     fromOverlay('tenure', fields.tenure, conflicts, { inferredFromPropertyType: false }),
@@ -485,14 +554,25 @@ function assemblePropertyFacts({
     epcScore,
     epcCertificateNumber,
     epcCertificateDate,
-    floorArea: listingFallback(
-      fromOverlay('floorArea', fields.square_feet, conflicts, {
-        unit: present(property.floor_area_unit) ? String(property.floor_area_unit) : null,
+    epcPotentialRating,
+    builtForm,
+    floorArea: preferOfficial(
+      fromOfficialEpb('floorArea', officialCurrent.floorAreaSqm, {
+        ...officialMeta,
+        unit: 'SQM',
         inferred: false,
+        scoringActivated: false,
+        notValuationInput: true,
       }),
-      'floorArea',
-      property.square_feet,
-      { inferred: false, unit: present(property.floor_area_unit) ? String(property.floor_area_unit) : null }
+      listingFallback(
+        fromOverlay('floorArea', fields.square_feet, conflicts, {
+          unit: present(property.floor_area_unit) ? String(property.floor_area_unit) : null,
+          inferred: false,
+        }),
+        'floorArea',
+        property.square_feet,
+        { inferred: false, unit: present(property.floor_area_unit) ? String(property.floor_area_unit) : null }
+      )
     ),
     yearBuilt: listingFallback(
       fromOverlay('yearBuilt', fields.year_built, conflicts, { inferred: false }),
@@ -500,9 +580,16 @@ function assemblePropertyFacts({
       property.year_built,
       { inferred: false }
     ),
-    constructionAgeBand: fromOverlay('constructionAgeBand', fields.construction_age_band, conflicts, {
-      neverWrittenToYearBuilt: true,
-    }),
+    constructionAgeBand: preferOfficial(
+      fromOfficialEpb('constructionAgeBand', officialCurrent.constructionAgeBand, {
+        ...officialMeta,
+        neverWrittenToYearBuilt: true,
+        notValuationInput: true,
+      }),
+      fromOverlay('constructionAgeBand', fields.construction_age_band, conflicts, {
+        neverWrittenToYearBuilt: true,
+      })
+    ),
     propertyType: listingFallback(
       fromOverlay('propertyType', fields.property_type, conflicts, { unknownNotDefaultedToFlat: true }),
       'propertyType',

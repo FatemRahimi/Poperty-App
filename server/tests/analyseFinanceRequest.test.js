@@ -142,6 +142,7 @@ async function analyse(body, listingOverrides = {}) {
     options: {
       skipExplanation: true,
       skipPostcodeMarket: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding: true,
@@ -165,9 +166,11 @@ test('controller analyse handlers share the canonical finance parser', () => {
   assert.ok(/analyseSubjectIntelligence[\s\S]*resolveIntelligenceAnalyseOptions/.test(src));
   assert.ok(/invalidFinanceHttpResponse\(parsed\.errors\)/.test(src));
   assert.ok(/finance: parsed\.snapshot/.test(src));
-  const parsed = resolveIntelligenceAnalyseOptions(NESTED_BODY);
+  const parsed = resolveIntelligenceAnalyseOptions({ ...NESTED_BODY, decisionJob: 'LET_INVEST' });
   assert.strictEqual(parsed.ok, true);
+  assert.strictEqual(parsed.decisionJob, 'LET_INVEST');
   assert.strictEqual(parsed.options.maintenance.frequency, 'monthly');
+  assert.strictEqual(parsed.options.decisionJob, 'LET_INVEST');
 });
 
 test('nested finance request reaches canonical financeInputContract', () => {

@@ -431,7 +431,7 @@ test('49-54. current intelligence freeze — source isolation', () => {
 test('55-62. neighbouring domains and provider cost unchanged', () => {
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.PLANNING).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.ENVIRONMENT).wiredIntoLiveAnalysis, true);
-  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, false);
+  assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.BUILDING_CONDITION).wiredIntoLiveAnalysis, true);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.DEVELOPMENT).wiredIntoLiveAnalysis, false);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.PROJECT_COST).wiredIntoLiveAnalysis, false);
   assert.strictEqual(platformRegistry.getDomain(DOMAIN_ID.LEGAL_TITLE).mayIncurProviderCost, false);
@@ -610,6 +610,7 @@ asyncTest('live analysis keeps valuation/rent/finance isolation with legal envel
       skipExplanation: true,
       skipPostcodeMarket: true,
       skipFlood: true,
+      skipEpb: true,
       skipPlanning: true,
       skipSchools: true,
       skipListedBuilding: true,
@@ -639,7 +640,8 @@ asyncTest('live analysis keeps valuation/rent/finance isolation with legal envel
   assert.strictEqual(report.marketIntelligence.rent.recommendedRent, 1100);
   assert.ok(report.planningDomain);
   assert.ok(report.environmentDomain);
-  assert.strictEqual(report.buildingConditionDomain, undefined);
+  assert.ok(report.buildingConditionDomain);
+  assert.strictEqual(report.buildingConditionDomain.assessment.professionalBuildingConditionAssessed, false);
   assert.strictEqual(report.developmentDomain, undefined);
   assert.strictEqual(report.projectCostDomain, undefined);
   const persist = read('../services/ai/propertyIntelligenceProduction.js');
