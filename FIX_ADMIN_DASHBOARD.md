@@ -25,7 +25,7 @@ JWT_SECRET=your_current_short_secret
 
 ### Step 3: Replace it with a longer secret (at least 32 characters):
 ```env
-JWT_SECRET=REDACTED
+JWT_SECRET=YOUR_JWT_SECRET_HERE
 ```
 
 Or generate a new one:
@@ -35,7 +35,7 @@ JWT_SECRET=your_very_long_random_secret_key_at_least_32_characters_long_12345678
 
 ### Step 4: Also set SESSION_SECRET (can be same as JWT_SECRET):
 ```env
-SESSION_SECRET=REDACTED
+SESSION_SECRET=YOUR_SESSION_SECRET_HERE
 ```
 
 ### Step 5: Restart the server
@@ -50,10 +50,10 @@ Make sure your `server/.env` file has:
 
 ```env
 # JWT Secret (MUST be at least 32 characters)
-JWT_SECRET=REDACTED
+JWT_SECRET=YOUR_JWT_SECRET_HERE
 
 # Session Secret (can be same as JWT_SECRET)
-SESSION_SECRET=REDACTED
+SESSION_SECRET=YOUR_SESSION_SECRET_HERE
 
 # Client URL
 CLIENT_URL=http://localhost:3000

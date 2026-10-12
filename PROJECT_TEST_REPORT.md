@@ -76,7 +76,7 @@ Invoke-WebRequest -Uri "http://localhost:3000" -UseBasicParsing
 ## Environment Configuration
 
 ### Current `.env` Settings
-- **DATABASE_URL**: `postgres://REDACTED@localhost:5432/propertydb`
+- **DATABASE_URL**: `postgres://postgres@localhost:5432/propertydb`
 - **PORT**: `5050`
 - **CLIENT_URL**: `http://localhost:3000`
 - **NODE_ENV**: `development`

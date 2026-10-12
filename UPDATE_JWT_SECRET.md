@@ -14,11 +14,11 @@ Your `JWT_SECRET` in `server/.env` is **only 12 characters** long. It needs to b
 2. Find the line: `JWT_SECRET=...`
 3. Replace it with:
    ```env
-   JWT_SECRET=REDACTED
+   JWT_SECRET=YOUR_JWT_SECRET_HERE
    ```
 4. Also update `SESSION_SECRET` (if it exists):
    ```env
-   SESSION_SECRET=REDACTED
+   SESSION_SECRET=YOUR_SESSION_SECRET_HERE
    ```
 5. **Save the file**
 6. **Restart your server** (stop with Ctrl+C, then run `npm run dev` again)
@@ -30,8 +30,8 @@ Run this in PowerShell from the project root:
 ```powershell
 $envFile = "server\.env"
 $content = Get-Content $envFile -Raw
-$newJWT = "JWT_SECRET=REDACTED"
-$newSession = "SESSION_SECRET=REDACTED"
+$newJWT = "JWT_SECRET=YOUR_JWT_SECRET_HERE"
+$newSession = "SESSION_SECRET=YOUR_SESSION_SECRET_HERE"
 
 # Replace JWT_SECRET
 if ($content -match "JWT_SECRET=.*") {

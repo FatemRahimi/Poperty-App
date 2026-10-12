@@ -167,7 +167,7 @@ router.get('/search', async (req, res) => {
   try {
     const { Pool } = require('pg');
     const pool = new Pool({
-      connectionString: process.env.DATABASE_URL || 'postgres://REDACTED@localhost:5432/propertydb'
+      connectionString: process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/propertydb'
     });
 
     const { 
@@ -483,7 +483,7 @@ router.get('/search/simple-suggestions', async (req, res) => {
   try {
     const { Pool } = require('pg');
     const pool = new Pool({
-      connectionString: process.env.DATABASE_URL || 'postgres://REDACTED@localhost:5432/propertydb'
+      connectionString: process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/propertydb'
     });
 
     const { q } = req.query;
@@ -614,7 +614,7 @@ router.get('/search/location-suggestions', async (req, res) => {
       if (suggestions.length < 3) {
         const { Pool } = require('pg');
         const pool = new Pool({
-          connectionString: process.env.DATABASE_URL || 'postgres://REDACTED@localhost:5432/propertydb'
+          connectionString: process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/propertydb'
         });
 
         const dbSuggestions = await pool.query(`
@@ -889,7 +889,7 @@ router.get('/search/suggestions', async (req, res) => {
     try {
       const { Pool } = require('pg');
       const pool = new Pool({
-        connectionString: process.env.DATABASE_URL || 'postgres://REDACTED@localhost:5432/propertydb'
+        connectionString: process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/propertydb'
       });
 
       const dbQuery = `
@@ -1057,7 +1057,7 @@ router.get('/public', async (req, res) => {
   try {
     const { Pool } = require('pg');
     const pool = new Pool({
-      connectionString: process.env.DATABASE_URL || 'postgres://REDACTED@localhost:5432/propertydb'
+      connectionString: process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/propertydb'
     });
 
     const { page = 1, limit = 12, category, property_type, city, min_price, max_price, bedrooms } = req.query;
@@ -1156,7 +1156,7 @@ router.get('/property/:slug', async (req, res) => {
   try {
     const { Pool } = require('pg');
     const pool = new Pool({
-      connectionString: process.env.DATABASE_URL || 'postgres://REDACTED@localhost:5432/propertydb'
+      connectionString: process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/propertydb'
     });
 
     const { slug } = req.params;

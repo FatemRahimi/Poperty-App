@@ -25,7 +25,11 @@ async function restoreBackupFixed() {
   
   const args = process.argv.slice(2);
   const backupIndex = args[0] ? parseInt(args[0]) - 1 : 0;
-  const password = args[1] || 'REDACTED';
+  const password = args[1];
+  if (!password) {
+    console.error('Database password is required as the second argument. No default password is provided.');
+    process.exit(1);
+  }
   
   // Find backup files
   const backupsDir = path.join(__dirname, '../backups');

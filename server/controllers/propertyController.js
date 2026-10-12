@@ -43,7 +43,7 @@ async function persistSubmittedClassification(client, property, body, userId) {
 }
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://REDACTED@localhost:5432/propertydb'
+  connectionString: process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/propertydb'
 });
 
 // Email transporter setup

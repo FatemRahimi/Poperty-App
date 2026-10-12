@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 (async () => {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL || 'postgres://REDACTED@localhost:5432/propertydb' });
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/propertydb' });
   const client = await pool.connect();
   try {
     console.log('🔧 Running AddList (sale) columns migration...');

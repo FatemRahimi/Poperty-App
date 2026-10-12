@@ -10,7 +10,7 @@
 
 ❌ **Issue Found:**
 - DATABASE_URL in `.env` is missing password
-- Current: `postgres://REDACTED@localhost:5432/propertydb`
+- Current: `postgres://postgres@localhost:5432/propertydb`
 - Needed: `postgres://postgres:YOUR_PASSWORD@localhost:5432/propertydb`
 
 ## Step-by-Step Setup
@@ -21,7 +21,7 @@
 
 Find this line:
 ```env
-DATABASE_URL=postgres://REDACTED@localhost:5432/propertydb
+DATABASE_URL=postgres://postgres@localhost:5432/propertydb
 ```
 
 Change it to (add your PostgreSQL password):

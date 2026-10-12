@@ -625,7 +625,7 @@ const AdminDashboard = () => {
                 </div>
                 <div className="credential-note">
                   <i className="fas fa-info-circle me-2"></i>
-                  All admin accounts use the password: <code>REDACTED
+                  Admin passwords are set individually and are not shown here.
                 </div>
               </div>
             </div>

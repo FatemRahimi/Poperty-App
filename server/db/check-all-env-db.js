@@ -69,8 +69,7 @@ const optionalVars = {
     default: 'admin@property.com'
   },
   'ADMIN_PASSWORD': {
-    description: 'Admin password',
-    default: 'REDACTED'
+    description: 'Admin password from the environment. No default.',
   },
   'ADMIN_ROUTE_SECRET': {
     description: 'Admin login route secret',

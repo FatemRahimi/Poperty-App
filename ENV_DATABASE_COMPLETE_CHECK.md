@@ -105,7 +105,7 @@
 
 2. Replace it with (at least 32 characters):
    ```env
-   JWT_SECRET=REDACTED
+   JWT_SECRET=YOUR_JWT_SECRET_HERE
    ```
 
 3. **Restart the server:**

@@ -10,8 +10,8 @@ if (-not (Test-Path $envFile)) {
 }
 
 $content = Get-Content $envFile -Raw
-$newJWT = "JWT_SECRET=REDACTED"
-$newSession = "SESSION_SECRET=REDACTED"
+$newJWT = "JWT_SECRET=YOUR_JWT_SECRET_HERE"
+$newSession = "SESSION_SECRET=YOUR_SESSION_SECRET_HERE"
 
 $updated = $false
 

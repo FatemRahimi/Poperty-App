@@ -26,8 +26,7 @@ const optionalVars = {
     default: 'admin@property.com'
   },
   'ADMIN_PASSWORD': {
-    description: 'Admin password (defaults to REDACTED)',
-    default: 'REDACTED'
+    description: 'Admin password from the environment. Required by admin setup scripts. No default.',
   },
   'ADMIN_ROUTE_SECRET': {
     description: 'Secret route for admin login page (defaults to x9k7m2p5q8)',
@@ -81,7 +80,7 @@ console.log('\n🔍 CONFIGURATION CHECK:\n');
 if (!process.env.JWT_SECRET) {
   console.log('  ❌ JWT_SECRET is missing!');
   console.log('     This will cause admin authentication to fail.');
-  console.log('     Add to .env: JWT_SECRET=REDACTED');
+  console.log('     Add to .env: JWT_SECRET=YOUR_JWT_SECRET_HERE');
 } else if (process.env.JWT_SECRET.length < 32) {
   console.log('  ⚠️  JWT_SECRET is too short (should be at least 32 characters)');
 } else {

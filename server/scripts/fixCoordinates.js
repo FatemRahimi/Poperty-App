@@ -8,7 +8,7 @@ const axios = require('axios');
  */
 async function fixDatabaseCoordinates() {
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgres://REDACTED@localhost:5432/propertydb'
+    connectionString: process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/propertydb'
   });
 
   try {

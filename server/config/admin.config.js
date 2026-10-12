@@ -3,7 +3,7 @@ require('dotenv').config();
 const adminConfig = {
   // Admin credentials from environment variables
   email: process.env.ADMIN_EMAIL || 'admin@property.com',
-  password: process.env.ADMIN_PASSWORD || 'REDACTED',
+  password: process.env.ADMIN_PASSWORD,
   firstName: process.env.ADMIN_FIRST_NAME || 'Admin',
   lastName: process.env.ADMIN_LAST_NAME || 'User',
   

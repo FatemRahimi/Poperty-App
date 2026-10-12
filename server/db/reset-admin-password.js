@@ -3,18 +3,22 @@ const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 
 async function resetAdminPassword() {
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword || !String(adminPassword).trim()) {
+    console.error('ADMIN_PASSWORD is required. Set it in the environment before running this script.');
+    process.exit(1);
+  }
+
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL
   });
 
   try {
-    const adminEmail = process.env.ADMIN_EMAIL || 'fa.rahimi5475@gmail.com';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'REDACTED';
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
 
     console.log('\n🔐 Resetting Admin Password\n');
     console.log('='.repeat(60));
     console.log(`📧 Admin Email: ${adminEmail}`);
-    console.log(`🔑 New Password: ${adminPassword}`);
     console.log('='.repeat(60));
 
     // Check if admin exists
@@ -66,7 +70,6 @@ async function resetAdminPassword() {
 
       console.log(`\n✅ Password updated successfully!`);
       console.log(`   Email: ${adminEmail}`);
-      console.log(`   Password: ${adminPassword}`);
     }
 
     // Verify the password works
@@ -91,9 +94,8 @@ async function resetAdminPassword() {
     console.log('📝 Login Information:');
     console.log(`   URL: http://localhost:3000/admin-x9k7m2p5q8`);
     console.log(`   Email: ${adminEmail}`);
-    console.log(`   Password: ${adminPassword}`);
     console.log('='.repeat(60));
-    console.log('\n✅ Done! You can now login with the password from .env file.\n');
+    console.log('\n✅ Done. The new password was taken from ADMIN_PASSWORD and was not printed.\n');
 
   } catch (error) {
     console.error('\n❌ Error resetting admin password:', error.message);

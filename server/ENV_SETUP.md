@@ -24,13 +24,13 @@ CLIENT_URL=http://localhost:3000
 PORT=5050
 
 # JWT Secret (I generated one for you - use this)
-JWT_SECRET=REDACTED
+JWT_SECRET=YOUR_JWT_SECRET_HERE
 
 # Session Secret (can be same as JWT_SECRET)
-SESSION_SECRET=REDACTED
+SESSION_SECRET=YOUR_SESSION_SECRET_HERE
 
 # Database Configuration
-DATABASE_URL=postgres://REDACTED@localhost:5432/propertydb
+DATABASE_URL=postgres://postgres@localhost:5432/propertydb
 
 # AI Property Services (optional — mock outputs used when unset)
 OPENAI_API_KEY=
@@ -63,6 +63,18 @@ PRIVATE_EVIDENCE_SCANNER_TIMEOUT_MS=
 PRIVATE_EVIDENCE_ROOT=
 PRIVATE_EVIDENCE_MAX_BYTES=
 PRIVATE_EVIDENCE_SMOKE_DOCUMENT=
+
+# Official MHCLG Energy Performance of Buildings API (England & Wales).
+# Bearer token from GOV.UK One Login account page. Never commit the token.
+# Never expose it to the client. Analyse uses this free official source only
+# when configured; missing credentials fail as UNAVAILABLE_MISSING_CREDENTIAL.
+MHCLG_EPB_ENABLED=true
+MHCLG_EPB_BEARER_TOKEN=
+MHCLG_EPB_BASE_URL=https://api.get-energy-performance-data.communities.gov.uk
+MHCLG_EPB_TIMEOUT_MS=15000
+MHCLG_EPB_PAGE_SIZE=100
+MHCLG_EPB_REFRESH_TTL_MS=2592000000
+
 ```
 
 ### 3. Get Google OAuth Credentials

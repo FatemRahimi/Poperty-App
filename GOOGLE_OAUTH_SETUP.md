@@ -18,7 +18,7 @@ GOOGLE_CALLBACK_URL=http://localhost:5050/api/auth/google/callback
 CLIENT_URL=http://localhost:3000
 PORT=5050
 JWT_SECRET=your_jwt_secret_here
-DATABASE_URL=postgres://REDACTED@localhost:5432/propertydb
+DATABASE_URL=postgres://postgres@localhost:5432/propertydb
 ```
 
 ## Step-by-Step Setup
@@ -87,7 +87,7 @@ PORT=5050
 JWT_SECRET=your_random_secret_key_here_minimum_32_characters
 
 # Database
-DATABASE_URL=postgres://REDACTED@localhost:5432/propertydb
+DATABASE_URL=postgres://postgres@localhost:5432/propertydb
 
 # Session Secret (can be same as JWT_SECRET)
 SESSION_SECRET=your_random_secret_key_here_minimum_32_characters

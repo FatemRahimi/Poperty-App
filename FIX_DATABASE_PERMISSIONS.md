@@ -175,7 +175,7 @@ If you can't run the scripts, change the database user to `postgres` in your `.e
 
 ```env
 # BEFORE
-DATABASE_URL=postgres://REDACTED@localhost:5432/propertydb
+DATABASE_URL=postgres://postgres@localhost:5432/propertydb
 
 # AFTER (use superuser)
 DATABASE_URL=postgres://postgres:YOUR_PASSWORD@localhost:5432/propertydb

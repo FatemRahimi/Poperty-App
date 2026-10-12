@@ -4,7 +4,7 @@ const { geocodeLocationEnhanced } = require('../utils/smartSearch');
 require('dotenv').config({ path: '../.env' });
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://REDACTED@localhost:5432/propertydb'
+  connectionString: process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/propertydb'
 });
 
 async function main() {

@@ -40,7 +40,7 @@ ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user';
 
 INSERT INTO users (email, first_name, last_name) VALUES ('test@example.com', 'Test', 'User');
 
--- Create admin user (password: REDACTED)
+-- Create admin user (password: YOUR_PASSWORD)
 INSERT INTO users (email, password, first_name, last_name, role, is_verified) 
 VALUES ('admin@property.com', 'REPLACE_WITH_BCRYPT_HASH', 'Admin', 'User', 'admin', true) 
 ON CONFLICT (email) DO NOTHING;

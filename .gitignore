@@ -62,3 +62,24 @@ server/data/epb/
 
 # Yarn Integrity file
 .yarn-integrity
+
+# Local secrets
+server/.env
+server/.env.*
+
+# Database backups and dumps
+server/backups/
+propertydb_backup*.sql
+*.sql.gz
+*backup*.sql
+*.dump
+
+# Private keys
+*.pem
+*.key
+id_rsa*
+
+# Local logs and one-off audit outputs
+*.log
+server/scripts/*-output.json
+server/scripts/_tmp-*

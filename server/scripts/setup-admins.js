@@ -2,59 +2,32 @@ const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 require('dotenv').config();
 
+const adminPassword = process.env.ADMIN_PASSWORD;
+if (!adminPassword || !String(adminPassword).trim()) {
+  console.error('ADMIN_PASSWORD is required. Set it in the environment before running this script.');
+  process.exit(1);
+}
+
 // Get admin from ENV (main super admin)
 const MAIN_ADMIN = {
-  email: process.env.ADMIN_EMAIL || 'fa.rahimi5475@gmail.com',
-  password: process.env.ADMIN_PASSWORD || 'REDACTED',
-  first_name: process.env.ADMIN_FIRST_NAME || 'Fatemeh',
-  last_name: process.env.ADMIN_LAST_NAME || 'Rahimi',
+  email: process.env.ADMIN_EMAIL || 'admin@example.com',
+  password: adminPassword,
+  first_name: process.env.ADMIN_FIRST_NAME || 'Admin',
+  last_name: process.env.ADMIN_LAST_NAME || 'User',
   role: 'super_admin'
 };
-
-// Additional predefined admins (can be customized later through dashboard)
-const ADDITIONAL_ADMINS = [
-  {
-    email: 'manager@property.com', 
-    password: 'REDACTED',
-    first_name: 'Property',
-    last_name: 'Manager',
-    role: 'admin'
-  },
-  {
-    email: 'sales@property.com',
-    password: 'REDACTED', 
-    first_name: 'Sales',
-    last_name: 'Director',
-    role: 'admin'
-  },
-  {
-    email: 'support@property.com',
-    password: 'REDACTED',
-    first_name: 'Support', 
-    last_name: 'Lead',
-    role: 'admin'
-  },
-  {
-    email: 'sysadmin@property.com',
-    password: 'REDACTED',
-    first_name: 'System',
-    last_name: 'Administrator', 
-    role: 'admin'
-  }
-];
 
 async function setupAdmins() {
   // Database connection
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgres://REDACTED@localhost:5432/propertydb'
+    connectionString: process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/propertydb'
   });
 
   try {
     console.log('🔧 Setting up admin users...');
     console.log(`📧 Main Admin Email: ${MAIN_ADMIN.email}`);
 
-    // Setup all admins (main + additional)
-    const allAdmins = [MAIN_ADMIN, ...ADDITIONAL_ADMINS];
+    const allAdmins = [MAIN_ADMIN];
 
     for (const admin of allAdmins) {
       // Hash the password
@@ -89,25 +62,8 @@ async function setupAdmins() {
     }
 
     console.log('\n🎉 All admin users set up successfully!');
-    console.log('\n📋 Admin Login Information:');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`🔑 MAIN ADMIN (from .env):`);
-    console.log(`   Email: ${MAIN_ADMIN.email}`);
-    console.log(`   Password: ${MAIN_ADMIN.password}`);
-    console.log(`   Role: ${MAIN_ADMIN.role}`);
-    console.log('');
-    
-    console.log(`👥 ADDITIONAL ADMINS:`);
-    ADDITIONAL_ADMINS.forEach((admin, index) => {
-      console.log(`${index + 1}. ${admin.first_name} ${admin.last_name}`);
-      console.log(`   Email: ${admin.email}`);
-      console.log(`   Password: ${admin.password}`);
-      console.log(`   Role: ${admin.role}`);
-      console.log('');
-    });
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('\n🌐 Admin Login URL: http://localhost:3000/admin-x9k7m2p5q8');
-    console.log('💡 Use your ENV email/password to login as main super admin');
+    console.log(`Role: ${MAIN_ADMIN.role}`);
+    console.log('Admin password was taken from ADMIN_PASSWORD and was not printed.');
 
   } catch (error) {
     console.error('❌ Error setting up admin users:', error);

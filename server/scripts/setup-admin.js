@@ -1,13 +1,20 @@
 const bcrypt = require('bcryptjs');
-const pool = require('../models/db');
 const adminConfig = require('../config/admin.config');
+
+const adminPassword = process.env.ADMIN_PASSWORD;
+if (!adminPassword || !String(adminPassword).trim()) {
+  console.error('ADMIN_PASSWORD is required. Set it in the environment before running this script.');
+  process.exit(1);
+}
+
+const pool = require('../models/db');
 
 async function setupAdminUser() {
   try {
     console.log('🔐 Setting up production admin user...');
     
     // Hash the admin password
-    const hashedPassword = await bcrypt.hash(adminConfig.password, 12);
+    const hashedPassword = await bcrypt.hash(adminPassword, 12);
     
     // Check if admin user already exists
     const existingAdmin = await pool.query(
@@ -35,7 +42,6 @@ async function setupAdminUser() {
     }
     
     console.log('📧 Admin Email:', adminConfig.email);
-    console.log('🔑 Admin Password:', adminConfig.password);
     console.log('🛡️ Secure Route:', `/admin-${adminConfig.routeSecret}`);
     console.log('🌐 Allowed IPs:', adminConfig.allowedIPs.join(', '));
     

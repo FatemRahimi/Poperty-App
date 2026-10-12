@@ -4,7 +4,7 @@
 
 **Error:** `password authentication failed for user "REDACTED"`
 
-This means PostgreSQL cannot authenticate the user `REDACTED` with the password `REDACTED`.
+This means PostgreSQL cannot authenticate the user `REDACTED` with the password `YOUR_PASSWORD`.
 
 ## 🔍 Why This Happens
 
@@ -39,7 +39,7 @@ SELECT usename FROM pg_user WHERE usename = 'REDACTED';
 
 ```sql
 -- Create the user with the password from your .env file
-CREATE USER REDACTED WITH PASSWORD 'REDACTED';
+CREATE USER REDACTED WITH PASSWORD 'YOUR_PASSWORD';
 
 -- Create the database if it doesn't exist
 CREATE DATABASE propertydb;
@@ -57,7 +57,7 @@ If the user exists but password is wrong:
 
 ```sql
 -- Reset the password to match your .env file
-ALTER USER REDACTED WITH PASSWORD 'REDACTED';
+ALTER USER REDACTED WITH PASSWORD 'YOUR_PASSWORD';
 
 -- Make sure database exists
 CREATE DATABASE propertydb;
@@ -78,9 +78,9 @@ GRANT ALL PRIVILEGES ON DATABASE propertydb TO REDACTED;
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_user WHERE usename = 'REDACTED') THEN
-        CREATE USER REDACTED WITH PASSWORD 'REDACTED';
+        CREATE USER REDACTED WITH PASSWORD 'YOUR_PASSWORD';
     ELSE
-        ALTER USER REDACTED WITH PASSWORD 'REDACTED';
+        ALTER USER REDACTED WITH PASSWORD 'YOUR_PASSWORD';
     END IF;
 END
 $$;
@@ -107,7 +107,7 @@ node -e "require('dotenv').config(); const {Pool}=require('pg'); const p=new Poo
 
 ## 🔄 After Fixing
 
-1. ✅ User `REDACTED` created with password `REDACTED`
+1. ✅ User `REDACTED` created with password `YOUR_PASSWORD`
 2. ✅ Database `propertydb` created
 3. ✅ Privileges granted
 4. ✅ Restart server: `npm run dev`
@@ -122,7 +122,7 @@ DATABASE_URL=postgres://postgres:YOUR_PASSWORD@localhost:5432/propertydb
 
 **So you need:**
 - User: `REDACTED`
-- Password: `REDACTED`
+- Password: `YOUR_PASSWORD`
 - Database: `propertydb`
 
 **Create them in PostgreSQL using the commands above!**

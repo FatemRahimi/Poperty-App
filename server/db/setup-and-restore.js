@@ -17,8 +17,11 @@ const colors = {
   cyan: '\x1b[36m'
 };
 
-// PostgreSQL password - you can set this as environment variable or hardcode for now
-const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD || 'REDACTED';
+const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD;
+if (!POSTGRES_PASSWORD || !String(POSTGRES_PASSWORD).trim()) {
+  console.error('POSTGRES_PASSWORD is required. Set it in the environment before running this script.');
+  process.exit(1);
+}
 
 async function setupAndRestore() {
   let pool = null;

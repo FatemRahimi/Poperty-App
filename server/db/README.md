@@ -33,7 +33,7 @@ psql -U your_user -d propertydb -f server/db/init.sql
 Or using Node.js:
 
 ```bash
-node -e "const {Pool}=require('pg');const pool=new Pool({connectionString:process.env.DATABASE_URL||'postgres://REDACTED@localhost:5432/propertydb'});const fs=require('fs');pool.query(fs.readFileSync('server/db/init.sql','utf8')).then(()=>{console.log('✅ Database initialized');process.exit(0);}).catch(e=>{console.error(e);process.exit(1);});"
+node -e "const {Pool}=require('pg');const pool=new Pool({connectionString:process.env.DATABASE_URL||'postgres://postgres@localhost:5432/propertydb'});const fs=require('fs');pool.query(fs.readFileSync('server/db/init.sql','utf8')).then(()=>{console.log('✅ Database initialized');process.exit(0);}).catch(e=>{console.error(e);process.exit(1);});"
 ```
 
 ### 2. Run Migrations
@@ -224,7 +224,7 @@ SELECT * FROM schema_migrations ORDER BY applied_at;
 
 Default connection string:
 ```
-postgres://REDACTED@localhost:5432/propertydb
+postgres://postgres@localhost:5432/propertydb
 ```
 
 Set custom connection via environment variable:
