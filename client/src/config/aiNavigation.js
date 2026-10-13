@@ -1,5 +1,4 @@
 import {
-  FaBrain,
   FaChartLine,
   FaPoundSign,
   FaBriefcase,
@@ -7,55 +6,41 @@ import {
   FaHome,
   FaComments,
   FaHistory,
-  FaTags,
+  FaUser,
   FaThLarge,
+  FaTachometerAlt,
 } from 'react-icons/fa';
 
-/** Live navigation only — no "Soon" placeholders in the product shell */
+/** Live navigation only — no "Soon" placeholders in the product shell. */
 export const AI_NAV = [
   {
     group: 'Start',
     items: [
-      { to: '/ai-services', label: 'Intelligence Hub', icon: FaThLarge, exact: true },
-    ],
-  },
-  {
-    group: 'Analyse',
-    items: [
-      {
-        to: '/ai-services/property-intelligence',
-        label: 'Property Intelligence',
-        icon: FaBrain,
-        hint: 'Property-specific',
-      },
-      {
-        to: '/ai-services/investment-analyst',
-        label: 'Investment Analyst',
-        icon: FaChartLine,
-        hint: 'Numbers only',
-      },
-      { to: '/ai-services/rent-intelligence', label: 'Rent Intelligence', icon: FaPoundSign },
-      { to: '/ai-services/portfolio-optimiser', label: 'Portfolio Optimiser', icon: FaBriefcase },
-    ],
-  },
-  {
-    group: 'Marketing tools',
-    items: [
-      { to: '/ai-services/listing-writer', label: 'Listing Writer', icon: FaPenFancy },
-      { to: '/ai-services/valuation', label: 'Valuation', icon: FaHome },
-      { to: '/ai-services/buyer-match', label: 'Buyer Match', icon: FaComments },
+      { to: '/ai-services', label: 'Home', icon: FaThLarge, exact: true },
+      { to: '/ai-services/history', label: 'Property cases', icon: FaHistory },
     ],
   },
   {
     group: 'Account',
     items: [
-      { to: '/ai-services/history', label: 'Analysis history', icon: FaHistory },
-      { to: '/ai-services/pricing', label: 'Credits & pricing', icon: FaTags },
+      { to: '/ai-services/pricing', label: 'Account', icon: FaUser },
+    ],
+  },
+  {
+    group: 'More tools',
+    disclosure: true,
+    items: [
+      { to: '/ai-services/portfolio-optimiser', label: 'Portfolio', icon: FaBriefcase },
+      { to: '/ai-services/investment-analyst', label: 'Investment Analyst', icon: FaChartLine },
+      { to: '/ai-services/rent-intelligence', label: 'Rent Intelligence', icon: FaPoundSign },
+      { to: '/ai-services/valuation', label: 'Valuation', icon: FaHome },
+      { to: '/ai-services/listing-writer', label: 'Listing Writer', icon: FaPenFancy },
+      { to: '/ai-services/buyer-match', label: 'Buyer Match', icon: FaComments },
+      { to: '/ai-services/dashboard', label: 'Activity', icon: FaTachometerAlt },
     ],
   },
 ];
 
-export const AI_PLATFORM_TAGLINE =
-  'Property-specific intelligence for UK decisions.';
+export const AI_PLATFORM_TAGLINE = '';
 
 export const AI_PRODUCT_NAME = 'Property Intelligence';

@@ -58,7 +58,6 @@ function renderUkRow({
         data-uprn={match.uprn}
         data-kind={match.kind || 'address'}
       >
-        <div className={`epp-thumb epp-thumb--uk ${shell ? 'epp-thumb--shell' : ''}`} aria-hidden />
         <div className="epp-row-body">
           <span className="epp-address">{address}</span>
           {buildingLine && buildingLine !== address ? (
@@ -69,9 +68,12 @@ function renderUkRow({
             {type && !shell ? ` · ${type}` : ''}
           </span>
           {match.uprn != null && match.uprn !== '' && (
-            <span className="epp-uprn-secondary" data-testid="epp-uprn-secondary">
-              Ref {match.uprn}
-            </span>
+            <details className="epp-identity-fold">
+              <summary>Identity details</summary>
+              <span className="epp-uprn-secondary" data-testid="epp-uprn-secondary">
+                Ref {match.uprn}
+              </span>
+            </details>
           )}
           {selected ? <span className="epp-status">Selected</span> : null}
         </div>
@@ -113,7 +115,7 @@ export default function ExactPropertyPicker({
     >
       <header className="epp-header">
         <h2 id="epp-heading" className="epp-heading">
-          Select the property
+          Select the exact property
           {postcodeLabel ? (
             <span className="epp-heading-postcode"> in {postcodeLabel}</span>
           ) : null}
@@ -126,8 +128,8 @@ export default function ExactPropertyPicker({
         </p>
         {namedUnitUnconfirmed ? (
           <p className="epp-named-unit-warning" data-testid="epp-named-unit-warning">
-            The named unit was not confirmed. A building or shell is not that named flat —
-            select a returned address below.
+            We couldn't confirm that exact flat. A building is not that flat —
+            select a returned address below, or search again.
           </p>
         ) : null}
         {potentiallyTruncated ? (
@@ -162,9 +164,7 @@ export default function ExactPropertyPicker({
                   >
                     {p.main_image ? (
                       <img src={p.main_image} alt="" className="epp-thumb" />
-                    ) : (
-                      <div className="epp-thumb epp-thumb--empty" aria-hidden />
-                    )}
+                    ) : null}
                     <div className="epp-row-body">
                       <span className="epp-address">{address}</span>
                       {(unit || type) && (

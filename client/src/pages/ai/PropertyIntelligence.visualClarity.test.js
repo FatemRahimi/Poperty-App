@@ -24,14 +24,14 @@ describe('Property Intelligence UI/UX visual clarity presentation', () => {
     'utf8'
   );
 
-  test('landing leads with search and compact step rail, not instruction essay', () => {
-    expect(piSrc).toMatch(/pi-landing-intro/);
-    expect(piSrc).toMatch(/Understand a property before you make a decision/);
-    expect(piSrc).toMatch(/Search by UK address or postcode/);
+  test('discovery is one job: find a property, without a step rail', () => {
+    expect(piSrc).toMatch(/Find a property/);
+    expect(piSrc).toMatch(/What property would you like to investigate\?/);
+    expect(piSrc).toMatch(/aria-label="UK address or postcode"/);
     expect(piSrc).not.toMatch(/How Property Intelligence works/);
-    expect(piSrc).toMatch(/Property<\/li>/);
-    expect(piSrc).toMatch(/Decision<\/li>/);
-    expect(piSrc).toMatch(/Intelligence<\/li>/);
+    expect(piSrc).not.toMatch(/pi-step-rail/);
+    expect(piSrc).not.toMatch(/Understand a property before you make a decision/);
+    expect(piSrc).not.toMatch(/Search by UK address or postcode/);
   });
 
   test('selected property and Analyse CTA remain dominant labels', () => {
@@ -69,10 +69,18 @@ describe('Property Intelligence UI/UX visual clarity presentation', () => {
     expect(formSrc).toMatch(/let-underwriting-unlock-guide/);
   });
 
-  test('AI hub distinguishes Property Intelligence from Investment Analyst', () => {
-    expect(hubSrc).toMatch(/Property-specific/);
-    expect(hubSrc).toMatch(/Numbers-only calculator/);
-    expect(navSrc).toMatch(/hint: 'Property-specific'/);
-    expect(navSrc).toMatch(/hint: 'Numbers only'/);
+  test('AI hub starts by finding a property and keeps helper tools secondary', () => {
+    expect(hubSrc).toMatch(/Find a property/);
+    expect(hubSrc).toMatch(/What property would you like to investigate\?/);
+    expect(hubSrc).toMatch(/Enter address or postcode/);
+    expect(hubSrc).not.toMatch(/Intelligence suite/);
+    expect(hubSrc).not.toMatch(/Quick tools/);
+    expect(hubSrc).not.toMatch(/Investment Analyst/);
+    expect(navSrc).toMatch(/label: 'Home'/);
+    expect(navSrc).toMatch(/disclosure: true/);
+    expect(navSrc).toMatch(/group: 'More tools'/);
+    expect(navSrc).not.toMatch(/group: 'Advanced tools'/);
+    expect(navSrc).not.toMatch(/hint: 'Property-specific'/);
+    expect(navSrc).not.toMatch(/hint: 'Numbers only'/);
   });
 });

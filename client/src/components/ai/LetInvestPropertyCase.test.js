@@ -121,6 +121,30 @@ describe('LET / INVEST property case', () => {
     expect(screen.getByTestId('underwriting-focus-serviceCharge')).toBeInTheDocument();
   });
 
+  test('an unassessed metric stored as zero is not shown as a number', () => {
+    render(
+      <IntelligenceReport
+        report={letReport({
+          investment: {
+            presented: {
+              noi: { available: false, value: 0, reason: 'NOI inputs are incomplete.' },
+              annualCashFlow: { available: false, value: 0 },
+              dscr: { available: false, value: 0 },
+              grossYield: { available: false, value: 0 },
+            },
+          },
+        })}
+      />
+    );
+    const numbers = screen.getByTestId('key-numbers');
+    expect(numbers).not.toHaveTextContent('£0');
+    expect(numbers).not.toHaveTextContent('0%');
+    expect(screen.queryByTestId('case-metric-noi')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('case-metric-dscr')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('case-metric-grossYield')).not.toBeInTheDocument();
+    expect(screen.getByTestId('workspace-metric-noi')).toHaveTextContent('Not assessed');
+  });
+
   test('area context and what-if stay outside the property case', () => {
     render(
       <IntelligenceReport
@@ -142,9 +166,41 @@ describe('LET / INVEST property case', () => {
     expect(screen.getByTestId('deep-market')).toHaveTextContent('Area market context');
     expect(propertyCase).not.toHaveTextContent('local market snapshot');
     expect(propertyCase).not.toContainElement(screen.queryByTestId('whatif-panel'));
+    expect(screen.getByTestId('deep-investigation-heading')).toHaveTextContent('Deep investigation');
     expect(screen.getByRole('link', { name: /what-if scenario/i })).toHaveAttribute('href', '#pi-what-if');
     expect(propertyCase).toHaveTextContent('does not replace the saved analysis');
     expect(screen.getByTestId('historical-snapshot-banner')).toHaveTextContent(/historical analysis/i);
+  });
+
+  test('what-if stays after the case and before deep investigation', () => {
+    render(
+      <IntelligenceReport
+        report={letReport({
+          decisionIntelligence: {
+            materialFindings: [{ id: 'yield', title: 'Gross yield is assessed', effect: 'supporting' }],
+            sensitivityDrivers: [{
+              id: 'driver_interestRate',
+              inputKey: 'interestRate',
+              group: 'finance',
+              title: 'Interest rate',
+              explanation: 'Interest rate can change cash flow.',
+            }],
+          },
+        })}
+        afterPropertyCase={<section data-testid="whatif-panel">What-if scenario</section>}
+      />
+    );
+    const propertyCase = screen.getByTestId('property-case');
+    const whatIf = screen.getByTestId('whatif-panel');
+    const deep = screen.getByTestId('deep-investigation');
+    expect(propertyCase).not.toContainElement(whatIf);
+    expect(propertyCase.compareDocumentPosition(whatIf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(whatIf.compareDocumentPosition(deep) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(propertyCase).not.toHaveTextContent('What can change this result');
+    expect(propertyCase).not.toHaveTextContent('Interest rate can change cash flow');
+    expect(screen.getByTestId('deep-methodology')).toHaveTextContent('What can change this result');
+    expect(screen.getByTestId('deep-methodology')).toHaveTextContent('Interest rate can change cash flow');
+    expect(screen.queryByTestId('decision-matters')).not.toBeInTheDocument();
   });
 
   test('BUY and SELL do not use the let property case', () => {

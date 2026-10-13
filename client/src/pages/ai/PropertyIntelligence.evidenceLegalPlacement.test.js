@@ -204,6 +204,7 @@ describe('Property Intelligence evidence / legal placement (Step 6)', () => {
       },
     });
     renderPI();
+    await userEvent.click(await screen.findByRole('button', { name: /^Browse listings/ }));
     await userEvent.click(await screen.findByRole('button', { name: /City loft/i }));
     expect(await screen.findByTestId('optional-legal-evidence')).toBeInTheDocument();
   });
@@ -229,6 +230,7 @@ describe('Property Intelligence evidence / legal placement (Step 6)', () => {
       },
     });
     renderPI();
+    await userEvent.click(await screen.findByRole('button', { name: /^Browse listings/ }));
     await userEvent.click(await screen.findByRole('button', { name: /City loft/i }));
     expect(await screen.findByTestId('decision-job-selector')).toBeInTheDocument();
     expect(screen.queryByTestId('optional-legal-evidence')).not.toBeInTheDocument();

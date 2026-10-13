@@ -37,7 +37,7 @@ describe('Property Intelligence — job selector subject-native closure', () => 
     expect(job).toBeGreaterThan(facts);
     expect(analyse).toBeGreaterThan(job);
     expect(piSrc).toMatch(/\{decisionJob \? \(/);
-    expect(piSrc).toMatch(/Choose what you are assessing\./);
+    expect(piSrc).toMatch(/Choose one for this property\./);
     expect(piSrc).not.toMatch(/pi-analyse-btn--waiting/);
   });
 

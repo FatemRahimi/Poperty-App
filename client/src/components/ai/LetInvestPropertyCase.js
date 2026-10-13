@@ -213,7 +213,7 @@ export default function LetInvestPropertyCase({
       </section>
 
       <section className="pi-case-block" data-testid="case-secondary-actions" aria-labelledby="case-secondary-heading">
-        <h3 id="case-secondary-heading">Secondary</h3>
+        <h3 id="case-secondary-heading">Secondary actions</h3>
         <p>
           <a href="#pi-what-if">Explore a what-if scenario</a>
         </p>

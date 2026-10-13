@@ -132,6 +132,7 @@ async function openListing() {
     },
   });
   renderPI();
+  await userEvent.click(await screen.findByRole('button', { name: /^Browse listings/ }));
   await userEvent.click(await screen.findByRole('button', { name: /City loft/i }));
   await userEvent.click(await screen.findByTestId('decision-job-LET_INVEST'));
 }

@@ -1,224 +1,132 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import {
-  FaBrain,
-  FaChartLine,
-  FaPoundSign,
-  FaPenFancy,
-  FaHome,
-  FaComments,
-  FaArrowRight,
-  FaCoins,
-  FaHistory,
-  FaTachometerAlt,
-  FaBriefcase,
-  FaGlobeEurope,
-} from 'react-icons/fa';
+import { Link, useNavigate } from 'react-router-dom';
 import AiWorkspaceLayout from '../../components/ai/AiWorkspaceLayout';
-import { fetchDashboard, fetchIntelligenceOverview } from '../../services/aiService';
-import { displayAiCredits, subscribeAiCredits } from '../../services/aiCreditState';
+import { fetchDashboard } from '../../services/aiService';
+import { subscribeAiCredits } from '../../services/aiCreditState';
 import { useAuth } from '../../context/AuthContext';
-import { AI_PRODUCT_NAME } from '../../config/aiNavigation';
-import '../../components/ai/AiWorkspaceLayout.css';
 import './AiHub.css';
 
-const FLAGSHIP_TOOLS = [
-  {
-    icon: FaBrain,
-    title: 'Property Intelligence',
-    desc: 'Choose a UK property, decide Buy / Let / Invest / Sell, then see evidence-backed intelligence.',
-    to: '/ai-services/property-intelligence',
-    tag: 'Property-specific',
-    primary: true,
-  },
-  {
-    icon: FaChartLine,
-    title: 'Investment Analyst',
-    desc: 'Numbers-only calculator — no property subject or Decision Workspace.',
-    to: '/ai-services/investment-analyst',
-    tag: 'Calculator',
-  },
-  {
-    icon: FaBriefcase,
-    title: 'Portfolio Optimiser',
-    desc: 'Aggregate yield, diversification, risks and recommended actions across all your listings.',
-    to: '/ai-services/portfolio-optimiser',
-    tag: 'Portfolio',
-  },
-  {
-    icon: FaPoundSign,
-    title: 'Rent Intelligence',
-    desc: 'Comparable rental estimates from your approved listings.',
-    to: '/ai-services/rent-intelligence',
-    tag: 'Rent',
-  },
-];
-
-const QUICK_TOOLS = [
-  { icon: FaPenFancy, title: 'Listing Writer', to: '/ai-services/listing-writer' },
-  { icon: FaHome, title: 'Valuation', to: '/ai-services/valuation' },
-  { icon: FaComments, title: 'Buyer Match', to: '/ai-services/buyer-match' },
-  { icon: FaTachometerAlt, title: 'Activity', to: '/ai-services/dashboard' },
-  { icon: FaHistory, title: 'History', to: '/ai-services/history' },
-];
-
-const typeLabel = {
-  listing_writer: 'Listing',
-  valuation: 'Valuation',
-  buyer_match: 'Buyer match',
-  property_intelligence: 'Intelligence',
-  investment_analyst: 'Investment',
-  rent_intelligence: 'Rent',
+const GOAL_LABEL = {
+  BUY: 'Buy a home',
+  LET_INVEST: 'Buy an investment property',
+  SELL: 'Sell a property',
 };
+
+function asObject(value) {
+  if (!value) return null;
+  if (typeof value === 'object') return value;
+  if (typeof value !== 'string') return null;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function knownPropertyGoal(item) {
+  const input = asObject(item?.input_data || item?.inputData);
+  const output = asObject(item?.output_data || item?.outputData);
+  const candidates = [
+    input?.decisionJob,
+    output?.residentialDecisionContext?.decisionJob,
+    output?.decisionJob,
+    output?.decisionWorkspace?.decisionJob,
+  ];
+  const job = candidates.find((value) => GOAL_LABEL[value]);
+  return job ? GOAL_LABEL[job] : null;
+}
 
 const AiHub = () => {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
-  const [intel, setIntel] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [credits, setCredits] = useState(null);
-  const [planName, setPlanName] = useState(null);
+  const [addressQuery, setAddressQuery] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated) {
       setLoading(false);
       return undefined;
     }
-    const unsub = subscribeAiCredits((snap) => {
-      setCredits(displayAiCredits(snap));
-      setPlanName(snap?.plan?.name || snap?.subscription?.plan || null);
-    });
-    Promise.all([
-      fetchDashboard().catch(() => null),
-      fetchIntelligenceOverview().catch(() => null),
-    ]).then(([dash, intelRes]) => {
-      setData(dash);
-      setIntel(intelRes);
-      setLoading(false);
-    });
+    const unsub = subscribeAiCredits(() => {});
+    fetchDashboard()
+      .catch(() => null)
+      .then((dash) => {
+        setData(dash);
+        setLoading(false);
+      });
     return unsub;
   }, [isAuthenticated]);
 
+  const openPropertySearch = (event) => {
+    event.preventDefault();
+    const query = addressQuery.trim();
+    const params = new URLSearchParams();
+    if (query) params.set('uk', query);
+    const search = params.toString();
+    navigate(`/ai-services/property-intelligence${search ? `?${search}` : ''}`);
+  };
+
+  const lookups = data?.recentUkLookups || [];
+  const propertyCases = (data?.recent || []).filter((item) => item?.request_type === 'property_intelligence');
+  const hasRecent = lookups.length > 0 || propertyCases.length > 0;
+
   return (
     <AiWorkspaceLayout
-      title={AI_PRODUCT_NAME}
-      subtitle="Start with Property Intelligence for a specific UK property. Other tools are specialised helpers."
+      title="Find a property"
+      subtitle="What property would you like to investigate?"
     >
       <div className="ai-hub">
-        {isAuthenticated && !loading && (
-          <div className="ai-hub-stats">
-            <div className="ai-hub-stat">
-              <FaCoins />
-              <div>
-                <small>Credits</small>
-                <strong>{credits == null ? '—' : credits}</strong>
-              </div>
-            </div>
-            <div className="ai-hub-stat">
-              <FaBrain />
-              <div>
-                <small>Analyses run</small>
-                <strong>{intel?.overview?.totalAnalyses ?? intel?.totalAnalyses ?? '—'}</strong>
-              </div>
-            </div>
-            <div className="ai-hub-stat">
-              <FaHistory />
-              <div>
-                <small>Plan</small>
-                <strong style={{ textTransform: 'capitalize' }}>{planName || data?.plan?.name || data?.subscription?.plan || 'Free'}</strong>
-              </div>
-            </div>
-          </div>
-        )}
+        <form className="ai-hub-search" onSubmit={openPropertySearch}>
+          <input
+            type="text"
+            value={addressQuery}
+            onChange={(event) => setAddressQuery(event.target.value)}
+            placeholder="Enter address or postcode"
+            aria-label="Enter address or postcode"
+          />
+          <button type="submit" className="ai-btn ai-btn-primary">Search</button>
+        </form>
 
         {!isAuthenticated && (
-          <div className="ai-hub-guest">
-            <p>Sign in to run analyses on your listings and track credits.</p>
-            <Link to="/login" state={{ from: '/ai-services' }} className="ai-btn ai-btn-primary">
-              Sign in to continue
-            </Link>
-          </div>
+          <p className="ai-hub-guest">
+            <Link to="/login" state={{ from: '/ai-services' }}>Sign in</Link>
+            {' '}to continue a saved property.
+          </p>
         )}
 
-        <section className="ai-hub-section">
-          <h2>Intelligence suite</h2>
-          <div className="ai-hub-flagship-grid">
-            {FLAGSHIP_TOOLS.map((tool) => {
-              const Icon = tool.icon;
-              return (
-                <Link key={tool.to} to={tool.to} className={`ai-hub-card ${tool.primary ? 'primary' : ''}`}>
-                  <span className="ai-hub-card-tag">{tool.tag}</span>
-                  <Icon className="ai-hub-card-icon" />
-                  <h3>{tool.title}</h3>
-                  <p>{tool.desc}</p>
-                  <span className="ai-hub-card-cta">Open <FaArrowRight /></span>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="ai-hub-section">
-          <h2>Quick tools</h2>
-          <div className="ai-hub-quick-grid">
-            {QUICK_TOOLS.map((tool) => {
-              const Icon = tool.icon;
-              return (
-                <Link key={tool.to} to={tool.to} className="ai-hub-quick">
-                  <Icon /> {tool.title}
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        {isAuthenticated && !loading && (data?.recentUkLookups?.length > 0) && (
-          <section className="ai-hub-section">
-            <h2>Recent UK property lookups</h2>
-            <p className="ai-hub-section-note">Addresses you analysed outside our marketplace — reopen in Property Intelligence.</p>
-            <div className="ai-hub-recent ai-hub-uk-lookups">
-              {data.recentUkLookups.map((item) => (
+        {isAuthenticated && !loading && hasRecent && (
+          <section className="ai-hub-section" aria-labelledby="ai-recent-heading">
+            <h2 id="ai-recent-heading">Recent properties</h2>
+            <div className="ai-hub-recent" data-testid="recent-properties">
+              {lookups.map((item) => (
                 <Link
-                  key={item.id}
+                  key={`lookup-${item.id}`}
                   to={`/ai-services/property-intelligence?subjectId=${item.id}`}
                   className="ai-hub-recent-row"
                 >
-                  <span className="ai-hub-recent-type"><FaGlobeEurope aria-hidden /></span>
                   <strong>{item.address}</strong>
-                  <em>
-                    {item.lastAccessedAt
-                      ? new Date(item.lastAccessedAt).toLocaleDateString()
-                      : 'Recent'}
-                    {item.linkedPropertyId ? ' · Linked' : ''}
-                  </em>
+                  <span>Continue</span>
                 </Link>
               ))}
+              {propertyCases.map((item) => {
+                const goal = knownPropertyGoal(item);
+                return (
+                  <Link
+                    key={`case-${item.id}`}
+                    to={`/ai-services/history/${item.id}`}
+                    className="ai-hub-recent-row"
+                  >
+                    <strong>{item.title || 'Saved property case'}</strong>
+                    {goal ? <em>{goal}</em> : null}
+                    <span>Continue</span>
+                  </Link>
+                );
+              })}
             </div>
           </section>
         )}
-
-        {isAuthenticated && data?.recent?.length > 0 && (
-          <section className="ai-hub-section">
-            <h2>Recent activity</h2>
-            <div className="ai-hub-recent">
-              {data.recent.slice(0, 6).map((item) => (
-                <Link key={item.id} to={`/ai-services/history/${item.id}`} className="ai-hub-recent-row">
-                  <span className="ai-hub-recent-type">{typeLabel[item.request_type] || item.request_type}</span>
-                  <strong>{item.title}</strong>
-                  <em>{new Date(item.created_at).toLocaleDateString()}</em>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <section className="ai-hub-band">
-          <div>
-            <h3>Need more credits?</h3>
-            <p>Professional unlocks unlimited generations and full intelligence tools.</p>
-          </div>
-          <Link to="/ai-services/pricing" className="ai-btn ai-btn-primary">View pricing</Link>
-        </section>
       </div>
     </AiWorkspaceLayout>
   );

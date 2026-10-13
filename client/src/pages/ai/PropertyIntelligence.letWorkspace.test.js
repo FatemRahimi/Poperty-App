@@ -143,6 +143,7 @@ describe('Property Intelligence — LET progressive workspace (Step 4)', () => {
       },
     });
     renderPI();
+    await userEvent.click(await screen.findByRole('button', { name: /^Browse listings/ }));
     await userEvent.click(await screen.findByRole('button', { name: /City loft/i }));
     await userEvent.click(await screen.findByTestId('decision-job-LET_INVEST'));
     expect(await screen.findByTestId('let-stage-tab-property_rent')).toHaveAttribute('aria-selected', 'true');

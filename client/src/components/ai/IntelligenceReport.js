@@ -2532,6 +2532,7 @@ export default function IntelligenceReport({
   analysisHistory = [],
   onOpenAnalysis = null,
   legalDocuments = null,
+  afterPropertyCase = null,
 }) {
   if (!report || typeof report !== 'object') {
     return (
@@ -2588,6 +2589,7 @@ export default function IntelligenceReport({
           onEditListing={onEditListing}
         />
       )}
+      {letDecisionFirst && afterPropertyCase}
       {!letDecisionFirst && (
       <header className="pi-report-hero">
         <div className="pi-report-hero-copy">
@@ -2702,6 +2704,9 @@ export default function IntelligenceReport({
       )}
 
       <DeepShell enabled={letDecisionFirst}>
+      {letDecisionFirst && (
+        <h2 className="pi-block-heading" data-testid="deep-investigation-heading">Deep investigation</h2>
+      )}
       <DeepGate enabled={letDecisionFirst} testId="deep-calculations" label="Calculations">
       {letDecisionFirst && (
         <LetInvestCalculationDetail
@@ -3035,6 +3040,11 @@ export default function IntelligenceReport({
       <DeepGate enabled={letDecisionFirst} testId="deep-methodology" label="Methodology">
       {letDecisionFirst && (
         <div data-testid="let-methodology">
+          <DecisionIntelligenceSection
+            intelligence={report.decisionIntelligence}
+            omitFindings
+            omitVerify
+          />
           <p data-testid="let-invest-landlord-methodology">
             Missing vacancy, operating-cost or mortgage inputs stay not assessed.
           </p>

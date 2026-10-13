@@ -62,7 +62,7 @@ describe('ExactPropertyPicker', () => {
       />
     );
     expect(screen.getByTestId('exact-property-picker')).toBeInTheDocument();
-    expect(screen.getByText('Select the property')).toBeInTheDocument();
+    expect(screen.getByText('Select the exact property')).toBeInTheDocument();
     expect(onSelectInternal).not.toHaveBeenCalled();
     expect(onSelectExternal).not.toHaveBeenCalled();
   });
@@ -282,7 +282,7 @@ describe('ExactPropertyPicker', () => {
         onSelectExternal={jest.fn()}
       />
     );
-    expect(screen.getByTestId('epp-named-unit-warning')).toHaveTextContent(/named unit was not confirmed/i);
+    expect(screen.getByTestId('epp-named-unit-warning')).toHaveTextContent(/couldn't confirm that exact flat/i);
     expect(screen.getByTestId('epp-truncation-note')).toHaveTextContent(/not claimed complete/i);
     expect(screen.queryByText(/postcode is complete/i)).not.toBeInTheDocument();
   });

@@ -199,6 +199,7 @@ describe('Property Intelligence — job selector flow (subject-native)', () => {
       },
     });
     renderPI();
+    await userEvent.click(await screen.findByRole('button', { name: /^Browse listings/ }));
     const listingBtn = await screen.findByRole('button', { name: /City loft/i });
     await userEvent.click(listingBtn);
     expect(await screen.findByTestId('decision-job-selector')).toBeInTheDocument();
@@ -209,7 +210,7 @@ describe('Property Intelligence — job selector flow (subject-native)', () => {
     expect(screen.getByTestId('decision-job-SELL')).toBeInTheDocument();
     expect(screen.queryByTestId('analyse-property-cta')).not.toBeInTheDocument();
     expect(screen.getByTestId('decision-job-required-hint')).toHaveTextContent(
-      'Choose what you are assessing.'
+      'Choose one for this property.'
     );
     expect(fetchPropertyPreview).toHaveBeenCalledWith(42);
     expect(screen.queryByText(/approved listing/i)).not.toBeInTheDocument();

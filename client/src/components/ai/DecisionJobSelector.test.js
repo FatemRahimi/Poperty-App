@@ -19,11 +19,11 @@ describe('DecisionJobSelector', () => {
     expect(screen.getByTestId('decision-job-BUY')).toBeInTheDocument();
     expect(screen.getByTestId('decision-job-LET_INVEST')).toBeInTheDocument();
     expect(screen.getByTestId('decision-job-SELL')).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /Buy\. Purchase decision/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Buy as my home\. Purchase decision/i })).toBeInTheDocument();
     expect(
-      screen.getByRole('radio', { name: /Let \/ Invest\. Rental investment/i })
+      screen.getByRole('radio', { name: /Buy as an investment\. Rental investment/i })
     ).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /Sell\. Sale \/ pricing context/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Sell this property\. Sale \/ pricing context/i })).toBeInTheDocument();
     expect(screen.queryByText(/^Hold$/)).not.toBeInTheDocument();
     expect(screen.queryByTestId('decision-job-HOLD')).not.toBeInTheDocument();
     const group = screen.getByTestId('decision-job-radiogroup');
@@ -67,9 +67,9 @@ describe('DecisionJobSelector', () => {
     render(<Harness />);
     const names = screen.getAllByRole('radio').map((node) => node.getAttribute('aria-label'));
     expect(names).toEqual([
-      'Buy. Purchase decision',
-      'Let / Invest. Rental investment / landlord assessment',
-      'Sell. Sale / pricing context',
+      'Buy as my home. Purchase decision',
+      'Buy as an investment. Rental investment / landlord assessment',
+      'Sell this property. Sale / pricing context',
     ]);
     expect(names.join(' ')).not.toMatch(/^Buy Purchase context Let \/ Invest/);
   });

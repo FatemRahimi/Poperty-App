@@ -31,7 +31,7 @@ describe('Property Intelligence — exact property acquisition', () => {
     expect(piSrc).toMatch(/onSelectInternal=\{selectProperty\}/);
     expect(piSrc).toMatch(/onSelectExternal=\{selectExternalMatch\}/);
     expect(piSrc).toMatch(/selected-property-confirmation/);
-    expect(pickerSrc).toMatch(/Select the property/);
+    expect(pickerSrc).toMatch(/Select the exact property/);
   });
 
   test('platform rows are property matches with listing evidence — not Your listing', () => {

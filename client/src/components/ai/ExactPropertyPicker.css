@@ -38,6 +38,16 @@
   margin-top: 1rem;
 }
 
+.epp-identity-fold {
+  margin-top: 0.25rem;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.epp-identity-fold summary {
+  cursor: pointer;
+}
+
 .epp-group + .epp-group {
   margin-top: 1.25rem;
   padding-top: 1rem;

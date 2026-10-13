@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { FaBrain, FaBookmark, FaBuilding, FaClock, FaGlobeEurope, FaSearch } from 'react-icons/fa';
+import { FaBrain, FaBookmark, FaBuilding, FaSearch } from 'react-icons/fa';
 import AiWorkspaceLayout from '../../components/ai/AiWorkspaceLayout';
 import IntelligenceReport, { fmt } from '../../components/ai/IntelligenceReport';
 import LegalTitleEvidencePanel from '../../components/ai/LegalTitleEvidencePanel';
@@ -88,6 +88,13 @@ function investigationStages(decisionJob) {
   return decisionJob === 'LET_INVEST' ? LET_INVESTIGATION_STAGES : DEFAULT_INVESTIGATION_STAGES;
 }
 
+const RESIDENTIAL_GOAL_JOBS = new Set(['BUY', 'LET_INVEST', 'SELL']);
+
+function decisionJobFromSearch(params) {
+  const value = params.get('decisionJob');
+  return RESIDENTIAL_GOAL_JOBS.has(value) ? value : null;
+}
+
 const TABS = [
   { id: 'mine', label: 'My properties', icon: FaBuilding, hint: 'Properties you own or manage' },
   { id: 'saved', label: 'Saved properties', icon: FaBookmark, hint: 'Listings you saved while browsing' },
@@ -110,12 +117,13 @@ const PropertyIntelligence = () => {
   const initialPropertyId = searchParams.get('propertyId');
   const initialSubjectId = searchParams.get('subjectId');
   const initialTab = searchParams.get('tab');
+  const initialDecisionJob = decisionJobFromSearch(searchParams);
   const [activeTab, setActiveTab] = useState(
     initialTab === 'mine' ? 'mine' : initialTab === 'saved' ? 'saved' : 'browse'
   );
   const [browseCount, setBrowseCount] = useState(null);
   const [query, setQuery] = useState('');
-  const [ukQuery, setUkQuery] = useState('');
+  const [ukQuery, setUkQuery] = useState(() => searchParams.get('uk') || '');
   const [lookupResult, setLookupResult] = useState(null);
   const [ukSearching, setUkSearching] = useState(false);
   const [ukLookupError, setUkLookupError] = useState('');
@@ -136,13 +144,13 @@ const PropertyIntelligence = () => {
   const [searching, setSearching] = useState(false);
   const [financeScenario, setFinanceScenario] = useState({ ...EMPTY_FINANCE_SCENARIO });
   const [financeErrors, setFinanceErrors] = useState({});
-  const [decisionJob, setDecisionJob] = useState(null);
+  const [decisionJob, setDecisionJob] = useState(initialDecisionJob);
   const [lastSubmittedScenarioKey, setLastSubmittedScenarioKey] = useState(null);
   const [analysisId, setAnalysisId] = useState(null);
   const [baselineFinancePayload, setBaselineFinancePayload] = useState({});
   const [historyView, setHistoryView] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
-  const [browseExpanded, setBrowseExpanded] = useState(true);
+  const [browseExpanded, setBrowseExpanded] = useState(false);
   const [loadingPreviewId, setLoadingPreviewId] = useState(null);
   const [scenarioOpen, setScenarioOpen] = useState(false);
   const [propertyFactsAttributes, setPropertyFactsAttributes] = useState(null);
@@ -159,7 +167,9 @@ const PropertyIntelligence = () => {
   const resultsStartRef = useRef(null);
   const restoredResultsKeyRef = useRef(null);
   const [financeFocusField, setFinanceFocusField] = useState(null);
-  const [financeExpandedSection, setFinanceExpandedSection] = useState(null);
+  const [financeExpandedSection, setFinanceExpandedSection] = useState(
+    initialDecisionJob === 'LET_INVEST' ? 'property_rent' : null
+  );
 
   const loadProperties = useCallback(async (q = '', tab = activeTab) => {
     if (!isAuthenticated) return;
@@ -267,7 +277,6 @@ const PropertyIntelligence = () => {
     setSelectedSubjectId(null);
     setLinkedListing(null);
     setReport(null);
-    setDecisionJob(null);
     setError('');
     setPropertyFactsAttributes(null);
     resetFinanceScenario();
@@ -327,14 +336,12 @@ const PropertyIntelligence = () => {
     setAccessContext(null);
     setLinkedListing(null);
     setReport(null);
-    setDecisionJob(null);
     setHistory([]);
     resetFinanceScenario();
     ukLookupRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     try {
       const data = await lookupIntelligenceProperties(q);
       setLookupResult(data);
-      setBrowseExpanded(!(data?.internal?.length > 0));
       if (data?.external?.available === false) {
         setUkLookupError('');
       }
@@ -379,7 +386,6 @@ const PropertyIntelligence = () => {
     setSelectedId(null);
     setLinkedListing(null);
     setReport(null);
-    setDecisionJob(null);
     setError('');
     setHistory([]);
     setPropertyFactsAttributes(null);
@@ -408,7 +414,6 @@ const PropertyIntelligence = () => {
     setSelectedSubjectId(null);
     setLinkedListing(null);
     setReport(null);
-    setDecisionJob(null);
     setHistory([]);
     setPropertyFactsAttributes(null);
     resetFinanceScenario();
@@ -590,7 +595,6 @@ const PropertyIntelligence = () => {
 
   const isProfessional = accessContext?.accessLevel === 'professional_intelligence';
   const isExternal = accessContext?.relationship === 'external_lookup' || accessContext?.relationship === 'external_linked_listing';
-  const isLinkedListing = Boolean(linkedListing || accessContext?.linkedPropertyId);
   /** Exact subject selected/resolved — listing is optional evidence, not the gate. */
   const hasExactPropertySubject = computeHasExactPropertySubject({
     preview,
@@ -599,7 +603,7 @@ const PropertyIntelligence = () => {
   });
   const hasLookupMatches =
     (lookupResult?.internal?.length ?? 0) > 0 || (lookupResult?.external?.matches?.length ?? 0) > 0;
-  const showBrowseSection = browseExpanded || !hasLookupMatches;
+  const showBrowseSection = browseExpanded;
   const postcodeAreaMode = Boolean(lookupResult?.postcodeIntelligence?.success && !preview);
   const scrollToPropertyMatches = useCallback(() => {
     propertyMatchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -679,13 +683,19 @@ const PropertyIntelligence = () => {
           propertyType={sanitizedType}
           originLabel={originLabel}
           relationshipHint={relationshipHint}
-          uprn={accessContext?.uprn || preview?.uprn}
           onChangeProperty={changeProperty}
         />
 
         <p className="pi-confirm-boundary" data-testid="property-confirm-boundary">
-          This is the exact property you are about to analyse.
+          This is the property we'll investigate.
         </p>
+
+        {(accessContext?.uprn || preview?.uprn) ? (
+          <details className="pi-identity-details" data-testid="exact-identity-details">
+            <summary>Identity details</summary>
+            <p>Reference {accessContext?.uprn || preview?.uprn}</p>
+          </details>
+        ) : null}
 
         <PropertyFactsSummary
           facts={propertyFacts}
@@ -693,14 +703,6 @@ const PropertyIntelligence = () => {
           preview={preview}
           onAttributesChange={setPropertyFactsAttributes}
         />
-
-        {accessContext && (
-          <p className={`pi-access-badge pi-access-${accessContext.accessLevel}`}>
-            {isProfessional ? 'Professional intelligence' : 'Market intelligence'}
-            {accessContext.relationship === 'owner' ? ' · You manage this property' : ''}
-            {isLinkedListing && ' · Linked listing'}
-          </p>
-        )}
 
         {linkedListing && (
           <div className="pi-linked-listing">
@@ -763,7 +765,7 @@ const PropertyIntelligence = () => {
 
         {!decisionJob && (
           <p className="pi-choose-job-hint" data-testid="decision-job-required-hint">
-            Choose what you are assessing.
+            Choose one for this property.
           </p>
         )}
 
@@ -794,7 +796,9 @@ const PropertyIntelligence = () => {
                 ? 'Analysing…'
                 : scenarioStale
                   ? 'Recalculate to apply these changes'
-                  : 'Analyse Property'}
+                  : decisionJob === 'LET_INVEST'
+                    ? 'Investigate property'
+                    : 'Analyse Property'}
             </button>
           </div>
         ) : null}
@@ -849,7 +853,7 @@ const PropertyIntelligence = () => {
         )}
         {historyView && (
           <p className="pi-snapshot-banner" data-testid="results-snapshot-banner" role="status">
-            Viewing a saved snapshot — historical analysis, not a newly generated result.
+            Saved snapshot — historical analysis, not a newly generated result.
           </p>
         )}
         <PropertyHeader
@@ -928,22 +932,18 @@ const PropertyIntelligence = () => {
     );
   };
 
+  const findingProperty = !report && !preview;
+  const pageTitle = findingProperty ? 'Find a property' : '';
+  const pageSubtitle = findingProperty
+    ? (hasLookupMatches
+      ? 'Select the exact property.'
+      : 'What property would you like to investigate?')
+    : '';
+
   return (
     <AiWorkspaceLayout
-      title="Property Intelligence"
-      subtitle={
-        report
-          ? (historyView
-            ? 'Saved snapshot — historical analysis'
-            : (decisionJob === 'LET_INVEST'
-              ? 'LET / INVEST assessment'
-              : 'Assessment results'))
-          : hasLookupMatches && !preview
-            ? 'Select the exact property to continue.'
-            : preview
-              ? 'Confirm this property, then choose what you are assessing.'
-              : 'Understand a property before you make a decision.'
-      }
+      title={pageTitle}
+      subtitle={pageSubtitle}
     >
       {!isAuthenticated && (
         <div className="ai-empty-state">
@@ -956,27 +956,8 @@ const PropertyIntelligence = () => {
       )}
 
       {isAuthenticated && !report && !preview && (
-        <div className="pi-selector ai-panel pi-selector--workspace">
-          {!lookupResult && !preview && (
-            <div className="pi-landing-intro" data-testid="pi-landing-intro">
-              <p className="pi-landing-lead">
-                Start with a UK address or postcode — you do not need to own the listing.
-              </p>
-              <ol className="pi-step-rail" aria-label="How it works">
-                <li><span>1</span> Property</li>
-                <li><span>2</span> Decision</li>
-                <li><span>3</span> Intelligence</li>
-              </ol>
-            </div>
-          )}
-
-          <section className="pi-uk-lookup pi-uk-lookup--primary" aria-labelledby="pi-uk-lookup-heading" ref={ukLookupRef}>
-            <div className="pi-uk-lookup-header">
-              <FaGlobeEurope aria-hidden />
-              <div>
-                <h2 id="pi-uk-lookup-heading">Search by UK address or postcode</h2>
-              </div>
-            </div>
+        <div className="pi-selector pi-selector--workspace">
+          <section className="pi-uk-lookup pi-uk-lookup--primary" aria-label="Find a property" ref={ukLookupRef}>
             <form className="pi-uk-search-form" onSubmit={runUkLookup} noValidate>
               <input
                 type="text"
@@ -1021,15 +1002,6 @@ const PropertyIntelligence = () => {
                   </Link>
                 )}
               </div>
-            )}
-
-            {!ukSearching && lookupResult?.postcodeIntelligence?.success && (
-              <PostcodeIntelligencePanel
-                intelligence={lookupResult.postcodeIntelligence}
-                mode={preview ? 'secondary' : 'primary'}
-                hasExactMatches={hasLookupMatches}
-                onSelectProperty={scrollToPropertyMatches}
-              />
             )}
 
             <div
@@ -1112,7 +1084,7 @@ const PropertyIntelligence = () => {
                 </p>
                 <p>
                   Refine the address search (include building name, flat number, and postcode), or browse
-                  approved listings below. Area Context above is not a selected property.
+                  approved listings below. Area market context is not a selected property.
                 </p>
               </div>
             )}
@@ -1125,43 +1097,48 @@ const PropertyIntelligence = () => {
 
             {recentSubjects.length > 0 && !preview && (
               <div className="pi-lookup-section pi-recent-lookups">
-                <h3 className="pi-lookup-section-title">
-                  <FaClock aria-hidden /> Recent UK lookups
-                </h3>
-                <div className="pi-property-list">
+                <h3 className="pi-lookup-section-title">Recent properties</h3>
+                <div className="pi-recent-rows">
                   {recentSubjects.map((s) => (
                     <button
                       key={s.id}
                       type="button"
-                      className={`pi-property-option pi-external-option ${selectedSubjectId === s.id ? 'selected' : ''}`}
+                      className={`pi-recent-row ${selectedSubjectId === s.id ? 'selected' : ''}`}
                       onClick={() => selectRecentSubject(s.id)}
                     >
-                      <div className="pi-property-placeholder pi-external-icon" aria-hidden />
-                      <div>
-                        <strong>{s.address}</strong>
-                        <p className="ai-insight-meta" style={{ margin: 0 }}>
-                          {s.linkedPropertyId ? `Linked listing · ` : ''}
-                          {s.lastAccessedAt
-                            ? new Date(s.lastAccessedAt).toLocaleDateString()
-                            : 'Previously opened'}
-                        </p>
-                      </div>
+                      <strong>{s.address}</strong>
+                      <span>Continue</span>
                     </button>
                   ))}
                 </div>
               </div>
             )}
             </div>
+
+            {!ukSearching && lookupResult?.postcodeIntelligence?.success && (
+              <details className="pi-area-context-fold" data-testid="area-context-fold">
+                <summary>Area market context</summary>
+                <p className="pi-muted">
+                  Local market snapshot for this postcode. This is not the analysis of a specific property.
+                </p>
+                <PostcodeIntelligencePanel
+                  intelligence={lookupResult.postcodeIntelligence}
+                  mode={preview ? 'secondary' : 'primary'}
+                  hasExactMatches={hasLookupMatches}
+                  onSelectProperty={scrollToPropertyMatches}
+                />
+              </details>
+            )}
           </section>
 
-          {!showBrowseSection && hasLookupMatches && (
+          {!showBrowseSection && (
             <div className="pi-browse-collapsed">
               <button
                 type="button"
                 className="ai-btn ai-btn-ghost"
                 onClick={() => setBrowseExpanded(true)}
               >
-                Browse all platform listings{browseCount != null ? ` (${browseCount})` : ''}
+                Browse listings{browseCount != null ? ` (${browseCount})` : ''}
               </button>
             </div>
           )}
@@ -1192,7 +1169,6 @@ const PropertyIntelligence = () => {
                     setPreview(null);
                     setAccessContext(null);
                     setReport(null);
-                    setDecisionJob(null);
                     setHistory([]);
                     resetFinanceScenario();
                   }}
@@ -1335,7 +1311,19 @@ const PropertyIntelligence = () => {
                 handleFocusUnderwritingInput(key);
               }}
               onEditListing={handleEditListing}
+              afterPropertyCase={decisionJob === 'LET_INVEST' ? (
+                <WhatIfPanel
+                  preview={preview}
+                  report={report}
+                  propertyId={selectedId}
+                  subjectId={selectedSubjectId}
+                  analysisId={analysisId}
+                  baselinePayload={baselineFinancePayload}
+                  listingSubject={listingSubject}
+                />
+              ) : null}
             />
+            {decisionJob !== 'LET_INVEST' && (
             <WhatIfPanel
               preview={preview}
               report={report}
@@ -1345,6 +1333,7 @@ const PropertyIntelligence = () => {
               baselinePayload={baselineFinancePayload}
               listingSubject={listingSubject}
             />
+            )}
           </div>
         </div>
       )}

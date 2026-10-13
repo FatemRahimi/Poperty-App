@@ -18,7 +18,7 @@ describe('Exact property picker — Property Intelligence wiring', () => {
     expect(piSrc).toMatch(/hasLookupMatches && !preview/);
     expect(piSrc).toMatch(/selected-property-confirmation/);
     expect(piSrc).toMatch(/property-confirm-boundary/);
-    expect(piSrc).toMatch(/This is the exact property you are about to analyse/);
+    expect(piSrc).toMatch(/This is the property we'll investigate/);
   });
 
   test('postcode alone never auto-selects a subject', () => {
@@ -47,11 +47,11 @@ describe('Exact property picker — Property Intelligence wiring', () => {
   test('no-match state does not enter property workflow', () => {
     expect(piSrc).toMatch(/no-exact-property-matches/);
     expect(piSrc).toMatch(/No exact property matches found/);
-    expect(piSrc).toMatch(/Area Context above is not a selected property/);
+    expect(piSrc).toMatch(/Area market context is not a selected property/);
   });
 
   test('picker copy avoids provider jargon and UPRN-first identity', () => {
-    expect(pickerSrc).toMatch(/Select the property/);
+    expect(pickerSrc).toMatch(/Select the exact property/);
     expect(pickerSrc).toMatch(/Property matches/);
     expect(pickerSrc).toMatch(/UK address \/ unit matches/);
     expect(pickerSrc).not.toMatch(/PropertyData/);

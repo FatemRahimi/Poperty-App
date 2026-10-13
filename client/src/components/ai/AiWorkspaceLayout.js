@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { FaRobot, FaBars, FaTimes } from 'react-icons/fa';
-import { AI_NAV, AI_PLATFORM_TAGLINE, AI_PRODUCT_NAME } from '../../config/aiNavigation';
+import { AI_NAV, AI_PLATFORM_TAGLINE } from '../../config/aiNavigation';
 import { displayAiCredits, refreshAiCredits, subscribeAiCredits } from '../../services/aiCreditState';
 import { useAuth } from '../../context/AuthContext';
 import './AiWorkspaceLayout.css';
@@ -31,17 +31,14 @@ const AiWorkspaceLayout = ({ children, title, subtitle }) => {
         <button type="button" className="ai-sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle menu">
           {sidebarOpen ? <FaTimes /> : <FaBars />}
         </button>
-        <Link to="/ai-services" className="ai-workspace-brand">
+        <Link to="/ai-services" className="ai-workspace-brand" aria-label="Home">
           <FaRobot />
-          <span>{AI_PRODUCT_NAME}</span>
+          <span>Home</span>
         </Link>
         <Link to="/" className="ai-workspace-home-link">
-          ← Back to site
+          ← Back
         </Link>
         <div className="ai-workspace-topbar-meta">
-          {isAuthenticated && credits !== null && (
-            <span className="ai-credits-pill">Credits: {credits}</span>
-          )}
           {!isAuthenticated && (
             <Link to="/login" state={{ from: `${location.pathname}${location.search || ''}` }} className="ai-btn ai-btn-primary ai-btn-sm">
               Sign in
@@ -60,10 +57,9 @@ const AiWorkspaceLayout = ({ children, title, subtitle }) => {
           />
         )}
         <aside className={`ai-workspace-sidebar ${sidebarOpen ? 'open' : ''}`}>
-          <p className="ai-sidebar-tagline">{AI_PLATFORM_TAGLINE}</p>
-          {AI_NAV.map((section) => (
-            <div key={section.group} className="ai-nav-group">
-              <p className="ai-nav-group-label">{section.group}</p>
+          {AI_PLATFORM_TAGLINE ? <p className="ai-sidebar-tagline">{AI_PLATFORM_TAGLINE}</p> : null}
+          {AI_NAV.map((section) => {
+            const links = (
               <ul>
                 {section.items.map((item) => {
                   const Icon = item.icon;
@@ -85,8 +81,25 @@ const AiWorkspaceLayout = ({ children, title, subtitle }) => {
                   );
                 })}
               </ul>
-            </div>
-          ))}
+            );
+            if (section.disclosure) {
+              return (
+                <details key={section.group} className="ai-nav-more" data-testid="more-tools">
+                  <summary>{section.group}</summary>
+                  {links}
+                </details>
+              );
+            }
+            return (
+              <div key={section.group} className="ai-nav-group">
+                <p className="ai-nav-group-label">{section.group}</p>
+                {links}
+                {section.group === 'Account' && isAuthenticated && credits !== null && (
+                  <p className="ai-nav-credits" data-testid="sidebar-credits">Credits: {credits}</p>
+                )}
+              </div>
+            );
+          })}
         </aside>
 
         <main className="ai-workspace-main">

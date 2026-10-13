@@ -4,17 +4,17 @@ import './DecisionJobSelector.css';
 export const RESIDENTIAL_DECISION_JOBS = [
   {
     id: 'BUY',
-    label: 'Buy',
+    label: 'Buy as my home',
     hint: 'Purchase decision',
   },
   {
     id: 'LET_INVEST',
-    label: 'Let / Invest',
+    label: 'Buy as an investment',
     hint: 'Rental investment / landlord assessment',
   },
   {
     id: 'SELL',
-    label: 'Sell',
+    label: 'Sell this property',
     hint: 'Sale / pricing context',
   },
 ];
@@ -68,16 +68,12 @@ export default function DecisionJobSelector({ value, onChange, disabled = false 
       aria-labelledby="pi-job-selector-heading"
     >
       <h2 id="pi-job-selector-heading" className="pi-job-selector-heading">
-        What are you assessing?
+        What are you considering?
       </h2>
-      <p className="pi-job-selector-lead" id="pi-job-selector-lead">
-        Choose one decision for this exact property — not a property fact.
-      </p>
       <div
         className="pi-job-selector-grid"
         role="radiogroup"
         aria-labelledby="pi-job-selector-heading"
-        aria-describedby="pi-job-selector-lead"
         data-testid="decision-job-radiogroup"
       >
         {RESIDENTIAL_DECISION_JOBS.map((job, index) => {
@@ -105,7 +101,6 @@ export default function DecisionJobSelector({ value, onChange, disabled = false 
               </span>
               <span className="pi-job-option-copy">
                 <span className="pi-job-option-label">{job.label}</span>
-                <span className="pi-job-option-hint">{job.hint}</span>
                 {selected ? (
                   <span className="pi-job-option-selected-text">Selected</span>
                 ) : null}

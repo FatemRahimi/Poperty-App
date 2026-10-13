@@ -101,7 +101,7 @@ export function letCheckingItems(report, workspace) {
     intelligence: report?.decisionIntelligence,
     economics: letKeyEconomics(report, workspace),
     legalTitleDomain: report?.legalTitleDomain,
-  });
+  }).filter((row) => row?.source !== 'verify');
 }
 
 export function letCheckingCopy(row) {
@@ -146,14 +146,6 @@ export function letNextActions({ workspace, intelligence, limitations }) {
   (intelligence?.investigationPriorities || []).forEach((row) => {
     push({
       id: row.id,
-      title: row.title || row.label,
-      detail: row.explanation || null,
-      inputKey: row.inputKey || null,
-    });
-  });
-  (intelligence?.sensitivityDrivers || []).forEach((row) => {
-    push({
-      id: row.id || row.inputKey,
       title: row.title || row.label,
       detail: row.explanation || null,
       inputKey: row.inputKey || null,
