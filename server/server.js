@@ -1,4 +1,8 @@
 require("./config/loadEnv");
+const { trustLocalCa } = require("./config/trustLocalCa");
+if (trustLocalCa()) {
+  console.log("Local HTTPS scanning certificate trusted for outbound requests");
+}
 const http = require('http');
 const { Server } = require('socket.io');
 const app = require('./app');

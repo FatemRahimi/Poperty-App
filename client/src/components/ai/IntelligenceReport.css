@@ -1216,3 +1216,66 @@
   border-radius: 10px;
   background: rgba(34, 197, 94, 0.12);
 }
+
+.pi-property-case,
+.pi-deep-investigation {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.pi-case-block {
+  padding: 1rem 1.1rem;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  background: #0f172a;
+}
+
+.pi-case-kicker {
+  margin: 0.85rem 0 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #38bdf8;
+}
+
+.pi-case-block > .pi-case-kicker:first-child {
+  margin-top: 0;
+}
+
+.pi-case-address {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.3;
+}
+
+.pi-case-block h3,
+.pi-case-block h4 {
+  margin: 0 0 0.55rem;
+}
+
+.pi-case-block article {
+  margin: 0 0 0.75rem;
+}
+
+.pi-case-block article p,
+.pi-case-history {
+  margin: 0.25rem 0 0;
+}
+
+.pi-deep-group {
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  background: #0b1220;
+}
+
+.pi-deep-group > summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.pi-deep-group[open] > summary {
+  margin-bottom: 0.75rem;
+}
+

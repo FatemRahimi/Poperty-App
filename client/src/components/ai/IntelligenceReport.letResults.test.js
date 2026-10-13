@@ -58,21 +58,18 @@ function letReport({ workspace = {}, ...report } = {}) {
 }
 
 describe('LET / INVEST decision-first results IA (Step 5)', () => {
-  test('LET result leads with assessment context, not the fit score as the answer', () => {
-    const { container } = render(
-      <IntelligenceReport report={letReport()} />
+  test('LET result opens a property case instead of a landlord-fit hero', () => {
+    render(<IntelligenceReport report={letReport()} />);
+    const propertyCase = screen.getByTestId('property-case');
+    expect(propertyCase).toHaveTextContent('1 Test Street');
+    expect(screen.getByTestId('case-goal')).toHaveTextContent('Buy to let');
+    expect(screen.getByTestId('decision-summary-text')).toHaveTextContent(
+      'Fit is mixed because cash flow is negative while gross yield is assessed.'
     );
-    const hero = container.querySelector('.pi-report-hero');
-    const heading = hero.querySelector('h2');
-    const fit = screen.getByTestId('hero-landlord-fit');
-    expect(hero).toHaveClass('pi-report-hero--let');
-    expect(hero).toHaveTextContent('LET / INVEST assessment');
-    expect(heading).toHaveTextContent('Investment assessment');
-    expect(heading.compareDocumentPosition(fit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(fit).toHaveTextContent('58/100');
-    expect(fit).toHaveTextContent('not confidence');
-    expect(fit).not.toHaveTextContent(/buy|avoid|good investment/i);
-    expect(fit.querySelector('strong').textContent).not.toMatch(/confidence/i);
+    expect(propertyCase).not.toHaveTextContent('58/100');
+    expect(propertyCase).not.toHaveTextContent('Evidence strength');
+    expect(propertyCase).not.toHaveTextContent(/good investment|don't buy|bad investment|\bavoid\b|\bproceed\b/i);
+    expect(screen.queryByTestId('decision-matters')).not.toBeInTheDocument();
   });
 
   test('landlord fit stays visible and is not presented as confidence or full coverage', () => {
@@ -178,7 +175,7 @@ describe('LET / INVEST decision-first results IA (Step 5)', () => {
     expect(screen.getByTestId('workspace-metric-netYield')).toHaveTextContent('Not assessed');
     expect(screen.getByTestId('gross-yield-orientation-note')).toHaveTextContent(/early orientation/i);
     expect(screen.getByTestId('let-limitations')).toBeInTheDocument();
-    expect(screen.getByTestId('underwriting-input-vacancyAssumption')).toHaveTextContent('Your input');
+    expect(screen.getByTestId('underwriting-input-vacancyAssumption')).toHaveTextContent('Vacancy assumption');
   });
 
   test('scenario purchase price stays distinct from listing asking, and listing labels require provenance', () => {
@@ -273,15 +270,16 @@ describe('LET / INVEST decision-first results IA (Step 5)', () => {
         })}
       />
     );
-    const limitations = screen.getByTestId('let-limitations');
-    const why = screen.getByTestId('let-why');
+    const checking = screen.getByTestId('what-needs-checking');
+    const actions = screen.getByTestId('next-actions');
     const evidenceBtn = screen.getByRole('button', { name: /supporting evidence — financial and market/i });
-    expect(limitations.compareDocumentPosition(why) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(why.compareDocumentPosition(evidenceBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getAllByText(findingTitle)).toHaveLength(1);
+    expect(screen.getByTestId('what-matters').compareDocumentPosition(checking) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(checking.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(actions.compareDocumentPosition(evidenceBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId('what-matters')).toHaveTextContent(findingTitle);
     expect(screen.queryByTestId('decision-matters')).not.toBeInTheDocument();
     expect(screen.queryByTestId('decision-verify')).not.toBeInTheDocument();
-    expect(screen.getByTestId('let-why')).toHaveTextContent('Fit is mixed because cash flow is negative');
+    expect(screen.getByTestId('decision-summary')).toHaveTextContent('Fit is mixed because cash flow is negative');
     expect(container.textContent).not.toMatch(/Why it matters[\s\S]*What currently matters/);
   });
 
@@ -329,16 +327,17 @@ describe('LET / INVEST decision-first results IA (Step 5)', () => {
         })}
       />
     );
-    const limitations = screen.getByTestId('let-limitations');
-    expect(limitations).toHaveTextContent('Legal / title evidence is not assessed');
-    expect(limitations).toHaveTextContent('title register and title plan not supplied');
-    expect(limitations).toHaveTextContent('limitation, not a clean-title conclusion');
-    expect(limitations).not.toHaveTextContent('A property is not a title');
-    expect(limitations).not.toHaveTextContent('legal-title-foundation');
+    const checking = screen.getByTestId('what-needs-checking');
+    expect(checking).toHaveTextContent('Legal / title evidence is not assessed');
+    expect(checking).toHaveTextContent('title register and title plan not supplied');
+    expect(checking).toHaveTextContent('limitation, not a clean-title conclusion');
+    expect(checking).not.toHaveTextContent('A property is not a title');
+    expect(checking).not.toHaveTextContent('legal-title-foundation');
     expect(screen.queryByText(/legal score|clean title|solicitor/i)).not.toBeInTheDocument();
     const legalFold = screen.getByRole('button', { name: /Legal \/ title evidence/i });
     expect(legalFold).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByTestId('let-why').compareDocumentPosition(legalFold)
+    expect(screen.getByTestId('property-case').compareDocumentPosition(legalFold)
       & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId('deep-documents')).toContainElement(legalFold);
   });
 });

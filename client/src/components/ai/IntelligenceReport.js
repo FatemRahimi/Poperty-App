@@ -6,7 +6,9 @@ import { formatAssetClassLabel, formatClassificationStateLabel } from '../../Uti
 import { assessmentLabel } from '../../Utils/decisionWorkspaceDisplay';
 import { causeLabel, UNDERWRITING_SECTIONS } from '../../Utils/underwritingInputDisplay';
 import SubjectAttributeCompletionPanel from './SubjectAttributeCompletionPanel';
-import LetInvestResultsPanel from './LetInvestResultsPanel';
+import LetInvestPropertyCase, { LetInvestAnalysisHistory } from './LetInvestPropertyCase';
+import { DeepGate, DeepShell } from './LetInvestDeepInvestigation';
+import { LetInvestCalculationDetail, LetInvestSaleContext } from './LetInvestCalculationDetail';
 import { fitCoverage, reportHasListingProvenance } from '../../Utils/letResultsDisplay';
 import { legalTitleProvenanceLabel } from '../../Utils/legalEvidenceDisplay';
 
@@ -2527,6 +2529,9 @@ export default function IntelligenceReport({
   onEditListing = null,
   listingSubject,
   snapshotView = false,
+  analysisHistory = [],
+  onOpenAnalysis = null,
+  legalDocuments = null,
 }) {
   if (!report || typeof report !== 'object') {
     return (
@@ -2573,15 +2578,22 @@ export default function IntelligenceReport({
         </button>
         <span className="pi-export-hint"><FaFileDownload /> Use &quot;Save as PDF&quot; in the print dialog</span>
       </div>
-      <header className={`pi-report-hero${letDecisionFirst ? ' pi-report-hero--let' : ''}`}>
+      {letDecisionFirst && (
+        <LetInvestPropertyCase
+          report={report}
+          workspace={workspace}
+          listingSubject={hasListing}
+          snapshotView={snapshotView}
+          onFocusUnderwritingInput={onFocusUnderwritingInput}
+          onEditListing={onEditListing}
+        />
+      )}
+      {!letDecisionFirst && (
+      <header className="pi-report-hero">
         <div className="pi-report-hero-copy">
-          <p className="pi-report-kicker">
-            {letDecisionFirst ? 'LET / INVEST assessment' : 'Current assessment'}
-          </p>
+          <p className="pi-report-kicker">Current assessment</p>
           <h2>
-            {letDecisionFirst
-              ? 'Investment assessment'
-              : (report.property?.title || 'Property intelligence')}
+            {report.property?.title || 'Property intelligence'}
           </h2>
           <p className="pi-report-address">{report.property?.address}</p>
           <p className="pi-report-date">
@@ -2595,15 +2607,13 @@ export default function IntelligenceReport({
               analysis — not a newly generated result.
             </p>
           )}
-          {!letDecisionFirst && (
-            <div className="pi-report-labels">
+          <div className="pi-report-labels">
               {Object.entries(report.labels || {})
                 .filter(([, v]) => v !== null && v !== undefined && v !== '')
                 .map(([k, v]) => (
                   <span key={k} className="pi-chip">{v}</span>
                 ))}
-            </div>
-          )}
+          </div>
         </div>
         <div className="pi-report-hero-status">
           {showLandlordHero ? (
@@ -2640,25 +2650,17 @@ export default function IntelligenceReport({
           </div>
         </div>
       </header>
+      )}
 
-      {useWorkspace ? (
-        letDecisionFirst ? (
-          <LetInvestResultsPanel
-            report={report}
-            workspace={workspace}
-            listingSubject={listingSubject}
-            onFocusUnderwritingInput={onFocusUnderwritingInput}
-            onEditListing={onEditListing}
-          />
-        ) : (
+      {useWorkspace && !letDecisionFirst ? (
           <DecisionWorkspacePanel
             report={report}
             workspace={workspace}
             onFocusUnderwritingInput={onFocusUnderwritingInput}
             onEditListing={onEditListing}
           />
-        )
-      ) : (
+      ) : null}
+      {!useWorkspace && (
       <section
         className="pi-decision-overview"
         data-testid="decision-overview"
@@ -2699,6 +2701,15 @@ export default function IntelligenceReport({
         />
       )}
 
+      <DeepShell enabled={letDecisionFirst}>
+      <DeepGate enabled={letDecisionFirst} testId="deep-calculations" label="Calculations">
+      {letDecisionFirst && (
+        <LetInvestCalculationDetail
+          report={report}
+          workspace={workspace}
+          listingSubject={hasListing}
+        />
+      )}
       <ReportSection
         title="Supporting evidence — financial and market"
         badge="Calculated from this scenario"
@@ -2796,7 +2807,10 @@ export default function IntelligenceReport({
           </div>
         )}
       </ReportSection>
+      </DeepGate>
 
+      <DeepGate enabled={letDecisionFirst} testId="deep-comparables" label="Comparable transactions">
+      {letDecisionFirst && <LetInvestSaleContext workspace={workspace} />}
       {(sale?.success || pricePosition?.success) && (
       <ReportSection
         title="Price intelligence"
@@ -2912,7 +2926,9 @@ export default function IntelligenceReport({
           <p className="pi-muted">{rent?.message || 'Insufficient comparable data for a reliable rental estimate.'}</p>
         )}
       </ReportSection>
+      </DeepGate>
 
+      <DeepGate enabled={letDecisionFirst} testId="deep-evidence" label="Evidence">
       <section className="pi-evidence-group" data-testid="property-context-evidence">
         <h2 className="pi-block-heading">Property and context evidence</h2>
         <p className="pi-muted">
@@ -2924,13 +2940,31 @@ export default function IntelligenceReport({
         <PlanningDevelopmentSection report={report} />
         <EnvironmentEvidenceSection report={report} />
         <EnergyPhysicalEvidenceSection report={report} />
-        <LegalTitleEvidenceSection report={report} />
+        {letDecisionFirst && (
+          <SubjectAttributeCompletionPanel
+            report={report}
+            unresolved={workspace?.unresolved || []}
+          />
+        )}
+        {!letDecisionFirst && <LegalTitleEvidenceSection report={report} />}
         <SchoolsEducationSection report={report} />
         <ListedBuildingSection report={report} />
         <ConservationAreaSection report={report} />
         <Article4Section report={report} />
       </section>
+      </DeepGate>
 
+      {letDecisionFirst && (
+        <DeepGate enabled testId="deep-documents" label="Documents">
+          <LegalTitleEvidenceSection report={report} />
+          {legalDocuments}
+          <p className="pi-muted">
+            Uploading a document does not verify authenticity.
+          </p>
+        </DeepGate>
+      )}
+
+      <DeepGate enabled={letDecisionFirst} testId="deep-market" label="Market context">
       {(marketContext || areaDemand) && (
         <ReportSection
           title="Area market context"
@@ -2996,7 +3030,32 @@ export default function IntelligenceReport({
           )}
         </ReportSection>
       )}
+      </DeepGate>
 
+      <DeepGate enabled={letDecisionFirst} testId="deep-methodology" label="Methodology">
+      {letDecisionFirst && (
+        <div data-testid="let-methodology">
+          <p data-testid="let-invest-landlord-methodology">
+            Missing vacancy, operating-cost or mortgage inputs stay not assessed.
+          </p>
+          <div data-testid="hero-landlord-fit">
+            <small>Landlord fit</small>
+            <strong>{fitAssessed ? `${personalDecision.score}/100` : 'Not assessed'}</strong>
+            <span>Decision state — not purchase advice, not confidence</span>
+            {coverage.coverageLabel && (
+              <span data-testid="hero-fit-coverage">
+                {coverage.coverageLabel}
+                {coverage.partial ? ' — not all dimensions were assessed' : ''}
+              </span>
+            )}
+          </div>
+          <div data-testid="hero-evidence-strength">
+            <small>Evidence strength</small>
+            <strong>{report.confidence?.level || 'Not assessed'}</strong>
+            <span>Not the fit score</span>
+          </div>
+        </div>
+      )}
       <ReportSection title="Property overview" badge="Secondary narrative" defaultOpen={false}>
         <p className="pi-muted">
           Executive summary from the property-explanation layer. Decision Intelligence above is the
@@ -3019,7 +3078,12 @@ export default function IntelligenceReport({
         <ScoreBreakdown scores={report.scores} />
         <ConfidenceExplainer assessment={report.confidence?.assessment} />
       </ReportSection>
+      </DeepGate>
 
+      <DeepGate enabled={letDecisionFirst} testId="deep-history" label="Analysis history">
+      {letDecisionFirst && (
+        <LetInvestAnalysisHistory entries={analysisHistory} onOpen={onOpenAnalysis} />
+      )}
       {showEarlierModelHeuristic(report) && (
         <div data-testid="earlier-model-analysis">
           <ReportSection
@@ -3079,7 +3143,9 @@ export default function IntelligenceReport({
           </ReportSection>
         </div>
       )}
+      </DeepGate>
 
+      <DeepGate enabled={letDecisionFirst} testId="deep-sources" label="Sources">
       {report.professionalInsights?.marketingGaps?.length > 0 && (
         <ReportSection title="Listing & marketing insights" badge="Owner / agent" defaultOpen={false}>
           <p className="pi-muted">{report.professionalInsights.listingQualityNote}</p>
@@ -3098,6 +3164,8 @@ export default function IntelligenceReport({
           <p className="pi-muted">Missing fields: {report.dataQuality.missing.join(', ')}</p>
         )}
       </ReportSection>
+      </DeepGate>
+      </DeepShell>
 
       <footer className="pi-disclaimer">{report.disclaimer}</footer>
     </div>

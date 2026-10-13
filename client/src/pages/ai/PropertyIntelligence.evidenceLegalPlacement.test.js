@@ -236,10 +236,7 @@ describe('Property Intelligence evidence / legal placement (Step 6)', () => {
   });
 
   test('Step 5 hierarchy, Step 4 LET workspace, and Step 3 selector remain unchanged', () => {
-    expect(reportSrc).toMatch(/Investment assessment/);
-    expect(letPanelSrc.indexOf('Key economics')).toBeLessThan(letPanelSrc.indexOf('Risks, limitations and missing evidence'));
-    expect(letPanelSrc.indexOf('Risks, limitations and missing evidence')).toBeLessThan(letPanelSrc.indexOf('Why this assessment'));
-    expect(reportSrc).toMatch(/LetInvestResultsPanel/);
+    expect(reportSrc).toMatch(/LetInvestPropertyCase/);
     expect(reportSrc).toMatch(/title="Legal \/ title evidence"/);
     expect(reportSrc).toMatch(/legalTitleProvenanceLabel/);
     expect(letPanelSrc).toMatch(/legalTitleDomain: report\?\.legalTitleDomain/);

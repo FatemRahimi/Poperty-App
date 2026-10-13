@@ -62,7 +62,7 @@ import '../../components/ai/AiWorkspaceLayout.css';
 import '../../components/ai/IntelligenceReport.css';
 import './PropertyIntelligence.css';
 
-const STAGES = [
+const DEFAULT_INVESTIGATION_STAGES = [
   { id: 'collect', label: 'Collecting property data' },
   { id: 'enrichment', label: 'Loading external property intelligence' },
   { id: 'quality', label: 'Checking data quality' },
@@ -72,6 +72,21 @@ const STAGES = [
   { id: 'scoring', label: 'Assembling decision workspace' },
   { id: 'explanation', label: 'Preparing AI explanation' },
 ];
+
+const LET_INVESTIGATION_STAGES = [
+  { id: 'collect', label: 'Confirming the property' },
+  { id: 'enrichment', label: 'Checking property evidence' },
+  { id: 'quality', label: 'Checking what is already known' },
+  { id: 'valuation', label: 'Checking price evidence' },
+  { id: 'comparables', label: 'Checking rent evidence' },
+  { id: 'financial', label: 'Running the letting numbers' },
+  { id: 'scoring', label: 'Identifying what still needs checking' },
+  { id: 'explanation', label: 'Preparing the property case' },
+];
+
+function investigationStages(decisionJob) {
+  return decisionJob === 'LET_INVEST' ? LET_INVESTIGATION_STAGES : DEFAULT_INVESTIGATION_STAGES;
+}
 
 const TABS = [
   { id: 'mine', label: 'My properties', icon: FaBuilding, hint: 'Properties you own or manage' },
@@ -501,8 +516,9 @@ const PropertyIntelligence = () => {
     setError('');
     setFinanceErrors({});
 
+    const stageCount = investigationStages(decisionJob).length;
     stageTimer.current = setInterval(() => {
-      setStageIndex((i) => (i < STAGES.length - 1 ? i + 1 : i));
+      setStageIndex((i) => (i < stageCount - 1 ? i + 1 : i));
     }, 700);
 
     try {
@@ -542,7 +558,7 @@ const PropertyIntelligence = () => {
       }
     } finally {
       clearInterval(stageTimer.current);
-      setStageIndex(STAGES.length);
+    setStageIndex(investigationStages(decisionJob).length);
       setLoading(false);
     }
   };
@@ -841,7 +857,7 @@ const PropertyIntelligence = () => {
           propertyType={sanitizedType}
           originLabel={originLabel}
           relationshipHint={relationshipHint}
-          uprn={accessContext?.uprn || preview?.uprn}
+          uprn={decisionJob === 'LET_INVEST' ? null : (accessContext?.uprn || preview?.uprn)}
           onChangeProperty={changeProperty}
           compact
           sticky
@@ -1262,7 +1278,7 @@ const PropertyIntelligence = () => {
 
       {loading && (
         <div className="pi-loading-stages">
-          {STAGES.map((s, i) => (
+          {investigationStages(decisionJob).map((s, i) => (
             <div key={s.id} className={`pi-stage ${i < stageIndex ? 'done' : i === stageIndex ? 'active' : ''}`}>
               <span className="pi-stage-dot" />
               {s.label}
@@ -1304,6 +1320,16 @@ const PropertyIntelligence = () => {
               report={report}
               listingSubject={listingSubject}
               snapshotView={historyView}
+              analysisHistory={history}
+              onOpenAnalysis={loadHistoricalAnalysis}
+              legalDocuments={decisionJob === 'LET_INVEST' ? (
+                <LegalTitleEvidencePanel
+                  key={`legal-case-${selectedId || ''}-${selectedSubjectId || ''}`}
+                  enabled
+                  propertyId={selectedId}
+                  subjectId={selectedSubjectId}
+                />
+              ) : null}
               onFocusUnderwritingInput={(key) => {
                 setScenarioOpen(true);
                 handleFocusUnderwritingInput(key);

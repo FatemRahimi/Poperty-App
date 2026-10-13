@@ -11,8 +11,8 @@ describe('Property Intelligence LET results IA wiring (Step 5)', () => {
     path.join(__dirname, '../../components/ai/WhatIfPanel.js'),
     'utf8'
   );
-  const letPanelSrc = fs.readFileSync(
-    path.join(__dirname, '../../components/ai/LetInvestResultsPanel.js'),
+  const caseSrc = fs.readFileSync(
+    path.join(__dirname, '../../components/ai/LetInvestPropertyCase.js'),
     'utf8'
   );
   const step4Src = fs.readFileSync(
@@ -39,13 +39,11 @@ describe('Property Intelligence LET results IA wiring (Step 5)', () => {
     expect(whatIfSrc).toMatch(/pi-whatif--exploration/);
   });
 
-  test('LET results panel is decision-first and does not duplicate DI findings', () => {
-    expect(reportSrc).toMatch(/LetInvestResultsPanel/);
+  test('LET results panel is a property case and does not duplicate the decision-intelligence block', () => {
+    expect(reportSrc).toMatch(/LetInvestPropertyCase/);
     expect(reportSrc).toMatch(/letDecisionFirst/);
     expect(reportSrc).toMatch(/showDecisionIntelligence && !letDecisionFirst/);
-    expect(letPanelSrc).toMatch(/Key economics/);
-    expect(letPanelSrc).toMatch(/Why this assessment/);
-    expect(letPanelSrc).toMatch(/decision-intelligence-findings/);
+    expect(reportSrc).not.toMatch(/LetInvestResultsPanel/);
   });
 
   test('Step 4 workspace helper remains the listing-evidence helper for pre-analysis', () => {
@@ -66,11 +64,8 @@ describe('Property Intelligence LET results IA wiring (Step 5)', () => {
     expect(piSrc.indexOf('data-testid="results-start"')).toBeLessThan(
       piSrc.indexOf('data-testid="decision-first-results"')
     );
-    expect(letPanelSrc.indexOf('Key economics')).toBeLessThan(
-      letPanelSrc.indexOf('Risks, limitations and missing evidence')
-    );
-    expect(letPanelSrc.indexOf('Risks, limitations and missing evidence')).toBeLessThan(
-      letPanelSrc.indexOf('Why this assessment')
-    );
+    expect(caseSrc.indexOf('What matters')).toBeLessThan(caseSrc.indexOf('Key numbers'));
+    expect(caseSrc.indexOf('Key numbers')).toBeLessThan(caseSrc.indexOf('What needs checking'));
+    expect(caseSrc.indexOf('What needs checking')).toBeLessThan(caseSrc.indexOf('Next actions'));
   });
 });
