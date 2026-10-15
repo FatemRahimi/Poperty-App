@@ -4,6 +4,7 @@
  */
 
 import { legalTitleLimitationItems } from './legalEvidenceDisplay';
+import { yieldBasisText } from './decisionDossierDisplay';
 
 export const LET_ECONOMIC_IDS = Object.freeze([
   'grossYield',
@@ -115,19 +116,22 @@ export function rentEvidenceRows(report, hasListing) {
 
 export function rentBasisCalloutText(rentBasis) {
   if (!rentBasis) return null;
+  let legacy = null;
   if (rentBasis.kind === 'MARKET') {
     const extra = rentBasis.marketSubstitutedForMissingListing
       ? ' Area asking-rent evidence was used where listing rent is missing — not property-specific achievable or recommended rent.'
       : ' This is not property-specific achievable or recommended rent.';
-    return `Rent basis for yield metrics: MARKET — area asking-rent context.${extra}`;
+    legacy = `Rent basis for yield metrics: MARKET — area asking-rent context.${extra}`;
+  } else if (rentBasis.kind === 'LISTING') {
+    legacy = 'Rent basis for yield metrics: LISTING — listing-supplied rent.';
+  } else if (rentBasis.kind === 'SCENARIO') {
+    legacy = 'Rent basis for yield metrics: SCENARIO — your rent assumption.';
+  } else if (rentBasis.label) {
+    legacy = `Rent basis for yield metrics: ${rentBasis.label}.`;
   }
-  if (rentBasis.kind === 'LISTING') {
-    return 'Rent basis for yield metrics: LISTING — listing-supplied rent.';
-  }
-  if (rentBasis.kind === 'SCENARIO') {
-    return 'Rent basis for yield metrics: SCENARIO — your rent assumption.';
-  }
-  return rentBasis.label ? `Rent basis for yield metrics: ${rentBasis.label}.` : null;
+  const canonical = yieldBasisText(rentBasis);
+  if (legacy && canonical && !legacy.includes(canonical)) return `${legacy} ${canonical}`;
+  return legacy || (canonical ? `Rent basis for yield metrics: ${canonical}` : null);
 }
 
 function presentedOrWorkspace(presentedField, workspaceItem, id, label) {

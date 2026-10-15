@@ -1762,7 +1762,9 @@ describe('IntelligenceReport residential decision workspace', () => {
       />
     );
     expect(screen.getByTestId('decision-workspace')).toBeInTheDocument();
-    expect(screen.getByTestId('decision-context-headline')).toHaveTextContent('BUY');
+    expect(screen.getByTestId('decision-context-headline')).toHaveTextContent('Purchase conclusion not available yet');
+    expect(screen.getByTestId('purchase-conclusion')).toHaveTextContent('Purchase conclusion not available yet');
+    expect(screen.getByTestId('hero-decision-job')).not.toHaveTextContent(/^Buy$/);
     expect(screen.getByTestId('buy-no-landlord-conclusion')).toBeInTheDocument();
     expect(screen.queryByTestId('hero-landlord-fit')).not.toBeInTheDocument();
     expect(screen.queryByTestId('decision-intelligence')).not.toBeInTheDocument();

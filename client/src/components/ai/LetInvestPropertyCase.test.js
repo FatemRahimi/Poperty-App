@@ -225,7 +225,8 @@ describe('LET / INVEST property case', () => {
     );
     expect(screen.queryByTestId('property-case')).not.toBeInTheDocument();
     expect(screen.getByTestId('decision-workspace')).toBeInTheDocument();
-    expect(screen.getByTestId('hero-decision-job')).toHaveTextContent('Buy');
+    expect(screen.getByTestId('hero-decision-job')).toHaveTextContent('Purchase conclusion not available yet');
+    expect(screen.getByTestId('hero-decision-job')).toHaveAttribute('data-decision-job', 'BUY');
 
     rerender(
       <IntelligenceReport

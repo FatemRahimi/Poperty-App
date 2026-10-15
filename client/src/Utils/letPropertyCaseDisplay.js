@@ -3,6 +3,7 @@
  * Reads existing report fields only. Does not score, rank, or invent evidence.
  */
 
+import { decisionRelevantPriorities, yieldBasisText } from './decisionDossierDisplay';
 import {
   letKeyEconomics,
   letLimitationItems,
@@ -87,12 +88,33 @@ export function letCaseKeyNumbers(report, workspace, hasListing) {
   if (rent?.value) {
     numbers.push({ id: 'rentAssumption', label: 'Rent assumption', value: rent.value });
   }
+  const basisText = yieldBasisText(report?.investment?.presented?.rentBasis);
   letKeyEconomics(report, workspace).forEach((item) => {
     const value = assessedEconomicValue(item);
     if (!value) return;
-    numbers.push({ id: item.id, label: item.label, value });
+    const isYield = item.id === 'grossYield' || item.id === 'netYield';
+    numbers.push({
+      id: item.id,
+      label: item.label,
+      value,
+      basisText: isYield ? basisText : null,
+    });
   });
   return numbers;
+}
+
+export function letWithheldEconomics(report, workspace) {
+  return letKeyEconomics(report, workspace)
+    .filter((item) => item && item.available === false)
+    .map((item) => ({
+      id: item.id,
+      label: item.label,
+      reason: item.reason || item.howToResolve || 'Not assessed. Missing inputs are not zero.',
+    }));
+}
+
+export function letInvestigationLead(report) {
+  return decisionRelevantPriorities(report?.decisionIntelligence?.investigationPriorities);
 }
 
 export function letCheckingItems(report, workspace) {

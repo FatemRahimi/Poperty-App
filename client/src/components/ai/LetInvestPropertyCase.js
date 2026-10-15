@@ -7,8 +7,10 @@ import {
   letCheckingCopy,
   letCheckingItems,
   letDecisionSummary,
+  letInvestigationLead,
   letNextActions,
   letWhatMatters,
+  letWithheldEconomics,
   orderFindingsForCase,
 } from '../../Utils/letPropertyCaseDisplay';
 
@@ -55,6 +57,8 @@ export default function LetInvestPropertyCase({
   onEditListing = null,
 }) {
   const summary = letDecisionSummary(report);
+  const investigation = letInvestigationLead(report);
+  const withheld = letWithheldEconomics(report, workspace);
   const findings = orderFindingsForCase(letCaseFindings(report, workspace));
   const matters = letWhatMatters(findings);
   const numbers = letCaseKeyNumbers(report, workspace, listingSubject);
@@ -91,9 +95,31 @@ export default function LetInvestPropertyCase({
       </header>
 
       <section className="pi-case-block" data-testid="decision-summary" aria-labelledby="case-summary-heading">
-        <h3 id="case-summary-heading">Decision summary</h3>
+        <h3 id="case-summary-heading">Decision status</h3>
         <p data-testid="decision-summary-text">{summary.text}</p>
         <p className="pi-muted">{summary.notAdvice}</p>
+        {investigation.length > 0 && (
+          <div data-testid="let-investigation">
+            <h4 className="pi-subheading">Investigate next</h4>
+            <ol>
+              {investigation.map((item) => (
+                <li key={item.id} data-testid={`let-priority-${item.id}`}>
+                  <strong>{item.title}</strong>
+                  {item.explanation ? <p>{item.explanation}</p> : null}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+        {withheld.length > 0 && (
+          <ul data-testid="withheld-metrics">
+            {withheld.map((row) => (
+              <li key={row.id} data-testid={`withheld-${row.id}`}>
+                <strong>{row.label}:</strong> Not assessed. {row.reason}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="pi-case-block" data-testid="what-matters" aria-labelledby="case-matters-heading">
@@ -117,6 +143,9 @@ export default function LetInvestPropertyCase({
               <div key={item.id} className="pi-metric-tile pi-metric-tile--assessed" data-testid={`case-metric-${item.id}`}>
                 <small>{item.label}</small>
                 <strong>{item.value}</strong>
+                {item.basisText ? (
+                  <em data-testid={`yield-rent-basis-${item.id}`}>{item.basisText}</em>
+                ) : null}
               </div>
             ))}
           </div>

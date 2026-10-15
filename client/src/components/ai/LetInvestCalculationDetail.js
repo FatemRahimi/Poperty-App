@@ -8,6 +8,7 @@ import {
   rentBasisCalloutText,
   rentEvidenceRows,
 } from '../../Utils/letResultsDisplay';
+import { yieldBasisText } from '../../Utils/decisionDossierDisplay';
 
 function metricText(item) {
   if (!item?.available) return 'Not assessed';
@@ -28,6 +29,7 @@ export function LetInvestCalculationDetail({ report, workspace, listingSubject }
   const priceRows = purchasePriceBasisRows(report, listingSubject);
   const rentRows = rentEvidenceRows(report, listingSubject);
   const rentCallout = rentBasisCalloutText(report?.investment?.presented?.rentBasis);
+  const basisText = yieldBasisText(report?.investment?.presented?.rentBasis);
 
   return (
     <div data-testid="let-calculation-detail">
@@ -64,6 +66,9 @@ export function LetInvestCalculationDetail({ report, workspace, listingSubject }
                 : item.label}
             </small>
             <strong>{metricText(item)}</strong>
+            {(item.id === 'grossYield' || item.id === 'netYield') && basisText ? (
+              <em data-testid={`yield-rent-basis-${item.id}`}>{basisText}</em>
+            ) : null}
             {!item.available && item.howToResolve ? <em>{item.howToResolve}</em> : null}
             {item.id === 'grossYield' && earlyGrossYield && item.available ? (
               <em data-testid="gross-yield-orientation-note">

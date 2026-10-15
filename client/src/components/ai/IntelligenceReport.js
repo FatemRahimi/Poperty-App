@@ -10,6 +10,8 @@ import LetInvestPropertyCase, { LetInvestAnalysisHistory } from './LetInvestProp
 import { DeepGate, DeepShell } from './LetInvestDeepInvestigation';
 import { LetInvestCalculationDetail, LetInvestSaleContext } from './LetInvestCalculationDetail';
 import { fitCoverage, reportHasListingProvenance } from '../../Utils/letResultsDisplay';
+import { purchaseConclusionText, yieldBasisText } from '../../Utils/decisionDossierDisplay';
+import OnePropertyDossier from './OnePropertyDossier';
 import { legalTitleProvenanceLabel } from '../../Utils/legalEvidenceDisplay';
 
 const fmt = (n) => (n != null && !Number.isNaN(Number(n)) ? `£${Number(n).toLocaleString()}` : '—');
@@ -41,13 +43,15 @@ const MISSING_LABELS = {
   mortgageTermYears: 'Mortgage term',
 };
 
-function PresentedMetric({ label, field, format = fmt, testId }) {
+function PresentedMetric({ label, field, format = fmt, testId, basisText = null }) {
   const assessed = Boolean(field?.available);
   const displayLabel = field?.basis === 'MARKET_RENT' ? 'Market-rent-based gross yield' : label;
+  const showBasis = basisText && (testId === 'metric-grossYield' || testId === 'metric-netYield');
   return (
     <div className={`pi-metric-tile ${assessed ? 'pi-metric-tile--assessed' : 'pi-metric-tile--missing'}`} data-testid={testId}>
       <small>{displayLabel}</small>
       <strong>{assessed ? format(field.value) : 'Not assessed'}</strong>
+      {showBasis ? <em data-testid={`yield-rent-basis-${testId}`}>{basisText}</em> : null}
       {assessed ? <em>Calculated result</em> : (field?.reason && <em>{field.reason}</em>)}
     </div>
   );
@@ -2041,7 +2045,10 @@ function LandlordDecisionSection({ decision }) {
           <em>From estimate confidence — not the fit score</em>
         </div>
         {outcomeLabel && (
-          <div className="pi-metric-tile" data-testid="landlord-outcome">
+          <div
+            className="pi-metric-tile"
+            data-testid={decision.profile === 'buyer_general' ? 'preference-fit-outcome' : 'landlord-outcome'}
+          >
             <small>Fit outcome</small>
             <strong>{outcomeLabel}</strong>
           </div>
@@ -2235,15 +2242,28 @@ function DecisionWorkspacePanel({ report, workspace, onFocusUnderwritingInput = 
   const contextEvidence = Array.isArray(workspace.contextEvidence) ? workspace.contextEvidence : [];
   const legacy = Boolean(workspace.legacySnapshot || workspace.unspecifiedCompatibility);
   const rentBasis = report?.investment?.presented?.rentBasis;
+  const basisText = yieldBasisText(rentBasis);
   const earlyGrossYield = job === 'LET_INVEST' && deeperLetUnderwritingIncomplete(key);
+  const preferenceFitItem = job === 'BUY'
+    ? key.find((item) => item.id === 'buyer_general_fit')
+    : null;
+  const signalItems = preferenceFitItem
+    ? key.filter((item) => item.id !== 'buyer_general_fit')
+    : key;
+  const buyConclusion = job === 'BUY' ? purchaseConclusionText(report?.buyDecision) : null;
 
   return (
     <div className="pi-decision-workspace" data-testid="decision-workspace">
       <section className="pi-workspace-context pi-workspace-decision" data-testid="decision-context">
         <p className="pi-report-kicker">Property decision</p>
         <h2 data-testid="decision-context-headline">
-          {workspace.copy?.headline || 'You are assessing this property'}
+          {buyConclusion || workspace.copy?.headline || 'You are assessing this property'}
         </h2>
+        {job === 'BUY' && (
+          <p className="pi-muted" data-testid="selected-decision-job" data-decision-job="BUY">
+            Selected goal: live in this property.
+          </p>
+        )}
         {workspace.copy?.notAdvice ? (
           <p className="pi-muted pi-workspace-one-liner">{workspace.copy.notAdvice}</p>
         ) : null}
@@ -2255,10 +2275,14 @@ function DecisionWorkspacePanel({ report, workspace, onFocusUnderwritingInput = 
         )}
       </section>
 
+      {job === 'BUY' && (
+        <OnePropertyDossier buyDecision={report.buyDecision} />
+      )}
+
       <section className="pi-workspace-block pi-workspace-signals" data-testid="key-intelligence">
         <h3>Key signals</h3>
         <div className="pi-metric-grid">
-          {key.map((item) => (
+          {signalItems.map((item) => (
             <div
               key={item.id}
               className={workspaceTileClassName(item, { earlyGrossYield })}
@@ -2266,6 +2290,9 @@ function DecisionWorkspacePanel({ report, workspace, onFocusUnderwritingInput = 
             >
               <small>{formatWorkspaceMetricLabel(item, { earlyGrossYield })}</small>
               <strong>{formatWorkspaceValue(item)}</strong>
+              {(item.id === 'grossYield' || item.id === 'netYield') && basisText ? (
+                <em data-testid={`yield-rent-basis-${item.id}`}>{basisText}</em>
+              ) : null}
               <AssessmentBadge state={item.state} />
               {item.id === 'grossYield' && earlyGrossYield && item.available && (
                 <em data-testid="gross-yield-orientation-note">
@@ -2303,6 +2330,24 @@ function DecisionWorkspacePanel({ report, workspace, onFocusUnderwritingInput = 
             </div>
           ))}
         </div>
+        {preferenceFitItem && (
+          <section data-testid="preference-fit">
+            <h4 className="pi-subheading">Preference fit</h4>
+            <p className="pi-muted">
+              This compares the listing with stated living preferences. It is not a purchase conclusion.
+            </p>
+            <div className="pi-metric-grid">
+              <div
+                className={workspaceTileClassName(preferenceFitItem)}
+                data-testid={`workspace-metric-${preferenceFitItem.id}`}
+              >
+                <small>{preferenceFitItem.label || 'Preference fit'}</small>
+                <strong>{formatWorkspaceValue(preferenceFitItem)}</strong>
+                <AssessmentBadge state={preferenceFitItem.state} />
+              </div>
+            </div>
+          </section>
+        )}
         {job === 'LET_INVEST' && rentBasis?.label && (
           <div className="pi-rent-basis-callout" data-testid="rent-basis-disclosure">
             <strong>Rent basis for yield metrics:</strong>{' '}
@@ -2336,7 +2381,7 @@ function DecisionWorkspacePanel({ report, workspace, onFocusUnderwritingInput = 
         )}
         {job === 'BUY' && (
           <p className="pi-muted" data-testid="buy-no-landlord-conclusion">
-            Landlord yield, cash flow and landlord fit are not Buy conclusions.
+            Landlord yield, cash flow and landlord fit are not purchase conclusions.
           </p>
         )}
         {job === 'SELL' && (
@@ -2351,7 +2396,7 @@ function DecisionWorkspacePanel({ report, workspace, onFocusUnderwritingInput = 
         )}
         {report.personalDecision?.profile === 'buyer_general' && (
           <details className="pi-workspace-pd" data-testid="buyer-personal-decision-details">
-            <summary>Owner-occupier dimensions</summary>
+            <summary>Preference fit</summary>
             <LandlordDecisionSection decision={report.personalDecision} />
           </details>
         )}
@@ -2631,10 +2676,20 @@ export default function IntelligenceReport({
               )}
             </div>
           ) : (
-            <div className="pi-report-hero-fit" data-testid="hero-decision-job">
-              <small>Decision</small>
-              <strong>{decisionJob === 'BUY' ? 'Buy' : decisionJob === 'SELL' ? 'Sell' : decisionJob}</strong>
-              <span>User intent — not a property fact</span>
+            <div className="pi-report-hero-fit" data-testid="hero-decision-job" data-decision-job={decisionJob}>
+              <small>{decisionJob === 'BUY' ? 'Purchase decision' : 'Decision'}</small>
+              <strong>
+                {decisionJob === 'BUY'
+                  ? purchaseConclusionText(report.buyDecision)
+                  : decisionJob === 'SELL'
+                    ? 'Sell'
+                    : decisionJob}
+              </strong>
+              <span>
+                {decisionJob === 'BUY'
+                  ? 'Selected goal: live in this property.'
+                  : 'User intent — not a property fact'}
+              </span>
             </div>
           )}
           <div className="pi-report-hero-score" data-testid="hero-evidence-strength">
@@ -2789,9 +2844,9 @@ export default function IntelligenceReport({
             {inv.presented ? (
               <>
                 <div className="pi-metric-grid">
-                  <PresentedMetric label="Gross yield" field={inv.presented.grossYield} format={fmtPct} testId="metric-grossYield" />
+                  <PresentedMetric label="Gross yield" field={inv.presented.grossYield} format={fmtPct} testId="metric-grossYield" basisText={yieldBasisText(inv.presented.rentBasis)} />
                   <PresentedMetric label="NOI" field={inv.presented.noi} testId="metric-noi" />
-                  <PresentedMetric label="Net yield" field={inv.presented.netYield} format={fmtPct} testId="metric-netYield" />
+                  <PresentedMetric label="Net yield" field={inv.presented.netYield} format={fmtPct} testId="metric-netYield" basisText={yieldBasisText(inv.presented.rentBasis)} />
                   <PresentedMetric label="Monthly cash flow" field={inv.presented.monthlyCashFlow} testId="metric-cashFlow" />
                   <PresentedMetric label="DSCR" field={inv.presented.dscr} format={(n) => n} testId="metric-dscr" />
                 </div>
