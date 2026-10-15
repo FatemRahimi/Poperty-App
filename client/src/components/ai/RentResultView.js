@@ -121,6 +121,7 @@ export default function RentResultView({ result }) {
       {Array.isArray(result.priceSensitivity) && result.priceSensitivity.length > 0 && (
         <div className="ai-panel">
           <h2>Price sensitivity</h2>
+          <p>Scenario assumption. Not an observed rent and not demand.</p>
           <table className="ai-data-table">
             <thead>
               <tr>

@@ -289,13 +289,13 @@ function buildBuyWorkspace(report) {
     comparableSoldEvidenceItem(report?.marketIntelligence?.comparableSoldEvidence),
     {
       id: 'buyer_general_fit',
-      label: 'Owner-occupier fit',
+      label: 'Owner-occupier preference fit',
       kind: 'personalDecision',
       state: pd?.available ? KERNEL_ASSESSMENT.ASSESSED : KERNEL_ASSESSMENT.NOT_ASSESSED,
       available: Boolean(pd?.available),
       value: pd?.available ? pd.score : null,
       display: pd,
-      whyItMatters: 'Existing buyer_general suitability against stated living requirements. Not purchase advice and not a buy score.',
+      whyItMatters: 'Preference fit against stated living requirements. Not a recommendation to buy, not income affordability, and not a buy score.',
       howToResolve: pd?.available
         ? null
         : (pd?.unavailableReason || 'Many owner-occupier dimensions stay not assessed until preferences or evidence exist.'),

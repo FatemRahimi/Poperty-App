@@ -283,6 +283,49 @@ const RENT_BASIS = Object.freeze({
   NONE: 'NONE',
 });
 
+const CANONICAL_RENT_BASIS = Object.freeze({
+  ACHIEVED_RENT: 'ACHIEVED_RENT',
+  LISTING_ASKING_RENT: 'LISTING_ASKING_RENT',
+  AREA_ASKING_RENT_ESTIMATE: 'AREA_ASKING_RENT_ESTIMATE',
+  USER_SCENARIO_RENT: 'USER_SCENARIO_RENT',
+  UNKNOWN: 'UNKNOWN',
+});
+
+const CANONICAL_RENT_DETAIL = Object.freeze({
+  [RENT_BASIS.SCENARIO]: Object.freeze({
+    canonicalBasis: CANONICAL_RENT_BASIS.USER_SCENARIO_RENT,
+    evidenceClass: 'scenario',
+    limitation: 'Yield uses a user scenario rent, not achieved rent.',
+  }),
+  [RENT_BASIS.LISTING]: Object.freeze({
+    canonicalBasis: CANONICAL_RENT_BASIS.LISTING_ASKING_RENT,
+    evidenceClass: 'asking',
+    limitation: 'Yield uses asking rent, not achieved rent.',
+  }),
+  [RENT_BASIS.MARKET]: Object.freeze({
+    canonicalBasis: CANONICAL_RENT_BASIS.AREA_ASKING_RENT_ESTIMATE,
+    evidenceClass: 'estimate',
+    limitation: 'Yield uses an area asking-rent estimate, not this property\'s asking rent and not achieved rent.',
+  }),
+  [RENT_BASIS.NONE]: Object.freeze({
+    canonicalBasis: CANONICAL_RENT_BASIS.UNKNOWN,
+    evidenceClass: 'unknown',
+    limitation: null,
+  }),
+});
+
+function finishRentBasis(row, { achievedRentKnown = false } = {}) {
+  const detail = CANONICAL_RENT_DETAIL[row.kind] || CANONICAL_RENT_DETAIL[RENT_BASIS.NONE];
+  return {
+    ...row,
+    canonicalBasis: detail.canonicalBasis,
+    evidenceClass: detail.evidenceClass,
+    limitation: detail.limitation,
+    achievedRentKnown: Boolean(achievedRentKnown),
+    askingIsNotAchieved: detail.canonicalBasis !== CANONICAL_RENT_BASIS.ACHIEVED_RENT,
+  };
+}
+
 const FINANCING_KIND = Object.freeze({
   UNKNOWN: 'UNKNOWN',
   EXPLICIT_MORTGAGE: 'EXPLICIT_MORTGAGE',
@@ -572,6 +615,7 @@ function resolveRentBasis({
   listingMonthlyRent = null,
   marketRent = null,
   scenarioExpectedRent = null,
+  achievedRentKnown = false,
 } = {}) {
   const listing = parseCanonicalNumber(listingMonthlyRent);
   const market = parseCanonicalNumber(marketRent);
@@ -580,8 +624,9 @@ function resolveRentBasis({
   const marketUsable = market.state === NUMERIC_STATES.POSITIVE_VALUE;
   const scenarioUsable = scenario.state === NUMERIC_STATES.POSITIVE_VALUE;
 
+  const known = { achievedRentKnown };
   if (scenarioUsable) {
-    return {
+    return finishRentBasis({
       kind: RENT_BASIS.SCENARIO,
       selectedRent: scenario.value,
       listingMonthlyRent: listingUsable ? listing.value : listing.state === NUMERIC_STATES.EXPLICIT_ZERO ? 0 : null,
@@ -591,10 +636,10 @@ function resolveRentBasis({
       label: 'SCENARIO_RENT',
       expectedRentIsNotMarketRent: true,
       expectedRentIsNotListingRent: true,
-    };
+    }, known);
   }
   if (listingUsable) {
-    return {
+    return finishRentBasis({
       kind: RENT_BASIS.LISTING,
       selectedRent: listing.value,
       listingMonthlyRent: listing.value,
@@ -604,10 +649,10 @@ function resolveRentBasis({
       label: 'LISTING_RENT',
       expectedRentIsNotMarketRent: true,
       expectedRentIsNotListingRent: false,
-    };
+    }, known);
   }
   if (marketUsable) {
-    return {
+    return finishRentBasis({
       kind: RENT_BASIS.MARKET,
       selectedRent: market.value,
       listingMonthlyRent: listing.state === NUMERIC_STATES.EXPLICIT_ZERO ? 0 : null,
@@ -617,9 +662,9 @@ function resolveRentBasis({
       label: 'MARKET_RENT',
       expectedRentIsNotMarketRent: false,
       expectedRentIsNotListingRent: true,
-    };
+    }, known);
   }
-  return {
+  return finishRentBasis({
     kind: RENT_BASIS.NONE,
     selectedRent: null,
     listingMonthlyRent: listing.state === NUMERIC_STATES.EXPLICIT_ZERO ? 0 : null,
@@ -629,7 +674,7 @@ function resolveRentBasis({
     label: null,
     expectedRentIsNotMarketRent: true,
     expectedRentIsNotListingRent: true,
-  };
+  }, known);
 }
 
 function resolvePurchasePriceBasis({ listingAskingPrice = null, scenarioPurchasePrice = null } = {}) {
@@ -1317,6 +1362,7 @@ module.exports = {
   METRIC_DEPENDENCIES,
   NUMERIC_STATES,
   RENT_BASIS,
+  CANONICAL_RENT_BASIS,
   FINANCING_KIND,
   ANALYSE_FINANCE_REQUEST_EXAMPLE,
   parseCanonicalNumber,

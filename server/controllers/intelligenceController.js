@@ -6,6 +6,7 @@ const {
   sensitivityAnalysis,
   calculateInvestmentScore,
 } = require('../services/ai/financialEngine');
+const { withholdDefaultedGrowth, withholdScenarioGrowth } = require('../services/ai/presentationSafety');
 const { analyseRent } = require('../services/ai/rentIntelligenceService');
 const {
   getPropertyIntelligence,
@@ -287,8 +288,19 @@ const analyseInvestment = async (req, res) => {
       });
     }
 
-    const metrics = calculateInvestmentMetrics(input);
-    const scenarios = buildScenarios(input);
+    const metrics = withholdDefaultedGrowth(calculateInvestmentMetrics(input));
+    const rawScenarios = buildScenarios(input);
+    const growthSupplied = {
+      appreciationSupplied: input.expectedAppreciation != null && input.expectedAppreciation !== '',
+      holdingSupplied: input.holdingPeriod != null && input.holdingPeriod !== '',
+    };
+    const scenarios = {
+      evidenceClass: 'SCENARIO',
+      notFact: true,
+      conservative: withholdScenarioGrowth(rawScenarios.conservative, growthSupplied),
+      base: withholdScenarioGrowth(rawScenarios.base, growthSupplied),
+      optimistic: withholdScenarioGrowth(rawScenarios.optimistic, growthSupplied),
+    };
     const sensitivity = sensitivityAnalysis(input);
     const score = calculateInvestmentScore(metrics, {
       marketScore: input.marketScore,

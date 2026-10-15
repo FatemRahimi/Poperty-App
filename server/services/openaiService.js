@@ -7,6 +7,7 @@
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+const { validateLlmFields, safeListingCopy, validateLlmText } = require('./ai/llmOutputGuard');
 
 async function callOpenAI(
   systemPrompt,
@@ -61,59 +62,36 @@ async function callOpenAI(
 }
 
 function mockListingWriter(input) {
-  const {
-    address = 'the property',
-    propertyType = 'property',
-    bedrooms = 3,
-    bathrooms = 2,
-    price,
-    features = [],
-    keyFeatures = [],
-    descriptionNotes = '',
-  } = input;
-
-  const featureList = [...features, ...keyFeatures].filter(Boolean);
-  const featureText = featureList.length
-    ? featureList.slice(0, 6).join(', ')
-    : 'modern finishes, spacious living areas and excellent natural light';
-
-  const priceText = price
-    ? ` priced at ${new Intl.NumberFormat('en-GB', {
-        style: 'currency',
-        currency: 'GBP',
-        maximumFractionDigits: 0,
-      }).format(Number(price))}`
-    : '';
-
-  return {
-    seoTitle: `${bedrooms} Bed ${propertyType} for Sale in ${address} | Premium Family Home`,
-    description: `Discover this outstanding ${bedrooms}-bedroom ${propertyType.toLowerCase()} in ${address}${priceText}. ${descriptionNotes || 'Thoughtfully presented throughout, this home combines stylish interiors with practical living space.'} Highlight features include ${featureText}. Ideal for families and professionals seeking a high-quality home in a desirable location. Early viewing is strongly recommended.`,
-    keySellingPoints: [
-      `${bedrooms} bedrooms and ${bathrooms} bathrooms`,
-      featureList[0] || 'High-spec interior finishes',
-      featureList[1] || 'Bright, well-proportioned living spaces',
-      `Prime location: ${address}`,
-      'Ready to move in with strong buyer appeal',
-    ],
-    socialMediaAdvert: `🏡 Just Listed!\n\n${bedrooms}-bed ${propertyType} in ${address}${priceText}.\n✨ ${featureList[0] || 'Stunning interiors'} · ${featureList[1] || 'Prime location'}\n\nBook a viewing today 👉`,
-    emailMarketing: `Subject: New to market – ${bedrooms}-bed ${propertyType} in ${address}\n\nDear Client,\n\nWe're excited to introduce a superb ${propertyType.toLowerCase()} in ${address}${priceText}. With ${bedrooms} bedrooms, ${bathrooms} bathrooms and standout features including ${featureText}, this home is perfectly positioned for today's market.\n\nArrange a private viewing at your earliest convenience.\n\nKind regards,\nYour Property Team`,
-  };
+  return safeListingCopy(input || {});
 }
 
-async function generateListingContent(input) {
-  const system = `You are an expert UK estate agent copywriter. Return JSON with keys: seoTitle, description, keySellingPoints (array of 5 strings), socialMediaAdvert, emailMarketing. Write in British English. Be persuasive but accurate.`;
+async function generateListingContent(input, options = {}) {
+  const system = `You are an expert UK estate agent copywriter. Return JSON with keys: seoTitle, description, keySellingPoints (array of strings), socialMediaAdvert, emailMarketing. Write in British English. Use only facts present in the input. Do not invent bedrooms, bathrooms, price, condition, finishes, features, location quality, schools, transport, lease terms, service charge, ground rent, demand, yield, or valuation. If a field was not supplied, say it was not supplied.`;
   const user = `Create marketing content for this property:\n${JSON.stringify(input, null, 2)}`;
+  const invoke = options.callModel || callOpenAI;
+  const safe = safeListingCopy(input || {});
 
   try {
-    const result = await callOpenAI(system, user);
-    if (result) {
-      return { data: result.parsed, model: result.model, tokensUsed: result.tokensUsed, source: 'openai' };
+    const result = await invoke(system, user);
+    if (result?.parsed) {
+      const verdict = validateLlmFields(result.parsed, input || {});
+      if (verdict.ok) {
+        return { data: result.parsed, model: result.model, tokensUsed: result.tokensUsed, source: 'openai' };
+      }
+      return {
+        data: safe,
+        model: null,
+        tokensUsed: result.tokensUsed || 0,
+        source: 'deterministic',
+        rejected: true,
+        rejectionReasons: verdict.reasons,
+      };
     }
   } catch (err) {
     console.warn('OpenAI listing writer fallback:', err.message);
   }
 
-  return { data: mockListingWriter(input), model: 'mock-listing-v1', tokensUsed: 0, source: 'mock' };
+  return { data: safe, model: null, tokensUsed: 0, source: 'deterministic' };
 }
 
 /**
@@ -145,19 +123,35 @@ async function generateBuyerMatches(prefs, properties) {
   return { data: base, model: 'buyer-match-v2', tokensUsed: 0, source: 'deterministic' };
 }
 
-async function polishBuyerMatchMessage(prefs, ranked) {
+async function polishBuyerMatchMessage(prefs, ranked, options = {}) {
   const base = { ...ranked };
   delete base.tokensUsed;
 
-  if (!OPENAI_API_KEY || !base.recommendations?.length) {
-    return base;
-  }
+  if (!base.recommendations?.length) return base;
+  if (!options.callModel && !OPENAI_API_KEY) return base;
 
+  const invoke = options.callModel || callOpenAI;
   try {
-    const system = `You refine a property-matching assistant message. Return JSON with key assistantMessage only. Keep it concise, helpful, British English. Do not change match scores.`;
-    const user = `User prefs: ${JSON.stringify(prefs)}\nTop matches: ${JSON.stringify(base.recommendations.slice(0, 3).map((r) => ({ title: r.title, score: r.matchScore, reasons: r.matchReasons })))}`;
-    const result = await callOpenAI(system, user, { temperature: 0.6, maxTokens: 400 });
+    const system = `You refine a property-matching assistant message. Return JSON with key assistantMessage only. Keep it concise, helpful, British English. Do not change match scores. Do not invent bedrooms, bathrooms, price, condition, features, schools, transport, demand, yield, valuation, or a recommendation to buy. This is preference fit, not purchase advice.`;
+    const grounded = {
+      prefs,
+      recommendations: base.recommendations.slice(0, 3).map((r) => ({
+        title: r.title,
+        score: r.matchScore,
+        reasons: r.matchReasons,
+        bedrooms: r.bedrooms,
+        bathrooms: r.bathrooms,
+        price: r.price,
+        address: r.address,
+      })),
+    };
+    const user = `User prefs and top matches:\n${JSON.stringify(grounded)}`;
+    const result = await invoke(system, user, { temperature: 0.6, maxTokens: 400 });
     if (result?.parsed?.assistantMessage) {
+      const verdict = validateLlmText(result.parsed.assistantMessage, grounded);
+      if (!verdict.ok) {
+        return { ...base, llmPolish: false, llmPolishRejected: true, rejectionReasons: verdict.reasons };
+      }
       base.assistantMessage = result.parsed.assistantMessage;
       return { ...base, tokensUsed: result.tokensUsed, llmPolish: true };
     }

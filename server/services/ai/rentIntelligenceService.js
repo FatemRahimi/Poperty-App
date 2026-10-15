@@ -181,9 +181,9 @@ function buildRentIntelligence({
       : Math.max(50, Math.round(recommended * 0.05));
 
   const priceSensitivity = [
-    { rent: Math.round(recommended * 1.07), demand: null, label: 'Premium positioning' },
-    { rent: recommended, demand: null, label: 'Recommended' },
-    { rent: Math.round(recommended * 0.97), demand: null, label: 'Volume positioning' },
+    { rent: Math.round(recommended * 1.07), demand: null, label: 'Premium positioning', evidenceClass: 'SCENARIO', observed: false, notEvidence: true },
+    { rent: recommended, demand: null, label: 'Recommended', evidenceClass: 'SCENARIO', observed: false, notEvidence: true },
+    { rent: Math.round(recommended * 0.97), demand: null, label: 'Volume positioning', evidenceClass: 'SCENARIO', observed: false, notEvidence: true },
   ];
 
   const mixed = Boolean(evidence?.available && ranked.length);
@@ -204,6 +204,8 @@ function buildRentIntelligence({
     timeToLet: null,
     timeToLetNote: 'days_on_market on asking listings is not time-to-let. Time-to-let remains notAssessed.',
     priceSensitivity,
+    priceSensitivityRole: 'ASSUMPTION',
+    priceSensitivityNote: 'These rents are multipliers on the recommended figure. They are not observed rents and not demand.',
     comparables: ranked.slice(0, 8),
     propertyDataRents: evidence && evidence.available ? evidence : buildRentalEvidence(null),
     dataQuality,

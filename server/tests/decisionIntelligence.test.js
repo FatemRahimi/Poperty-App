@@ -421,7 +421,7 @@ test('no importanceScore and investigation order is decision_relevant then confl
   assert.strictEqual(result.scoringActivated, false);
 });
 
-test('empty legitimate priorities stay empty rather than inventing filler', () => {
+test('complete finance still records unknown achieved rent and does not invent other decision-relevant items', () => {
   const facts = assemblePropertyFacts({
     property: listing({ has_garden: true, has_garage: true, parking_spaces: 1 }),
   });
@@ -436,8 +436,10 @@ test('empty legitimate priorities stay empty rather than inventing filler', () =
     evidenceAsOf: ASOF,
   });
   assert.deepStrictEqual(
-    result.investigationPriorities.filter((row) => row.importance === IMPORTANCE.decisionRelevant),
-    []
+    result.investigationPriorities
+      .filter((row) => row.importance === IMPORTANCE.decisionRelevant)
+      .map((row) => row.id),
+    ['achieved_rent_unknown']
   );
 });
 

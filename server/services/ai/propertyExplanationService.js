@@ -3,6 +3,7 @@
  */
 
 const { callOpenAI } = require('../openaiService');
+const { validateLlmText } = require('./llmOutputGuard');
 
 function templateSummary(facts) {
   const parts = [];
@@ -108,13 +109,14 @@ function templateSummary(facts) {
   return parts.join(' ');
 }
 
-async function generatePropertyExplanation(structuredFacts) {
+async function generatePropertyExplanation(structuredFacts, options = {}) {
   const fallback = {
     summary: templateSummary(structuredFacts),
     source: 'template',
     model: null,
     tokensUsed: 0,
   };
+  const invoke = options.callModel || callOpenAI;
 
   const system = `You are a UK property intelligence analyst. You receive ONLY pre-calculated structured facts in JSON.
 You must NOT invent numbers, rents, yields, comparables, demand scores, tenure, EPC, council tax, service charge, ground rent, lease term, floor area, build year, heating, garden, parking, broadband, flood, planning, schools, listed buildings, conservation areas, Article 4 membership, permitted-development restrictions, investigation priorities, unresolved dependencies, importance, operating costs, NOI, net yield, cash flow, DSCR, missing frequencies, or cost responsibility.
@@ -138,8 +140,16 @@ If data is insufficient, say so clearly.`;
   const user = JSON.stringify(structuredFacts, null, 2);
 
   try {
-    const result = await callOpenAI(system, user, { temperature: 0.3, maxTokens: 600 });
+    const result = await invoke(system, user, { temperature: 0.3, maxTokens: 600 });
     if (!result?.parsed?.summary) return fallback;
+    const verdict = validateLlmText(result.parsed.summary, structuredFacts);
+    if (!verdict.ok) {
+      return {
+        ...fallback,
+        rejected: true,
+        rejectionReasons: verdict.reasons,
+      };
+    }
 
     return {
       summary: result.parsed.summary,

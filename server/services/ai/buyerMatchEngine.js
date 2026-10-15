@@ -560,6 +560,24 @@ function scoreTransport(property, prefs, intelligence = {}) {
  * a finding. It now reports unavailable until a schools provider is connected.
  */
 function scoreSchools(property, prefs) {
+  const evidence = property?.schoolEvidence
+    || property?.propertyFacts?.facts?.schools
+    || property?.facts?.schools
+    || null;
+  const hasEvidence = Boolean(
+    evidence
+    && evidence.available === true
+    && (
+      (Array.isArray(evidence.nearbySchools) && evidence.nearbySchools.length > 0)
+      || evidence.value != null
+    )
+  );
+  if (hasEvidence) {
+    return unavailable(
+      'schools_context_only',
+      'Nearby educational establishments are context only. School fit is not scored. Catchment, quality, and admission are not assessed.'
+    );
+  }
   if (!(prefs.schools || '').trim()) {
     return unavailable(
       'no_school_preference',
@@ -671,11 +689,14 @@ function rankBuyerMatches(prefs, properties = []) {
     .slice(0, 10);
 
   const assistantMessage = ranked.length
-    ? `I ranked ${ranked.length} propert${ranked.length === 1 ? 'y' : 'ies'} using deterministic scoring (budget, location, bedrooms, lifestyle, transport and schools). Top match: ${ranked[0].matchScore}%${prefs.budgetMax || prefs.budget ? ` · Budget up to ${formatCurrency(Number(prefs.budgetMax || prefs.budget))}` : ''}${prefs.location ? ` · ${prefs.location}` : ''}.`
-    : `No listings scored above the minimum threshold for your filters. Try widening budget or location.`;
+    ? `I ranked ${ranked.length} propert${ranked.length === 1 ? 'y' : 'ies'} by preference fit (budget, location, bedrooms, lifestyle, transport and schools). This is not a recommendation to buy. Top match: ${ranked[0].matchScore}%${prefs.budgetMax || prefs.budget ? ` · Budget up to ${formatCurrency(Number(prefs.budgetMax || prefs.budget))}` : ''}${prefs.location ? ` · ${prefs.location}` : ''}.`
+    : `No listings scored above the minimum threshold for your filters. Try widening budget or location. This is preference fit, not a recommendation to buy.`;
 
   return {
     assistantMessage,
+    resultRole: 'preference_fit',
+    notABuyRecommendation: true,
+    buyRecommendation: null,
     preferencesSummary: {
       budget: prefs.budgetMax || prefs.budget || null,
       location: prefs.location || null,

@@ -15,6 +15,7 @@ const {
   parseFinancePayload,
   OPERATING_COST_KEYS,
 } = require('./financeInputContract');
+const { calculateSafeLtv } = require('./safeLtv');
 
 const COST_KEYS = [
   'maintenance',
@@ -335,7 +336,16 @@ function presentEvidencedInvestment(metrics, adapterEvidence = null, options = {
   if (fromEngine.grossYield?.available && grossYieldBasis) {
     fromEngine.grossYield.basis = grossYieldBasis;
     fromEngine.grossYield.rentBasisKind = rentBasis.kind;
+    fromEngine.grossYield.rentBasis = rentBasis.canonicalBasis || null;
+    fromEngine.grossYield.evidenceClass = rentBasis.evidenceClass || null;
+    fromEngine.grossYield.limitation = rentBasis.limitation || null;
+    fromEngine.grossYield.achievedRentKnown = Boolean(rentBasis.achievedRentKnown);
   }
+
+  const ltv = calculateSafeLtv({
+    purchasePrice: assumptions.purchasePrice,
+    deposit: assumptions.deposit,
+  });
 
   return {
     ...fromEngine,
@@ -343,10 +353,15 @@ function presentEvidencedInvestment(metrics, adapterEvidence = null, options = {
     financeAssessed,
     costEvidence,
     financeEvidence,
+    ltv,
     rentBasis: rentBasis
       ? {
           kind: rentBasis.kind,
           label: rentBasis.label,
+          canonicalBasis: rentBasis.canonicalBasis || null,
+          evidenceClass: rentBasis.evidenceClass || null,
+          limitation: rentBasis.limitation || null,
+          achievedRentKnown: Boolean(rentBasis.achievedRentKnown),
           marketSubstitutedForMissingListing: Boolean(rentBasis.marketSubstitutedForMissingListing),
         }
       : null,

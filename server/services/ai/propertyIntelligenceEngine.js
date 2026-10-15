@@ -143,6 +143,8 @@ const {
   scorePublicBuyerGeneralPersonalDecision,
 } = require('./personalDecisionCanonical');
 const { assembleDecisionIntelligence } = require('./decisionIntelligence');
+const { assembleBuyDecision, buyDecisionNotApplicable } = require('./buyDecision');
+const { withholdDefaultedGrowth, labelScenarioBlock } = require('./presentationSafety');
 const { explainDecisionIntelligence } = require('./decisionIntelligenceExplanation');
 const { buildRisks } = require('./legacyHeuristicIntelligence');
 const {
@@ -1100,10 +1102,12 @@ async function assemblePropertyIntelligenceReport({
     listingAskingPrice,
     scenarioPurchasePrice,
   });
+  const achievedRentFact = propertyFacts?.facts?.achievedRent;
   const rentBasis = resolveRentBasis({
     listingMonthlyRent,
     marketRent,
     scenarioExpectedRent,
+    achievedRentKnown: Boolean(achievedRentFact?.available && achievedRentFact.value != null),
   });
   const purchasePriceBase = priceBasis.selectedPrice;
   const rentForInvestment = rentBasis.selectedRent;
@@ -1176,6 +1180,12 @@ async function assemblePropertyIntelligenceReport({
   });
   if (investment && !investment.partial) {
     investment.financeRequest = financeRequest;
+  }
+  if (investment?.metrics) {
+    investment.metrics = withholdDefaultedGrowth(investment.metrics);
+  }
+  if (investment?.scenarios) {
+    investment.scenarios = labelScenarioBlock(investment.scenarios);
   }
 
   const marketingGaps = isProfessional ? detectMarketingGaps(property) : [];
@@ -1306,6 +1316,8 @@ async function assemblePropertyIntelligenceReport({
       rentIntel,
       pricePosition,
       financeRequest,
+      areaMarketDemand,
+      areaRentalDemand,
     });
     try {
       decisionIntelligence.explanation = await explainDecisionIntelligence({
@@ -1627,6 +1639,28 @@ async function assemblePropertyIntelligenceReport({
   const insufficientData =
     !dataQuality.sufficientForAnalysis && comparableCount === 0 && !monthlyRent && !rentIntel?.success;
 
+  const depositField = financeContractPreview.fields.deposit;
+  const buyPrice = purchasePriceBase > 0
+    ? { value: purchasePriceBase, supplied: true, source: priceBasis.kind === 'SCENARIO' ? 'user_supplied' : 'listing_asking' }
+    : { supplied: false, value: null };
+  const buyDeposit = depositField?.available
+    ? { value: depositField.value, supplied: true, source: depositField.sourceKind || 'user_supplied' }
+    : { supplied: false, value: null };
+  const buyDecision = decisionIntent.ok && job === DECISION_JOB.BUY
+    ? assembleBuyDecision({
+      propertyFacts,
+      personalDecision,
+      pricePosition,
+      saleValuation,
+      comparableSoldEvidence,
+      purchasePrice: buyPrice,
+      deposit: buyDeposit,
+      areaMarketDemand,
+      areaRentalDemand,
+      evidenceAsOf,
+    })
+    : buyDecisionNotApplicable();
+
   const report = {
     success: true,
     insufficientData,
@@ -1770,6 +1804,7 @@ async function assemblePropertyIntelligenceReport({
     decisionJob: job,
     personalDecision,
     decisionIntelligence,
+    buyDecision,
     decisionWorkspace: buildResidentialDecisionWorkspace({
       decisionContext: residentialDecisionContext,
       report: {

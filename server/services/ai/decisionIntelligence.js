@@ -22,6 +22,8 @@ const {
   FIELD_CONTRACT,
   METRIC_DEPENDENCIES,
 } = require('./financeInputContract');
+const { leaseholdEvidence, EVIDENCE_STATE } = require('./leaseholdTruth');
+const { buildAreaMarketContext } = require('./areaMarketContext');
 
 const ENGINE = 'decisionIntelligence';
 const VERSION = 'decision-intelligence-1.0.0';
@@ -80,6 +82,10 @@ const DECISION_RELEVANT_ORDER = Object.freeze([
   'purchase_price_or_expected_rent_missing',
   'rent_position_not_assessed',
   'landlord_demand_not_assessed',
+  'achieved_rent_unknown',
+  'lease_years_unknown',
+  'service_charge_unknown',
+  'ground_rent_unknown',
 ]);
 
 const EFFECT = Object.freeze({
@@ -863,6 +869,88 @@ function contextItems(propertyFacts, asOf) {
   }).filter(Boolean);
 }
 
+function achievedRentDependency(propertyFacts, investment, asOf) {
+  if (!presentedAvailable(investment, 'grossYield')) return null;
+  const canonical = investment?.presented?.rentBasis?.canonicalBasis
+    || investment?.presented?.grossYield?.rentBasis
+    || investment?.rentBasis?.canonicalBasis
+    || null;
+  if (canonical === 'ACHIEVED_RENT') return null;
+  const fact = propertyFacts?.facts?.achievedRent;
+  if (fact?.available && fact.value != null) return null;
+  const basisLabel = canonical || 'a non-achieved rent';
+  return makeItem({
+    id: 'achieved_rent_unknown',
+    type: 'missing_rent_evidence',
+    title: 'Achieved rent unknown',
+    explanation:
+      `Gross yield is assessed from ${basisLabel}. Achieved rent is unknown, so the yield is not an achieved-rent yield. Asking rent and area asking estimates are not achieved rent.`,
+    importance: IMPORTANCE.decisionRelevant,
+    evidenceRefs: [
+      { kind: 'investment.presented', path: 'grossYield' },
+      { kind: 'propertyFacts', path: 'facts.achievedRent' },
+    ],
+    scope: 'property',
+    asOf,
+    affects: ['investment.presented.grossYield'],
+    limitations: [
+      'Gross yield is still calculated. This item classifies the rent basis. It does not replace the yield.',
+      'Unknown achieved rent is not zero.',
+    ],
+  });
+}
+
+function leaseholdDependencies(propertyFacts, investment, asOf) {
+  const lease = leaseholdEvidence(propertyFacts);
+  if (!lease.tenure.applicableLeasehold) return [];
+  const included = investment?.presented?.costEvidence?.included || [];
+  const items = [];
+  if (lease.leaseYearsRemaining.state === EVIDENCE_STATE.UNKNOWN) {
+    items.push(makeItem({
+      id: 'lease_years_unknown',
+      type: 'missing_lease_evidence',
+      title: 'Lease years remaining unknown',
+      explanation:
+        'Tenure is leasehold and remaining term was not evidenced. This is an investigation item. No lender rule is applied.',
+      importance: IMPORTANCE.decisionRelevant,
+      evidenceRefs: [{ kind: 'propertyFacts', path: 'implications.leaseRemaining' }],
+      scope: 'property',
+      asOf,
+      affects: [],
+      limitations: ['No mortgageability threshold is applied in this phase.'],
+    }));
+  }
+  if (lease.serviceCharge.state === EVIDENCE_STATE.UNKNOWN && !included.includes('serviceCharge')) {
+    items.push(makeItem({
+      id: 'service_charge_unknown',
+      type: 'missing_lease_evidence',
+      title: 'Service charge unknown',
+      explanation: 'Leasehold service charge was not evidenced. Unknown is not £0 and is not omitted from the cost question.',
+      importance: IMPORTANCE.decisionRelevant,
+      evidenceRefs: [{ kind: 'propertyFacts', path: 'facts.serviceCharge' }],
+      scope: 'property',
+      asOf,
+      affects: ['investment.presented.noi'],
+      limitations: ['A missing service charge is not treated as zero.'],
+    }));
+  }
+  if (lease.groundRent.state === EVIDENCE_STATE.UNKNOWN && !included.includes('groundRent')) {
+    items.push(makeItem({
+      id: 'ground_rent_unknown',
+      type: 'missing_lease_evidence',
+      title: 'Ground rent unknown',
+      explanation: 'Leasehold ground rent was not evidenced. Unknown is not £0.',
+      importance: IMPORTANCE.decisionRelevant,
+      evidenceRefs: [{ kind: 'propertyFacts', path: 'facts.groundRent' }],
+      scope: 'property',
+      asOf,
+      affects: ['investment.presented.noi'],
+      limitations: ['A missing ground rent is not treated as zero.'],
+    }));
+  }
+  return items;
+}
+
 function orderInvestigationPriorities(dependencies) {
   const relevant = dependencies.filter((item) => item.importance === IMPORTANCE.decisionRelevant);
   const reviewing = dependencies.filter((item) => item.importance === IMPORTANCE.worthReviewing);
@@ -1135,6 +1223,8 @@ function assembleDecisionIntelligence({
   rentIntel = null,
   pricePosition = null,
   financeRequest = null,
+  areaMarketDemand = null,
+  areaRentalDemand = null,
 } = {}) {
   const asOf = evidenceAsOf || propertyFacts?.retrievedAt || personalDecision?.assessedAt || null;
   const unresolved = [];
@@ -1151,6 +1241,9 @@ function assembleDecisionIntelligence({
   if (rentPosition) unresolved.push(rentPosition);
   const demand = demandDependency(personalDecision, asOf);
   if (demand) unresolved.push(demand);
+  const achieved = achievedRentDependency(propertyFacts, investment, asOf);
+  if (achieved) unresolved.push(achieved);
+  unresolved.push(...leaseholdDependencies(propertyFacts, investment, asOf));
 
   unresolved.push(...conflictItems(propertyFacts, asOf));
 
@@ -1188,6 +1281,7 @@ function assembleDecisionIntelligence({
     investigationPriorities,
     materialFindings,
     sensitivityDrivers,
+    areaMarketContext: buildAreaMarketContext({ areaMarketDemand, areaRentalDemand }),
     notAScore: true,
     notPurchaseAdvice: true,
     note:
