@@ -90,6 +90,52 @@ describe('decision dossier display', () => {
     expect(yieldBasisText(null)).toBeNull();
   });
 
+  test('assessed sold cohort is price context and market context stays out of known', () => {
+    const assessed = buyDossierView({
+      buyRecommendation: null,
+      evidence: {
+        soldComparableSupport: {
+          state: 'KNOWN',
+          evidenceClass: 'SOLD_PRICE_CONTEXT',
+          value: 'Sold-price context',
+          limitation: 'Same-postcode official sales are price context. They are not this home\'s value, not a valuation, and not a recommendation to buy.',
+          notAValuation: true,
+          notExactUnitTransactions: true,
+        },
+        affordability: { state: 'UNKNOWN', value: null },
+      },
+    });
+    const sold = assessed.known.find((row) => row.id === 'soldComparableSupport');
+    expect(sold.value).toMatch(/not this home's value/i);
+    expect(sold.value).toMatch(/not a valuation/i);
+    expect(sold.value).not.toMatch(/£|fair value|undervalued/);
+    expect(assessed.unknown.find((row) => row.id === 'affordability').value).toBe('Unknown');
+    expect(assessed.conclusion).toBe('Purchase conclusion not available yet');
+
+    const market = buyDossierView({
+      buyRecommendation: null,
+      evidence: {
+        soldComparableSupport: {
+          state: 'CONTEXT',
+          evidenceClass: 'MARKET_CONTEXT',
+          value: null,
+          limitation: 'Local sold transactions are market context. A large transaction count does not make them evidence for this home.',
+        },
+      },
+    });
+    expect(market.known.find((row) => row.id === 'soldComparableSupport')).toBeUndefined();
+    expect(market.context.find((line) => line.id === 'sold-market-context').text).toMatch(/market context/i);
+    expect(market.context.find((line) => line.id === 'sold-market-context').text).toMatch(/does not make them evidence/i);
+
+    const thin = buyDossierView({
+      evidence: {
+        soldComparableSupport: { state: 'UNKNOWN', value: null },
+      },
+    });
+    expect(thin.unknown.find((row) => row.id === 'soldComparableSupport').value).toBe('Unknown');
+    expect(thin.unknown.find((row) => row.id === 'soldComparableSupport').value).not.toBe('£0');
+  });
+
   test('unresolved identity is unknown and is not replaced with a unit', () => {
     const view = buyDossierView(leaseholdBuyDecision());
     expect(view.unknown.find((row) => row.id === 'identity').value).toBe('Unknown');

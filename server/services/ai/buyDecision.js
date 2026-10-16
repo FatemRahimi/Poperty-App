@@ -53,11 +53,60 @@ function valuationSupport(pricePosition, saleValuation) {
   return unknown('Valuation support is not assessed. Asking price is not itself a valuation.');
 }
 
+function soldPriceContext() {
+  return {
+    state: 'KNOWN',
+    assessed: true,
+    role: 'sold_price_context',
+    evidenceClass: 'SOLD_PRICE_CONTEXT',
+    value: 'Sold-price context',
+    notAValuation: true,
+    notSubjectValue: true,
+    notExactUnitTransactions: true,
+    notABuyRecommendation: true,
+    cohort: 'same_postcode_type_recent',
+    limitation: 'Same-postcode official sales are price context. They are not this home\'s value, not a valuation, and not a recommendation to buy.',
+  };
+}
+
+function marketSoldContext() {
+  return {
+    state: 'CONTEXT',
+    assessed: false,
+    role: 'market_context',
+    evidenceClass: 'MARKET_CONTEXT',
+    value: null,
+    notAValuation: true,
+    notSubjectValue: true,
+    notPropertyEvidence: true,
+    notABuyRecommendation: true,
+    limitation: 'Local sold transactions are market context. A large transaction count does not make them evidence for this home.',
+  };
+}
+
 function comparableSupport(comparableSoldEvidence) {
-  if (comparableSoldEvidence?.available === true || comparableSoldEvidence?.sufficient === true) {
-    return { state: 'KNOWN', assessed: true, role: 'sold_evidence' };
+  if (!comparableSoldEvidence || typeof comparableSoldEvidence !== 'object') {
+    return unknown('Defensible sold-comparable support is not assessed.');
   }
-  if (comparableSoldEvidence && comparableSoldEvidence.state && comparableSoldEvidence.state !== 'notAssessed') {
+  const assessment = comparableSoldEvidence.assessment;
+  if (assessment === 'ASSESSED') return soldPriceContext();
+  if (assessment === 'MARKET_CONTEXT') return marketSoldContext();
+  if (assessment === 'NOT_APPLICABLE') {
+    return {
+      state: 'NOT_APPLICABLE',
+      assessed: false,
+      value: null,
+      evidenceClass: 'NOT_APPLICABLE',
+      reason: 'Official comparable assessment does not apply to this subject.',
+    };
+  }
+  if (assessment) {
+    return unknown('Official sold-comparable support is not sufficient. No typical price is used.');
+  }
+  if (comparableSoldEvidence.available === true || comparableSoldEvidence.sufficient === true) {
+    return soldPriceContext();
+  }
+  if (comparableSoldEvidence.state && comparableSoldEvidence.state !== 'notAssessed') {
     return {
       state: 'KNOWN',
       assessed: true,

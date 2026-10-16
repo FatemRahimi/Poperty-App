@@ -54,6 +54,91 @@ function leaseholdBuyDecision() {
 }
 
 describe('one-property decision dossier', () => {
+  test('market-context sold sales stay in context and an assessed cohort is not a valuation', () => {
+    const { rerender } = render(
+      <IntelligenceReport
+        report={{
+          property: { address: '1 Example Court' },
+          residentialDecisionContext: { decisionJob: 'BUY' },
+          decisionJob: 'BUY',
+          buyDecision: {
+            buyRecommendation: null,
+            evidence: {
+              soldComparableSupport: {
+                state: 'CONTEXT',
+                evidenceClass: 'MARKET_CONTEXT',
+                value: null,
+                limitation: 'Local sold transactions are market context. A large transaction count does not make them evidence for this home.',
+              },
+              affordability: { state: 'UNKNOWN', value: null },
+            },
+            investigationPriorities: [],
+          },
+          decisionWorkspace: {
+            decisionJob: 'BUY',
+            copy: { headline: 'You are assessing this property to BUY', notAdvice: 'Not advice.' },
+            keyIntelligence: [],
+            unresolved: [],
+            findings: [],
+            nextActions: [],
+          },
+          decisionIntelligence: { applicable: false },
+        }}
+      />
+    );
+    expect(screen.getByTestId('dossier-context-sold-market-context')).toHaveTextContent(/market context/i);
+    expect(screen.queryByTestId('dossier-evidence-soldComparableSupport')).not.toBeInTheDocument();
+    expect(screen.getByTestId('purchase-conclusion')).toHaveTextContent('Purchase conclusion not available yet');
+
+    rerender(
+      <IntelligenceReport
+        report={{
+          property: { address: '1 Example Court' },
+          residentialDecisionContext: { decisionJob: 'BUY' },
+          decisionJob: 'BUY',
+          buyDecision: {
+            buyRecommendation: null,
+            evidence: {
+              soldComparableSupport: {
+                state: 'KNOWN',
+                evidenceClass: 'SOLD_PRICE_CONTEXT',
+                limitation: 'Same-postcode official sales are price context. They are not this home\'s value, not a valuation, and not a recommendation to buy.',
+              },
+            },
+            investigationPriorities: [],
+            preferenceFit: { role: 'preference_fit', outcome: 'strong_fit', score: 80 },
+          },
+          personalDecision: {
+            profile: 'buyer_general',
+            available: true,
+            score: 80,
+            outcome: 'strong_fit',
+            scoreLabel: 'Owner-occupier preference fit',
+          },
+          decisionWorkspace: {
+            decisionJob: 'BUY',
+            copy: { notAdvice: 'Not advice.' },
+            keyIntelligence: [{
+              id: 'buyer_general_fit',
+              label: 'Owner-occupier preference fit',
+              state: 'ASSESSED',
+              available: true,
+              value: 80,
+            }],
+            unresolved: [],
+            findings: [],
+            nextActions: [],
+          },
+          decisionIntelligence: { applicable: false },
+        }}
+      />
+    );
+    const sold = screen.getByTestId('dossier-evidence-soldComparableSupport');
+    expect(sold).toHaveTextContent(/not a valuation/i);
+    expect(sold).not.toHaveTextContent(/£/);
+    expect(screen.getByTestId('purchase-conclusion').compareDocumentPosition(screen.getByTestId('preference-fit')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   test('purchase conclusion leads, and strong fit is only the preference fit', () => {
     render(
       <IntelligenceReport

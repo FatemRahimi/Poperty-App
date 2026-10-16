@@ -118,6 +118,9 @@ function knownDisplay(key, field) {
       ? 'UPRN recorded. A UPRN is not a title.'
       : 'Identity recorded';
   }
+  if (key === 'soldComparableSupport') {
+    return field.limitation || 'Sold-price context. Not this home\'s value and not a valuation.';
+  }
   if (field.value != null && (typeof field.value === 'string' || typeof field.value === 'number')) {
     return String(field.value);
   }
@@ -177,6 +180,13 @@ export function buyContextLines(buyDecision) {
       text: count != null
         ? `Nearby schools recorded: ${count}. Admission, catchment eligibility, and school quality are not assessed.`
         : 'Schools were not assessed. Admission, catchment eligibility, and school quality are not assessed.',
+    });
+  }
+  const sold = buyDecision?.evidence?.soldComparableSupport;
+  if (sold && (sold.evidenceClass === 'MARKET_CONTEXT' || sold.state === 'CONTEXT')) {
+    lines.push({
+      id: 'sold-market-context',
+      text: sold.limitation || 'Local sold transactions are market context. They are not evidence for this home.',
     });
   }
   const area = buyDecision?.areaMarketContext;

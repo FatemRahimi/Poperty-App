@@ -460,6 +460,69 @@ asyncTest('property explanation, listing copy and buyer polish reject unsupporte
   assert.notStrictEqual(polished.recommendations[0].matchScore, null);
 });
 
+test('official comparable assessment binds into the buy decision without becoming a valuation', () => {
+  const facts = assemblePropertyFacts({
+    property: listing({ tenure: 'leasehold', service_charges: 0 }),
+  });
+  const assessed = assembleBuyDecision({
+    propertyFacts: facts,
+    comparableSoldEvidence: {
+      assessment: 'ASSESSED',
+      relevantMarketTransactionCount: 12,
+      observedComparableMedian: 240000,
+      defensibleComparableCount: 4,
+    },
+  });
+  const sold = assessed.evidence.soldComparableSupport;
+  assert.strictEqual(sold.state, 'KNOWN');
+  assert.strictEqual(sold.evidenceClass, 'SOLD_PRICE_CONTEXT');
+  assert.strictEqual(sold.notAValuation, true);
+  assert.strictEqual(sold.notSubjectValue, true);
+  assert.strictEqual(sold.notExactUnitTransactions, true);
+  assert.strictEqual(sold.notABuyRecommendation, true);
+  assert.strictEqual(sold.observedComparableMedian, undefined);
+  assert.strictEqual(assessed.buyRecommendation, null);
+  assert.strictEqual(assessed.evidence.affordability.state, 'UNKNOWN');
+  assert.strictEqual(assessed.evidence.deposit.state, 'UNKNOWN');
+  assert.strictEqual(assessed.evidence.serviceCharge.state, 'KNOWN');
+  assert.strictEqual(assessed.evidence.serviceCharge.value, 0);
+  assert.strictEqual(assessed.evidence.groundRent.state, 'UNKNOWN');
+  assert.strictEqual(assessed.evidence.groundRent.value, null);
+  assert.ok(!/worth|fair value|undervalued|overvalued|don't buy/i.test(JSON.stringify(sold)));
+
+  const market = assembleBuyDecision({
+    propertyFacts: facts,
+    comparableSoldEvidence: {
+      assessment: 'MARKET_CONTEXT',
+      relevantMarketTransactionCount: 80,
+      observedLocalMedian: 190000,
+    },
+  });
+  assert.strictEqual(market.evidence.soldComparableSupport.state, 'CONTEXT');
+  assert.strictEqual(market.evidence.soldComparableSupport.evidenceClass, 'MARKET_CONTEXT');
+  assert.notStrictEqual(market.evidence.soldComparableSupport.state, 'KNOWN');
+  assert.strictEqual(market.evidence.soldComparableSupport.value, null);
+
+  const thin = assembleBuyDecision({
+    propertyFacts: facts,
+    comparableSoldEvidence: { assessment: 'INSUFFICIENT_EVIDENCE' },
+  });
+  assert.strictEqual(thin.evidence.soldComparableSupport.state, 'UNKNOWN');
+  assert.strictEqual(thin.evidence.soldComparableSupport.value, null);
+
+  const failed = assembleBuyDecision({
+    propertyFacts: facts,
+    comparableSoldEvidence: { assessment: 'UNAVAILABLE' },
+  });
+  assert.strictEqual(failed.evidence.soldComparableSupport.state, 'UNKNOWN');
+  assert.strictEqual(failed.evidence.soldComparableSupport.value, null);
+
+  const absent = assembleBuyDecision({ propertyFacts: facts });
+  assert.strictEqual(absent.evidence.soldComparableSupport.state, 'UNKNOWN');
+  assert.strictEqual(absent.evidence.identity.state === 'KNOWN' || absent.evidence.identity.state === 'UNKNOWN', true);
+  assert.notStrictEqual(absent.evidence.soldComparableSupport.value, 0);
+});
+
 (async () => {
   for (const item of pending) {
     try {
