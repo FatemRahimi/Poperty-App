@@ -8,7 +8,7 @@ const { leaseholdEvidence } = require('./leaseholdTruth');
 const { buildAreaMarketContext } = require('./areaMarketContext');
 
 const ENGINE = 'buyDecision';
-const VERSION = 'buy-decision-1.1.0';
+const VERSION = 'buy-decision-1.2.0';
 
 const IMPORTANCE = Object.freeze({
   decisionCritical: 'decision_critical',
@@ -321,6 +321,122 @@ function deriveBuyInvestigation(evidence) {
   });
 }
 
+function relationshipItem({ id, title, evidenceKeys, state, implication, limitation }) {
+  return {
+    id,
+    type: 'evidence_relationship',
+    title,
+    evidenceKeys,
+    state,
+    implication,
+    limitation,
+    notARecommendation: true,
+  };
+}
+
+function limited(field) {
+  return Boolean(field && (field.state === 'UNKNOWN' || field.state === 'CONFLICTED'));
+}
+
+function deriveBuyRelationships(evidence) {
+  const items = [];
+  if (limited(evidence?.identity)) {
+    items.push(relationshipItem({
+      id: 'identity_limits_exact_property_evidence',
+      title: 'Identity → exact-property evidence',
+      evidenceKeys: ['identity'],
+      state: evidence.identity.state,
+      implication: 'Conclusions that depend on this exact dwelling remain limited.',
+      limitation: 'Area and postcode context is not discarded and is not treated as invalid. A UPRN is not a title.',
+    }));
+  }
+  if (limited(evidence?.leaseYearsRemaining)) {
+    items.push(relationshipItem({
+      id: 'lease_length_limits_ownership_assessment',
+      title: 'Lease length → decision completeness',
+      evidenceKeys: ['tenure', 'leaseYearsRemaining'],
+      state: evidence.leaseYearsRemaining.state,
+      implication: 'Ownership and financing implications of the remaining term are not assessed.',
+      limitation: 'No lender rule is applied. An unknown remaining term is not a mortgage result.',
+    }));
+  }
+  const serviceUnknown = limited(evidence?.serviceCharge);
+  const groundUnknown = limited(evidence?.groundRent);
+  if (serviceUnknown || groundUnknown) {
+    const evidenceKeys = [];
+    if (serviceUnknown) evidenceKeys.push('serviceCharge');
+    if (groundUnknown) evidenceKeys.push('groundRent');
+    const missing = [
+      serviceUnknown ? 'service charge' : null,
+      groundUnknown ? 'ground rent' : null,
+    ].filter(Boolean).join(' and ');
+    const evidenced = [
+      !serviceUnknown && evidence?.serviceCharge?.state === 'KNOWN' ? 'service charge' : null,
+      !groundUnknown && evidence?.groundRent?.state === 'KNOWN' ? 'ground rent' : null,
+    ].filter(Boolean);
+    items.push(relationshipItem({
+      id: 'leasehold_costs_limit_ownership_cost',
+      title: 'Leasehold charges → ownership cost',
+      evidenceKeys,
+      state: 'UNKNOWN',
+      implication: `${missing[0].toUpperCase()}${missing.slice(1)} ${missing.includes(' and ') ? 'are' : 'is'} not evidenced, so ongoing ownership-cost assessment is incomplete.`,
+      limitation: evidenced.length
+        ? `${evidenced[0][0].toUpperCase()}${evidenced[0].slice(1)} is already evidenced and is not treated as missing. Unknown charges are not zero.`
+        : 'Unknown charges are not zero.',
+    }));
+  }
+  const ltv = evidence?.ltv;
+  if (ltv && ltv.state === 'KNOWN' && ltv.value != null) {
+    items.push(relationshipItem({
+      id: 'deposit_supports_ltv',
+      title: 'Deposit → loan to value',
+      evidenceKeys: ['deposit', 'ltv'],
+      state: 'KNOWN',
+      implication: `Loan to value from the supplied price and deposit is ${ltv.value}%.`,
+      limitation: 'This is the existing loan-to-value result. It is not lender approval and not a lending decision.',
+    }));
+  } else if (ltv) {
+    items.push(relationshipItem({
+      id: 'deposit_limits_ltv',
+      title: 'Deposit → loan to value',
+      evidenceKeys: ['deposit', 'ltv'],
+      state: ltv.state || 'UNKNOWN',
+      implication: ltv.reason || 'Loan to value is not assessed.',
+      limitation: 'Deposit is not inferred from a budget. This is not a lending decision.',
+    }));
+  }
+  const sold = evidence?.soldComparableSupport;
+  if (sold && (sold.evidenceClass === 'SOLD_PRICE_CONTEXT' || sold.role === 'sold_price_context') && sold.state === 'KNOWN') {
+    items.push(relationshipItem({
+      id: 'sold_context_limits_price_evidence',
+      title: 'Sold-price evidence → price context',
+      evidenceKeys: ['soldComparableSupport'],
+      state: 'KNOWN',
+      implication: 'Defensible sold-price context exists for a same-postcode cohort.',
+      limitation: sold.limitation || 'Same-postcode official sales are price context. They are not this home\'s value, not a valuation, and not a recommendation to buy.',
+    }));
+  } else if (sold && (sold.evidenceClass === 'MARKET_CONTEXT' || sold.state === 'CONTEXT')) {
+    items.push(relationshipItem({
+      id: 'sold_market_context_limits_price_evidence',
+      title: 'Sold sales → market context',
+      evidenceKeys: ['soldComparableSupport'],
+      state: 'CONTEXT',
+      implication: 'Local sold transactions are market context only.',
+      limitation: sold.limitation || 'A large transaction count does not make them evidence for this home, and they are not a valuation.',
+    }));
+  } else if (sold && sold.state !== 'NOT_APPLICABLE') {
+    items.push(relationshipItem({
+      id: 'sold_support_limits_price_evidence',
+      title: 'Sold-price evidence → price support',
+      evidenceKeys: ['soldComparableSupport'],
+      state: sold.state || 'UNKNOWN',
+      implication: 'Official sold-comparable support is not sufficient, so price support for this home remains unresolved.',
+      limitation: 'No typical price is used. This is not a valuation.',
+    }));
+  }
+  return items;
+}
+
 function assembleBuyDecision({
   propertyFacts = null,
   personalDecision = null,
@@ -384,6 +500,7 @@ function assembleBuyDecision({
     },
   };
   const priorities = deriveBuyInvestigation(evidence);
+  const relationships = deriveBuyRelationships(evidence);
 
   return {
     engine: ENGINE,
@@ -407,6 +524,7 @@ function assembleBuyDecision({
       .filter((row) => row.state === 'UNKNOWN' || row.state === 'CONFLICTED')
       .map((row) => row.id),
     investigationPriorities: priorities,
+    relationships,
   };
 }
 

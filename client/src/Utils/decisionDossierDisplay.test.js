@@ -188,5 +188,31 @@ describe('decision dossier display', () => {
     expect(saved.investigation[0].priorityLabel).toBeNull();
     expect(saved.investigation[0].resolutionLabel).toBeNull();
     expect(saved.conclusion).toBe('Purchase conclusion not available yet');
+    expect(saved.relationships).toEqual([]);
+  });
+
+  test('stored relationships render and a saved decision without them does not invent any', () => {
+    const view = buyDossierView({
+      buyRecommendation: null,
+      evidence: {
+        leaseYearsRemaining: { state: 'UNKNOWN', value: null },
+        serviceCharge: { state: 'KNOWN', value: 0 },
+      },
+      relationships: [
+        {
+          id: 'lease_length_limits_ownership_assessment',
+          title: 'Lease length → decision completeness',
+          evidenceKeys: ['tenure', 'leaseYearsRemaining'],
+          state: 'UNKNOWN',
+          implication: 'Ownership and financing implications of the remaining term are not assessed.',
+          limitation: 'No lender rule is applied.',
+        },
+      ],
+    });
+    expect(view.relationships).toHaveLength(1);
+    expect(view.relationships[0].title).toMatch(/Lease length/);
+    expect(view.relationships[0].implication).toMatch(/not assessed/i);
+    expect(view.known.find((row) => row.id === 'serviceCharge').value).toBe('\u00A30');
+    expect(view.relationships.some((row) => /service charge/i.test(row.implication))).toBe(false);
   });
 });

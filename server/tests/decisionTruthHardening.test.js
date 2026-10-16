@@ -621,6 +621,108 @@ test('buy investigation is derived from this decision evidence', () => {
   assert.ok(!sparse.investigationPriorities.some((row) => row.explanation == null));
 });
 
+test('buy relationships are implications of stored evidence, not recommendations', () => {
+  const unresolved = assembleBuyDecision({
+    propertyFacts: assemblePropertyFacts({
+      property: { price: 250000, category: 'sale', tenure: 'leasehold', city: 'Leeds' },
+    }),
+    areaMarketDemand: { available: true, band: 'High' },
+  });
+  const lease = unresolved.relationships.find((row) => row.id === 'lease_length_limits_ownership_assessment');
+  assert.ok(lease);
+  assert.strictEqual(lease.state, 'UNKNOWN');
+  assert.deepStrictEqual(lease.evidenceKeys, ['tenure', 'leaseYearsRemaining']);
+  assert.ok(/not assessed/i.test(lease.implication));
+  assert.ok(!/unmortgageable|mortgage difficult|lease extension/i.test(JSON.stringify(lease)));
+  assert.notStrictEqual(lease.id, 'lease_years_unknown');
+  const costs = unresolved.relationships.find((row) => row.id === 'leasehold_costs_limit_ownership_cost');
+  assert.ok(costs.evidenceKeys.includes('serviceCharge'));
+  assert.ok(costs.evidenceKeys.includes('groundRent'));
+  assert.strictEqual(unresolved.evidence.groundRent.value, null);
+  assert.ok(!/£0/.test(JSON.stringify(costs)));
+  const identity = unresolved.relationships.find((row) => row.id === 'identity_limits_exact_property_evidence');
+  assert.ok(identity);
+  assert.ok(/not discarded|not treated as invalid/i.test(identity.limitation));
+  assert.strictEqual(unresolved.areaMarketContext.salesDemand.band, 'High');
+  assert.strictEqual(unresolved.buyRecommendation, null);
+  assert.ok(unresolved.investigationPriorities.some((row) => row.id === 'lease_years_unknown'));
+  assert.ok(!/good investment|don't buy|undervalued|overvalued/i.test(JSON.stringify(unresolved.relationships)));
+
+  const knownLease = assemblePropertyFacts({
+    property: listing({ tenure: 'leasehold', service_charges: 0, ground_rent: 0 }),
+  });
+  knownLease.implications.leaseRemaining = { available: true, value: 92, state: 'calculated' };
+  const known = assembleBuyDecision({ propertyFacts: knownLease });
+  assert.strictEqual(known.evidence.leaseYearsRemaining.value, 92);
+  assert.strictEqual(known.evidence.serviceCharge.value, 0);
+  assert.strictEqual(known.evidence.groundRent.value, 0);
+  assert.ok(!known.relationships.some((row) => row.id === 'lease_length_limits_ownership_assessment'));
+  assert.ok(!known.relationships.some((row) => row.id === 'leasehold_costs_limit_ownership_cost'));
+  assert.ok(!/80 years|lender threshold|unmortgageable/i.test(JSON.stringify(known.relationships)));
+
+  const zeroChargeOnly = assembleBuyDecision({
+    propertyFacts: assemblePropertyFacts({
+      property: listing({ tenure: 'leasehold', service_charges: 0 }),
+    }),
+  });
+  const partialCost = zeroChargeOnly.relationships.find((row) => row.id === 'leasehold_costs_limit_ownership_cost');
+  assert.ok(partialCost);
+  assert.deepStrictEqual(partialCost.evidenceKeys, ['groundRent']);
+  assert.strictEqual(zeroChargeOnly.evidence.serviceCharge.value, 0);
+  assert.ok(/service charge is already evidenced/i.test(partialCost.limitation));
+  assert.ok(!/service charge is not evidenced/i.test(partialCost.implication));
+
+  const noDeposit = assembleBuyDecision({
+    propertyFacts: assemblePropertyFacts({ property: listing({ tenure: 'freehold' }) }),
+  });
+  const blockedLtv = noDeposit.relationships.find((row) => row.id === 'deposit_limits_ltv');
+  assert.ok(blockedLtv);
+  assert.strictEqual(blockedLtv.state, 'UNKNOWN');
+  assert.strictEqual(noDeposit.evidence.ltv.value, null);
+  assert.ok(!/approv/i.test(JSON.stringify(blockedLtv)));
+
+  const withDeposit = assembleBuyDecision({
+    propertyFacts: assemblePropertyFacts({ property: listing({ tenure: 'freehold' }) }),
+    purchasePrice: { value: 200000, supplied: true, source: 'listing_asking' },
+    deposit: { value: 50000, supplied: true, source: 'user_supplied' },
+  });
+  const ltvRow = withDeposit.relationships.find((row) => row.id === 'deposit_supports_ltv');
+  assert.ok(ltvRow);
+  assert.strictEqual(ltvRow.state, 'KNOWN');
+  assert.strictEqual(withDeposit.evidence.ltv.value, 75);
+  assert.ok(/75%/.test(ltvRow.implication));
+  assert.ok(/not lender approval/i.test(ltvRow.limitation));
+  assert.ok(!withDeposit.relationships.some((row) => row.id === 'deposit_limits_ltv'));
+
+  const assessed = assembleBuyDecision({
+    propertyFacts: assemblePropertyFacts({ property: listing({ tenure: 'freehold' }) }),
+    comparableSoldEvidence: { assessment: 'ASSESSED', observedComparableMedian: 240000 },
+  });
+  const sold = assessed.relationships.find((row) => row.id === 'sold_context_limits_price_evidence');
+  assert.ok(sold);
+  assert.ok(/not this home's value/i.test(sold.limitation));
+  assert.ok(!/240000|£240,000/.test(JSON.stringify(sold)));
+  assert.strictEqual(assessed.buyRecommendation, null);
+
+  const market = assembleBuyDecision({
+    propertyFacts: assemblePropertyFacts({ property: listing({ tenure: 'freehold' }) }),
+    comparableSoldEvidence: { assessment: 'MARKET_CONTEXT', relevantMarketTransactionCount: 80, observedLocalMedian: 190000 },
+  });
+  const marketRow = market.relationships.find((row) => row.id === 'sold_market_context_limits_price_evidence');
+  assert.strictEqual(marketRow.state, 'CONTEXT');
+  assert.ok(/market context/i.test(marketRow.implication));
+  assert.ok(!/190000/.test(JSON.stringify(marketRow)));
+
+  const thin = assembleBuyDecision({
+    propertyFacts: assemblePropertyFacts({ property: listing({ tenure: 'freehold' }) }),
+    comparableSoldEvidence: { assessment: 'INSUFFICIENT_EVIDENCE' },
+  });
+  const thinRow = thin.relationships.find((row) => row.id === 'sold_support_limits_price_evidence');
+  assert.strictEqual(thinRow.state, 'UNKNOWN');
+  assert.ok(/no typical price/i.test(thinRow.limitation));
+  assert.strictEqual(thin.evidence.soldComparableSupport.value, null);
+});
+
 (async () => {
   for (const item of pending) {
     try {

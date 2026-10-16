@@ -307,4 +307,40 @@ describe('one-property decision dossier', () => {
     expect(screen.getByTestId('purchase-conclusion')).toHaveTextContent('Purchase conclusion not available yet');
     expect(screen.queryByText('Decision critical')).not.toBeInTheDocument();
   });
+
+  test('how the evidence connects renders stored relationships and omits them when absent', () => {
+    const { rerender } = render(
+      <OnePropertyDossier
+        buyDecision={{
+          buyRecommendation: null,
+          relationships: [
+            {
+              id: 'lease_length_limits_ownership_assessment',
+              title: 'Lease length → decision completeness',
+              implication: 'Ownership and financing implications of the remaining term are not assessed.',
+              limitation: 'No lender rule is applied.',
+            },
+          ],
+          investigationPriorities: [
+            {
+              id: 'lease_years_unknown',
+              importance: 'decision_relevant',
+              title: 'Lease length unknown',
+              explanation: 'Obtain the remaining term from the lease or title.',
+            },
+          ],
+        }}
+      />
+    );
+    const link = screen.getByTestId('dossier-relationship-lease_length_limits_ownership_assessment');
+    expect(screen.getByTestId('dossier-relationships')).toHaveTextContent('How the evidence connects');
+    expect(link).toHaveTextContent(/not assessed/i);
+    expect(link).not.toHaveTextContent(/unmortgageable/i);
+    expect(screen.getByTestId('dossier-priority-lease_years_unknown')).toHaveTextContent(/remaining term/i);
+    expect(link.compareDocumentPosition(screen.getByTestId('dossier-priority-lease_years_unknown')) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+
+    rerender(<OnePropertyDossier buyDecision={{ buyRecommendation: null }} />);
+    expect(screen.queryByTestId('dossier-relationships')).not.toBeInTheDocument();
+    expect(screen.getByTestId('purchase-conclusion')).toHaveTextContent('Purchase conclusion not available yet');
+  });
 });

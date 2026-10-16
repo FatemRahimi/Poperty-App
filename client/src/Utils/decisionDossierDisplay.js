@@ -227,6 +227,17 @@ export function buyContextLines(buyDecision) {
   return lines;
 }
 
+export function buyRelationshipLines(buyDecision) {
+  return (Array.isArray(buyDecision?.relationships) ? buyDecision.relationships : [])
+    .filter((row) => row && (row.implication || row.title))
+    .map((row) => ({
+      id: row.id || row.title,
+      title: row.title || 'Evidence relationship',
+      implication: row.implication || '',
+      limitation: row.limitation || '',
+    }));
+}
+
 export function buyDossierView(buyDecision) {
   const rows = buyEvidenceRows(buyDecision);
   return {
@@ -236,6 +247,7 @@ export function buyDossierView(buyDecision) {
     unknown: rows.filter((row) => row.state === 'UNKNOWN' || row.state === 'CONFLICTED'),
     notApplicable: rows.filter((row) => row.state === 'NOT_APPLICABLE'),
     investigation: decisionRelevantPriorities(buyDecision?.investigationPriorities),
+    relationships: buyRelationshipLines(buyDecision),
     context: buyContextLines(buyDecision),
     preferenceNote: buyDecision?.preferenceFit?.note || null,
   };

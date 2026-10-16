@@ -60,6 +60,20 @@ export default function OnePropertyDossier({ buyDecision }) {
           <p className="pi-muted">No investigation priorities were returned for this analysis.</p>
         )}
       </div>
+      {view.relationships.length > 0 && (
+        <div data-testid="dossier-relationships">
+          <h4 className="pi-subheading">How the evidence connects</h4>
+          <ul>
+            {view.relationships.map((row) => (
+              <li key={row.id} data-testid={`dossier-relationship-${row.id}`}>
+                <strong>{row.title}</strong>
+                {row.implication ? <p>{row.implication}</p> : null}
+                {row.limitation ? <p>{row.limitation}</p> : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {view.context.length > 0 && (
         <div data-testid="dossier-context">
           <h4 className="pi-subheading">Context only</h4>
