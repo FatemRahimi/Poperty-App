@@ -143,7 +143,7 @@ asyncTest('UKHPI re-ingestion is idempotent and a conflict does not overwrite', 
   assert.strictEqual(store.snapshot()[0].provenance.licence, 'Open Government Licence v3.0');
   const conflict = await ingestUkhpiCsv(
     `${header}\n2024-01-01,United Kingdom,K02000001,999999,9.9\n`,
-    { store, releaseLabel: '2024-04', ingestedAt: '2026-03-01T00:00:00.000Z' }
+    { store, releaseLabel: '2024-03', ingestedAt: '2026-03-01T00:00:00.000Z' }
   );
   assert.strictEqual(conflict.conflict_count, 1);
   assert.strictEqual(store.snapshot()[0].averagePrice, 280000);

@@ -146,12 +146,40 @@ function annualChangeFromObservation(observation) {
   return Number.isFinite(value) ? value : null;
 }
 
+const MARKET_RECORD_KIND = Object.freeze({
+  OFFICIAL_OBSERVATION: 'OFFICIAL_OBSERVATION',
+  GEOGRAPHY_CROSSWALK: 'GEOGRAPHY_CROSSWALK',
+  DERIVED_METRIC: 'DERIVED_METRIC',
+});
+
+const GEOGRAPHY_LIMITATIONS = Object.freeze([
+  'A postcode is not a property boundary, a title, a UPRN, or an exact location.',
+  'Official geography codes are the identity. Names are labels and are not used to match places.',
+  'A local-authority or index geography does not describe an individual home.',
+  'Licence text is product metadata, not a legal opinion and not a statement that commercial use is unrestricted.',
+  'Third-party rights may apply to postcode fields.',
+  'Coverage is whatever the imported release contains. Great Britain coverage is not UK coverage, and Northern Ireland is not added when the release does not contain it.',
+]);
+
+const ONS_POSTCODE_DIRECTORY_PROVENANCE = officialDatasetProvenance({
+  provider: 'Office for National Statistics',
+  dataset: 'ONS Postcode Directory',
+  sourceUrl: 'https://www.ons.gov.uk/methodology/geography/geographicalproducts/postcodeproducts',
+  licence: null,
+  requiredAttribution: null,
+  geographicCoverage: null,
+  limitations: GEOGRAPHY_LIMITATIONS,
+});
+
 module.exports = {
   COVERAGE_STATE,
   DATASET_ID,
+  MARKET_RECORD_KIND,
   SHARED_LICENCE_LIMITATIONS,
+  GEOGRAPHY_LIMITATIONS,
   HMLR_PRICE_PAID_PROVENANCE,
   UKHPI_PROVENANCE,
+  ONS_POSTCODE_DIRECTORY_PROVENANCE,
   officialDatasetProvenance,
   classifyImportCoverage,
   annualChangeFromObservation,

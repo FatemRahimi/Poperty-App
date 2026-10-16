@@ -2,7 +2,10 @@
  * UKHPI observations. Separate from individual sale transactions.
  */
 
-const { UKHPI_PROVENANCE } = require('../../architecture/officialMarketDataset');
+const { UKHPI_PROVENANCE, classifyImportCoverage, annualChangeFromObservation } = require('../../architecture/officialMarketDataset');
+const { releaseLabelOrUnspecified, selectEffectiveRecords } = require('./releaseSelection');
+
+const UKHPI_IDENTITY_FIELDS = ['source', 'geographyCode', 'observationDate', 'propertyCategory'];
 
 function observationKey(row) {
   return [
@@ -10,7 +13,14 @@ function observationKey(row) {
     row.geographyCode,
     row.observationDate,
     row.propertyCategory || 'all',
+    releaseLabelOrUnspecified(row.releaseLabel),
   ].join('|');
+}
+
+function succeededReleaseLabels(runs) {
+  return runs
+    .filter((run) => run.status === 'SUCCEEDED')
+    .map((run) => releaseLabelOrUnspecified(run.release_label));
 }
 
 function createMemoryUkhpiStore() {
@@ -20,6 +30,13 @@ function createMemoryUkhpiStore() {
     kind: 'memory',
     async latestRun() {
       return runs.length ? runs[runs.length - 1] : null;
+    },
+    async datasetCoverage(options = {}) {
+      const coverage = classifyImportCoverage({ latestRun: await this.latestRun(), ...options });
+      if (coverage.state === 'EMPTY' && byKey.size > 0) {
+        return { ...coverage, state: 'AVAILABLE', acceptedCount: byKey.size };
+      }
+      return coverage;
     },
     async startRun(meta = {}) {
       const run = {
@@ -34,6 +51,7 @@ function createMemoryUkhpiStore() {
         rows_processed: 0,
         provenance: UKHPI_PROVENANCE,
         ...meta,
+        release_label: releaseLabelOrUnspecified(meta.release_label),
         started_at: new Date().toISOString(),
       };
       runs.push(run);
@@ -45,17 +63,49 @@ function createMemoryUkhpiStore() {
       return run || null;
     },
     async upsert(observation) {
-      const key = observationKey(observation);
+      const stored = {
+        ...observation,
+        recordKind: 'OFFICIAL_OBSERVATION',
+        releaseLabel: releaseLabelOrUnspecified(observation.releaseLabel),
+      };
+      const key = observationKey(stored);
       const existing = byKey.get(key);
       if (!existing) {
-        byKey.set(key, { ...observation });
+        byKey.set(key, stored);
         return 'inserted';
       }
-      if (existing.contentFingerprint === observation.contentFingerprint) return 'duplicate';
+      if (existing.contentFingerprint === stored.contentFingerprint) return 'duplicate';
       return 'conflict';
     },
     snapshot() {
       return [...byKey.values()];
+    },
+    async queryObservations({
+      geographyCode = null,
+      propertyCategory = null,
+      fromDate = null,
+      toDate = null,
+      selection = 'effective',
+    } = {}) {
+      const datasetCoverage = await this.datasetCoverage();
+      if (!geographyCode) {
+        return {
+          observations: [],
+          datasetCoverage,
+          matched: false,
+          annualChange: null,
+          growthCalculated: false,
+          selection,
+        };
+      }
+      const rows = [...byKey.values()].filter((row) => (
+        row.geographyCode === geographyCode
+        && (!propertyCategory || row.propertyCategory === propertyCategory)
+        && (!fromDate || row.observationDate >= String(fromDate).slice(0, 10))
+        && (!toDate || row.observationDate <= String(toDate).slice(0, 10))
+      ));
+      const observations = chooseUkhpiRows(rows, runs, selection);
+      return observationQueryResult(observations, datasetCoverage, selection);
     },
   };
 }
@@ -109,6 +159,7 @@ function observationFromRow(row) {
     monthlyChange: numericOrNull(row.monthly_change),
     propertyCategory: row.property_category,
     releaseLabel: row.release_label,
+    recordKind: row.record_kind || row.recordKind || 'OFFICIAL_OBSERVATION',
     contentFingerprint: row.content_fingerprint == null ? null : String(row.content_fingerprint).trim(),
     ingestedAt: row.ingested_at,
     provenance: parseJson(row.provenance),
@@ -125,7 +176,7 @@ INSERT INTO ukhpi_observations (
   $6::date, $7, $8, $9, $10,
   $11, $12, $13, $14, $15::jsonb
 )
-ON CONFLICT (source, geography_code, observation_date, property_category)
+ON CONFLICT (source, geography_code, observation_date, property_category, release_label)
 DO NOTHING
 RETURNING id, content_fingerprint`;
 
@@ -197,10 +248,14 @@ function createPostgresUkhpiStore(db) {
     },
     async datasetCoverage(options = {}) {
       const { classifyImportCoverage } = require('../../architecture/officialMarketDataset');
-      return classifyImportCoverage({
+      const coverage = classifyImportCoverage({
         latestRun: await this.latestRun(),
         ...options,
       });
+      if (coverage.state !== 'EMPTY') return coverage;
+      const count = await database.query('SELECT COUNT(*)::int AS n FROM ukhpi_observations');
+      const n = count.rows[0] ? Number(count.rows[0].n) : 0;
+      return n > 0 ? { ...coverage, state: 'AVAILABLE', acceptedCount: n } : coverage;
     },
     async upsert(observation) {
       const source = observation.source || 'UK_HOUSE_PRICE_INDEX';
@@ -218,7 +273,7 @@ function createPostgresUkhpiStore(db) {
         numericOrNull(observation.annualChange),
         numericOrNull(observation.monthlyChange),
         category,
-        observation.releaseLabel || null,
+        releaseLabelOrUnspecified(observation.releaseLabel),
         observation.contentFingerprint,
         observation.ingestedAt || new Date().toISOString(),
         JSON.stringify(observation.provenance || UKHPI_PROVENANCE),
@@ -230,8 +285,9 @@ function createPostgresUkhpiStore(db) {
          WHERE source = $1
            AND geography_code = $2
            AND observation_date = $3::date
-           AND property_category = $4`,
-        [source, observation.geographyCode, date, category]
+           AND property_category = $4
+           AND release_label = $5`,
+        [source, observation.geographyCode, date, category, releaseLabelOrUnspecified(observation.releaseLabel)]
       );
       const stored = existing.rows[0];
       if (stored && sameFingerprint(stored.content_fingerprint, observation.contentFingerprint)) {
@@ -239,13 +295,22 @@ function createPostgresUkhpiStore(db) {
       }
       return 'conflict';
     },
+    async succeededRuns() {
+      const result = await database.query(
+        `SELECT id, release_label, status, finished_at
+         FROM ukhpi_import_runs
+         WHERE status = 'SUCCEEDED'
+         ORDER BY id ASC`
+      );
+      return result.rows || [];
+    },
     async queryObservations({
       geographyCode = null,
       propertyCategory = null,
       fromDate = null,
       toDate = null,
+      selection = 'effective',
     } = {}) {
-      const { annualChangeFromObservation } = require('../../architecture/officialMarketDataset');
       const datasetCoverage = await this.datasetCoverage();
       if (!geographyCode) {
         return {
@@ -254,6 +319,7 @@ function createPostgresUkhpiStore(db) {
           matched: false,
           annualChange: null,
           growthCalculated: false,
+          selection,
         };
       }
       const result = await database.query(QUERY_OBSERVATIONS_SQL, [
@@ -263,17 +329,43 @@ function createPostgresUkhpiStore(db) {
         fromDate ? sqlDate(fromDate) : null,
         toDate ? sqlDate(toDate) : null,
       ]);
-      const observations = (result.rows || []).map(observationFromRow);
-      return {
-        observations,
-        datasetCoverage,
-        matched: observations.length > 0,
-        annualChange: observations.length === 1
-          ? annualChangeFromObservation(observations[0])
-          : null,
-        growthCalculated: false,
-      };
+      const observations = chooseUkhpiRows(
+        (result.rows || []).map(observationFromRow),
+        await this.succeededRuns(),
+        selection
+      );
+      return observationQueryResult(observations, datasetCoverage, selection);
     },
+  };
+}
+
+function chooseUkhpiRows(rows, runs, selection) {
+  const sorted = rows.slice().sort((a, b) => (
+    String(a.observationDate).localeCompare(String(b.observationDate))
+    || String(a.propertyCategory).localeCompare(String(b.propertyCategory))
+    || String(a.releaseLabel).localeCompare(String(b.releaseLabel))
+    || Number(a.id || 0) - Number(b.id || 0)
+  ));
+  if (selection === 'history') return sorted;
+  if (selection && selection !== 'effective') {
+    return sorted.filter((row) => releaseLabelOrUnspecified(row.releaseLabel) === releaseLabelOrUnspecified(selection));
+  }
+  return selectEffectiveRecords(sorted, {
+    identityFields: UKHPI_IDENTITY_FIELDS,
+    succeededReleaseLabels: succeededReleaseLabels(runs),
+  }).sort((a, b) => String(a.observationDate).localeCompare(String(b.observationDate)));
+}
+
+function observationQueryResult(observations, datasetCoverage, selection) {
+  return {
+    observations,
+    datasetCoverage,
+    matched: observations.length > 0,
+    annualChange: observations.length === 1
+      ? annualChangeFromObservation(observations[0])
+      : null,
+    growthCalculated: false,
+    selection,
   };
 }
 

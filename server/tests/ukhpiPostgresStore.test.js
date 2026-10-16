@@ -74,12 +74,19 @@ function createUkhpiTestDb() {
         });
         return { rows: [{ ...row }], rowCount: 1 };
       }
+      if (text.includes('COUNT(*)') && text.includes('ukhpi_observations')) {
+        return { rows: [{ n: observations.length }], rowCount: 1 };
+      }
+      if (text.includes('FROM ukhpi_import_runs') && text.includes("status = 'SUCCEEDED'")) {
+        const succeeded = runs.filter((item) => item.status === 'SUCCEEDED');
+        return { rows: succeeded.map((item) => ({ ...item })), rowCount: succeeded.length };
+      }
       if (text.includes('FROM ukhpi_import_runs') && text.includes('ORDER BY id DESC')) {
         const row = runs[runs.length - 1];
         return { rows: row ? [{ ...row }] : [], rowCount: row ? 1 : 0 };
       }
       if (text.startsWith('INSERT INTO ukhpi_observations')) {
-        const key = [params[0], params[2], String(params[5]).slice(0, 10), params[10]].join('|');
+        const key = [params[0], params[2], String(params[5]).slice(0, 10), params[10], params[11]].join('|');
         if (observations.some((item) => item._key === key)) {
           return { rows: [], rowCount: 0 };
         }
@@ -106,7 +113,7 @@ function createUkhpiTestDb() {
         return { rows: [{ id: row.id, content_fingerprint: row.content_fingerprint }], rowCount: 1 };
       }
       if (text.startsWith('SELECT content_fingerprint')) {
-        const key = [params[0], params[1], String(params[2]).slice(0, 10), params[3]].join('|');
+        const key = [params[0], params[1], String(params[2]).slice(0, 10), params[3], params[4]].join('|');
         const row = observations.find((item) => item._key === key);
         return { rows: row ? [{ content_fingerprint: row.content_fingerprint }] : [], rowCount: row ? 1 : 0 };
       }
@@ -155,7 +162,7 @@ test('postgres SQL does not overwrite observations or turn null into zero', () =
   assert.strictEqual(numericOrNull(''), null);
   assert.notStrictEqual(numericOrNull(null), 0);
   const sql = INSERT_OBSERVATION_SQL;
-  assert.ok(sql.includes('ON CONFLICT (source, geography_code, observation_date, property_category)'));
+  assert.ok(sql.includes('ON CONFLICT (source, geography_code, observation_date, property_category, release_label)'));
   assert.ok(sql.includes('DO NOTHING'));
   assert.ok(!/DO UPDATE/i.test(sql));
   assert.ok(!/COALESCE\([^)]*,\s*0\)/.test(sql));
@@ -251,7 +258,7 @@ test('a conflicting postgres observation stays stored and a failed run is not em
   });
   const conflict = await ingestUkhpiCsv(`${header}\n2024-01-01,United Kingdom,K02000001,999999,9.9\n`, {
     store,
-    releaseLabel: '2024-05',
+    releaseLabel: '2024-04',
     ingestedAt: '2026-05-01T00:00:00.000Z',
   });
   assert.strictEqual(conflict.conflict_count, 1);

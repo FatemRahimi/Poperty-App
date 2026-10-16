@@ -24,6 +24,8 @@ const MIGRATIONS = [
   '024_official_sale_lookup_links.sql',
   '025_canonical_subject_identity.sql',
   '029_ukhpi_observations.sql',
+  '030_official_geography_crosswalk.sql',
+  '031_ukhpi_observation_releases.sql',
 ];
 
 async function columnExists(table, column) {
@@ -65,7 +67,10 @@ async function run() {
     ['property_identities', 'paon'],
     ['property_identity_events', 'property_id'],
     ['ukhpi_observations', 'geography_code'],
+    ['ukhpi_observations', 'record_kind'],
     ['ukhpi_import_runs', 'status'],
+    ['official_geography_crosswalk', 'normalized_postcode'],
+    ['official_geography_import_runs', 'status'],
   ];
 
   console.log('\nVerification:');

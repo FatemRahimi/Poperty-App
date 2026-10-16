@@ -24,6 +24,8 @@ const MIGRATION_FILES = [
   '026_official_epb_certificates.sql',
   '027_user_declared_subject_identity.sql',
   '029_ukhpi_observations.sql',
+  '030_official_geography_crosswalk.sql',
+  '031_ukhpi_observation_releases.sql',
 ];
 
 async function columnExists(table, column) {
@@ -76,6 +78,8 @@ async function ensureIntelligenceSchema() {
   const needsOfficialEpb = !(await tableExists('official_epb_certificates'));
   const needsUserDeclaredIdentity = !(await columnExists('property_identities', 'building_name'));
   const needsUkhpi = !(await tableExists('ukhpi_observations'));
+  const needsUkhpiReleases = !(await columnExists('ukhpi_observations', 'record_kind'));
+  const needsGeography = !(await tableExists('official_geography_crosswalk'));
 
   if (
     !needsSubjectId &&
@@ -94,7 +98,9 @@ async function ensureIntelligenceSchema() {
     !needsCanonicalIdentity &&
     !needsOfficialEpb &&
     !needsUserDeclaredIdentity &&
-    !needsUkhpi
+    !needsUkhpi &&
+    !needsUkhpiReleases &&
+    !needsGeography
   ) {
     return { applied: false, ok: true };
   }
@@ -166,6 +172,20 @@ async function ensureIntelligenceSchema() {
       await applySql('029_ukhpi_observations.sql');
     } catch (err) {
       console.error('❌ UKHPI schema could not be applied:', err.message);
+    }
+  }
+  if (needsGeography) {
+    try {
+      await applySql('030_official_geography_crosswalk.sql');
+    } catch (err) {
+      console.error('❌ Official geography crosswalk schema could not be applied:', err.message);
+    }
+  }
+  if (needsUkhpi || needsUkhpiReleases) {
+    try {
+      await applySql('031_ukhpi_observation_releases.sql');
+    } catch (err) {
+      console.error('❌ UKHPI release schema could not be applied:', err.message);
     }
   }
 
