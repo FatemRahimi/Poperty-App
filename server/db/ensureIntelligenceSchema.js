@@ -23,6 +23,7 @@ const MIGRATION_FILES = [
   '025_canonical_subject_identity.sql',
   '026_official_epb_certificates.sql',
   '027_user_declared_subject_identity.sql',
+  '029_ukhpi_observations.sql',
 ];
 
 async function columnExists(table, column) {
@@ -74,6 +75,7 @@ async function ensureIntelligenceSchema() {
   const needsCanonicalIdentity = !(await columnExists('property_identities', 'paon'));
   const needsOfficialEpb = !(await tableExists('official_epb_certificates'));
   const needsUserDeclaredIdentity = !(await columnExists('property_identities', 'building_name'));
+  const needsUkhpi = !(await tableExists('ukhpi_observations'));
 
   if (
     !needsSubjectId &&
@@ -91,7 +93,8 @@ async function ensureIntelligenceSchema() {
     !needsOfficialSaleLinks &&
     !needsCanonicalIdentity &&
     !needsOfficialEpb &&
-    !needsUserDeclaredIdentity
+    !needsUserDeclaredIdentity &&
+    !needsUkhpi
   ) {
     return { applied: false, ok: true };
   }
@@ -156,6 +159,13 @@ async function ensureIntelligenceSchema() {
       await applySql('027_user_declared_subject_identity.sql');
     } catch (err) {
       console.error('❌ User-declared subject identity schema could not be applied:', err.message);
+    }
+  }
+  if (needsUkhpi) {
+    try {
+      await applySql('029_ukhpi_observations.sql');
+    } catch (err) {
+      console.error('❌ UKHPI schema could not be applied:', err.message);
     }
   }
 

@@ -23,6 +23,7 @@ const MIGRATIONS = [
   '023_official_sale_transactions.sql',
   '024_official_sale_lookup_links.sql',
   '025_canonical_subject_identity.sql',
+  '029_ukhpi_observations.sql',
 ];
 
 async function columnExists(table, column) {
@@ -63,6 +64,8 @@ async function run() {
     ['official_sale_lookup_links', 'identifier'],
     ['property_identities', 'paon'],
     ['property_identity_events', 'property_id'],
+    ['ukhpi_observations', 'geography_code'],
+    ['ukhpi_import_runs', 'status'],
   ];
 
   console.log('\nVerification:');
