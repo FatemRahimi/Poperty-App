@@ -12,6 +12,7 @@ import { LetInvestCalculationDetail, LetInvestSaleContext } from './LetInvestCal
 import { fitCoverage, reportHasListingProvenance } from '../../Utils/letResultsDisplay';
 import { purchaseConclusionText, yieldBasisText } from '../../Utils/decisionDossierDisplay';
 import OnePropertyDossier from './OnePropertyDossier';
+import BuyDecisionComparison from './BuyDecisionComparison';
 import { legalTitleProvenanceLabel } from '../../Utils/legalEvidenceDisplay';
 
 const fmt = (n) => (n != null && !Number.isNaN(Number(n)) ? `£${Number(n).toLocaleString()}` : '—');
@@ -2278,6 +2279,9 @@ function DecisionWorkspacePanel({ report, workspace, onFocusUnderwritingInput = 
       {job === 'BUY' && (
         <OnePropertyDossier buyDecision={report.buyDecision} />
       )}
+      {job === 'BUY' && report.buyComparison ? (
+        <BuyDecisionComparison comparison={report.buyComparison} />
+      ) : null}
 
       <section className="pi-workspace-block pi-workspace-signals" data-testid="key-intelligence">
         <h3>Key signals</h3>

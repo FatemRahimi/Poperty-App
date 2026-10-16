@@ -1855,6 +1855,40 @@ describe('IntelligenceReport residential decision workspace', () => {
     expect(screen.getByTestId('workspace-metric-noi')).not.toHaveTextContent('£0');
   });
 
+  test('BUY renders a supplied comparison and does not invent one when it is absent', () => {
+    const { rerender } = render(
+      <IntelligenceReport
+        report={{
+          ...workspaceReport('BUY'),
+          buyDecision: { buyRecommendation: null },
+          buyComparison: {
+            conclusion: 'No purchase winner is determined from the current evidence.',
+            subjects: [{ id: 'a', label: 'Property A' }, { id: 'b', label: 'Property B' }],
+            columns: [{ id: 'askingPrice', label: 'Asking price', a: '£280,000', b: '£300,000' }],
+            observations: [{
+              id: 'asking_price_difference',
+              title: 'Price',
+              statement: 'Property A\'s asking price is £20,000 lower.',
+              limitation: 'This does not establish better value.',
+            }],
+          },
+        }}
+      />
+    );
+    expect(screen.getByTestId('buy-comparison-conclusion')).toHaveTextContent('No purchase winner');
+    expect(screen.getByTestId('buy-comparison-observation-asking_price_difference')).toHaveTextContent('does not establish better value');
+
+    rerender(
+      <IntelligenceReport
+        report={{
+          ...workspaceReport('BUY'),
+          buyDecision: { buyRecommendation: null },
+        }}
+      />
+    );
+    expect(screen.queryByTestId('buy-comparison')).not.toBeInTheDocument();
+  });
+
   test('SELL workspace does not invent sell methodology', () => {
     render(
       <IntelligenceReport
