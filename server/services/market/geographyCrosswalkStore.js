@@ -9,7 +9,7 @@ const {
   classifyImportCoverage,
 } = require('../../architecture/officialMarketDataset');
 const { canonicalPostcode } = require('./canonicalPostcode');
-const { releaseLabelOrUnspecified, selectEffectiveRecords } = require('./releaseSelection');
+const { releaseLabelOrUnspecified, selectEffectiveRecords, EFFECTIVE_SELECTION } = require('./releaseSelection');
 
 const IDENTITY_FIELDS = ['source', 'normalizedPostcode'];
 
@@ -65,17 +65,51 @@ function lookupResult({
   coverage,
   matchStatus,
   geography = null,
+  effectiveSelection = null,
+  ambiguousReleases = [],
 }) {
   return {
     input: input == null ? null : String(input),
     normalizedPostcode: parsed && parsed.ok ? parsed.normalized : null,
     matched: matchStatus === 'MATCHED',
     matchStatus,
+    effectiveSelection,
+    ambiguousReleases,
     geography,
     datasetCoverage: coverage,
     provenance: geography?.provenance || ONS_POSTCODE_DIRECTORY_PROVENANCE,
     limitations: GEOGRAPHY_LIMITATIONS.slice(),
     coordinates: null,
+  };
+}
+
+function applyEffectiveGeography(rows, succeededReleaseLabels) {
+  const selected = selectEffectiveRecords(rows, {
+    identityFields: IDENTITY_FIELDS,
+    succeededReleaseLabels,
+  });
+  if (selected.status === EFFECTIVE_SELECTION.AMBIGUOUS) {
+    return {
+      matchStatus: 'AMBIGUOUS',
+      effectiveSelection: EFFECTIVE_SELECTION.AMBIGUOUS,
+      geography: null,
+      ambiguousReleases: selected.ambiguous.flatMap((group) => group.releases),
+    };
+  }
+  const geography = selected.records[0] || null;
+  if (!geography) {
+    return {
+      matchStatus: 'NO_MATCH',
+      effectiveSelection: EFFECTIVE_SELECTION.NONE,
+      geography: null,
+      ambiguousReleases: [],
+    };
+  }
+  return {
+    matchStatus: 'MATCHED',
+    effectiveSelection: EFFECTIVE_SELECTION.RESOLVED,
+    geography,
+    ambiguousReleases: [],
   };
 }
 
@@ -154,25 +188,21 @@ function createMemoryGeographyStore() {
           matchStatus: coverage.state,
         });
       }
-      const matches = selectEffectiveRecords(await this.findByPostcode(parsed.normalized), {
-        identityFields: IDENTITY_FIELDS,
-        succeededReleaseLabels: succeededLabels(await this.succeededRuns()),
-      });
-      const geography = matches[0] || null;
+      const chosen = applyEffectiveGeography(
+        await this.findByPostcode(parsed.normalized),
+        succeededLabels(await this.succeededRuns())
+      );
       return lookupResult({
         input: postcode,
         parsed,
         coverage,
-        matchStatus: geography ? 'MATCHED' : 'NO_MATCH',
-        geography,
+        ...chosen,
       });
     },
     async historyByPostcode(postcode) {
       const parsed = canonicalPostcode(postcode);
       if (!parsed.ok) return [];
-      return (await this.findByPostcode(parsed.normalized))
-        .slice()
-        .sort((a, b) => String(a.releaseLabel).localeCompare(String(b.releaseLabel)));
+      return this.findByPostcode(parsed.normalized);
     },
   };
   return api;
@@ -319,17 +349,15 @@ function createPostgresGeographyStore(db) {
       if (coverage.state === 'NOT_IMPORTED' || coverage.state === 'ERROR' || coverage.state === 'EMPTY') {
         return lookupResult({ input: postcode, parsed, coverage, matchStatus: coverage.state });
       }
-      const matches = selectEffectiveRecords(await this.findByPostcode(parsed.normalized), {
-        identityFields: IDENTITY_FIELDS,
-        succeededReleaseLabels: succeededLabels(await this.succeededRuns()),
-      });
-      const geography = matches[0] || null;
+      const chosen = applyEffectiveGeography(
+        await this.findByPostcode(parsed.normalized),
+        succeededLabels(await this.succeededRuns())
+      );
       return lookupResult({
         input: postcode,
         parsed,
         coverage,
-        matchStatus: geography ? 'MATCHED' : 'NO_MATCH',
-        geography,
+        ...chosen,
       });
     },
     async historyByPostcode(postcode) {

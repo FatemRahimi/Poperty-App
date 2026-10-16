@@ -96,6 +96,8 @@ function createMemoryUkhpiStore() {
           annualChange: null,
           growthCalculated: false,
           selection,
+          effectiveSelection: null,
+          ambiguous: [],
         };
       }
       const rows = [...byKey.values()].filter((row) => (
@@ -104,8 +106,8 @@ function createMemoryUkhpiStore() {
         && (!fromDate || row.observationDate >= String(fromDate).slice(0, 10))
         && (!toDate || row.observationDate <= String(toDate).slice(0, 10))
       ));
-      const observations = chooseUkhpiRows(rows, runs, selection);
-      return observationQueryResult(observations, datasetCoverage, selection);
+      const chosen = chooseUkhpiRows(rows, runs, selection);
+      return observationQueryResult(chosen, datasetCoverage, selection);
     },
   };
 }
@@ -320,6 +322,8 @@ function createPostgresUkhpiStore(db) {
           annualChange: null,
           growthCalculated: false,
           selection,
+          effectiveSelection: null,
+          ambiguous: [],
         };
       }
       const result = await database.query(QUERY_OBSERVATIONS_SQL, [
@@ -329,12 +333,12 @@ function createPostgresUkhpiStore(db) {
         fromDate ? sqlDate(fromDate) : null,
         toDate ? sqlDate(toDate) : null,
       ]);
-      const observations = chooseUkhpiRows(
+      const chosen = chooseUkhpiRows(
         (result.rows || []).map(observationFromRow),
         await this.succeededRuns(),
         selection
       );
-      return observationQueryResult(observations, datasetCoverage, selection);
+      return observationQueryResult(chosen, datasetCoverage, selection);
     },
   };
 }
@@ -342,21 +346,30 @@ function createPostgresUkhpiStore(db) {
 function chooseUkhpiRows(rows, runs, selection) {
   const sorted = rows.slice().sort((a, b) => (
     String(a.observationDate).localeCompare(String(b.observationDate))
-    || String(a.propertyCategory).localeCompare(String(b.propertyCategory))
-    || String(a.releaseLabel).localeCompare(String(b.releaseLabel))
+    || String(a.propertyCategory || '').localeCompare(String(b.propertyCategory || ''))
     || Number(a.id || 0) - Number(b.id || 0)
   ));
-  if (selection === 'history') return sorted;
-  if (selection && selection !== 'effective') {
-    return sorted.filter((row) => releaseLabelOrUnspecified(row.releaseLabel) === releaseLabelOrUnspecified(selection));
+  if (selection === 'history' || (selection && selection !== 'effective')) {
+    const observations = selection === 'history'
+      ? sorted
+      : sorted.filter((row) => releaseLabelOrUnspecified(row.releaseLabel) === releaseLabelOrUnspecified(selection));
+    return { observations, effectiveSelection: null, ambiguous: [] };
   }
-  return selectEffectiveRecords(sorted, {
+  const selected = selectEffectiveRecords(sorted, {
     identityFields: UKHPI_IDENTITY_FIELDS,
     succeededReleaseLabels: succeededReleaseLabels(runs),
-  }).sort((a, b) => String(a.observationDate).localeCompare(String(b.observationDate)));
+  });
+  return {
+    observations: selected.records.slice().sort((a, b) => (
+      String(a.observationDate).localeCompare(String(b.observationDate))
+    )),
+    effectiveSelection: selected.status,
+    ambiguous: selected.ambiguous,
+  };
 }
 
-function observationQueryResult(observations, datasetCoverage, selection) {
+function observationQueryResult(chosen, datasetCoverage, selection) {
+  const observations = chosen.observations || [];
   return {
     observations,
     datasetCoverage,
@@ -366,6 +379,8 @@ function observationQueryResult(observations, datasetCoverage, selection) {
       : null,
     growthCalculated: false,
     selection,
+    effectiveSelection: chosen.effectiveSelection == null ? null : chosen.effectiveSelection,
+    ambiguous: chosen.ambiguous || [],
   };
 }
 
