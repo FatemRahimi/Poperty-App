@@ -4,11 +4,43 @@
  */
 
 const { calculateSafeLtv } = require('./safeLtv');
-const { leaseholdEvidence, EVIDENCE_STATE } = require('./leaseholdTruth');
+const { leaseholdEvidence } = require('./leaseholdTruth');
 const { buildAreaMarketContext } = require('./areaMarketContext');
 
 const ENGINE = 'buyDecision';
-const VERSION = 'buy-decision-1.0.0';
+const VERSION = 'buy-decision-1.1.0';
+
+const IMPORTANCE = Object.freeze({
+  decisionCritical: 'decision_critical',
+  decisionRelevant: 'decision_relevant',
+  worthReviewing: 'worth_reviewing',
+});
+
+const RESOLUTION = Object.freeze({
+  automaticExistingData: 'automatic_existing_data',
+  userInputRequired: 'user_input_required',
+  externalEvidenceRequired: 'external_evidence_required',
+  notCurrentlySupported: 'not_currently_supported',
+});
+
+const INVESTIGATION_ORDER = Object.freeze([
+  'identity_unresolved',
+  'affordability_evidence_incomplete',
+  'lease_years_unknown',
+  'deposit_unknown',
+  'service_charge_unknown',
+  'ground_rent_unknown',
+  'sold_comparable_market_context',
+  'sold_comparable_support_unknown',
+  'valuation_support_unavailable',
+  'environment_evidence_unresolved',
+]);
+
+const IMPORTANCE_RANK = Object.freeze({
+  decision_critical: 0,
+  decision_relevant: 1,
+  worth_reviewing: 2,
+});
 
 function unknown(reason) {
   return { state: 'UNKNOWN', assessed: false, value: null, reason };
@@ -117,16 +149,176 @@ function comparableSupport(comparableSoldEvidence) {
   return unknown('Defensible sold-comparable support is not assessed.');
 }
 
-function investigation(id, title, explanation) {
+function investigationItem({
+  id,
+  evidenceKey,
+  state,
+  importance,
+  title,
+  explanation,
+  whatNext,
+  resolution,
+}) {
   return {
     id,
     type: 'investigation_priority',
-    importance: 'decision_relevant',
-    state: 'UNKNOWN',
+    evidenceKey,
+    state,
+    importance,
     title,
     explanation,
+    whatNext,
+    resolution,
     notARecommendation: true,
   };
+}
+
+function needsInvestigation(field) {
+  return Boolean(field && (field.state === 'UNKNOWN' || field.state === 'CONFLICTED'));
+}
+
+function soldPriceContextKnown(field) {
+  return Boolean(
+    field
+    && field.state === 'KNOWN'
+    && (field.evidenceClass === 'SOLD_PRICE_CONTEXT' || field.role === 'sold_price_context')
+  );
+}
+
+function deriveBuyInvestigation(evidence) {
+  const items = [];
+  if (needsInvestigation(evidence?.identity)) {
+    items.push(investigationItem({
+      id: 'identity_unresolved',
+      evidenceKey: 'identity',
+      state: evidence.identity.state,
+      importance: IMPORTANCE.decisionCritical,
+      title: 'Property identity unresolved',
+      explanation: 'This decision is about one dwelling. Without a canonical listing identity or UPRN, later evidence cannot be tied to this home. A UPRN is not a title.',
+      whatNext: 'Record the canonical listing or a unique UPRN. This analysis has not established which dwelling the other evidence belongs to.',
+      resolution: RESOLUTION.externalEvidenceRequired,
+    }));
+  }
+  if (needsInvestigation(evidence?.affordability)) {
+    items.push(investigationItem({
+      id: 'affordability_evidence_incomplete',
+      evidenceKey: 'affordability',
+      state: evidence.affordability.state,
+      importance: IMPORTANCE.decisionCritical,
+      title: 'Affordability evidence incomplete',
+      explanation: 'Income, commitments, and expenditure were not supplied. Budget-versus-price preference fit is not affordability and is not a reason to buy.',
+      whatNext: 'Supply income, commitments, and expenditure. They are not read from the listing and they are not inferred.',
+      resolution: RESOLUTION.userInputRequired,
+    }));
+  }
+  if (needsInvestigation(evidence?.leaseYearsRemaining)) {
+    items.push(investigationItem({
+      id: 'lease_years_unknown',
+      evidenceKey: 'leaseYearsRemaining',
+      state: evidence.leaseYearsRemaining.state,
+      importance: IMPORTANCE.decisionCritical,
+      title: 'Lease length unknown',
+      explanation: 'Tenure is leasehold and the remaining term was not evidenced. Lease length can change ownership risk. No lender rule is applied.',
+      whatNext: 'Obtain the remaining term from the lease or title. This analysis has not retrieved it.',
+      resolution: RESOLUTION.externalEvidenceRequired,
+    }));
+  }
+  if (needsInvestigation(evidence?.deposit)) {
+    items.push(investigationItem({
+      id: 'deposit_unknown',
+      evidenceKey: 'deposit',
+      state: evidence.deposit.state,
+      importance: IMPORTANCE.decisionRelevant,
+      title: 'Deposit unknown',
+      explanation: 'Deposit was not supplied, so loan-to-value is not assessed. A budget is not a deposit. An unknown deposit is not zero.',
+      whatNext: 'Supply the deposit for this purchase. It is not taken from the asking price or from a budget.',
+      resolution: RESOLUTION.userInputRequired,
+    }));
+  }
+  if (needsInvestigation(evidence?.serviceCharge)) {
+    items.push(investigationItem({
+      id: 'service_charge_unknown',
+      evidenceKey: 'serviceCharge',
+      state: evidence.serviceCharge.state,
+      importance: IMPORTANCE.decisionRelevant,
+      title: 'Service charge unknown',
+      explanation: 'Leasehold service charge was not evidenced. Unknown is not zero, and a missing charge is not a saving.',
+      whatNext: 'Obtain the service charge for this leasehold. This analysis has not retrieved it.',
+      resolution: RESOLUTION.externalEvidenceRequired,
+    }));
+  }
+  if (needsInvestigation(evidence?.groundRent)) {
+    items.push(investigationItem({
+      id: 'ground_rent_unknown',
+      evidenceKey: 'groundRent',
+      state: evidence.groundRent.state,
+      importance: IMPORTANCE.decisionRelevant,
+      title: 'Ground rent unknown',
+      explanation: 'Leasehold ground rent was not evidenced. Unknown is not zero.',
+      whatNext: 'Obtain the ground rent for this leasehold. This analysis has not retrieved it.',
+      resolution: RESOLUTION.externalEvidenceRequired,
+    }));
+  }
+  const sold = evidence?.soldComparableSupport;
+  if (sold && (sold.evidenceClass === 'MARKET_CONTEXT' || sold.state === 'CONTEXT')) {
+    items.push(investigationItem({
+      id: 'sold_comparable_market_context',
+      evidenceKey: 'soldComparableSupport',
+      state: 'CONTEXT',
+      importance: IMPORTANCE.decisionRelevant,
+      title: 'Sold sales are market context only',
+      explanation: sold.limitation || 'Local sold transactions are market context. A large transaction count does not make them evidence for this home.',
+      whatNext: 'Keep these sales as local market context. They are not this home\'s value, and this analysis does not turn them into a valuation.',
+      resolution: RESOLUTION.notCurrentlySupported,
+    }));
+  } else if (!soldPriceContextKnown(sold) && sold?.state !== 'NOT_APPLICABLE' && needsInvestigation(sold || { state: 'UNKNOWN' })) {
+    items.push(investigationItem({
+      id: 'sold_comparable_support_unknown',
+      evidenceKey: 'soldComparableSupport',
+      state: sold?.state || 'UNKNOWN',
+      importance: IMPORTANCE.decisionRelevant,
+      title: 'Sold-comparable support not established',
+      explanation: 'Official sold-comparable support is not sufficient for this home. No typical price is used.',
+      whatNext: 'Do not substitute a postcode average or a valuation. This analysis does not create a value for this home from missing sold evidence.',
+      resolution: RESOLUTION.notCurrentlySupported,
+    }));
+  }
+  if (needsInvestigation(evidence?.valuationSupport)) {
+    items.push(investigationItem({
+      id: 'valuation_support_unavailable',
+      evidenceKey: 'valuationSupport',
+      state: evidence.valuationSupport.state,
+      importance: IMPORTANCE.decisionRelevant,
+      title: 'Valuation support unavailable',
+      explanation: 'Asking price is not a supported value. No valuation has been assessed for this home.',
+      whatNext: 'Do not treat the asking price as a valuation. This analysis does not produce one.',
+      resolution: RESOLUTION.notCurrentlySupported,
+    }));
+  }
+  const environment = evidence?.environment || {};
+  const environmentUnresolved = ['flood', 'planning', 'listedBuilding', 'conservationArea', 'article4']
+    .filter((key) => needsInvestigation(environment[key]));
+  if (environmentUnresolved.length) {
+    items.push(investigationItem({
+      id: 'environment_evidence_unresolved',
+      evidenceKey: 'environment',
+      state: environmentUnresolved.some((key) => environment[key].state === 'CONFLICTED') && environmentUnresolved.every((key) => environment[key].state === 'CONFLICTED')
+        ? 'CONFLICTED'
+        : 'UNKNOWN',
+      importance: IMPORTANCE.worthReviewing,
+      title: 'Property or environment evidence unresolved',
+      explanation: `These context facts are not assessed: ${environmentUnresolved.join(', ')}. Unknown is not a clearance.`,
+      whatNext: 'Missing environment context stays unknown. This analysis does not turn it into a clearance.',
+      resolution: RESOLUTION.notCurrentlySupported,
+    }));
+  }
+  return items.slice().sort((a, b) => {
+    const byImportance = (IMPORTANCE_RANK[a.importance] ?? 9) - (IMPORTANCE_RANK[b.importance] ?? 9);
+    if (byImportance !== 0) return byImportance;
+    const left = INVESTIGATION_ORDER.indexOf(a.id);
+    const right = INVESTIGATION_ORDER.indexOf(b.id);
+    return (left === -1 ? INVESTIGATION_ORDER.length : left) - (right === -1 ? INVESTIGATION_ORDER.length : right);
+  });
 }
 
 function assembleBuyDecision({
@@ -150,63 +342,48 @@ function assembleBuyDecision({
   const schools = propertyFacts?.facts?.schools;
   const valuation = valuationSupport(pricePosition, saleValuation);
   const comparables = comparableSupport(comparableSoldEvidence);
-
-  const priorities = [
-    investigation(
-      'affordability_evidence_incomplete',
-      'Affordability evidence incomplete',
-      'Income, commitments, and expenditure were not assessed. Budget-versus-price preference fit is not affordability and is not a reason to buy.'
-    ),
-    ltv.available ? null : investigation(
-      'deposit_unknown',
-      'Deposit unknown',
-      'Deposit was not supplied, so LTV and cash toward the purchase are not assessed. Budget is not used as a deposit.'
-    ),
-    investigation(
-      'ongoing_housing_cost_unknown',
-      'Ongoing housing cost unknown',
-      'Mortgage payment, service charge, ground rent, and council tax have not been combined into an occupancy cost. Missing costs are not zero.'
-    ),
-    valuation.assessed ? null : investigation(
-      'valuation_support_unavailable',
-      'Valuation support unavailable',
-      'Asking price is not treated as a supported value until a defensible valuation or price position exists.'
-    ),
-    lease.tenure.applicableLeasehold && lease.leaseYearsRemaining.state === EVIDENCE_STATE.UNKNOWN
-      ? investigation(
-        'lease_years_unknown',
-        'Lease years remaining unknown',
-        'Tenure is leasehold and remaining term was not evidenced. This is an investigation item. No lender rule is applied.'
-      )
-      : null,
-    lease.tenure.applicableLeasehold && lease.serviceCharge.state === EVIDENCE_STATE.UNKNOWN
-      ? investigation(
-        'service_charge_unknown',
-        'Service charge unknown',
-        'Leasehold service charge was not evidenced. Unknown is not £0.'
-      )
-      : null,
-    lease.tenure.applicableLeasehold && lease.groundRent.state === EVIDENCE_STATE.UNKNOWN
-      ? investigation(
-        'ground_rent_unknown',
-        'Ground rent unknown',
-        'Leasehold ground rent was not evidenced. Unknown is not £0.'
-      )
-      : null,
-  ].filter(Boolean);
-
-  const environmentUnresolved = ['flood', 'planning', 'listedBuilding', 'conservationArea', 'article4']
-    .filter((key) => !factKnown(propertyFacts?.facts?.[key]));
-  if (environmentUnresolved.length) {
-    priorities.push({
-      ...investigation(
-        'environment_evidence_unresolved',
-        'Property or environment evidence unresolved',
-        `These context facts are not assessed: ${environmentUnresolved.join(', ')}. Unknown is not a clearance.`
-      ),
-      importance: 'worth_reviewing',
-    });
-  }
+  const evidence = {
+    identity: identityKnown
+      ? known({
+        listingId: propertyFacts?.identity?.listingId?.value ?? null,
+        uprn: propertyFacts?.identity?.uprn?.value ?? null,
+        uprnIsNotVerifiedTitle: true,
+      })
+      : unknown('Canonical listing or UPRN identity was not available.'),
+    askingPrice: factKnown(asking)
+      ? known(asking.value, { evidenceClass: 'asking', notAValuation: true })
+      : unknown('Asking or purchase price was not evidenced.'),
+    valuationSupport: valuation,
+    soldComparableSupport: comparables,
+    deposit: ltv.deposit != null && explicitlyKnownDeposit(deposit)
+      ? known(ltv.deposit, { provenance: ltv.provenance.deposit })
+      : unknown('Deposit was not supplied.'),
+    ltv,
+    affordability: unknown('Income, commitments, and expenditure were not assessed. Missing affordability evidence is not a positive fit.'),
+    cashToComplete: unknown('Transaction costs are not calculated. A supplied deposit does not make cash to complete known.'),
+    ongoingHousingCost: unknown('Ongoing housing cost is not assessed. Missing mortgage, service charge, ground rent, or council tax inputs are not zero.'),
+    tenure: lease.tenure,
+    leaseYearsRemaining: lease.leaseYearsRemaining,
+    serviceCharge: lease.serviceCharge,
+    groundRent: lease.groundRent,
+    schools: {
+      role: 'context',
+      state: schools?.available ? 'KNOWN' : 'UNKNOWN',
+      nearbyCount: Array.isArray(schools?.nearbySchools) ? schools.nearbySchools.length : null,
+      catchment: 'NOT_ASSESSED',
+      admission: 'NOT_ASSESSED',
+      quality: 'NOT_ASSESSED',
+      notAScore: true,
+    },
+    environment: {
+      flood: environmentState(propertyFacts?.facts?.flood),
+      planning: environmentState(propertyFacts?.facts?.planning),
+      listedBuilding: environmentState(propertyFacts?.facts?.listedBuilding),
+      conservationArea: environmentState(propertyFacts?.facts?.conservationArea),
+      article4: environmentState(propertyFacts?.facts?.article4),
+    },
+  };
+  const priorities = deriveBuyInvestigation(evidence);
 
   return {
     engine: ENGINE,
@@ -224,49 +401,11 @@ function assembleBuyDecision({
       outcome: personalDecision?.outcome || null,
       note: 'Preference fit compares the listing with stated living preferences. It is not a recommendation to buy and it is not income affordability.',
     },
-    evidence: {
-      identity: identityKnown
-        ? known({
-          listingId: propertyFacts?.identity?.listingId?.value ?? null,
-          uprn: propertyFacts?.identity?.uprn?.value ?? null,
-          uprnIsNotVerifiedTitle: true,
-        })
-        : unknown('Canonical listing or UPRN identity was not available.'),
-      askingPrice: factKnown(asking)
-        ? known(asking.value, { evidenceClass: 'asking', notAValuation: true })
-        : unknown('Asking or purchase price was not evidenced.'),
-      valuationSupport: valuation,
-      soldComparableSupport: comparables,
-      deposit: ltv.deposit != null && explicitlyKnownDeposit(deposit)
-        ? known(ltv.deposit, { provenance: ltv.provenance.deposit })
-        : unknown('Deposit was not supplied.'),
-      ltv,
-      affordability: unknown('Income, commitments, and expenditure were not assessed. Missing affordability evidence is not a positive fit.'),
-      cashToComplete: unknown('Transaction costs are not calculated. A supplied deposit does not make cash to complete known.'),
-      ongoingHousingCost: unknown('Ongoing housing cost is not assessed. Missing mortgage, service charge, ground rent, or council tax inputs are not zero.'),
-      tenure: lease.tenure,
-      leaseYearsRemaining: lease.leaseYearsRemaining,
-      serviceCharge: lease.serviceCharge,
-      groundRent: lease.groundRent,
-      schools: {
-        role: 'context',
-        state: schools?.available ? 'KNOWN' : 'UNKNOWN',
-        nearbyCount: Array.isArray(schools?.nearbySchools) ? schools.nearbySchools.length : null,
-        catchment: 'NOT_ASSESSED',
-        admission: 'NOT_ASSESSED',
-        quality: 'NOT_ASSESSED',
-        notAScore: true,
-      },
-      environment: {
-        flood: environmentState(propertyFacts?.facts?.flood),
-        planning: environmentState(propertyFacts?.facts?.planning),
-        listedBuilding: environmentState(propertyFacts?.facts?.listedBuilding),
-        conservationArea: environmentState(propertyFacts?.facts?.conservationArea),
-        article4: environmentState(propertyFacts?.facts?.article4),
-      },
-    },
+    evidence,
     areaMarketContext: buildAreaMarketContext({ areaMarketDemand, areaRentalDemand }),
-    materialUnknowns: priorities.map((row) => row.id),
+    materialUnknowns: priorities
+      .filter((row) => row.state === 'UNKNOWN' || row.state === 'CONFLICTED')
+      .map((row) => row.id),
     investigationPriorities: priorities,
   };
 }
@@ -296,6 +435,8 @@ function buyDecisionNotApplicable(reason) {
 module.exports = {
   ENGINE,
   VERSION,
+  IMPORTANCE,
+  RESOLUTION,
   assembleBuyDecision,
   buyDecisionNotApplicable,
 };

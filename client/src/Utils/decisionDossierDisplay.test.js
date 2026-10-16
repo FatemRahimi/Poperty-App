@@ -141,4 +141,52 @@ describe('decision dossier display', () => {
     expect(view.unknown.find((row) => row.id === 'identity').value).toBe('Unknown');
     expect(view.conclusion).not.toMatch(/\bBuy\b|Recommended|Affordable|Suitable purchase/);
   });
+
+  test('decision-critical investigation stays ahead of relevant items and old priorities still render', () => {
+    const view = buyDossierView({
+      buyRecommendation: null,
+      investigationPriorities: [
+        {
+          id: 'deposit_unknown',
+          importance: 'decision_relevant',
+          title: 'Deposit unknown',
+          explanation: 'A budget is not a deposit.',
+          state: 'UNKNOWN',
+          whatNext: 'Supply the deposit for this purchase.',
+          resolution: 'user_input_required',
+          evidenceKey: 'deposit',
+        },
+        {
+          id: 'lease_years_unknown',
+          importance: 'decision_critical',
+          title: 'Lease length unknown',
+          explanation: 'No lender rule is applied.',
+          state: 'UNKNOWN',
+          whatNext: 'Obtain the remaining term from the lease or title. This analysis has not retrieved it.',
+          resolution: 'external_evidence_required',
+          evidenceKey: 'leaseYearsRemaining',
+        },
+        {
+          id: 'environment_evidence_unresolved',
+          importance: 'worth_reviewing',
+          title: 'Property or environment evidence unresolved',
+          explanation: 'Unknown is not a clearance.',
+        },
+      ],
+    });
+    expect(view.investigation.map((item) => item.id)).toEqual(['deposit_unknown', 'lease_years_unknown']);
+    expect(view.investigation[1].priorityLabel).toBe('Decision critical');
+    expect(view.investigation[1].stateLabel).toBe('Unknown');
+    expect(view.investigation[1].resolutionLabel).toMatch(/has not been retrieved/i);
+    expect(view.context.find((line) => line.id === 'environment_evidence_unresolved').text).toMatch(/not a clearance/i);
+
+    const saved = buyDossierView({
+      investigationPriorities: [{ title: 'Lease years remaining unknown' }],
+    });
+    expect(saved.investigation).toHaveLength(1);
+    expect(saved.investigation[0].title).toBe('Lease years remaining unknown');
+    expect(saved.investigation[0].priorityLabel).toBeNull();
+    expect(saved.investigation[0].resolutionLabel).toBeNull();
+    expect(saved.conclusion).toBe('Purchase conclusion not available yet');
+  });
 });

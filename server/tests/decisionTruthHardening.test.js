@@ -523,6 +523,104 @@ test('official comparable assessment binds into the buy decision without becomin
   assert.notStrictEqual(absent.evidence.soldComparableSupport.value, 0);
 });
 
+test('buy investigation is derived from this decision evidence', () => {
+  const unresolved = assembleBuyDecision({
+    propertyFacts: assemblePropertyFacts({
+      property: { price: 250000, category: 'sale', tenure: 'leasehold', city: 'Leeds' },
+    }),
+  });
+  const ids = unresolved.investigationPriorities.map((row) => row.id);
+  assert.strictEqual(ids[0], 'identity_unresolved');
+  assert.ok(ids.indexOf('identity_unresolved') < ids.indexOf('affordability_evidence_incomplete'));
+  assert.ok(ids.indexOf('affordability_evidence_incomplete') < ids.indexOf('lease_years_unknown'));
+  assert.ok(ids.indexOf('lease_years_unknown') < ids.indexOf('sold_comparable_support_unknown'));
+  const lease = unresolved.investigationPriorities.find((row) => row.id === 'lease_years_unknown');
+  assert.strictEqual(lease.importance, 'decision_critical');
+  assert.strictEqual(lease.evidenceKey, 'leaseYearsRemaining');
+  assert.strictEqual(lease.state, 'UNKNOWN');
+  assert.strictEqual(lease.resolution, 'external_evidence_required');
+  assert.ok(/has not retrieved/i.test(lease.whatNext));
+  assert.ok(!/unmortgageable/i.test(JSON.stringify(lease)));
+  const service = unresolved.investigationPriorities.find((row) => row.id === 'service_charge_unknown');
+  const ground = unresolved.investigationPriorities.find((row) => row.id === 'ground_rent_unknown');
+  assert.ok(service);
+  assert.ok(ground);
+  assert.strictEqual(unresolved.evidence.groundRent.value, null);
+  assert.ok(!/£0/.test(JSON.stringify(ground)));
+  const affordability = unresolved.investigationPriorities.find((row) => row.id === 'affordability_evidence_incomplete');
+  assert.strictEqual(affordability.resolution, 'user_input_required');
+  assert.ok(/not inferred/i.test(affordability.whatNext));
+  assert.strictEqual(unresolved.buyRecommendation, null);
+  assert.ok(!/check the lease|check schools|check crime|check transport|get a survey|talk to a solicitor/i.test(
+    JSON.stringify(unresolved.investigationPriorities)
+  ));
+  assert.ok(!unresolved.investigationPriorities.some((row) => /school/i.test(row.id)));
+
+  const knownLease = assemblePropertyFacts({
+    property: listing({ tenure: 'leasehold', service_charges: 0 }),
+  });
+  knownLease.implications.leaseRemaining = { available: true, value: 92, state: 'calculated' };
+  const known = assembleBuyDecision({ propertyFacts: knownLease });
+  assert.strictEqual(known.evidence.leaseYearsRemaining.state, 'KNOWN');
+  assert.strictEqual(known.evidence.serviceCharge.state, 'KNOWN');
+  assert.strictEqual(known.evidence.serviceCharge.value, 0);
+  assert.ok(!known.investigationPriorities.some((row) => row.id === 'lease_years_unknown'));
+  assert.ok(!known.investigationPriorities.some((row) => row.id === 'service_charge_unknown'));
+  assert.ok(!known.investigationPriorities.some((row) => row.id === 'identity_unresolved'));
+  assert.ok(known.investigationPriorities.some((row) => row.id === 'ground_rent_unknown'));
+
+  const assessed = assembleBuyDecision({
+    propertyFacts: assemblePropertyFacts({ property: listing({ tenure: 'freehold' }) }),
+    comparableSoldEvidence: {
+      assessment: 'ASSESSED',
+      observedComparableMedian: 240000,
+      defensibleComparableCount: 4,
+    },
+  });
+  assert.strictEqual(assessed.evidence.soldComparableSupport.evidenceClass, 'SOLD_PRICE_CONTEXT');
+  assert.ok(!assessed.investigationPriorities.some((row) => row.id === 'sold_comparable_support_unknown'));
+  assert.ok(!assessed.investigationPriorities.some((row) => row.id === 'sold_comparable_market_context'));
+  assert.strictEqual(assessed.evidence.soldComparableSupport.observedComparableMedian, undefined);
+  assert.ok(!assessed.investigationPriorities.some((row) => row.id === 'lease_years_unknown'));
+  assert.ok(!assessed.investigationPriorities.some((row) => row.id === 'service_charge_unknown'));
+  assert.ok(!assessed.investigationPriorities.some((row) => row.id === 'ground_rent_unknown'));
+
+  const market = assembleBuyDecision({
+    propertyFacts: assemblePropertyFacts({ property: listing({ tenure: 'freehold' }) }),
+    comparableSoldEvidence: {
+      assessment: 'MARKET_CONTEXT',
+      relevantMarketTransactionCount: 80,
+      observedLocalMedian: 190000,
+    },
+  });
+  const marketItem = market.investigationPriorities.find((row) => row.id === 'sold_comparable_market_context');
+  assert.ok(marketItem);
+  assert.strictEqual(marketItem.state, 'CONTEXT');
+  assert.notStrictEqual(marketItem.state, 'UNKNOWN');
+  assert.strictEqual(marketItem.resolution, 'not_currently_supported');
+  assert.strictEqual(market.evidence.soldComparableSupport.value, null);
+  assert.ok(!/commission|instruct a valuer|fair value/i.test(`${marketItem.explanation} ${marketItem.whatNext}`));
+  assert.ok(/not this home's value/i.test(`${marketItem.explanation} ${marketItem.whatNext}`));
+  assert.ok(!market.materialUnknowns.includes('sold_comparable_market_context'));
+
+  const withDeposit = assembleBuyDecision({
+    propertyFacts: assemblePropertyFacts({ property: listing({ tenure: 'freehold' }) }),
+    purchasePrice: { value: 200000, supplied: true, source: 'listing_asking' },
+    deposit: { value: 0, supplied: true, source: 'user_supplied' },
+  });
+  assert.strictEqual(withDeposit.evidence.deposit.state, 'KNOWN');
+  assert.strictEqual(withDeposit.evidence.deposit.value, 0);
+  assert.ok(!withDeposit.investigationPriorities.some((row) => row.id === 'deposit_unknown'));
+
+  const sparse = assembleBuyDecision();
+  assert.strictEqual(sparse.buyRecommendation, null);
+  assert.ok(Array.isArray(sparse.investigationPriorities));
+  assert.strictEqual(sparse.evidence.leaseYearsRemaining.state, 'NOT_APPLICABLE');
+  assert.strictEqual(sparse.evidence.groundRent.value, null);
+  assert.ok(!sparse.investigationPriorities.some((row) => row.id === 'lease_years_unknown'));
+  assert.ok(!sparse.investigationPriorities.some((row) => row.explanation == null));
+});
+
 (async () => {
   for (const item of pending) {
     try {

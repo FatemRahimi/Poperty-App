@@ -48,7 +48,11 @@ export default function OnePropertyDossier({ buyDecision }) {
             {view.investigation.map((item) => (
               <li key={item.id} data-testid={`dossier-priority-${item.id}`}>
                 <strong>{item.title}</strong>
+                {item.priorityLabel ? <p>{item.priorityLabel}</p> : null}
+                {item.stateLabel ? <p>{`Current state: ${item.stateLabel}`}</p> : null}
                 {item.explanation ? <p>{item.explanation}</p> : null}
+                {item.whatNext ? <p>{item.whatNext}</p> : null}
+                {item.resolutionLabel ? <p>{`Resolution: ${item.resolutionLabel}`}</p> : null}
               </li>
             ))}
           </ol>

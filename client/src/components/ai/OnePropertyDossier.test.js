@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 
 jest.mock('../../services/aiService', () => ({
   getSubjectPropertyAttributes: jest.fn(async () => ({ success: true, attributes: {} })),
@@ -6,6 +6,7 @@ jest.mock('../../services/aiService', () => ({
 }));
 
 import IntelligenceReport from './IntelligenceReport';
+import OnePropertyDossier from './OnePropertyDossier';
 
 function leaseholdBuyDecision() {
   return {
@@ -260,5 +261,50 @@ describe('one-property decision dossier', () => {
       expect(node).toHaveTextContent(/not achieved rent/i);
       expect(node.textContent).not.toMatch(/\bACHIEVED_RENT\b/);
     });
+  });
+
+  test('investigate next renders the stored priority, state, and resolution without inventing a task', () => {
+    render(
+      <OnePropertyDossier
+        buyDecision={{
+          buyRecommendation: null,
+          evidence: {
+            leaseYearsRemaining: { state: 'UNKNOWN', value: null },
+            serviceCharge: { state: 'KNOWN', value: 0 },
+          },
+          investigationPriorities: [
+            {
+              id: 'lease_years_unknown',
+              importance: 'decision_critical',
+              evidenceKey: 'leaseYearsRemaining',
+              state: 'UNKNOWN',
+              title: 'Lease length unknown',
+              explanation: 'No lender rule is applied.',
+              whatNext: 'Obtain the remaining term from the lease or title. This analysis has not retrieved it.',
+              resolution: 'external_evidence_required',
+            },
+          ],
+        }}
+      />
+    );
+    const item = screen.getByTestId('dossier-priority-lease_years_unknown');
+    expect(item).toHaveTextContent('Decision critical');
+    expect(item).toHaveTextContent('Current state: Unknown');
+    expect(item).toHaveTextContent(/has not been retrieved/i);
+    expect(item).toHaveTextContent(/External evidence is required/i);
+    expect(screen.queryByTestId('dossier-priority-service_charge_unknown')).not.toBeInTheDocument();
+    expect(screen.getByTestId('dossier-evidence-serviceCharge')).toHaveTextContent('£0');
+
+    cleanup();
+    render(
+      <OnePropertyDossier
+        buyDecision={{
+          investigationPriorities: [{ title: 'Older saved priority' }],
+        }}
+      />
+    );
+    expect(screen.getByText('Older saved priority')).toBeInTheDocument();
+    expect(screen.getByTestId('purchase-conclusion')).toHaveTextContent('Purchase conclusion not available yet');
+    expect(screen.queryByText('Decision critical')).not.toBeInTheDocument();
   });
 });

@@ -101,9 +101,22 @@ function humanState(state) {
   if (state === 'UNKNOWN') return 'Unknown';
   if (state === 'NOT_APPLICABLE') return 'Not applicable';
   if (state === 'CONFLICTED') return 'Conflicting evidence';
+  if (state === 'CONTEXT') return 'Context';
   if (state === 'NOT_ASSESSED') return 'Not assessed';
   return 'Not assessed';
 }
+
+const PRIORITY_LABEL = Object.freeze({
+  decision_critical: 'Decision critical',
+  decision_relevant: 'Decision relevant',
+});
+
+const RESOLUTION_LABEL = Object.freeze({
+  automatic_existing_data: 'Can be read from evidence already held.',
+  user_input_required: 'Your input is required. It has not been supplied.',
+  external_evidence_required: 'External evidence is required. It has not been retrieved.',
+  not_currently_supported: 'Not currently supported by this analysis.',
+});
 
 function knownDisplay(key, field) {
   if (key === 'leaseYearsRemaining') return `${field.value} years`;
@@ -149,11 +162,20 @@ export function buyEvidenceRows(buyDecision) {
 export function decisionRelevantPriorities(items) {
   return (Array.isArray(items) ? items : [])
     .filter((item) => item && (item.title || item.explanation))
-    .filter((item) => item.importance === 'decision_relevant' || item.importance == null)
+    .filter((item) => (
+      item.importance === 'decision_critical'
+      || item.importance === 'decision_relevant'
+      || item.importance == null
+    ))
     .map((item) => ({
       id: item.id || item.title,
       title: item.title || 'Needs investigation',
       explanation: item.explanation || '',
+      evidenceKey: item.evidenceKey || null,
+      priorityLabel: PRIORITY_LABEL[item.importance] || null,
+      stateLabel: item.state ? humanState(item.state) : null,
+      whatNext: item.whatNext || '',
+      resolutionLabel: RESOLUTION_LABEL[item.resolution] || null,
     }));
 }
 
