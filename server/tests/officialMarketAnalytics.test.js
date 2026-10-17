@@ -1,6 +1,8 @@
 const assert = require('assert');
 const { createMemoryUkhpiStore } = require('../services/market/ukhpiStore');
 const { createMemoryOfficialSaleStore } = require('../services/market/officialSaleTransactionRepository');
+const { toCanonicalTransaction } = require('../architecture/officialSaleTransaction');
+const { parsePositivePrice } = require('../services/market/hmlrPricePaidParser');
 const {
   analyseOfficialMarket,
   median,
@@ -207,60 +209,121 @@ function baseSeries() {
     assert.strictEqual(result.subject.hpiScope, 'UKHPI_GEOGRAPHY');
   });
 
-  await test('transaction count, median, period, and coverage truth', async () => {
-    assert.strictEqual(median([200, 100, 300]), 200);
-    assert.strictEqual(median([100, 400, 200, 300]), 250);
-    const rows = [
-      sale('1', 100000, '2025-07-01'),
-      sale('2', 200000, '2025-08-01'),
-      sale('3', 300000, '2025-09-01'),
-      sale('4', 400000, '2025-10-01'),
-      sale('5', null, '2025-11-01', false),
-      sale('6', 0, '2025-12-01', true),
-      sale('7', 500000, '2025-06-30'),
-    ];
-    const store = await seedSales(rows);
-    const result = await analyseOfficialMarket({
+  async function salesResult(rows, postcode = 'B1 2UJ') {
+    return analyseOfficialMarket({
       ukhpiStore: await seedUkhpi(baseSeries()),
-      saleStore: store,
+      saleStore: await seedSales(rows),
       geographyCode: 'E08000025',
-      postcode: 'B1 2UJ',
+      postcode,
       asOf: '2026-06-30',
     });
-    assert.strictEqual(result.transactions.period.start, '2025-07-01');
-    assert.strictEqual(result.transactions.period.end, '2026-06-30');
-    assert.strictEqual(result.transactions.count, 6);
-    assert.strictEqual(result.transactions.sampleCount, 5);
-    assert.strictEqual(result.transactions.medianSoldPrice, 200000);
-    assert.strictEqual(result.transactions.sufficiency.median.state, 'SUFFICIENT');
-    assert.strictEqual(result.transactions.scope, 'POSTCODE');
-    assert.strictEqual(result.transactions.provenance.postcode, 'B1 2UJ');
-    assert.notStrictEqual(result.subject.hpiScope, result.subject.transactionScope);
+  }
 
-    const thin = await seedSales([
+  await test('transaction count and price sample stay separate', async () => {
+    assert.strictEqual(median([100, 300, 500, 700, 900]), 500);
+    assert.strictEqual(median([100, 200, 300, 400]), 250);
+
+    const enough = await salesResult([
+      sale('1', 100000, '2026-01-01'),
+      sale('2', 200000, '2026-02-01'),
+      sale('3', 300000, '2026-03-01'),
+      sale('4', 400000, '2026-04-01'),
+      sale('5', 500000, '2026-05-01'),
+    ]);
+    assert.strictEqual(enough.transactions.transactionCount, 5);
+    assert.strictEqual(enough.transactions.priceSampleCount, 5);
+    assert.strictEqual(enough.transactions.count, 5);
+    assert.strictEqual(enough.transactions.countAliasOf, 'transactionCount');
+    assert.strictEqual(enough.transactions.medianSoldPrice, 300000);
+    assert.strictEqual(enough.transactions.sufficiency.median.state, 'SUFFICIENT');
+    assert.strictEqual(enough.transactions.period.start, '2025-07-01');
+    assert.strictEqual(enough.transactions.period.end, '2026-06-30');
+    assert.notStrictEqual(enough.subject.hpiScope, enough.subject.transactionScope);
+
+    const thinPrices = await salesResult([
       sale('1', 100000, '2026-01-01'),
       sale('2', 300000, '2026-02-01'),
       sale('3', 500000, '2026-03-01'),
+      sale('4', null, '2026-04-01', false),
+      sale('5', null, '2026-05-01', false),
     ]);
-    const small = await analyseOfficialMarket({
-      ukhpiStore: await seedUkhpi(baseSeries()),
-      saleStore: thin,
-      geographyCode: 'E08000025',
-      postcode: 'B1 2UJ',
-      asOf: '2026-06-30',
-    });
-    assert.strictEqual(small.transactions.medianSoldPrice, 300000);
-    assert.strictEqual(small.transactions.sufficiency.median.reason, 'insufficient_transaction_sample');
+    assert.strictEqual(thinPrices.transactions.transactionCount, 5);
+    assert.strictEqual(thinPrices.transactions.priceSampleCount, 3);
+    assert.strictEqual(thinPrices.transactions.medianSoldPrice, 300000);
+    assert.strictEqual(thinPrices.transactions.sufficiency.median.state, 'INSUFFICIENT');
+    assert.strictEqual(thinPrices.transactions.sufficiency.median.reason, 'insufficient_price_sample');
+    assert.notStrictEqual(thinPrices.transactions.provenance.transactionCount, thinPrices.transactions.provenance.priceSampleCount);
+    assert.strictEqual(thinPrices.transactions.provenance.priceSampleCount, 3);
+    assert.strictEqual(thinPrices.transactions.medianEvidence.priceSampleCount, 3);
+    assert.strictEqual(thinPrices.transactions.medianEvidence.factClass, 'DERIVED');
+    assert.strictEqual(thinPrices.transactions.recordKind, 'FACT');
 
-    const empty = await seedSales([sale('9', 100000, '2026-01-01')]);
-    const none = await analyseOfficialMarket({
-      ukhpiStore: await seedUkhpi(baseSeries()),
-      saleStore: empty,
-      geographyCode: 'E08000025',
-      postcode: 'SW1A 1AA',
-      asOf: '2026-06-30',
+    const blank = await salesResult([
+      sale('1', 100000, '2026-01-01'),
+      { ...sale('2', '', '2026-02-01', false), price_gbp: '' },
+    ]);
+    assert.strictEqual(blank.transactions.transactionCount, 2);
+    assert.strictEqual(blank.transactions.priceSampleCount, 1);
+    assert.strictEqual(blank.transactions.medianSoldPrice, 100000);
+
+    const nonNumeric = await salesResult([
+      sale('1', 100000, '2026-01-01'),
+      { ...sale('2', 'not-a-price', '2026-02-01', true), price_gbp: 'not-a-price' },
+    ]);
+    assert.strictEqual(nonNumeric.transactions.transactionCount, 2);
+    assert.strictEqual(nonNumeric.transactions.priceSampleCount, 1);
+
+    const negative = await salesResult([
+      sale('1', 100000, '2026-01-01'),
+      sale('2', 300000, '2026-02-01'),
+      sale('3', -50, '2026-03-01', true),
+    ]);
+    assert.strictEqual(negative.transactions.transactionCount, 3);
+    assert.strictEqual(negative.transactions.priceSampleCount, 2);
+    assert.strictEqual(negative.transactions.medianSoldPrice, 200000);
+
+    const explicitZero = toCanonicalTransaction({
+      price_gbp: 0,
+      price_present: true,
+      source_transaction_id: 'zero',
+      transfer_date: '2026-01-01',
     });
-    assert.strictEqual(none.transactions.count, 0);
+    assert.strictEqual(parsePositivePrice('0').present, false);
+    assert.strictEqual(parsePositivePrice('0').invalid, true);
+    assert.strictEqual(parsePositivePrice(null).value, null);
+    assert.strictEqual(explicitZero.pricePresent, false);
+    assert.strictEqual(explicitZero.priceGbp, null);
+    const zeroRow = await salesResult([
+      sale('1', 100000, '2026-01-01'),
+      sale('2', 0, '2026-02-01', true),
+      sale('3', null, '2026-03-01', false),
+    ]);
+    assert.strictEqual(zeroRow.transactions.transactionCount, 3);
+    assert.strictEqual(zeroRow.transactions.priceSampleCount, 1);
+    assert.strictEqual(zeroRow.transactions.medianSoldPrice, 100000);
+    assert.notStrictEqual(zeroRow.transactions.medianSoldPrice, 0);
+
+    const malformed = await salesResult([
+      sale('1', 100000, '2026-01-01'),
+      { ...sale('', 999999, '2026-02-01'), source_transaction_id: '' },
+      { ...sale('deleted', 999999, '2026-02-02'), live: false, record_status: 'D' },
+      { ...sale('undated', 999999, null), transfer_date: null },
+      sale('other', 999999, '2026-02-03'),
+    ].map((row, index) => (
+      index === 4 ? { ...row, postcode: 'SW1A 1AA', postcode_compact: 'SW1A1AA' } : row
+    )));
+    assert.strictEqual(malformed.transactions.transactionCount, 1);
+    assert.strictEqual(malformed.transactions.priceSampleCount, 1);
+
+    const outside = await salesResult([
+      sale('1', 100000, '2026-01-01'),
+      sale('2', 900000, '2025-06-30'),
+    ]);
+    assert.strictEqual(outside.transactions.transactionCount, 1);
+
+    const none = await salesResult([sale('9', 100000, '2026-01-01')], 'SW1A 1AA');
+    assert.strictEqual(none.transactions.transactionCount, 0);
+    assert.strictEqual(none.transactions.priceSampleCount, 0);
     assert.strictEqual(none.transactions.medianSoldPrice, null);
 
     const missing = await analyseOfficialMarket({
@@ -270,19 +333,30 @@ function baseSeries() {
       postcode: 'B1 2UJ',
       asOf: '2026-06-30',
     });
+    assert.strictEqual(missing.transactions.transactionCount, null);
     assert.strictEqual(missing.transactions.count, null);
     assert.strictEqual(missing.transactions.sufficiency.reason, 'dataset_not_imported');
 
-    const failed = await seedSales([sale('1', 100000, '2026-01-01')], 'FAILED');
-    const errored = await analyseOfficialMarket({
+    const failed = await analyseOfficialMarket({
       ukhpiStore: await seedUkhpi(baseSeries()),
-      saleStore: failed,
+      saleStore: await seedSales([sale('1', 100000, '2026-01-01')], 'FAILED'),
       geographyCode: 'E08000025',
       postcode: 'B1 2UJ',
       asOf: '2026-06-30',
     });
-    assert.strictEqual(errored.transactions.count, null);
-    assert.strictEqual(errored.transactions.sufficiency.reason, 'coverage_error');
+    assert.strictEqual(failed.transactions.transactionCount, null);
+    assert.strictEqual(failed.transactions.sufficiency.reason, 'coverage_error');
+
+    const even = await salesResult([
+      sale('1', 100000, '2026-01-01'),
+      sale('2', 200000, '2026-02-01'),
+      sale('3', 300000, '2026-03-01'),
+      sale('4', 400000, '2026-04-01'),
+    ]);
+    assert.strictEqual(even.transactions.transactionCount, 4);
+    assert.strictEqual(even.transactions.priceSampleCount, 4);
+    assert.strictEqual(even.transactions.medianSoldPrice, 250000);
+    assert.strictEqual(even.transactions.sufficiency.median.state, 'INSUFFICIENT');
   });
 
   await test('benchmark difference stays factual', async () => {

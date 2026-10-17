@@ -4,7 +4,9 @@
  */
 
 const { MARKET_RECORD_KIND, classifyImportCoverage } = require('../../architecture/officialMarketDataset');
+const { toCanonicalTransaction } = require('../../architecture/officialSaleTransaction');
 const { canonicalPostcode } = require('./canonicalPostcode');
+const { parseIsoDate } = require('./hmlrPricePaidParser');
 
 const CALCULATION_METHOD = 'observed_to_observed';
 const MIN_MEDIAN_SAMPLE = 5;
@@ -232,13 +234,16 @@ function mapHorizons(builder) {
   return hpi;
 }
 
-function validSalePrice(row) {
-  if (!row || row.price_present === false || row.price_gbp == null || row.price_gbp === '') return null;
-  const price = Number(row.price_gbp);
-  if (!Number.isFinite(price)) return null;
-  if (price === 0 && row.price_present !== true) return null;
-  if (price < 0) return null;
-  return price;
+function isUsableTransaction(row) {
+  if (!row || row.live === false || row.record_status === 'D') return false;
+  if (row.source_transaction_id == null || String(row.source_transaction_id).trim() === '') return false;
+  return Boolean(parseIsoDate(row.transfer_date));
+}
+
+function priceForMedian(row) {
+  const canonical = toCanonicalTransaction(row);
+  if (!canonical.pricePresent) return null;
+  return canonical.priceGbp;
 }
 
 async function saleRows(store, compact) {
@@ -272,16 +277,7 @@ async function transactionActivity({ store, postcode, asOf }) {
     sourceGeography: 'England and Wales',
   };
   if (!asOf) {
-    return {
-      ...subject,
-      period: null,
-      count: null,
-      medianSoldPrice: null,
-      status: SUFFICIENCY.UNAVAILABLE,
-      sufficiency: { state: SUFFICIENCY.UNAVAILABLE, reason: 'period_not_specified' },
-      provenance: null,
-      limitations: ANALYTICS_LIMITATIONS.slice(),
-    };
+    return unavailableTransactions(subject, null, null, 'period_not_specified');
   }
   const period = trailingTwelveMonths(asOf);
   const coverage = await saleCoverage(store);
@@ -292,64 +288,102 @@ async function transactionActivity({ store, postcode, asOf }) {
   if (coverage.state === 'ERROR') return unavailableTransactions(subject, period, coverage, 'coverage_error');
   if (coverage.state === 'EMPTY') return unavailableTransactions(subject, period, coverage, 'dataset_empty');
   const rows = (await saleRows(store, parsed.compact)).filter((row) => {
-    const date = String(row.transfer_date || '').slice(0, 10);
-    return date && date >= period.start && date <= period.end;
+    const date = parseIsoDate(row.transfer_date);
+    return isUsableTransaction(row) && date >= period.start && date <= period.end;
   });
-  const prices = rows.map(validSalePrice).filter((price) => price != null);
-  const count = rows.length;
-  const medianValue = prices.length ? median(prices) : null;
-  const medianState = prices.length >= MIN_MEDIAN_SAMPLE ? SUFFICIENCY.SUFFICIENT : SUFFICIENCY.INSUFFICIENT;
+  const prices = rows.map(priceForMedian).filter((price) => price != null);
+  const transactionCount = rows.length;
+  const priceSampleCount = prices.length;
+  const medianValue = priceSampleCount ? median(prices) : null;
+  const medianSufficiency = priceSampleCount >= MIN_MEDIAN_SAMPLE
+    ? { state: SUFFICIENCY.SUFFICIENT, reason: null }
+    : { state: SUFFICIENCY.INSUFFICIENT, reason: 'insufficient_price_sample' };
+  const provenance = {
+    dataset: 'Price Paid Data',
+    source: 'HMLR_PRICE_PAID_DATA',
+    postcode: parsed.normalized,
+    period,
+    transactionCount,
+    priceSampleCount,
+    calculationMethod: 'median_actual_sold_price',
+    medianSufficiency,
+  };
   return {
-    recordKind: count === 0 ? 'FACT' : 'FACT',
+    recordKind: 'FACT',
     factClass: 'FACT',
     ...subject,
     period,
-    count,
+    transactionCount,
+    priceSampleCount,
+    count: transactionCount,
+    countAliasOf: 'transactionCount',
+    sampleCount: priceSampleCount,
+    sampleCountAliasOf: 'priceSampleCount',
     medianSoldPrice: medianValue,
     medianUnit: 'GBP',
-    sampleCount: prices.length,
+    medianRecordKind: MARKET_RECORD_KIND.DERIVED_METRIC,
+    medianFactClass: 'DERIVED',
     status: SUFFICIENCY.SUFFICIENT,
     sufficiency: {
-      count: { state: SUFFICIENCY.SUFFICIENT, reason: count === 0 ? 'no_matching_transactions' : null },
-      median: {
-        state: medianState,
-        reason: prices.length >= MIN_MEDIAN_SAMPLE ? null : 'insufficient_transaction_sample',
+      transactions: {
+        state: SUFFICIENCY.SUFFICIENT,
+        reason: transactionCount === 0 ? 'no_matching_transactions' : null,
       },
+      count: {
+        state: SUFFICIENCY.SUFFICIENT,
+        reason: transactionCount === 0 ? 'no_matching_transactions' : null,
+      },
+      median: medianSufficiency,
     },
     calculationMethod: 'live_official_sales_in_period',
-    provenance: {
-      dataset: 'Price Paid Data',
-      source: 'HMLR_PRICE_PAID_DATA',
-      postcode: parsed.normalized,
-      period,
-      sampleCount: prices.length,
-      calculationMethod: 'median_actual_sold_price',
-    },
+    provenance,
     coverage,
     limitations: ANALYTICS_LIMITATIONS.slice(),
+    medianEvidence: {
+      recordKind: MARKET_RECORD_KIND.DERIVED_METRIC,
+      factClass: 'DERIVED',
+      metric: 'median_sold_price',
+      value: medianValue,
+      unit: 'GBP',
+      transactionCount,
+      priceSampleCount,
+      calculationMethod: 'median_actual_sold_price',
+      sufficiency: medianSufficiency,
+      provenance,
+      limitations: ANALYTICS_LIMITATIONS.slice(),
+    },
   };
 }
 
 function unavailableTransactions(subject, period, coverage, reason) {
-  const status = reason === 'coverage_error' || reason === 'dataset_not_imported' || reason === 'dataset_empty'
-    ? SUFFICIENCY.UNAVAILABLE
-    : SUFFICIENCY.UNAVAILABLE;
   return {
+    recordKind: 'FACT',
     factClass: 'FACT',
     ...subject,
     period,
+    transactionCount: null,
+    priceSampleCount: null,
     count: null,
+    countAliasOf: 'transactionCount',
+    sampleCount: null,
+    sampleCountAliasOf: 'priceSampleCount',
     medianSoldPrice: null,
     medianUnit: 'GBP',
-    sampleCount: null,
-    status,
-    sufficiency: { state: status, reason },
+    medianRecordKind: MARKET_RECORD_KIND.DERIVED_METRIC,
+    medianFactClass: 'DERIVED',
+    medianEvidence: null,
+    status: SUFFICIENCY.UNAVAILABLE,
+    sufficiency: { state: SUFFICIENCY.UNAVAILABLE, reason },
     calculationMethod: 'live_official_sales_in_period',
     provenance: {
       dataset: 'Price Paid Data',
       source: 'HMLR_PRICE_PAID_DATA',
       postcode: subject.postcode,
       period,
+      transactionCount: null,
+      priceSampleCount: null,
+      calculationMethod: 'median_actual_sold_price',
+      medianSufficiency: { state: SUFFICIENCY.UNAVAILABLE, reason },
     },
     coverage,
     limitations: ANALYTICS_LIMITATIONS.slice(),
@@ -449,6 +483,7 @@ async function analyseOfficialMarket({
   const evidence = [hpi.oneYear, hpi.threeYear, hpi.fiveYear];
   if (benchmark.horizons) evidence.push(benchmark.horizons.oneYear, benchmark.horizons.threeYear, benchmark.horizons.fiveYear);
   evidence.push(transactions);
+  if (transactions.medianEvidence) evidence.push(transactions.medianEvidence);
   return {
     recordKind: MARKET_RECORD_KIND.DERIVED_METRIC,
     subject: {
