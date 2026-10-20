@@ -29,6 +29,13 @@ const AREA_EVIDENCE_PROFILE_STATUS = Object.freeze({
   UNRESOLVED: 'UNRESOLVED',
 });
 
+/** Composer-only reason when a family producer throws/rejects after geography is resolved. */
+const AREA_EVIDENCE_FAMILY_RUNTIME_REASON = 'family_runtime_error';
+
+const AREA_EVIDENCE_FAILURE_KIND = Object.freeze({
+  RUNTIME_EXCEPTION: 'RUNTIME_EXCEPTION',
+});
+
 const AREA_EVIDENCE_PROFILE_LIMITATIONS = Object.freeze([
   'Composition only. Evidence families may use different geography vintages; nationwide vintage alignment is not proven.',
   'Evidence families may represent different time periods. Historical evidence is not a forecast and is not current by default.',
@@ -65,6 +72,8 @@ module.exports = {
   AREA_EVIDENCE_FAMILY,
   AREA_EVIDENCE_FAMILY_ORDER,
   AREA_EVIDENCE_PROFILE_STATUS,
+  AREA_EVIDENCE_FAMILY_RUNTIME_REASON,
+  AREA_EVIDENCE_FAILURE_KIND,
   AREA_EVIDENCE_PROFILE_LIMITATIONS,
   FORBIDDEN_PROFILE_INFERENCE_KEYS,
 };

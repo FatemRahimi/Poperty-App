@@ -9,6 +9,8 @@ const {
   AREA_EVIDENCE_FAMILY,
   AREA_EVIDENCE_FAMILY_ORDER,
   AREA_EVIDENCE_PROFILE_STATUS,
+  AREA_EVIDENCE_FAMILY_RUNTIME_REASON,
+  AREA_EVIDENCE_FAILURE_KIND,
   AREA_EVIDENCE_PROFILE_LIMITATIONS,
   FORBIDDEN_PROFILE_INFERENCE_KEYS,
 } = require('../../architecture/officialAreaEvidenceProfileContract');
@@ -17,6 +19,92 @@ const { analyseOfficialMarket } = require('./officialMarketAnalytics');
 const { getOfficialLadPopulationEvidence } = require('./officialAreaPopulationEvidence');
 const { getOfficialLadDeprivationEvidence } = require('./officialAreaDeprivationEvidence');
 const { getOfficialLadTenureEvidence } = require('./officialAreaTenureEvidence');
+
+function isRuntimeFamilyFailure(result) {
+  return Boolean(
+    result
+    && result.failureKind === AREA_EVIDENCE_FAILURE_KIND.RUNTIME_EXCEPTION
+    && result.reason === AREA_EVIDENCE_FAMILY_RUNTIME_REASON
+  );
+}
+
+function marketRuntimeFailureEnvelope() {
+  return {
+    status: 'UNAVAILABLE',
+    reason: AREA_EVIDENCE_FAMILY_RUNTIME_REASON,
+    failureKind: AREA_EVIDENCE_FAILURE_KIND.RUNTIME_EXCEPTION,
+    recordKind: null,
+    subject: null,
+    hpi: null,
+    transactions: null,
+    benchmark: null,
+    evidence: [],
+    coverage: {
+      ukhpi: { state: 'ERROR' },
+      hmlr: { state: 'ERROR' },
+    },
+    limitations: [],
+    provenance: null,
+  };
+}
+
+function populationRuntimeFailureEnvelope() {
+  return {
+    status: 'UNAVAILABLE',
+    reason: AREA_EVIDENCE_FAMILY_RUNTIME_REASON,
+    failureKind: AREA_EVIDENCE_FAILURE_KIND.RUNTIME_EXCEPTION,
+    subject: null,
+    observation: null,
+    metrics: null,
+    evidence: [],
+    coverage: { state: 'ERROR' },
+    geographyVintage: null,
+    limitations: [],
+    provenance: null,
+    derivedGrowth: false,
+  };
+}
+
+function deprivationRuntimeFailureEnvelope() {
+  return {
+    status: 'UNAVAILABLE',
+    reason: AREA_EVIDENCE_FAMILY_RUNTIME_REASON,
+    failureKind: AREA_EVIDENCE_FAILURE_KIND.RUNTIME_EXCEPTION,
+    subject: null,
+    observation: null,
+    evidence: [],
+    coverage: { state: 'ERROR' },
+    geographyVintage: null,
+    limitations: [],
+    provenance: null,
+  };
+}
+
+function tenureRuntimeFailureEnvelope() {
+  return {
+    status: 'UNAVAILABLE',
+    reason: AREA_EVIDENCE_FAMILY_RUNTIME_REASON,
+    failureKind: AREA_EVIDENCE_FAILURE_KIND.RUNTIME_EXCEPTION,
+    subject: null,
+    observations: [],
+    aggregates: [],
+    evidence: [],
+    coverage: { state: 'ERROR' },
+    geographyVintage: null,
+    limitations: [],
+    provenance: null,
+    historicalCensusContext: null,
+    sharesImplemented: false,
+  };
+}
+
+async function isolateFamily(run, envelopeFactory) {
+  try {
+    return await run();
+  } catch {
+    return envelopeFactory();
+  }
+}
 
 function assertNoInferenceFields(payload) {
   const text = JSON.stringify(payload);
@@ -117,7 +205,36 @@ async function resolveProfileGeography({ postcode = null, geographyStore = null 
     };
   }
 
-  const lookup = await geographyStore.lookupByPostcode(parsed.normalized);
+  let lookup;
+  try {
+    lookup = await geographyStore.lookupByPostcode(parsed.normalized);
+  } catch {
+    return {
+      ok: false,
+      status: AREA_EVIDENCE_PROFILE_STATUS.UNAVAILABLE,
+      reason: 'crosswalk_runtime_error',
+      geographyResolution: {
+        method: 'postcode_crosswalk',
+        postcode: parsed.normalized,
+        matchStatus: 'ERROR',
+        effectiveSelection: null,
+        ambiguousReleases: [],
+        coverage: { state: 'ERROR' },
+        localAuthorityCode: null,
+        ukhpiGeographyCode: null,
+        countryCode: null,
+        crosswalkReleaseLabel: null,
+      },
+      subject: {
+        postcode: parsed.normalized,
+        localAuthorityCode: null,
+        ukhpiGeographyCode: null,
+        countryCode: null,
+        geographyType: 'COMPOSITE',
+      },
+    };
+  }
+
   const geographyResolution = {
     method: 'postcode_crosswalk',
     postcode: parsed.normalized,
@@ -280,6 +397,17 @@ function summarizeMarketFamily(market) {
       reason: 'market_result_absent',
     });
   }
+  if (isRuntimeFamilyFailure(market)) {
+    return familyStatusEntry({
+      family: AREA_EVIDENCE_FAMILY.MARKET,
+      status: 'UNAVAILABLE',
+      coverageState: market.coverage?.ukhpi?.state || market.coverage?.hmlr?.state || 'ERROR',
+      sufficiency: 'UNAVAILABLE',
+      reason: AREA_EVIDENCE_FAMILY_RUNTIME_REASON,
+      geographyVintage: null,
+      referencePeriod: null,
+    });
+  }
   const ukhpiState = market.coverage?.ukhpi?.state || null;
   const hmlrState = market.coverage?.hmlr?.state || null;
   const txStatus = market.transactions?.status || null;
@@ -334,13 +462,29 @@ function profileStatusFromFamilies(familyStatus) {
   return AREA_EVIDENCE_PROFILE_STATUS.PARTIAL;
 }
 
+function hasFamilyProvenance(value) {
+  if (value == null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
+}
+
 function provenanceRefsFromFamilies(families) {
   const refs = [];
-  if (families?.geography?.provenance) refs.push({ family: AREA_EVIDENCE_FAMILY.GEOGRAPHY });
-  if (families?.market) refs.push({ family: AREA_EVIDENCE_FAMILY.MARKET });
-  if (families?.population?.provenance) refs.push({ family: AREA_EVIDENCE_FAMILY.POPULATION });
-  if (families?.deprivation?.provenance) refs.push({ family: AREA_EVIDENCE_FAMILY.DEPRIVATION });
-  if (families?.housing?.tenure?.provenance) refs.push({ family: AREA_EVIDENCE_FAMILY.HOUSING_TENURE });
+  if (hasFamilyProvenance(families?.geography?.provenance)) {
+    refs.push({ family: AREA_EVIDENCE_FAMILY.GEOGRAPHY });
+  }
+  if (hasFamilyProvenance(families?.market?.provenance)) {
+    refs.push({ family: AREA_EVIDENCE_FAMILY.MARKET });
+  }
+  if (hasFamilyProvenance(families?.population?.provenance)) {
+    refs.push({ family: AREA_EVIDENCE_FAMILY.POPULATION });
+  }
+  if (hasFamilyProvenance(families?.deprivation?.provenance)) {
+    refs.push({ family: AREA_EVIDENCE_FAMILY.DEPRIVATION });
+  }
+  if (hasFamilyProvenance(families?.housing?.tenure?.provenance)) {
+    refs.push({ family: AREA_EVIDENCE_FAMILY.HOUSING_TENURE });
+  }
   return sortByFamilyOrder(refs);
 }
 
@@ -356,7 +500,28 @@ async function getOfficialAreaEvidenceProfile({
   propertyCategory = 'all',
   generatedAt = new Date().toISOString(),
 } = {}) {
-  const geo = await resolveProfileGeography({ postcode, geographyStore });
+  let geo;
+  try {
+    geo = await resolveProfileGeography({ postcode, geographyStore });
+  } catch {
+    geo = {
+      ok: false,
+      status: AREA_EVIDENCE_PROFILE_STATUS.UNAVAILABLE,
+      reason: 'geography_runtime_error',
+      geographyResolution: {
+        method: 'postcode_crosswalk',
+        postcode: null,
+        matchStatus: 'ERROR',
+      },
+      subject: {
+        postcode: null,
+        localAuthorityCode: null,
+        ukhpiGeographyCode: null,
+        countryCode: null,
+        geographyType: 'COMPOSITE',
+      },
+    };
+  }
 
   if (!geo.ok) {
     const familyStatus = sortByFamilyOrder([
@@ -423,37 +588,49 @@ async function getOfficialAreaEvidenceProfile({
     note: 'localAuthorityCode and ukhpiGeographyCode are distinct. Names are labels only.',
   };
 
-  const market = await analyseOfficialMarket({
-    ukhpiStore,
-    saleStore,
-    geographyCode: subject.ukhpiGeographyCode,
-    geographyName: lookup.geography?.ukhpiGeographyName || null,
-    geographyType: subject.ukhpiGeographyCode ? 'UKHPI_GEOGRAPHY' : null,
-    propertyCategory,
-    postcode: subject.postcode,
-    asOf,
-  });
+  const market = await isolateFamily(
+    () => analyseOfficialMarket({
+      ukhpiStore,
+      saleStore,
+      geographyCode: subject.ukhpiGeographyCode,
+      geographyName: lookup.geography?.ukhpiGeographyName || null,
+      geographyType: subject.ukhpiGeographyCode ? 'UKHPI_GEOGRAPHY' : null,
+      propertyCategory,
+      postcode: subject.postcode,
+      asOf,
+    }),
+    marketRuntimeFailureEnvelope
+  );
 
-  const population = await getOfficialLadPopulationEvidence({
-    populationStore,
-    geographyStore,
-    postcode: subject.postcode,
-    geographyCode: subject.localAuthorityCode,
-  });
+  const population = await isolateFamily(
+    () => getOfficialLadPopulationEvidence({
+      populationStore,
+      geographyStore,
+      postcode: subject.postcode,
+      geographyCode: subject.localAuthorityCode,
+    }),
+    populationRuntimeFailureEnvelope
+  );
 
-  const deprivation = await getOfficialLadDeprivationEvidence({
-    iodStore,
-    geographyStore,
-    postcode: subject.postcode,
-    geographyCode: subject.localAuthorityCode,
-  });
+  const deprivation = await isolateFamily(
+    () => getOfficialLadDeprivationEvidence({
+      iodStore,
+      geographyStore,
+      postcode: subject.postcode,
+      geographyCode: subject.localAuthorityCode,
+    }),
+    deprivationRuntimeFailureEnvelope
+  );
 
-  const tenure = await getOfficialLadTenureEvidence({
-    tenureStore,
-    geographyStore,
-    postcode: subject.postcode,
-    geographyCode: subject.localAuthorityCode,
-  });
+  const tenure = await isolateFamily(
+    () => getOfficialLadTenureEvidence({
+      tenureStore,
+      geographyStore,
+      postcode: subject.postcode,
+      geographyCode: subject.localAuthorityCode,
+    }),
+    tenureRuntimeFailureEnvelope
+  );
 
   const families = {
     geography: geographyFamily,
@@ -510,4 +687,5 @@ module.exports = {
   getOfficialAreaEvidenceProfile,
   resolveProfileGeography,
   AREA_EVIDENCE_PROFILE_SCHEMA_VERSION,
+  AREA_EVIDENCE_FAMILY_RUNTIME_REASON,
 };

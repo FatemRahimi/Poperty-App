@@ -13,6 +13,8 @@ const {
 const {
   AREA_EVIDENCE_PROFILE_SCHEMA_VERSION,
   AREA_EVIDENCE_FAMILY,
+  AREA_EVIDENCE_FAMILY_RUNTIME_REASON,
+  AREA_EVIDENCE_FAILURE_KIND,
   FORBIDDEN_PROFILE_INFERENCE_KEYS,
 } = require('../architecture/officialAreaEvidenceProfileContract');
 const { createMemoryGeographyStore } = require('../services/market/geographyCrosswalkStore');
@@ -366,6 +368,157 @@ function assertNoForbidden(profile) {
       .includes(profile.families.deprivation.reason)
       || profile.families.deprivation.reason === 'non_england_geography');
     assert.strictEqual(profile.families.deprivation.observation, null);
+    assertNoForbidden(profile);
+  });
+
+  await test('thrown market failure is isolated; other families preserved', async () => {
+    const stores = await buildBaseStores();
+    const throwingUkhpi = {
+      async queryObservations() {
+        throw new Error('forced market boom\n    at secretStack:1:1');
+      },
+    };
+    const profile = await getOfficialAreaEvidenceProfile({
+      postcode: 'B1 2UJ',
+      geographyStore: stores.geography,
+      ukhpiStore: throwingUkhpi,
+      saleStore: stores.saleStore,
+      populationStore: stores.population,
+      iodStore: stores.iod,
+      tenureStore: stores.tenure,
+      asOf: '2026-06-15',
+      generatedAt: '2026-10-20T12:00:00.000Z',
+    });
+    assert.ok(profile.families);
+    assert.strictEqual(profile.families.market.status, 'UNAVAILABLE');
+    assert.strictEqual(profile.families.market.reason, AREA_EVIDENCE_FAMILY_RUNTIME_REASON);
+    assert.strictEqual(profile.families.market.failureKind, AREA_EVIDENCE_FAILURE_KIND.RUNTIME_EXCEPTION);
+    assert.strictEqual(profile.families.market.hpi, null);
+    assert.strictEqual(profile.families.market.transactions, null);
+    assert.strictEqual(profile.families.market.provenance, null);
+    assert.strictEqual(profile.families.population.status, 'SUFFICIENT');
+    assert.strictEqual(profile.families.deprivation.status, 'SUFFICIENT');
+    assert.strictEqual(profile.families.housing.tenure.status, 'SUFFICIENT');
+    assert.ok(profile.unknowns.some((item) => (
+      item.family === AREA_EVIDENCE_FAMILY.MARKET
+      && item.reason === AREA_EVIDENCE_FAMILY_RUNTIME_REASON
+    )));
+    assert.ok(!JSON.stringify(profile).includes('forced market boom'));
+    assert.ok(!JSON.stringify(profile).includes('secretStack'));
+    assertNoForbidden(profile);
+  });
+
+  await test('thrown population failure is isolated; no zero population', async () => {
+    const stores = await buildBaseStores();
+    const throwingPop = {
+      async queryByGeographyCode() {
+        throw new Error('forced population boom');
+      },
+    };
+    const profile = await getOfficialAreaEvidenceProfile({
+      postcode: 'B1 2UJ',
+      geographyStore: stores.geography,
+      ukhpiStore: stores.ukhpi,
+      saleStore: stores.saleStore,
+      populationStore: throwingPop,
+      iodStore: stores.iod,
+      tenureStore: stores.tenure,
+      asOf: '2026-06-15',
+      generatedAt: '2026-10-20T12:00:00.000Z',
+    });
+    assert.strictEqual(profile.families.population.status, 'UNAVAILABLE');
+    assert.strictEqual(profile.families.population.reason, AREA_EVIDENCE_FAMILY_RUNTIME_REASON);
+    assert.strictEqual(profile.families.population.observation, null);
+    assert.strictEqual(profile.families.population.provenance, null);
+    assert.strictEqual(profile.families.population.derivedGrowth, false);
+    assert.notStrictEqual(profile.families.population.metrics?.totalUsualResidentPopulation, 0);
+    assert.strictEqual(profile.families.deprivation.status, 'SUFFICIENT');
+    assert.strictEqual(profile.families.housing.tenure.status, 'SUFFICIENT');
+    assert.ok(profile.families.market);
+    assert.ok(profile.unknowns.some((item) => item.family === AREA_EVIDENCE_FAMILY.POPULATION));
+    assert.ok(profile.provenanceRefs.some((item) => item.family === AREA_EVIDENCE_FAMILY.DEPRIVATION));
+    assert.ok(!profile.provenanceRefs.some((item) => item.family === AREA_EVIDENCE_FAMILY.POPULATION));
+    assertNoForbidden(profile);
+  });
+
+  await test('thrown deprivation failure is isolated; no area-quality inference', async () => {
+    const stores = await buildBaseStores();
+    const throwingIod = {
+      async queryByGeographyCode() {
+        throw new Error('forced deprivation boom');
+      },
+    };
+    const profile = await getOfficialAreaEvidenceProfile({
+      postcode: 'B1 2UJ',
+      geographyStore: stores.geography,
+      ukhpiStore: stores.ukhpi,
+      saleStore: stores.saleStore,
+      populationStore: stores.population,
+      iodStore: throwingIod,
+      tenureStore: stores.tenure,
+      asOf: '2026-06-15',
+      generatedAt: '2026-10-20T12:00:00.000Z',
+    });
+    assert.strictEqual(profile.families.deprivation.status, 'UNAVAILABLE');
+    assert.strictEqual(profile.families.deprivation.reason, AREA_EVIDENCE_FAMILY_RUNTIME_REASON);
+    assert.strictEqual(profile.families.deprivation.observation, null);
+    assert.strictEqual(profile.families.deprivation.provenance, null);
+    assert.strictEqual(profile.families.population.status, 'SUFFICIENT');
+    assert.strictEqual(profile.families.housing.tenure.status, 'SUFFICIENT');
+    assert.ok(profile.unknowns.some((item) => item.family === AREA_EVIDENCE_FAMILY.DEPRIVATION));
+    assertNoForbidden(profile);
+  });
+
+  await test('thrown tenure failure is isolated; no fabricated renters', async () => {
+    const stores = await buildBaseStores();
+    const throwingTenure = {
+      async queryByGeographyCode() {
+        throw new Error('forced tenure boom');
+      },
+    };
+    const profile = await getOfficialAreaEvidenceProfile({
+      postcode: 'B1 2UJ',
+      geographyStore: stores.geography,
+      ukhpiStore: stores.ukhpi,
+      saleStore: stores.saleStore,
+      populationStore: stores.population,
+      iodStore: stores.iod,
+      tenureStore: throwingTenure,
+      asOf: '2026-06-15',
+      generatedAt: '2026-10-20T12:00:00.000Z',
+    });
+    assert.strictEqual(profile.families.housing.tenure.status, 'UNAVAILABLE');
+    assert.strictEqual(profile.families.housing.tenure.reason, AREA_EVIDENCE_FAMILY_RUNTIME_REASON);
+    assert.deepStrictEqual(profile.families.housing.tenure.observations, []);
+    assert.deepStrictEqual(profile.families.housing.tenure.aggregates, []);
+    assert.strictEqual(profile.families.housing.tenure.provenance, null);
+    assert.strictEqual(profile.families.population.status, 'SUFFICIENT');
+    assert.strictEqual(profile.families.deprivation.status, 'SUFFICIENT');
+    assert.ok(profile.unknowns.some((item) => item.family === AREA_EVIDENCE_FAMILY.HOUSING_TENURE));
+    assertNoForbidden(profile);
+  });
+
+  await test('thrown geography lookup returns families null without composing evidence', async () => {
+    const stores = await buildBaseStores();
+    const throwingGeography = {
+      async lookupByPostcode() {
+        throw new Error('forced geography boom\n    at internalGeo:9:9');
+      },
+    };
+    const profile = await getOfficialAreaEvidenceProfile({
+      postcode: 'B1 2UJ',
+      geographyStore: throwingGeography,
+      ukhpiStore: stores.ukhpi,
+      populationStore: stores.population,
+      iodStore: stores.iod,
+      tenureStore: stores.tenure,
+      generatedAt: '2026-10-20T12:00:00.000Z',
+    });
+    assert.strictEqual(profile.families, null);
+    assert.strictEqual(profile.status, 'UNAVAILABLE');
+    assert.ok(['crosswalk_runtime_error', 'geography_runtime_error'].includes(profile.reason));
+    assert.ok(!JSON.stringify(profile).includes('forced geography boom'));
+    assert.ok(!JSON.stringify(profile).includes('internalGeo'));
     assertNoForbidden(profile);
   });
 
