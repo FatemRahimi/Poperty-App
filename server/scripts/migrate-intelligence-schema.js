@@ -29,6 +29,7 @@ const MIGRATIONS = [
   '032_iod2025_lad_observations.sql',
   '033_ons_lad_population_observations.sql',
   '034_census2021_lad_tenure_observations.sql',
+  '035_brownfield_land_observations.sql',
 ];
 
 async function columnExists(table, column) {
@@ -80,6 +81,8 @@ async function run() {
     ['ons_lad_population_import_runs', 'status'],
     ['census2021_lad_tenure_observations', 'geography_code'],
     ['census2021_lad_tenure_import_runs', 'status'],
+    ['brownfield_land_observations', 'source_entity_id'],
+    ['brownfield_land_import_runs', 'status'],
   ];
 
   console.log('\nVerification:');
