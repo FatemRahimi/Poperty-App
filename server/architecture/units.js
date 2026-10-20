@@ -18,6 +18,8 @@ const UNIT = Object.freeze({
   HECTARES: 'HECTARES',
   PERCENT: 'PERCENT',
   RATIO: 'RATIO',
+  SCORE: 'SCORE',
+  RANK: 'RANK',
   MONTHS: 'MONTHS',
   YEARS: 'YEARS',
   DAYS: 'DAYS',

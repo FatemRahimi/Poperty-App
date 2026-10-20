@@ -26,6 +26,7 @@ const MIGRATION_FILES = [
   '029_ukhpi_observations.sql',
   '030_official_geography_crosswalk.sql',
   '031_ukhpi_observation_releases.sql',
+  '032_iod2025_lad_observations.sql',
 ];
 
 async function columnExists(table, column) {
@@ -80,6 +81,7 @@ async function ensureIntelligenceSchema() {
   const needsUkhpi = !(await tableExists('ukhpi_observations'));
   const needsUkhpiReleases = !(await columnExists('ukhpi_observations', 'record_kind'));
   const needsGeography = !(await tableExists('official_geography_crosswalk'));
+  const needsIodLad = !(await tableExists('iod2025_lad_observations'));
 
   if (
     !needsSubjectId &&
@@ -100,7 +102,8 @@ async function ensureIntelligenceSchema() {
     !needsUserDeclaredIdentity &&
     !needsUkhpi &&
     !needsUkhpiReleases &&
-    !needsGeography
+    !needsGeography &&
+    !needsIodLad
   ) {
     return { applied: false, ok: true };
   }
@@ -186,6 +189,13 @@ async function ensureIntelligenceSchema() {
       await applySql('031_ukhpi_observation_releases.sql');
     } catch (err) {
       console.error('❌ UKHPI release schema could not be applied:', err.message);
+    }
+  }
+  if (needsIodLad) {
+    try {
+      await applySql('032_iod2025_lad_observations.sql');
+    } catch (err) {
+      console.error('❌ IoD 2025 LAD schema could not be applied:', err.message);
     }
   }
 
