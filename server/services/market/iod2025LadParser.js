@@ -57,15 +57,26 @@ function parseOptionalNumber(raw, { integer = false } = {}) {
   if (raw == null || raw === '') return { ok: true, value: null, present: false };
   if (typeof raw === 'number') {
     if (!Number.isFinite(raw)) return { ok: false, reason: 'non_numeric_metric' };
-    const value = integer ? Math.trunc(raw) : raw;
-    return { ok: true, value, present: true };
+    if (integer && !Number.isInteger(raw)) return { ok: false, reason: 'non_integer_metric' };
+    return { ok: true, value: raw, present: true };
   }
   const text = String(raw).trim();
   if (!text) return { ok: true, value: null, present: false };
+  if (integer) {
+    if (!/^-?\d+$/.test(text)) {
+      if (/^-?\d+\.\d+$/.test(text)) return { ok: false, reason: 'non_integer_metric' };
+      return { ok: false, reason: 'non_numeric_metric' };
+    }
+    const number = Number(text);
+    if (!Number.isFinite(number) || !Number.isInteger(number)) {
+      return { ok: false, reason: 'non_integer_metric' };
+    }
+    return { ok: true, value: number, present: true };
+  }
   if (!/^-?\d+(\.\d+)?$/.test(text)) return { ok: false, reason: 'non_numeric_metric' };
   const number = Number(text);
   if (!Number.isFinite(number)) return { ok: false, reason: 'non_numeric_metric' };
-  return { ok: true, value: integer ? Math.trunc(number) : number, present: true };
+  return { ok: true, value: number, present: true };
 }
 
 function contentFingerprint(row) {

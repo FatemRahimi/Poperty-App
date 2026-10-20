@@ -11,6 +11,7 @@ const XLSX = require('xlsx');
 const {
   parseIodFile10ImdCsv,
   parseIodFile10Xlsx,
+  parseOptionalNumber,
 } = require('../services/market/iod2025LadParser');
 const {
   createMemoryIod2025LadStore,
@@ -88,6 +89,32 @@ function fixtureXlsxBuffer() {
     const york = parsed.rows.find((row) => row.geographyCode === 'E06000014');
     assert.strictEqual(york.imdProportionMostDeprived10, 0);
     assert.notStrictEqual(york.imdProportionMostDeprived10, null);
+  });
+
+  await test('integer ranks reject decimals without truncation', async () => {
+    assert.deepStrictEqual(parseOptionalNumber(5, { integer: true }), { ok: true, value: 5, present: true });
+    assert.deepStrictEqual(parseOptionalNumber('5', { integer: true }), { ok: true, value: 5, present: true });
+    assert.deepStrictEqual(parseOptionalNumber(5.7, { integer: true }), { ok: false, reason: 'non_integer_metric' });
+    assert.deepStrictEqual(parseOptionalNumber('5.7', { integer: true }), { ok: false, reason: 'non_integer_metric' });
+    assert.deepStrictEqual(parseOptionalNumber(-3, { integer: true }), { ok: true, value: -3, present: true });
+    assert.deepStrictEqual(parseOptionalNumber('-3', { integer: true }), { ok: true, value: -3, present: true });
+    assert.deepStrictEqual(parseOptionalNumber('-3.2', { integer: true }), { ok: false, reason: 'non_integer_metric' });
+    assert.deepStrictEqual(parseOptionalNumber(Number.NaN, { integer: true }), { ok: false, reason: 'non_numeric_metric' });
+    assert.deepStrictEqual(parseOptionalNumber(Number.POSITIVE_INFINITY, { integer: true }), { ok: false, reason: 'non_numeric_metric' });
+    assert.deepStrictEqual(parseOptionalNumber('rank', { integer: true }), { ok: false, reason: 'non_numeric_metric' });
+
+    assert.deepStrictEqual(parseOptionalNumber(38.115), { ok: true, value: 38.115, present: true });
+    assert.deepStrictEqual(parseOptionalNumber(0.4279), { ok: true, value: 0.4279, present: true });
+    assert.deepStrictEqual(parseOptionalNumber(0), { ok: true, value: 0, present: true });
+    assert.deepStrictEqual(parseOptionalNumber(''), { ok: true, value: null, present: false });
+    assert.deepStrictEqual(parseOptionalNumber(null), { ok: true, value: null, present: false });
+    assert.deepStrictEqual(parseOptionalNumber('abc'), { ok: false, reason: 'non_numeric_metric' });
+
+    const decimalRankRow = parseIodFile10ImdCsv(
+      `${FIXTURE.split('\n')[0]}\nE08000099,Test,1,2,10,5.7,0.1,6\n`
+    );
+    assert.strictEqual(decimalRankRow.rows.length, 0);
+    assert.ok(decimalRankRow.rejected.some((item) => item.reason === 'non_integer_metric'));
   });
 
   await test('parser rejects missing headers, invalid LAD codes, and non-numeric metrics', async () => {
