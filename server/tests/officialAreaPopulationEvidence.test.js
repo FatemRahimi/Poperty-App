@@ -27,8 +27,11 @@ const {
   ONS_MYE_GEOGRAPHY_VINTAGE,
   ONS_MYE_RELEASE_LABEL,
   ONS_MYE_REFERENCE_PERIOD,
+  ONS_MYE_RELEASE_DATE,
   ONS_MYE_SOURCE_PRODUCT,
   ONS_MYE_INDICATOR,
+  ONS_MYE_PROVENANCE,
+  ONS_MYE_LIMITATIONS,
 } = require('../architecture/officialAreaEconomicDataset');
 const { EVIDENCE_CLASS } = require('../architecture/evidenceContract');
 const { COVERAGE_STATE } = require('../architecture/officialMarketDataset');
@@ -70,11 +73,47 @@ function test(name, fn) {
     assert.strictEqual(birmingham.indicator, ONS_MYE_INDICATOR);
     assert.strictEqual(birmingham.observationDate, ONS_MYE_REFERENCE_PERIOD);
     assert.strictEqual(birmingham.provenance.metricNature, 'ESTIMATE');
+    assert.strictEqual(birmingham.provenance.referencePeriod, '2024-06-30');
+    assert.strictEqual(birmingham.provenance.releaseDate, ONS_MYE_RELEASE_DATE);
+    assert.notStrictEqual(birmingham.provenance.releaseDate, birmingham.observationDate);
+    assert.notStrictEqual(ONS_MYE_PROVENANCE.releaseDate, ONS_MYE_REFERENCE_PERIOD);
+    assert.strictEqual(ONS_MYE_PROVENANCE.releaseDate, '2025-09-26');
+    assert.strictEqual(ONS_MYE_REFERENCE_PERIOD, '2024-06-30');
     const historical = parsed.rows.find((row) => (
       row.geographyCode === 'E08000025' && row.observationDate === '2023-06-30'
     ));
     assert.strictEqual(historical.totalUsualResidentPopulation, 1149000);
     assert.ok(!Object.prototype.hasOwnProperty.call(historical, 'populationGrowth'));
+  });
+
+  await test('provenance separates reference period from publication release date', async () => {
+    assert.strictEqual(ONS_MYE_REFERENCE_PERIOD, '2024-06-30');
+    assert.strictEqual(ONS_MYE_RELEASE_DATE, '2025-09-26');
+    assert.notStrictEqual(ONS_MYE_RELEASE_DATE, ONS_MYE_REFERENCE_PERIOD);
+    assert.strictEqual(ONS_MYE_PROVENANCE.releaseDate, ONS_MYE_RELEASE_DATE);
+    assert.notStrictEqual(ONS_MYE_PROVENANCE.releaseDate, '2024-06-30');
+    assert.strictEqual(ONS_MYE_PROVENANCE.datasetVersion, ONS_MYE_RELEASE_LABEL);
+    assert.ok(ONS_MYE_LIMITATIONS.some((line) => /reference date/i.test(line)));
+    assert.ok(ONS_MYE_LIMITATIONS.some((line) => /publication date/i.test(line)));
+    assert.ok(ONS_MYE_LIMITATIONS.some((line) => /MYE_MID_2024 names the mid-2024 observation edition family/i.test(line)));
+
+    const population = (await ingestOnsMyeLadPopulation({ csvText: FIXTURE })).store;
+    const evidence = await getOfficialLadPopulationEvidence({
+      populationStore: population,
+      geographyCode: 'E08000025',
+    });
+    assert.strictEqual(evidence.status, 'SUFFICIENT');
+    assert.strictEqual(evidence.subject.referencePeriod, '2024-06-30');
+    assert.strictEqual(evidence.observation.referencePeriod, '2024-06-30');
+    assert.strictEqual(evidence.observation.recordKind, 'OFFICIAL_OBSERVATION');
+    assert.strictEqual(evidence.provenance.releaseDate, '2025-09-26');
+    assert.notStrictEqual(evidence.provenance.releaseDate, evidence.subject.referencePeriod);
+    assert.strictEqual(evidence.evidence[0].provenance.referencePeriod, '2024-06-30');
+    assert.strictEqual(evidence.evidence[0].provenance.releaseDate, '2025-09-26');
+    assert.strictEqual(evidence.evidence[0].provenance.metricNature, 'ESTIMATE');
+    assert.strictEqual(evidence.evidence[0].observedAt, '2024-06-30');
+    assert.strictEqual(evidence.derivedGrowth, false);
+    assert.ok(!Object.prototype.hasOwnProperty.call(evidence, 'populationGrowth'));
   });
 
   await test('integer population rejects decimals, negatives, and malformed text', async () => {

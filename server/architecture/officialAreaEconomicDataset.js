@@ -82,12 +82,22 @@ function isLadGssCode(value) {
 const ONS_MYE_SOURCE = 'ONS_MID_YEAR_POPULATION_ESTIMATES';
 const ONS_MYE_DATASET = 'Mid-year population estimates';
 const ONS_MYE_SOURCE_PRODUCT = 'Explore Local Statistics — population-count ltla CSV (total usual residents)';
+/** Edition-family label for mid-2024 observations — NOT the ONS publication calendar date. */
 const ONS_MYE_RELEASE_LABEL = 'MYE_MID_2024';
+/** Mid-year population reference date (30 June). Distinct from publication/release date. */
 const ONS_MYE_REFERENCE_PERIOD = '2024-06-30';
+/**
+ * Authoritative publication date for the implemented Explore Local Statistics
+ * population-count (ltla) extract: ONS ELS indicator page “published 26 September 2025”,
+ * aligned with the UK mid-2024 MYE bulletin release date (26 September 2025).
+ */
+const ONS_MYE_RELEASE_DATE = '2025-09-26';
 const ONS_MYE_GEOGRAPHY_TYPE = 'LAD';
 const ONS_MYE_GEOGRAPHY_VINTAGE = 'LTLA_MID_2024';
 const ONS_MYE_INDICATOR = 'Total population';
 const ONS_MYE_SOURCE_URL = 'https://www.ons.gov.uk/Peoplepopulationandcommunity/Populationandmigration/Populationestimates/Datasets/Populationestimatesforukenglandandwalesscotlandandnorthernireland';
+const ONS_MYE_ELS_INDICATOR_URL = 'https://www.ons.gov.uk/explore-local-statistics/indicators/population-count';
+const ONS_MYE_UK_BULLETIN_URL = 'https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/bulletins/annualmidyearpopulationestimates/mid2024';
 const ONS_MYE_EDITIONS_URL = 'https://www.ons.gov.uk/datasets/mid-year-pop-est/editions';
 
 const ONS_MYE_ATTRIBUTION =
@@ -100,6 +110,9 @@ const ONS_MYE_LIMITATIONS = Object.freeze([
   'Not a house-price forecast, rental-demand measure, or investment recommendation.',
   'Population size or change must not be treated as property-price growth or investment attractiveness.',
   'Phase 2B v1 stores official observations only. App-derived population growth is not calculated here.',
+  'observationDate / referencePeriod is the mid-year population reference date (30 June). It is not the dataset publication date.',
+  'provenance.releaseDate is the Explore Local Statistics / UK mid-2024 MYE publication date (2025-09-26). It is not the mid-year reference date.',
+  'releaseLabel MYE_MID_2024 names the mid-2024 observation edition family. It is not a publication calendar date and does not by itself encode revision chronology.',
   'Geography vintage is release/edition specific. Nationwide crosswalk vintage compatibility is not claimed from fixture matches alone.',
   'Licence text is product metadata, not a legal opinion and not a statement that commercial use for every product purpose is cleared.',
 ]);
@@ -124,10 +137,10 @@ const ONS_MYE_HEADERS = Object.freeze({
 const ONS_MYE_PROVENANCE = officialDatasetProvenance({
   provider: 'Office for National Statistics',
   dataset: ONS_MYE_DATASET,
-  sourceUrl: ONS_MYE_SOURCE_URL,
+  sourceUrl: ONS_MYE_ELS_INDICATOR_URL,
   licence: 'Open Government Licence v3.0',
   requiredAttribution: ONS_MYE_ATTRIBUTION,
-  releaseDate: '2024-06-30',
+  releaseDate: ONS_MYE_RELEASE_DATE,
   datasetVersion: ONS_MYE_RELEASE_LABEL,
   geographicCoverage: 'United Kingdom local authorities (ltla) as published in the selected extract',
   limitations: ONS_MYE_LIMITATIONS,
@@ -157,10 +170,13 @@ module.exports = {
   ONS_MYE_SOURCE_PRODUCT,
   ONS_MYE_RELEASE_LABEL,
   ONS_MYE_REFERENCE_PERIOD,
+  ONS_MYE_RELEASE_DATE,
   ONS_MYE_GEOGRAPHY_TYPE,
   ONS_MYE_GEOGRAPHY_VINTAGE,
   ONS_MYE_INDICATOR,
   ONS_MYE_SOURCE_URL,
+  ONS_MYE_ELS_INDICATOR_URL,
+  ONS_MYE_UK_BULLETIN_URL,
   ONS_MYE_EDITIONS_URL,
   ONS_MYE_ATTRIBUTION,
   ONS_MYE_LIMITATIONS,

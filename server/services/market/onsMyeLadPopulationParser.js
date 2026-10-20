@@ -141,7 +141,10 @@ function parsePopulationRow(fields, headerIndex, options = {}) {
     provenance: {
       ...ONS_MYE_PROVENANCE,
       sourceProduct: ONS_MYE_SOURCE_PRODUCT,
+      // datasetVersion / releaseLabel = mid-year edition family; not publication date.
       datasetVersion: options.releaseLabel || ONS_MYE_RELEASE_LABEL,
+      releaseDate: ONS_MYE_PROVENANCE.releaseDate,
+      referencePeriod: period.value,
       ingestedAt: options.ingestedAt || null,
       geographyVintage: options.geographyVintage || ONS_MYE_GEOGRAPHY_VINTAGE,
       metricNature: 'ESTIMATE',
