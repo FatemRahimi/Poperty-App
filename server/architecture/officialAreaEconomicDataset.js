@@ -75,6 +75,64 @@ function isEnglandLadGssCode(value) {
   return /^E\d{8}$/.test(String(value || '').trim());
 }
 
+function isLadGssCode(value) {
+  return /^[EWSN]\d{8}$/.test(String(value || '').trim());
+}
+
+const ONS_MYE_SOURCE = 'ONS_MID_YEAR_POPULATION_ESTIMATES';
+const ONS_MYE_DATASET = 'Mid-year population estimates';
+const ONS_MYE_SOURCE_PRODUCT = 'Explore Local Statistics — population-count ltla CSV (total usual residents)';
+const ONS_MYE_RELEASE_LABEL = 'MYE_MID_2024';
+const ONS_MYE_REFERENCE_PERIOD = '2024-06-30';
+const ONS_MYE_GEOGRAPHY_TYPE = 'LAD';
+const ONS_MYE_GEOGRAPHY_VINTAGE = 'LTLA_MID_2024';
+const ONS_MYE_INDICATOR = 'Total population';
+const ONS_MYE_SOURCE_URL = 'https://www.ons.gov.uk/Peoplepopulationandcommunity/Populationandmigration/Populationestimates/Datasets/Populationestimatesforukenglandandwalesscotlandandnorthernireland';
+const ONS_MYE_EDITIONS_URL = 'https://www.ons.gov.uk/datasets/mid-year-pop-est/editions';
+
+const ONS_MYE_ATTRIBUTION =
+  'Contains public sector information licensed under the Open Government Licence v3.0. Source: Office for National Statistics — Mid-year population estimates (total usual residents).';
+
+const ONS_MYE_LIMITATIONS = Object.freeze([
+  ...SHARED_LICENCE_LIMITATIONS,
+  'Values are mid-year population ESTIMATES of usual residents, not Census counts and not an exact headcount.',
+  'LAD/ltla-level area context only. Not property-level evidence and not a statement about one home.',
+  'Not a house-price forecast, rental-demand measure, or investment recommendation.',
+  'Population size or change must not be treated as property-price growth or investment attractiveness.',
+  'Phase 2B v1 stores official observations only. App-derived population growth is not calculated here.',
+  'Geography vintage is release/edition specific. Nationwide crosswalk vintage compatibility is not claimed from fixture matches alone.',
+  'Licence text is product metadata, not a legal opinion and not a statement that commercial use for every product purpose is cleared.',
+]);
+
+const ONS_MYE_METRICS = Object.freeze({
+  TOTAL_USUAL_RESIDENT_POPULATION: {
+    id: 'total_usual_resident_population',
+    indicator: ONS_MYE_INDICATOR,
+    unit: 'PERSONS',
+    valueKind: 'ESTIMATE_COUNT',
+  },
+});
+
+const ONS_MYE_HEADERS = Object.freeze({
+  indicator: 'indicator',
+  geographyCode: 'areacd',
+  geographyName: 'areanm',
+  period: 'period',
+  value: 'value',
+});
+
+const ONS_MYE_PROVENANCE = officialDatasetProvenance({
+  provider: 'Office for National Statistics',
+  dataset: ONS_MYE_DATASET,
+  sourceUrl: ONS_MYE_SOURCE_URL,
+  licence: 'Open Government Licence v3.0',
+  requiredAttribution: ONS_MYE_ATTRIBUTION,
+  releaseDate: '2024-06-30',
+  datasetVersion: ONS_MYE_RELEASE_LABEL,
+  geographicCoverage: 'United Kingdom local authorities (ltla) as published in the selected extract',
+  limitations: ONS_MYE_LIMITATIONS,
+});
+
 module.exports = {
   COVERAGE_STATE,
   MARKET_RECORD_KIND,
@@ -93,4 +151,20 @@ module.exports = {
   IOD2025_HEADERS,
   IOD2025_PROVENANCE,
   isEnglandLadGssCode,
+  isLadGssCode,
+  ONS_MYE_SOURCE,
+  ONS_MYE_DATASET,
+  ONS_MYE_SOURCE_PRODUCT,
+  ONS_MYE_RELEASE_LABEL,
+  ONS_MYE_REFERENCE_PERIOD,
+  ONS_MYE_GEOGRAPHY_TYPE,
+  ONS_MYE_GEOGRAPHY_VINTAGE,
+  ONS_MYE_INDICATOR,
+  ONS_MYE_SOURCE_URL,
+  ONS_MYE_EDITIONS_URL,
+  ONS_MYE_ATTRIBUTION,
+  ONS_MYE_LIMITATIONS,
+  ONS_MYE_METRICS,
+  ONS_MYE_HEADERS,
+  ONS_MYE_PROVENANCE,
 };

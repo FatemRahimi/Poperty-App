@@ -20,6 +20,7 @@ const UNIT = Object.freeze({
   RATIO: 'RATIO',
   SCORE: 'SCORE',
   RANK: 'RANK',
+  PERSONS: 'PERSONS',
   MONTHS: 'MONTHS',
   YEARS: 'YEARS',
   DAYS: 'DAYS',

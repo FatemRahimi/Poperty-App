@@ -27,6 +27,7 @@ const MIGRATIONS = [
   '030_official_geography_crosswalk.sql',
   '031_ukhpi_observation_releases.sql',
   '032_iod2025_lad_observations.sql',
+  '033_ons_lad_population_observations.sql',
 ];
 
 async function columnExists(table, column) {
@@ -74,6 +75,8 @@ async function run() {
     ['official_geography_import_runs', 'status'],
     ['iod2025_lad_observations', 'geography_code'],
     ['iod2025_lad_import_runs', 'status'],
+    ['ons_lad_population_observations', 'geography_code'],
+    ['ons_lad_population_import_runs', 'status'],
   ];
 
   console.log('\nVerification:');
