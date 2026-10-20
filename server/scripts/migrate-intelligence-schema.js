@@ -28,6 +28,7 @@ const MIGRATIONS = [
   '031_ukhpi_observation_releases.sql',
   '032_iod2025_lad_observations.sql',
   '033_ons_lad_population_observations.sql',
+  '034_census2021_lad_tenure_observations.sql',
 ];
 
 async function columnExists(table, column) {
@@ -77,6 +78,8 @@ async function run() {
     ['iod2025_lad_import_runs', 'status'],
     ['ons_lad_population_observations', 'geography_code'],
     ['ons_lad_population_import_runs', 'status'],
+    ['census2021_lad_tenure_observations', 'geography_code'],
+    ['census2021_lad_tenure_import_runs', 'status'],
   ];
 
   console.log('\nVerification:');

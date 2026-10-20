@@ -146,6 +146,152 @@ const ONS_MYE_PROVENANCE = officialDatasetProvenance({
   limitations: ONS_MYE_LIMITATIONS,
 });
 
+function isEnglandWalesLadGssCode(value) {
+  return /^[EW]\d{8}$/.test(String(value || '').trim());
+}
+
+const CENSUS2021_TS054_SOURCE = 'ONS_CENSUS_2021_TS054';
+const CENSUS2021_TS054_DATASET = 'Census 2021 — Tenure (TS054)';
+const CENSUS2021_TS054_DATASET_ID = 'TS054';
+const CENSUS2021_TS054_EDITION = '2021';
+const CENSUS2021_TS054_VERSION = 4;
+const CENSUS2021_TS054_SOURCE_PRODUCT = 'ONS Census 2021 topic summary TS054 Tenure — lower tier local authorities CSV (v4)';
+const CENSUS2021_TS054_RELEASE_LABEL = 'CENSUS2021_TS054_V4';
+/** Census Day — household tenure observation date. Not the dataset publication date. */
+const CENSUS2021_TS054_REFERENCE_PERIOD = '2021-03-21';
+/** Original TS054 release date. */
+const CENSUS2021_TS054_RELEASE_DATE = '2023-01-05';
+/** Latest dataset version update date for edition 2021 version 4. */
+const CENSUS2021_TS054_VERSION_DATE = '2023-03-28';
+const CENSUS2021_TS054_GEOGRAPHY_TYPE = 'LAD';
+const CENSUS2021_TS054_GEOGRAPHY_VINTAGE = 'CENSUS_2021_LTLA';
+const CENSUS2021_TS054_SOURCE_URL = 'https://www.ons.gov.uk/datasets/TS054/editions/2021/versions/4';
+const CENSUS2021_TS054_DOWNLOAD_URL = 'https://download.ons.gov.uk/downloads/datasets/TS054/editions/2021/versions/4.csv';
+
+const CENSUS2021_TS054_ATTRIBUTION =
+  'Contains public sector information licensed under the Open Government Licence v3.0. Source: Office for National Statistics — Census 2021 TS054 Tenure.';
+
+const CENSUS2021_TS054_CATEGORIES = Object.freeze({
+  DOES_NOT_APPLY: {
+    code: '-8',
+    label: 'Does not apply',
+  },
+  OWNED_OUTRIGHT: {
+    code: '0',
+    label: 'Owned: Owns outright',
+  },
+  OWNED_MORTGAGE: {
+    code: '1',
+    label: 'Owned: Owns with a mortgage or loan',
+  },
+  SHARED_OWNERSHIP: {
+    code: '2',
+    label: 'Shared ownership: Shared ownership',
+  },
+  SOCIAL_RENTED_COUNCIL: {
+    code: '3',
+    label: 'Social rented: Rents from council or Local Authority',
+  },
+  SOCIAL_RENTED_OTHER: {
+    code: '4',
+    label: 'Social rented: Other social rented',
+  },
+  PRIVATE_RENTED_LANDLORD: {
+    code: '5',
+    label: 'Private rented: Private landlord or letting agency',
+  },
+  PRIVATE_RENTED_OTHER: {
+    code: '6',
+    label: 'Private rented: Other private rented',
+  },
+  LIVES_RENT_FREE: {
+    code: '7',
+    label: 'Lives rent free',
+  },
+});
+
+const CENSUS2021_TS054_CATEGORY_BY_CODE = Object.freeze(
+  Object.fromEntries(
+    Object.values(CENSUS2021_TS054_CATEGORIES).map((item) => [item.code, item])
+  )
+);
+
+const CENSUS2021_TS054_AGGREGATES = Object.freeze({
+  OWNER_OCCUPIED_CORE: {
+    id: 'OWNER_OCCUPIED_CORE',
+    componentCodes: [
+      CENSUS2021_TS054_CATEGORIES.OWNED_OUTRIGHT.code,
+      CENSUS2021_TS054_CATEGORIES.OWNED_MORTGAGE.code,
+    ],
+    note: 'Owned outright + owns with mortgage/loan. Shared ownership is excluded.',
+  },
+  SHARED_OWNERSHIP: {
+    id: 'SHARED_OWNERSHIP',
+    componentCodes: [CENSUS2021_TS054_CATEGORIES.SHARED_OWNERSHIP.code],
+    note: 'Shared ownership remains separate from owner-occupied core.',
+  },
+  PRIVATE_RENTED_COMBINED: {
+    id: 'PRIVATE_RENTED_COMBINED',
+    componentCodes: [
+      CENSUS2021_TS054_CATEGORIES.PRIVATE_RENTED_LANDLORD.code,
+      CENSUS2021_TS054_CATEGORIES.PRIVATE_RENTED_OTHER.code,
+    ],
+    note: 'Private landlord/agency + other private rented.',
+  },
+  SOCIAL_RENTED_COMBINED: {
+    id: 'SOCIAL_RENTED_COMBINED',
+    componentCodes: [
+      CENSUS2021_TS054_CATEGORIES.SOCIAL_RENTED_COUNCIL.code,
+      CENSUS2021_TS054_CATEGORIES.SOCIAL_RENTED_OTHER.code,
+    ],
+    note: 'ONS quality notice: combine council/local authority and other social rented when analysing this variable.',
+  },
+  LIVES_RENT_FREE: {
+    id: 'LIVES_RENT_FREE',
+    componentCodes: [CENSUS2021_TS054_CATEGORIES.LIVES_RENT_FREE.code],
+    note: 'Lives rent free remains separate.',
+  },
+  DOES_NOT_APPLY: {
+    id: 'DOES_NOT_APPLY',
+    componentCodes: [CENSUS2021_TS054_CATEGORIES.DOES_NOT_APPLY.code],
+    note: 'Does not apply is preserved separately and is not a tenure share denominator.',
+  },
+});
+
+const CENSUS2021_TS054_HEADERS = Object.freeze({
+  geographyCode: 'Lower tier local authorities Code',
+  geographyName: 'Lower tier local authorities',
+  categoryCode: 'Tenure of household (9 categories) Code',
+  categoryLabel: 'Tenure of household (9 categories)',
+  observation: 'Observation',
+});
+
+const CENSUS2021_TS054_LIMITATIONS = Object.freeze([
+  ...SHARED_LICENCE_LIMITATIONS,
+  'HISTORICAL_CENSUS_CONTEXT. Values are Census 2021 household tenure as at Census Day 2021-03-21. They are not current 2026 tenure.',
+  'Household tenure is area structural context. It is not property legal tenure (freehold/leasehold) of a subject dwelling.',
+  'Tenure information is not available for household spaces with no usual residents. Does not apply is preserved separately and must not be treated as a tenure share denominator.',
+  'ONS quality notice: people may misidentify council/local authority versus housing association landlords. Combine those social rented categories when analysing this variable.',
+  'Shared ownership must remain separate from owner-occupied core. Do not silently fold it into owner occupation.',
+  'Census 2021 uses statistical disclosure control including record swapping and cell key perturbation. Small count differences can occur; counts are not exact administrative headcounts.',
+  'Private rented household counts are not rental demand, achievable rent, BTL attractiveness, or an investment recommendation.',
+  'Owner occupation, social renting, or private renting shares/counts are not area quality, house-price growth, or opportunity scores.',
+  'Geography vintage is Census 2021 LTLA. Compatibility with LAD_2024 and LTLA_MID_2024 is not claimed from fixture matches alone.',
+  'Licence text is product metadata, not a legal opinion and not a statement that commercial use for every product purpose is cleared.',
+]);
+
+const CENSUS2021_TS054_PROVENANCE = officialDatasetProvenance({
+  provider: 'Office for National Statistics',
+  dataset: CENSUS2021_TS054_DATASET,
+  sourceUrl: CENSUS2021_TS054_SOURCE_URL,
+  licence: 'Open Government Licence v3.0',
+  requiredAttribution: CENSUS2021_TS054_ATTRIBUTION,
+  releaseDate: CENSUS2021_TS054_VERSION_DATE,
+  datasetVersion: CENSUS2021_TS054_RELEASE_LABEL,
+  geographicCoverage: 'England and Wales lower tier local authorities',
+  limitations: CENSUS2021_TS054_LIMITATIONS,
+});
+
 module.exports = {
   COVERAGE_STATE,
   MARKET_RECORD_KIND,
@@ -165,6 +311,7 @@ module.exports = {
   IOD2025_PROVENANCE,
   isEnglandLadGssCode,
   isLadGssCode,
+  isEnglandWalesLadGssCode,
   ONS_MYE_SOURCE,
   ONS_MYE_DATASET,
   ONS_MYE_SOURCE_PRODUCT,
@@ -183,4 +330,25 @@ module.exports = {
   ONS_MYE_METRICS,
   ONS_MYE_HEADERS,
   ONS_MYE_PROVENANCE,
+  CENSUS2021_TS054_SOURCE,
+  CENSUS2021_TS054_DATASET,
+  CENSUS2021_TS054_DATASET_ID,
+  CENSUS2021_TS054_EDITION,
+  CENSUS2021_TS054_VERSION,
+  CENSUS2021_TS054_SOURCE_PRODUCT,
+  CENSUS2021_TS054_RELEASE_LABEL,
+  CENSUS2021_TS054_REFERENCE_PERIOD,
+  CENSUS2021_TS054_RELEASE_DATE,
+  CENSUS2021_TS054_VERSION_DATE,
+  CENSUS2021_TS054_GEOGRAPHY_TYPE,
+  CENSUS2021_TS054_GEOGRAPHY_VINTAGE,
+  CENSUS2021_TS054_SOURCE_URL,
+  CENSUS2021_TS054_DOWNLOAD_URL,
+  CENSUS2021_TS054_ATTRIBUTION,
+  CENSUS2021_TS054_CATEGORIES,
+  CENSUS2021_TS054_CATEGORY_BY_CODE,
+  CENSUS2021_TS054_AGGREGATES,
+  CENSUS2021_TS054_HEADERS,
+  CENSUS2021_TS054_LIMITATIONS,
+  CENSUS2021_TS054_PROVENANCE,
 };

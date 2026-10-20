@@ -28,6 +28,7 @@ const MIGRATION_FILES = [
   '031_ukhpi_observation_releases.sql',
   '032_iod2025_lad_observations.sql',
   '033_ons_lad_population_observations.sql',
+  '034_census2021_lad_tenure_observations.sql',
 ];
 
 async function columnExists(table, column) {
@@ -84,6 +85,7 @@ async function ensureIntelligenceSchema() {
   const needsGeography = !(await tableExists('official_geography_crosswalk'));
   const needsIodLad = !(await tableExists('iod2025_lad_observations'));
   const needsOnsPopulation = !(await tableExists('ons_lad_population_observations'));
+  const needsCensusTenure = !(await tableExists('census2021_lad_tenure_observations'));
 
   if (
     !needsSubjectId &&
@@ -106,7 +108,8 @@ async function ensureIntelligenceSchema() {
     !needsUkhpiReleases &&
     !needsGeography &&
     !needsIodLad &&
-    !needsOnsPopulation
+    !needsOnsPopulation &&
+    !needsCensusTenure
   ) {
     return { applied: false, ok: true };
   }
@@ -206,6 +209,13 @@ async function ensureIntelligenceSchema() {
       await applySql('033_ons_lad_population_observations.sql');
     } catch (err) {
       console.error('❌ ONS LAD population schema could not be applied:', err.message);
+    }
+  }
+  if (needsCensusTenure) {
+    try {
+      await applySql('034_census2021_lad_tenure_observations.sql');
+    } catch (err) {
+      console.error('❌ Census 2021 LAD tenure schema could not be applied:', err.message);
     }
   }
 

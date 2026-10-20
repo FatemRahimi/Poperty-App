@@ -21,6 +21,7 @@ const UNIT = Object.freeze({
   SCORE: 'SCORE',
   RANK: 'RANK',
   PERSONS: 'PERSONS',
+  HOUSEHOLDS: 'HOUSEHOLDS',
   MONTHS: 'MONTHS',
   YEARS: 'YEARS',
   DAYS: 'DAYS',
