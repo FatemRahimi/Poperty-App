@@ -31,6 +31,7 @@ const MIGRATION_FILES = [
   '034_census2021_lad_tenure_observations.sql',
   '035_brownfield_land_observations.sql',
   '036_brownfield_land_revisions.sql',
+  '037_brownfield_provider_coverage.sql',
 ];
 
 async function columnExists(table, column) {
@@ -91,6 +92,7 @@ async function ensureIntelligenceSchema() {
   const needsBrownfieldLand = !(await tableExists('brownfield_land_observations'));
   const needsBrownfieldRevisions = needsBrownfieldLand
     || !(await indexExists('idx_brownfield_land_entity_revisions'));
+  const needsBrownfieldCoverage = !(await tableExists('brownfield_lpa_identities'));
 
   if (
     !needsSubjectId &&
@@ -116,7 +118,8 @@ async function ensureIntelligenceSchema() {
     !needsOnsPopulation &&
     !needsCensusTenure &&
     !needsBrownfieldLand &&
-    !needsBrownfieldRevisions
+    !needsBrownfieldRevisions &&
+    !needsBrownfieldCoverage
   ) {
     return { applied: false, ok: true };
   }
@@ -237,6 +240,13 @@ async function ensureIntelligenceSchema() {
       await applySql('036_brownfield_land_revisions.sql');
     } catch (err) {
       console.error('❌ Brownfield land revision schema could not be applied:', err.message);
+    }
+  }
+  if (needsBrownfieldCoverage) {
+    try {
+      await applySql('037_brownfield_provider_coverage.sql');
+    } catch (err) {
+      console.error('❌ Brownfield provider coverage schema could not be applied:', err.message);
     }
   }
 

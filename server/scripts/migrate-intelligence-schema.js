@@ -31,6 +31,7 @@ const MIGRATIONS = [
   '034_census2021_lad_tenure_observations.sql',
   '035_brownfield_land_observations.sql',
   '036_brownfield_land_revisions.sql',
+  '037_brownfield_provider_coverage.sql',
 ];
 
 async function columnExists(table, column) {
@@ -85,6 +86,10 @@ async function run() {
     ['brownfield_land_observations', 'source_entity_id'],
     ['brownfield_land_import_runs', 'status'],
     ['brownfield_land_observations', 'content_fingerprint'],
+    ['brownfield_coverage_runs', 'status'],
+    ['brownfield_lpa_identities', 'reference'],
+    ['brownfield_provider_index', 'organisation_entity'],
+    ['brownfield_organisation_lpa_links', 'mapping_status'],
   ];
 
   console.log('\nVerification:');
