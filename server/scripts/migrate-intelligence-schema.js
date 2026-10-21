@@ -30,6 +30,7 @@ const MIGRATIONS = [
   '033_ons_lad_population_observations.sql',
   '034_census2021_lad_tenure_observations.sql',
   '035_brownfield_land_observations.sql',
+  '036_brownfield_land_revisions.sql',
 ];
 
 async function columnExists(table, column) {
@@ -83,6 +84,7 @@ async function run() {
     ['census2021_lad_tenure_import_runs', 'status'],
     ['brownfield_land_observations', 'source_entity_id'],
     ['brownfield_land_import_runs', 'status'],
+    ['brownfield_land_observations', 'content_fingerprint'],
   ];
 
   console.log('\nVerification:');

@@ -1,6 +1,7 @@
 /**
  * Brownfield land observation store.
- * Conflict-safe upsert. No silent overwrite of changed fingerprints.
+ * Retains revisions; never silently overwrites changed fingerprints.
+ * Effective selection uses source entry-date only (see brownfieldLandRevisionSelection).
  */
 
 const {
@@ -13,19 +14,47 @@ const {
 } = require('../../architecture/officialBrownfieldLandDataset');
 const { classifyImportCoverage } = require('../../architecture/officialMarketDataset');
 const { releaseLabelOrUnspecified } = require('./releaseSelection');
+const {
+  BROWNFIELD_SELECTION,
+  selectEffectiveBrownfieldObservation,
+  compareRevisions,
+} = require('./brownfieldLandRevisionSelection');
 
 function observationKey(row) {
   return [
     row.source || BROWNFIELD_SOURCE,
     String(row.sourceEntityId),
     releaseLabelOrUnspecified(row.releaseLabel || BROWNFIELD_RELEASE_LABEL),
+    String(row.contentFingerprint || ''),
   ].join('|');
 }
 
 function compareObservations(a, b) {
   const idDiff = Number(a.sourceEntityId) - Number(b.sourceEntityId);
   if (idDiff !== 0) return idDiff;
+  const rev = compareRevisions(a, b);
+  if (rev !== 0) return rev;
   return String(a.reference || '').localeCompare(String(b.reference || ''));
+}
+
+function groupByEntityId(rows) {
+  const groups = new Map();
+  (rows || []).forEach((row) => {
+    const id = Number(row.sourceEntityId);
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(row);
+  });
+  return groups;
+}
+
+function effectiveFromRows(rows) {
+  const revisions = rows.slice().sort(compareRevisions);
+  const selection = selectEffectiveBrownfieldObservation(revisions);
+  return {
+    revisions,
+    selection,
+    effectiveObservation: selection.effectiveObservation,
+  };
 }
 
 function createMemoryBrownfieldLandStore() {
@@ -77,43 +106,60 @@ function createMemoryBrownfieldLandStore() {
         recordKind: 'OFFICIAL_OBSERVATION',
         releaseLabel: releaseLabelOrUnspecified(observation.releaseLabel || BROWNFIELD_RELEASE_LABEL),
       };
+      if (!stored.contentFingerprint) return 'rejected';
       const key = observationKey(stored);
-      const existing = byKey.get(key);
-      if (!existing) {
-        byKey.set(key, stored);
-        return 'inserted';
-      }
-      if (existing.contentFingerprint === stored.contentFingerprint) return 'duplicate';
-      return 'conflict';
+      if (byKey.has(key)) return 'duplicate';
+      byKey.set(key, stored);
+      return 'inserted';
     },
     snapshot() {
       return [...byKey.values()].sort(compareObservations);
     },
-    async queryBySourceEntityId(sourceEntityId, {
+    async listRevisionsBySourceEntityId(sourceEntityId, {
       releaseLabel = BROWNFIELD_RELEASE_LABEL,
     } = {}) {
       const datasetCoverage = await this.datasetCoverage();
       if (sourceEntityId == null || sourceEntityId === '') {
         return {
-          observations: [],
+          revisions: [],
           datasetCoverage,
           matched: false,
           matchStatus: 'INVALID_INPUT',
+          selection: selectEffectiveBrownfieldObservation([]),
         };
       }
       const id = Number(sourceEntityId);
       const release = releaseLabelOrUnspecified(releaseLabel);
-      const observations = [...byKey.values()].filter((row) => (
+      const revisions = [...byKey.values()].filter((row) => (
         Number(row.sourceEntityId) === id
         && releaseLabelOrUnspecified(row.releaseLabel) === release
-      )).sort(compareObservations);
+      )).sort(compareRevisions);
+      const selection = selectEffectiveBrownfieldObservation(revisions);
       return {
-        observations,
+        revisions,
         datasetCoverage,
-        matched: observations.length > 0,
-        matchStatus: observations.length
+        matched: revisions.length > 0,
+        matchStatus: revisions.length
           ? 'MATCHED'
           : (datasetCoverage.state === 'NOT_IMPORTED' ? 'NOT_IMPORTED' : 'NO_MATCH'),
+        selection,
+      };
+    },
+    async queryBySourceEntityId(sourceEntityId, {
+      releaseLabel = BROWNFIELD_RELEASE_LABEL,
+    } = {}) {
+      const listed = await this.listRevisionsBySourceEntityId(sourceEntityId, { releaseLabel });
+      const effective = listed.selection.selectionStatus === BROWNFIELD_SELECTION.RESOLVED
+        ? [listed.selection.effectiveObservation]
+        : [];
+      return {
+        observations: effective,
+        revisions: listed.revisions,
+        selection: listed.selection,
+        datasetCoverage: listed.datasetCoverage,
+        matched: listed.matched,
+        matchStatus: listed.matchStatus,
+        effectiveResolved: listed.selection.selectionStatus === BROWNFIELD_SELECTION.RESOLVED,
       };
     },
     async queryByOrganisationEntity(organisationEntity, {
@@ -123,6 +169,8 @@ function createMemoryBrownfieldLandStore() {
       if (organisationEntity == null || organisationEntity === '') {
         return {
           observations: [],
+          revisions: [],
+          selections: [],
           datasetCoverage,
           matched: false,
           matchStatus: 'INVALID_INPUT',
@@ -130,15 +178,33 @@ function createMemoryBrownfieldLandStore() {
       }
       const org = Number(organisationEntity);
       const release = releaseLabelOrUnspecified(releaseLabel);
-      const observations = [...byKey.values()].filter((row) => (
+      const rows = [...byKey.values()].filter((row) => (
         Number(row.organisationEntity) === org
         && releaseLabelOrUnspecified(row.releaseLabel) === release
-      )).sort(compareObservations);
+      ));
+      const groups = groupByEntityId(rows);
+      const observations = [];
+      const revisions = [];
+      const selections = [];
+      [...groups.keys()].sort((a, b) => a - b).forEach((id) => {
+        const packed = effectiveFromRows(groups.get(id));
+        revisions.push(...packed.revisions);
+        selections.push({
+          sourceEntityId: id,
+          ...packed.selection,
+        });
+        if (packed.selection.selectionStatus === BROWNFIELD_SELECTION.RESOLVED) {
+          observations.push(packed.effectiveObservation);
+        }
+      });
+      observations.sort(compareObservations);
       return {
         observations,
+        revisions: revisions.sort(compareObservations),
+        selections,
         datasetCoverage,
-        matched: observations.length > 0,
-        matchStatus: observations.length
+        matched: rows.length > 0,
+        matchStatus: rows.length
           ? 'MATCHED'
           : (datasetCoverage.state === 'NOT_IMPORTED' ? 'NOT_IMPORTED' : 'NO_MATCH'),
       };
@@ -148,10 +214,27 @@ function createMemoryBrownfieldLandStore() {
     } = {}) {
       const datasetCoverage = await this.datasetCoverage();
       const release = releaseLabelOrUnspecified(releaseLabel);
-      const observations = [...byKey.values()]
-        .filter((row) => releaseLabelOrUnspecified(row.releaseLabel) === release)
-        .sort(compareObservations);
-      return { observations, datasetCoverage };
+      const rows = [...byKey.values()]
+        .filter((row) => releaseLabelOrUnspecified(row.releaseLabel) === release);
+      const groups = groupByEntityId(rows);
+      const observations = [];
+      const selections = [];
+      [...groups.keys()].sort((a, b) => a - b).forEach((id) => {
+        const packed = effectiveFromRows(groups.get(id));
+        selections.push({
+          sourceEntityId: id,
+          ...packed.selection,
+        });
+        if (packed.selection.selectionStatus === BROWNFIELD_SELECTION.RESOLVED) {
+          observations.push(packed.effectiveObservation);
+        }
+      });
+      return {
+        observations: observations.sort(compareObservations),
+        revisions: rows.sort(compareObservations),
+        selections,
+        datasetCoverage,
+      };
     },
   };
 }
@@ -274,17 +357,16 @@ function createPostgresBrownfieldLandStore(db = null) {
       const release = releaseLabelOrUnspecified(observation.releaseLabel || BROWNFIELD_RELEASE_LABEL);
       const existing = await database.query(
         `SELECT content_fingerprint FROM brownfield_land_observations
-         WHERE source = $1 AND source_entity_id = $2 AND release_label = $3`,
+         WHERE source = $1 AND source_entity_id = $2 AND release_label = $3
+           AND content_fingerprint = $4`,
         [
           observation.source || BROWNFIELD_SOURCE,
           observation.sourceEntityId,
           release,
+          observation.contentFingerprint,
         ]
       );
-      if (existing.rows[0]) {
-        if (existing.rows[0].content_fingerprint === observation.contentFingerprint) return 'duplicate';
-        return 'conflict';
-      }
+      if (existing.rows[0]) return 'duplicate';
       await database.query(
         `INSERT INTO brownfield_land_observations (
           source, dataset, dataset_label, source_product, record_kind,
@@ -300,7 +382,7 @@ function createPostgresBrownfieldLandStore(db = null) {
           $15::date,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26::date,$27::date,$28::date,
           $29,$30,$31,$32,$33,$34::jsonb,$35::jsonb
         )
-        ON CONFLICT (source, source_entity_id, release_label) DO NOTHING`,
+        ON CONFLICT (source, source_entity_id, release_label, content_fingerprint) DO NOTHING`,
         [
           observation.source || BROWNFIELD_SOURCE,
           observation.dataset || 'brownfield-land',
@@ -341,32 +423,52 @@ function createPostgresBrownfieldLandStore(db = null) {
       );
       return 'inserted';
     },
-    async queryBySourceEntityId(sourceEntityId, {
+    async listRevisionsBySourceEntityId(sourceEntityId, {
       releaseLabel = BROWNFIELD_RELEASE_LABEL,
     } = {}) {
       const datasetCoverage = await this.datasetCoverage();
       if (sourceEntityId == null || sourceEntityId === '') {
         return {
-          observations: [],
+          revisions: [],
           datasetCoverage,
           matched: false,
           matchStatus: 'INVALID_INPUT',
+          selection: selectEffectiveBrownfieldObservation([]),
         };
       }
       const result = await database.query(
         `SELECT * FROM brownfield_land_observations
          WHERE source_entity_id = $1 AND release_label = $2
-         ORDER BY source_entity_id, reference NULLS LAST`,
+         ORDER BY entry_date NULLS LAST, content_fingerprint`,
         [Number(sourceEntityId), releaseLabelOrUnspecified(releaseLabel)]
       );
-      const observations = result.rows.map(mapPostgresRow);
+      const revisions = result.rows.map(mapPostgresRow).sort(compareRevisions);
+      const selection = selectEffectiveBrownfieldObservation(revisions);
       return {
-        observations,
+        revisions,
         datasetCoverage,
-        matched: observations.length > 0,
-        matchStatus: observations.length
+        matched: revisions.length > 0,
+        matchStatus: revisions.length
           ? 'MATCHED'
           : (datasetCoverage.state === 'NOT_IMPORTED' ? 'NOT_IMPORTED' : 'NO_MATCH'),
+        selection,
+      };
+    },
+    async queryBySourceEntityId(sourceEntityId, {
+      releaseLabel = BROWNFIELD_RELEASE_LABEL,
+    } = {}) {
+      const listed = await this.listRevisionsBySourceEntityId(sourceEntityId, { releaseLabel });
+      const effective = listed.selection.selectionStatus === BROWNFIELD_SELECTION.RESOLVED
+        ? [listed.selection.effectiveObservation]
+        : [];
+      return {
+        observations: effective,
+        revisions: listed.revisions,
+        selection: listed.selection,
+        datasetCoverage: listed.datasetCoverage,
+        matched: listed.matched,
+        matchStatus: listed.matchStatus,
+        effectiveResolved: listed.selection.selectionStatus === BROWNFIELD_SELECTION.RESOLVED,
       };
     },
     async queryByOrganisationEntity(organisationEntity, {
@@ -376,6 +478,8 @@ function createPostgresBrownfieldLandStore(db = null) {
       if (organisationEntity == null || organisationEntity === '') {
         return {
           observations: [],
+          revisions: [],
+          selections: [],
           datasetCoverage,
           matched: false,
           matchStatus: 'INVALID_INPUT',
@@ -384,15 +488,32 @@ function createPostgresBrownfieldLandStore(db = null) {
       const result = await database.query(
         `SELECT * FROM brownfield_land_observations
          WHERE organisation_entity = $1 AND release_label = $2
-         ORDER BY source_entity_id, reference NULLS LAST`,
+         ORDER BY source_entity_id, entry_date NULLS LAST, content_fingerprint`,
         [Number(organisationEntity), releaseLabelOrUnspecified(releaseLabel)]
       );
-      const observations = result.rows.map(mapPostgresRow);
+      const rows = result.rows.map(mapPostgresRow);
+      const groups = groupByEntityId(rows);
+      const observations = [];
+      const revisions = [];
+      const selections = [];
+      [...groups.keys()].sort((a, b) => a - b).forEach((id) => {
+        const packed = effectiveFromRows(groups.get(id));
+        revisions.push(...packed.revisions);
+        selections.push({
+          sourceEntityId: id,
+          ...packed.selection,
+        });
+        if (packed.selection.selectionStatus === BROWNFIELD_SELECTION.RESOLVED) {
+          observations.push(packed.effectiveObservation);
+        }
+      });
       return {
-        observations,
+        observations: observations.sort(compareObservations),
+        revisions: revisions.sort(compareObservations),
+        selections,
         datasetCoverage,
-        matched: observations.length > 0,
-        matchStatus: observations.length
+        matched: rows.length > 0,
+        matchStatus: rows.length
           ? 'MATCHED'
           : (datasetCoverage.state === 'NOT_IMPORTED' ? 'NOT_IMPORTED' : 'NO_MATCH'),
       };
@@ -404,11 +525,27 @@ function createPostgresBrownfieldLandStore(db = null) {
       const result = await database.query(
         `SELECT * FROM brownfield_land_observations
          WHERE release_label = $1
-         ORDER BY source_entity_id, reference NULLS LAST`,
+         ORDER BY source_entity_id, entry_date NULLS LAST, content_fingerprint`,
         [releaseLabelOrUnspecified(releaseLabel)]
       );
+      const rows = result.rows.map(mapPostgresRow);
+      const groups = groupByEntityId(rows);
+      const observations = [];
+      const selections = [];
+      [...groups.keys()].sort((a, b) => a - b).forEach((id) => {
+        const packed = effectiveFromRows(groups.get(id));
+        selections.push({
+          sourceEntityId: id,
+          ...packed.selection,
+        });
+        if (packed.selection.selectionStatus === BROWNFIELD_SELECTION.RESOLVED) {
+          observations.push(packed.effectiveObservation);
+        }
+      });
       return {
-        observations: result.rows.map(mapPostgresRow),
+        observations: observations.sort(compareObservations),
+        revisions: rows.sort(compareObservations),
+        selections,
         datasetCoverage,
       };
     },
@@ -419,4 +556,5 @@ module.exports = {
   observationKey,
   createMemoryBrownfieldLandStore,
   createPostgresBrownfieldLandStore,
+  BROWNFIELD_SELECTION,
 };

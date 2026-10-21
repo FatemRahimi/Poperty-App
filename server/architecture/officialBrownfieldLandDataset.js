@@ -41,8 +41,17 @@ const BROWNFIELD_LIMITATIONS = Object.freeze([
   'Site geometry/point proximity does NOT imply impact on a property or area.',
   'No growth, rental-demand, regeneration, opportunity, or investment inference is supported by this dataset alone.',
   'IngestedAt / retrievedAt are retrieval or import times. They are not source publication dates.',
+  'Changed source content is retained as a distinct revision. The edition-family release label BROWNFIELD_LAND is not publication chronology and is not ordered lexically.',
+  'Effective observation selection uses Planning Data entry-date only when present and unambiguous. Import order, ingest time, retrieval time, and database id are never used as publication chronology.',
+  'When multiple changed revisions lack a defensible entry-date ordering, selection is AMBIGUOUS and no revision is presented as current fact.',
   'Licence text is product metadata, not a legal opinion and not a statement that commercial use for every product purpose is cleared.',
 ]);
+
+const BROWNFIELD_SELECTION = Object.freeze({
+  RESOLVED: 'RESOLVED',
+  AMBIGUOUS: 'AMBIGUOUS',
+  NONE: 'NONE',
+});
 
 const BROWNFIELD_PROVENANCE = officialDatasetProvenance({
   provider: 'Ministry of Housing, Communities and Local Government — Planning Data',
@@ -97,6 +106,7 @@ module.exports = {
   BROWNFIELD_DWELLING_NATURE,
   BROWNFIELD_LIMITATIONS,
   BROWNFIELD_PROVENANCE,
+  BROWNFIELD_SELECTION,
   FORBIDDEN_BROWNFIELD_INFERENCE_KEYS,
   COVERAGE_STATE,
   MARKET_RECORD_KIND,

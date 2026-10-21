@@ -29,9 +29,14 @@ const {
   getOfficialBrownfieldLandEvidence,
 } = require('../services/market/officialAreaBrownfieldEvidence');
 const {
+  BROWNFIELD_SELECTION,
+  selectEffectiveBrownfieldObservation,
+} = require('../services/market/brownfieldLandRevisionSelection');
+const {
   mapApplication,
   DATASET: PLANNING_APPLICATION_DATASET,
 } = require('../services/providers/planningData/planningApplicationClient');
+const fsProfileContract = require('../architecture/officialAreaEvidenceProfileContract');
 
 const FIXTURE = fs.readFileSync(
   path.join(__dirname, 'fixtures/planningdata-brownfield-land-min.json'),
@@ -169,7 +174,7 @@ function assertNoForbidden(payload) {
     assert.strictEqual(row.coordinateReferenceSystem, 'EPSG:4326');
   });
 
-  await test('same identity same fingerprint duplicate; changed fingerprint conflict', async () => {
+  await test('same fingerprint duplicate; changed fingerprint retained as revision', async () => {
     const store = createMemoryBrownfieldLandStore();
     const first = await ingestBrownfieldLand({ store, entitiesJson: FIXTURE });
     assert.strictEqual(first.status, 'SUCCEEDED');
@@ -179,15 +184,146 @@ function assertNoForbidden(payload) {
     assert.strictEqual(again.status, 'SUCCEEDED');
     assert.strictEqual(again.unchanged_count, first.inserted_count);
     assert.strictEqual(again.inserted_count, 0);
-    assert.strictEqual(again.conflict_count, 0);
 
     const changed = JSON.parse(FIXTURE);
     changed.entities[0]['minimum-net-dwellings'] = '20';
     changed.entities[0]['maximum-net-dwellings'] = '20';
-    const conflict = await ingestBrownfieldLand({ store, entitiesJson: JSON.stringify(changed) });
-    assert.strictEqual(conflict.conflict_count, 1);
-    const kept = await store.queryBySourceEntityId(1700000);
-    assert.strictEqual(kept.observations[0].minimumNetDwellings, 15);
+    changed.entities[0]['entry-date'] = '2025-01-01';
+    const revised = await ingestBrownfieldLand({ store, entitiesJson: JSON.stringify(changed) });
+    assert.strictEqual(revised.inserted_count, 1);
+    assert.strictEqual(revised.conflict_count, 0);
+
+    const listed = await store.listRevisionsBySourceEntityId(1700000);
+    assert.strictEqual(listed.revisions.length, 2);
+    assert.strictEqual(listed.selection.selectionStatus, BROWNFIELD_SELECTION.RESOLVED);
+    assert.strictEqual(listed.selection.selectionBasis, 'source_entry_date');
+    assert.strictEqual(listed.selection.effectiveObservation.minimumNetDwellings, 20);
+    assert.strictEqual(listed.selection.effectiveObservation.entryDate, '2025-01-01');
+
+    const olderStillPresent = listed.revisions.some((row) => (
+      row.minimumNetDwellings === 15 && row.entryDate === '2024-12-16'
+    ));
+    assert.strictEqual(olderStillPresent, true);
+  });
+
+  await test('later source entry-date wins even when older revision imported afterward', async () => {
+    const store = createMemoryBrownfieldLandStore();
+    const newerFirst = {
+      entities: [{
+        entity: 5001,
+        dataset: 'brownfield-land',
+        reference: 'REV-NEW',
+        'organisation-entity': 1,
+        'entry-date': '2025-06-01',
+        'minimum-net-dwellings': '30',
+        'maximum-net-dwellings': '30',
+        'planning-permission-status': 'permissioned',
+        'ownership-status': 'unknown-ownership',
+        point: 'POINT (-1 51)',
+      }],
+    };
+    const olderLater = {
+      entities: [{
+        entity: 5001,
+        dataset: 'brownfield-land',
+        reference: 'REV-OLD',
+        'organisation-entity': 1,
+        'entry-date': '2024-01-01',
+        'minimum-net-dwellings': '10',
+        'maximum-net-dwellings': '10',
+        'planning-permission-status': 'not-permissioned',
+        'ownership-status': 'unknown-ownership',
+        point: 'POINT (-1 51)',
+      }],
+    };
+    await ingestBrownfieldLand({ store, entities: newerFirst });
+    await ingestBrownfieldLand({ store, entities: olderLater });
+    const evidence = await getOfficialBrownfieldLandEvidence({
+      brownfieldStore: store,
+      sourceEntityId: 5001,
+    });
+    assert.strictEqual(evidence.status, 'SUFFICIENT');
+    assert.strictEqual(evidence.observations[0].minimumNetDwellings, 30);
+    assert.strictEqual(evidence.observations[0].entryDate, '2025-06-01');
+    assert.strictEqual(evidence.revisionSelection.selectionBasis, 'source_entry_date');
+    assert.strictEqual(evidence.revisions.length, 2);
+  });
+
+  await test('missing chronology with changed revisions is AMBIGUOUS and not current fact', async () => {
+    const store = createMemoryBrownfieldLandStore();
+    const a = {
+      entities: [{
+        entity: 5002,
+        dataset: 'brownfield-land',
+        reference: 'AMB-A',
+        'organisation-entity': 1,
+        'entry-date': '',
+        'minimum-net-dwellings': '5',
+        'maximum-net-dwellings': '5',
+        'planning-permission-status': 'permissioned',
+        point: 'POINT (-1 51)',
+      }],
+    };
+    const b = {
+      entities: [{
+        entity: 5002,
+        dataset: 'brownfield-land',
+        reference: 'AMB-B',
+        'organisation-entity': 1,
+        'entry-date': '',
+        'minimum-net-dwellings': '8',
+        'maximum-net-dwellings': '8',
+        'planning-permission-status': 'not-permissioned',
+        point: 'POINT (-1 51)',
+      }],
+    };
+    await ingestBrownfieldLand({ store, entities: a });
+    await ingestBrownfieldLand({ store, entities: b });
+    const evidence = await getOfficialBrownfieldLandEvidence({
+      brownfieldStore: store,
+      sourceEntityId: 5002,
+    });
+    assert.strictEqual(evidence.status, 'UNRESOLVED');
+    assert.strictEqual(evidence.reason, 'brownfield_revision_ambiguous');
+    assert.deepStrictEqual(evidence.observations, []);
+    assert.strictEqual(evidence.revisionSelection.selectionStatus, BROWNFIELD_SELECTION.AMBIGUOUS);
+    assert.strictEqual(evidence.revisionSelection.effectiveObservation, null);
+    assert.ok(evidence.revisions.length >= 2);
+    assert.ok(!Object.prototype.hasOwnProperty.call(evidence, 'developer'));
+  });
+
+  await test('tied entry-date and ingest/retrieval time are not used as chronology', async () => {
+    const tied = selectEffectiveBrownfieldObservation([
+      {
+        sourceEntityId: 1,
+        contentFingerprint: 'aaa',
+        entryDate: '2025-01-01',
+        ingestedAt: '2026-01-01T00:00:00.000Z',
+        retrievedAt: '2026-02-01T00:00:00.000Z',
+      },
+      {
+        sourceEntityId: 1,
+        contentFingerprint: 'bbb',
+        entryDate: '2025-01-01',
+        ingestedAt: '2026-03-01T00:00:00.000Z',
+        retrievedAt: '2026-04-01T00:00:00.000Z',
+      },
+    ]);
+    assert.strictEqual(tied.selectionStatus, BROWNFIELD_SELECTION.AMBIGUOUS);
+    assert.strictEqual(tied.effectiveObservation, null);
+    assert.strictEqual(tied.ambiguityReason, 'tied_source_entry_date');
+
+    const one = selectEffectiveBrownfieldObservation([
+      { sourceEntityId: 1, contentFingerprint: 'only', entryDate: null },
+    ]);
+    assert.strictEqual(one.selectionStatus, BROWNFIELD_SELECTION.RESOLVED);
+    assert.strictEqual(one.selectionBasis, 'single_observation');
+  });
+
+  await test('areaEvidenceProfile.v1 remains unwired to brownfield', async () => {
+    assert.ok(!Object.values(fsProfileContract.AREA_EVIDENCE_FAMILY).includes('brownfield'));
+    assert.ok(!fsProfileContract.AREA_EVIDENCE_FAMILY_ORDER.includes('brownfield'));
+    assert.ok(!fsProfileContract.AREA_EVIDENCE_FAMILY_ORDER.some((id) => /brownfield/i.test(id)));
   });
 
   await test('coverage NOT_IMPORTED EMPTY ERROR and empty != no development', async () => {

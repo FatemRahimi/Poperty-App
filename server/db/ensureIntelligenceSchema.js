@@ -30,6 +30,7 @@ const MIGRATION_FILES = [
   '033_ons_lad_population_observations.sql',
   '034_census2021_lad_tenure_observations.sql',
   '035_brownfield_land_observations.sql',
+  '036_brownfield_land_revisions.sql',
 ];
 
 async function columnExists(table, column) {
@@ -88,6 +89,8 @@ async function ensureIntelligenceSchema() {
   const needsOnsPopulation = !(await tableExists('ons_lad_population_observations'));
   const needsCensusTenure = !(await tableExists('census2021_lad_tenure_observations'));
   const needsBrownfieldLand = !(await tableExists('brownfield_land_observations'));
+  const needsBrownfieldRevisions = needsBrownfieldLand
+    || !(await indexExists('idx_brownfield_land_entity_revisions'));
 
   if (
     !needsSubjectId &&
@@ -112,7 +115,8 @@ async function ensureIntelligenceSchema() {
     !needsIodLad &&
     !needsOnsPopulation &&
     !needsCensusTenure &&
-    !needsBrownfieldLand
+    !needsBrownfieldLand &&
+    !needsBrownfieldRevisions
   ) {
     return { applied: false, ok: true };
   }
@@ -226,6 +230,13 @@ async function ensureIntelligenceSchema() {
       await applySql('035_brownfield_land_observations.sql');
     } catch (err) {
       console.error('❌ Brownfield land schema could not be applied:', err.message);
+    }
+  }
+  if (needsBrownfieldRevisions) {
+    try {
+      await applySql('036_brownfield_land_revisions.sql');
+    } catch (err) {
+      console.error('❌ Brownfield land revision schema could not be applied:', err.message);
     }
   }
 
