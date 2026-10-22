@@ -32,6 +32,7 @@ const MIGRATION_FILES = [
   '035_brownfield_land_observations.sql',
   '036_brownfield_land_revisions.sql',
   '037_brownfield_provider_coverage.sql',
+  '038_brownfield_revision_uniqueness_repair.sql',
 ];
 
 async function columnExists(table, column) {
@@ -56,6 +57,30 @@ async function indexExists(name) {
   const result = await pool.query(
     `SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = $1`,
     [name]
+  );
+  return result.rows.length > 0;
+}
+
+async function constraintExists(name) {
+  const result = await pool.query(
+    'SELECT 1 FROM pg_constraint WHERE conname = $1',
+    [name]
+  );
+  return result.rows.length > 0;
+}
+
+async function obsoleteBrownfieldUnique() {
+  const result = await pool.query(
+    `SELECT 1
+     FROM pg_constraint c
+     JOIN pg_class t ON t.oid = c.conrelid
+     JOIN pg_namespace n ON n.oid = t.relnamespace
+     WHERE n.nspname = 'public'
+       AND t.relname = 'brownfield_land_observations'
+       AND c.contype = 'u'
+       AND pg_get_constraintdef(c.oid) LIKE '%source_entity_id%'
+       AND pg_get_constraintdef(c.oid) LIKE '%release_label%'
+       AND pg_get_constraintdef(c.oid) NOT LIKE '%content_fingerprint%'`
   );
   return result.rows.length > 0;
 }
@@ -92,6 +117,9 @@ async function ensureIntelligenceSchema() {
   const needsBrownfieldLand = !(await tableExists('brownfield_land_observations'));
   const needsBrownfieldRevisions = needsBrownfieldLand
     || !(await indexExists('idx_brownfield_land_entity_revisions'));
+  const needsBrownfieldRevisionRepair = needsBrownfieldLand
+    || await obsoleteBrownfieldUnique()
+    || !(await constraintExists('brownfield_land_observations_revision_identity'));
   const needsBrownfieldCoverage = !(await tableExists('brownfield_lpa_identities'));
 
   if (
@@ -119,6 +147,7 @@ async function ensureIntelligenceSchema() {
     !needsCensusTenure &&
     !needsBrownfieldLand &&
     !needsBrownfieldRevisions &&
+    !needsBrownfieldRevisionRepair &&
     !needsBrownfieldCoverage
   ) {
     return { applied: false, ok: true };
@@ -240,6 +269,13 @@ async function ensureIntelligenceSchema() {
       await applySql('036_brownfield_land_revisions.sql');
     } catch (err) {
       console.error('❌ Brownfield land revision schema could not be applied:', err.message);
+    }
+  }
+  if (needsBrownfieldRevisionRepair) {
+    try {
+      await applySql('038_brownfield_revision_uniqueness_repair.sql');
+    } catch (err) {
+      console.error('❌ Brownfield revision uniqueness repair could not be applied:', err.message);
     }
   }
   if (needsBrownfieldCoverage) {

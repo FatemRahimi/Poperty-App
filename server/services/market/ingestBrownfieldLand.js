@@ -1,5 +1,7 @@
 /**
  * Offline / supplied-payload brownfield-land ingest. No live network in tests.
+ * Parsing finishes before the persistence transaction. A database failure
+ * rolls back that attempt and does not remove earlier successful revisions.
  */
 
 const { parseBrownfieldEntitiesPayload } = require('./brownfieldLandParser');
@@ -13,56 +15,35 @@ async function ingestBrownfieldLand({
   releaseLabel = BROWNFIELD_RELEASE_LABEL,
   retrievedAt = null,
   ingestedAt = new Date().toISOString(),
+  failAtIndex = null,
 } = {}) {
   const target = store || createMemoryBrownfieldLandStore();
   const started = Date.now();
-  const run = await target.startRun({
-    release_label: releaseLabel,
-    retrieved_at: retrievedAt,
-    ingested_at: ingestedAt,
+  const payload = entities != null ? entities : entitiesJson;
+  if (payload == null) {
+    throw new Error('brownfield_ingest_requires_entities');
+  }
+  const parsed = parseBrownfieldEntitiesPayload(payload, {
+    releaseLabel,
+    retrievedAt,
+    ingestedAt,
   });
-  const stats = {
-    rows_processed: 0,
-    inserted_count: 0,
-    unchanged_count: 0,
-    rejected_count: 0,
-    conflict_count: 0,
-  };
-  try {
-    const payload = entities != null ? entities : entitiesJson;
-    if (payload == null) {
-      throw new Error('brownfield_ingest_requires_entities');
-    }
-    const parsed = parseBrownfieldEntitiesPayload(payload, {
-      releaseLabel,
-      retrievedAt,
-      ingestedAt,
+  if (!parsed.rows.length && parsed.rejected.length) {
+    const run = await target.startRun({
+      release_label: releaseLabel,
+      retrieved_at: retrievedAt,
+      ingested_at: ingestedAt,
     });
-    stats.rejected_count += parsed.rejected.length;
-    if (!parsed.rows.length && parsed.rejected.length) {
-      await target.finishRun(run.id, {
-        status: 'FAILED',
-        failure_reason: parsed.rejected[0]?.reason || 'no_valid_entities',
-        ...stats,
-        duration_ms: Date.now() - started,
-      });
-      return {
-        store: target,
-        runId: run.id,
-        ...stats,
-        status: 'FAILED',
-        rejected: parsed.rejected,
-      };
-    }
-    for (const observation of parsed.rows) {
-      stats.rows_processed += 1;
-      const outcome = await target.upsert({ ...observation, ingestedAt, retrievedAt });
-      if (outcome === 'inserted') stats.inserted_count += 1;
-      else if (outcome === 'duplicate') stats.unchanged_count += 1;
-      else if (outcome === 'conflict') stats.conflict_count += 1;
-    }
+    const stats = {
+      rows_processed: 0,
+      inserted_count: 0,
+      unchanged_count: 0,
+      rejected_count: parsed.rejected.length,
+      conflict_count: 0,
+    };
     await target.finishRun(run.id, {
-      status: 'SUCCEEDED',
+      status: 'FAILED',
+      failure_reason: parsed.rejected[0]?.reason || 'no_valid_entities',
       ...stats,
       duration_ms: Date.now() - started,
     });
@@ -70,19 +51,25 @@ async function ingestBrownfieldLand({
       store: target,
       runId: run.id,
       ...stats,
-      status: 'SUCCEEDED',
-      rejected: parsed.rejected,
-      providerCount: parsed.providerCount,
-    };
-  } catch (error) {
-    await target.finishRun(run.id, {
       status: 'FAILED',
-      failure_reason: error.message,
-      ...stats,
-      duration_ms: Date.now() - started,
-    });
-    throw error;
+      failure_reason: parsed.rejected[0]?.reason || 'no_valid_entities',
+      rejected: parsed.rejected,
+    };
   }
+  const result = await target.importAcceptedBatch({
+    rows: parsed.rows.map((row) => ({ ...row, ingestedAt, retrievedAt })),
+    rejectedCount: parsed.rejected.length,
+    releaseLabel,
+    retrievedAt,
+    failAtIndex,
+  });
+  return {
+    store: target,
+    ...result,
+    rejected: parsed.rejected,
+    providerCount: parsed.providerCount,
+    duration_ms: Date.now() - started,
+  };
 }
 
 module.exports = {

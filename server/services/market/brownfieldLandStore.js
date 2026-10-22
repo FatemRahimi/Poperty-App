@@ -57,6 +57,39 @@ function effectiveFromRows(rows) {
   };
 }
 
+/** rowCount from INSERT ... ON CONFLICT DO NOTHING RETURNING. Zero rows is not an insert. */
+function classifyObservationInsert(rowCount) {
+  return Number(rowCount) > 0 ? 'inserted' : 'duplicate';
+}
+
+/**
+ * Usable evidence follows the latest SUCCEEDED run.
+ * A newer STARTED or FAILED attempt stays visible and does not hide that run.
+ */
+function describeBrownfieldCoverage({
+  latestAttempt = null,
+  latestSuccess = null,
+  observationCount = 0,
+  options = {},
+} = {}) {
+  const coverage = latestSuccess
+    ? classifyImportCoverage({ latestRun: latestSuccess, ...options })
+    : classifyImportCoverage({ latestRun: latestAttempt, ...options });
+  const withRows = latestSuccess && coverage.state === 'EMPTY' && observationCount > 0
+    ? { ...coverage, state: 'AVAILABLE', acceptedCount: observationCount }
+    : coverage;
+  const attemptStatus = latestAttempt ? String(latestAttempt.status || '') : null;
+  return {
+    ...withRows,
+    latestAttemptStatus: attemptStatus,
+    latestAttemptId: latestAttempt ? latestAttempt.id : null,
+    latestSuccessfulRunId: latestSuccess ? latestSuccess.id : null,
+    failureReason: latestAttempt && attemptStatus !== 'SUCCEEDED'
+      ? (latestAttempt.failure_reason || latestAttempt.failureReason || null)
+      : null,
+  };
+}
+
 function createMemoryBrownfieldLandStore() {
   const byKey = new Map();
   const runs = [];
@@ -65,12 +98,19 @@ function createMemoryBrownfieldLandStore() {
     async latestRun() {
       return runs.length ? runs[runs.length - 1] : null;
     },
-    async datasetCoverage(options = {}) {
-      const coverage = classifyImportCoverage({ latestRun: await this.latestRun(), ...options });
-      if (coverage.state === 'EMPTY' && byKey.size > 0) {
-        return { ...coverage, state: 'AVAILABLE', acceptedCount: byKey.size };
+    async latestSuccessfulRun() {
+      for (let index = runs.length - 1; index >= 0; index -= 1) {
+        if (String(runs[index].status || '') === 'SUCCEEDED') return runs[index];
       }
-      return coverage;
+      return null;
+    },
+    async datasetCoverage(options = {}) {
+      return describeBrownfieldCoverage({
+        latestAttempt: await this.latestRun(),
+        latestSuccess: await this.latestSuccessfulRun(),
+        observationCount: byKey.size,
+        options,
+      });
     },
     async startRun(meta = {}) {
       const run = {
@@ -111,6 +151,70 @@ function createMemoryBrownfieldLandStore() {
       if (byKey.has(key)) return 'duplicate';
       byKey.set(key, stored);
       return 'inserted';
+    },
+    async importAcceptedBatch({
+      rows = [],
+      rejectedCount = 0,
+      releaseLabel = BROWNFIELD_RELEASE_LABEL,
+      retrievedAt = null,
+      failAtIndex = null,
+    } = {}) {
+      const snapshot = new Map(byKey);
+      const started = Date.now();
+      const run = await this.startRun({
+        release_label: releaseLabel,
+        retrieved_at: retrievedAt,
+      });
+      const stats = {
+        rows_processed: 0,
+        inserted_count: 0,
+        unchanged_count: 0,
+        rejected_count: rejectedCount,
+        conflict_count: 0,
+      };
+      try {
+        for (let index = 0; index < rows.length; index += 1) {
+          if (failAtIndex != null && index === failAtIndex) {
+            throw new Error('injected_database_failure');
+          }
+          const outcome = await this.upsert(rows[index]);
+          if (outcome === 'rejected') {
+            throw new Error('brownfield_observation_missing_fingerprint');
+          }
+          stats.rows_processed += 1;
+          if (outcome === 'inserted') stats.inserted_count += 1;
+          else stats.unchanged_count += 1;
+        }
+        await this.finishRun(run.id, {
+          status: 'SUCCEEDED',
+          ...stats,
+          duration_ms: Date.now() - started,
+        });
+        return { runId: run.id, status: 'SUCCEEDED', ...stats };
+      } catch (error) {
+        byKey.clear();
+        snapshot.forEach((value, key) => byKey.set(key, value));
+        await this.finishRun(run.id, {
+          status: 'FAILED',
+          failure_reason: error.message,
+          rows_processed: 0,
+          inserted_count: 0,
+          unchanged_count: 0,
+          rejected_count: rejectedCount,
+          conflict_count: 0,
+          duration_ms: Date.now() - started,
+        });
+        return {
+          runId: run.id,
+          status: 'FAILED',
+          failure_reason: error.message,
+          rows_processed: 0,
+          inserted_count: 0,
+          unchanged_count: 0,
+          rejected_count: rejectedCount,
+          conflict_count: 0,
+        };
+      }
     },
     snapshot() {
       return [...byKey.values()].sort(compareObservations);
@@ -283,6 +387,75 @@ function mapPostgresRow(row) {
   };
 }
 
+const OBSERVATION_INSERT_SQL = `INSERT INTO brownfield_land_observations (
+          source, dataset, dataset_label, source_product, record_kind,
+          geography_type, geographic_scope, source_entity_id, organisation_entity,
+          reference, name, site_address, ownership_status, planning_permission_status,
+          planning_permission_type, planning_permission_date, minimum_net_dwellings,
+          maximum_net_dwellings, dwelling_nature, deliverable, hectares,
+          point_wkt, latitude, longitude, geometry_wkt, coordinate_reference_system,
+          entry_date, start_date, end_date, notes, site_plan_url, release_label,
+          content_fingerprint, retrieved_at, provenance, limitations
+        ) VALUES (
+          $1,$2,$3,$4,'OFFICIAL_OBSERVATION',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
+          $15::date,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26::date,$27::date,$28::date,
+          $29,$30,$31,$32,$33,$34::jsonb,$35::jsonb
+        )
+        ON CONFLICT (source, source_entity_id, release_label, content_fingerprint) DO NOTHING
+        RETURNING id`;
+
+function observationInsertParams(observation, release) {
+  return [
+    observation.source || BROWNFIELD_SOURCE,
+    observation.dataset || 'brownfield-land',
+    observation.datasetLabel || BROWNFIELD_DATASET_LABEL,
+    observation.sourceProduct || BROWNFIELD_SOURCE_PRODUCT,
+    observation.geographyType || 'SITE',
+    observation.geographicScope || BROWNFIELD_GEOGRAPHIC_SCOPE,
+    observation.sourceEntityId,
+    observation.organisationEntity,
+    observation.reference,
+    observation.name,
+    observation.siteAddress,
+    observation.ownershipStatus,
+    observation.planningPermissionStatus,
+    observation.planningPermissionType,
+    observation.planningPermissionDate,
+    observation.minimumNetDwellings,
+    observation.maximumNetDwellings,
+    observation.dwellingNature,
+    observation.deliverable,
+    observation.hectares,
+    observation.pointWkt,
+    observation.latitude,
+    observation.longitude,
+    observation.geometryWkt,
+    observation.coordinateReferenceSystem,
+    observation.entryDate,
+    observation.startDate,
+    observation.endDate,
+    observation.notes,
+    observation.sitePlanUrl,
+    release,
+    observation.contentFingerprint,
+    observation.retrievedAt || null,
+    JSON.stringify(observation.provenance || BROWNFIELD_PROVENANCE),
+    JSON.stringify(observation.limitations || []),
+  ];
+}
+
+async function insertBrownfieldObservation(queryable, observation) {
+  const release = releaseLabelOrUnspecified(observation.releaseLabel || BROWNFIELD_RELEASE_LABEL);
+  if (!observation.contentFingerprint) {
+    throw new Error('brownfield_observation_missing_fingerprint');
+  }
+  const result = await queryable.query(
+    OBSERVATION_INSERT_SQL,
+    observationInsertParams(observation, release)
+  );
+  return classifyObservationInsert(result.rowCount);
+}
+
 function createPostgresBrownfieldLandStore(db = null) {
   const database = db || (() => {
     // eslint-disable-next-line global-require
@@ -297,15 +470,24 @@ function createPostgresBrownfieldLandStore(db = null) {
       );
       return result.rows[0] || null;
     },
+    async latestSuccessfulRun() {
+      const result = await database.query(
+        `SELECT * FROM brownfield_land_import_runs
+         WHERE status = 'SUCCEEDED'
+         ORDER BY id DESC
+         LIMIT 1`
+      );
+      return result.rows[0] || null;
+    },
     async datasetCoverage(options = {}) {
-      const coverage = classifyImportCoverage({
-        latestRun: await this.latestRun(),
-        ...options,
-      });
-      if (coverage.state !== 'EMPTY') return coverage;
       const count = await database.query('SELECT COUNT(*)::int AS n FROM brownfield_land_observations');
       const n = count.rows[0] ? Number(count.rows[0].n) : 0;
-      return n > 0 ? { ...coverage, state: 'AVAILABLE', acceptedCount: n } : coverage;
+      return describeBrownfieldCoverage({
+        latestAttempt: await this.latestRun(),
+        latestSuccess: await this.latestSuccessfulRun(),
+        observationCount: n,
+        options,
+      });
     },
     async startRun(meta = {}) {
       const result = await database.query(
@@ -354,74 +536,117 @@ function createPostgresBrownfieldLandStore(db = null) {
       return result.rows[0] || null;
     },
     async upsert(observation) {
-      const release = releaseLabelOrUnspecified(observation.releaseLabel || BROWNFIELD_RELEASE_LABEL);
-      const existing = await database.query(
-        `SELECT content_fingerprint FROM brownfield_land_observations
-         WHERE source = $1 AND source_entity_id = $2 AND release_label = $3
-           AND content_fingerprint = $4`,
-        [
-          observation.source || BROWNFIELD_SOURCE,
-          observation.sourceEntityId,
-          release,
-          observation.contentFingerprint,
-        ]
-      );
-      if (existing.rows[0]) return 'duplicate';
-      await database.query(
-        `INSERT INTO brownfield_land_observations (
-          source, dataset, dataset_label, source_product, record_kind,
-          geography_type, geographic_scope, source_entity_id, organisation_entity,
-          reference, name, site_address, ownership_status, planning_permission_status,
-          planning_permission_type, planning_permission_date, minimum_net_dwellings,
-          maximum_net_dwellings, dwelling_nature, deliverable, hectares,
-          point_wkt, latitude, longitude, geometry_wkt, coordinate_reference_system,
-          entry_date, start_date, end_date, notes, site_plan_url, release_label,
-          content_fingerprint, retrieved_at, provenance, limitations
-        ) VALUES (
-          $1,$2,$3,$4,'OFFICIAL_OBSERVATION',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
-          $15::date,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26::date,$27::date,$28::date,
-          $29,$30,$31,$32,$33,$34::jsonb,$35::jsonb
-        )
-        ON CONFLICT (source, source_entity_id, release_label, content_fingerprint) DO NOTHING`,
-        [
-          observation.source || BROWNFIELD_SOURCE,
-          observation.dataset || 'brownfield-land',
-          observation.datasetLabel || BROWNFIELD_DATASET_LABEL,
-          observation.sourceProduct || BROWNFIELD_SOURCE_PRODUCT,
-          observation.geographyType || 'SITE',
-          observation.geographicScope || BROWNFIELD_GEOGRAPHIC_SCOPE,
-          observation.sourceEntityId,
-          observation.organisationEntity,
-          observation.reference,
-          observation.name,
-          observation.siteAddress,
-          observation.ownershipStatus,
-          observation.planningPermissionStatus,
-          observation.planningPermissionType,
-          observation.planningPermissionDate,
-          observation.minimumNetDwellings,
-          observation.maximumNetDwellings,
-          observation.dwellingNature,
-          observation.deliverable,
-          observation.hectares,
-          observation.pointWkt,
-          observation.latitude,
-          observation.longitude,
-          observation.geometryWkt,
-          observation.coordinateReferenceSystem,
-          observation.entryDate,
-          observation.startDate,
-          observation.endDate,
-          observation.notes,
-          observation.sitePlanUrl,
-          release,
-          observation.contentFingerprint,
-          observation.retrievedAt || null,
-          JSON.stringify(observation.provenance || BROWNFIELD_PROVENANCE),
-          JSON.stringify(observation.limitations || []),
-        ]
-      );
-      return 'inserted';
+      return insertBrownfieldObservation(database, observation);
+    },
+    async importAcceptedBatch({
+      rows = [],
+      rejectedCount = 0,
+      releaseLabel = BROWNFIELD_RELEASE_LABEL,
+      retrievedAt = null,
+      failAtIndex = null,
+    } = {}) {
+      if (!database || typeof database.connect !== 'function') {
+        throw new Error('brownfield_postgres_import_requires_connect');
+      }
+      const client = await database.connect();
+      const started = Date.now();
+      const release = releaseLabelOrUnspecified(releaseLabel);
+      try {
+        await client.query('BEGIN');
+        const startedRun = await client.query(
+          `INSERT INTO brownfield_land_import_runs
+            (source, dataset, source_product, release_label, status, provenance, geographic_coverage, retrieved_at)
+           VALUES ($1, $2, $3, $4, 'STARTED', $5::jsonb, $6, $7)
+           RETURNING *`,
+          [
+            BROWNFIELD_SOURCE,
+            BROWNFIELD_DATASET_LABEL,
+            BROWNFIELD_SOURCE_PRODUCT,
+            release,
+            JSON.stringify(BROWNFIELD_PROVENANCE),
+            BROWNFIELD_GEOGRAPHIC_SCOPE,
+            retrievedAt || null,
+          ]
+        );
+        const runId = startedRun.rows[0].id;
+        const stats = {
+          rows_processed: 0,
+          inserted_count: 0,
+          unchanged_count: 0,
+          rejected_count: rejectedCount,
+          conflict_count: 0,
+        };
+        for (let index = 0; index < rows.length; index += 1) {
+          if (failAtIndex != null && index === failAtIndex) {
+            throw new Error('injected_database_failure');
+          }
+          const outcome = await insertBrownfieldObservation(client, rows[index]);
+          stats.rows_processed += 1;
+          if (outcome === 'inserted') stats.inserted_count += 1;
+          else stats.unchanged_count += 1;
+        }
+        await client.query(
+          `UPDATE brownfield_land_import_runs SET
+            status = 'SUCCEEDED',
+            rows_processed = $2,
+            inserted_count = $3,
+            unchanged_count = $4,
+            rejected_count = $5,
+            conflict_count = 0,
+            failure_reason = NULL,
+            finished_at = CURRENT_TIMESTAMP,
+            duration_ms = $6
+           WHERE id = $1`,
+          [
+            runId,
+            stats.rows_processed,
+            stats.inserted_count,
+            stats.unchanged_count,
+            stats.rejected_count,
+            Date.now() - started,
+          ]
+        );
+        await client.query('COMMIT');
+        return { runId, status: 'SUCCEEDED', ...stats };
+      } catch (error) {
+        try {
+          await client.query('ROLLBACK');
+        } catch {
+          /* the transaction is already closed */
+        }
+        const failed = await database.query(
+          `INSERT INTO brownfield_land_import_runs
+            (source, dataset, source_product, release_label, status, provenance, geographic_coverage,
+             retrieved_at, failure_reason, rows_processed, inserted_count, unchanged_count,
+             rejected_count, conflict_count, finished_at, duration_ms)
+           VALUES ($1, $2, $3, $4, 'FAILED', $5::jsonb, $6, $7, $8, 0, 0, 0, $9, 0, CURRENT_TIMESTAMP, $10)
+           RETURNING id`,
+          [
+            BROWNFIELD_SOURCE,
+            BROWNFIELD_DATASET_LABEL,
+            BROWNFIELD_SOURCE_PRODUCT,
+            release,
+            JSON.stringify(BROWNFIELD_PROVENANCE),
+            BROWNFIELD_GEOGRAPHIC_SCOPE,
+            retrievedAt || null,
+            error.message,
+            rejectedCount,
+            Date.now() - started,
+          ]
+        );
+        return {
+          runId: failed.rows[0] ? failed.rows[0].id : null,
+          status: 'FAILED',
+          failure_reason: error.message,
+          rows_processed: 0,
+          inserted_count: 0,
+          unchanged_count: 0,
+          rejected_count: rejectedCount,
+          conflict_count: 0,
+        };
+      } finally {
+        client.release();
+      }
     },
     async listRevisionsBySourceEntityId(sourceEntityId, {
       releaseLabel = BROWNFIELD_RELEASE_LABEL,
@@ -554,6 +779,7 @@ function createPostgresBrownfieldLandStore(db = null) {
 
 module.exports = {
   observationKey,
+  classifyObservationInsert,
   createMemoryBrownfieldLandStore,
   createPostgresBrownfieldLandStore,
   BROWNFIELD_SELECTION,

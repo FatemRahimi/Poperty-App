@@ -32,6 +32,7 @@ const MIGRATIONS = [
   '035_brownfield_land_observations.sql',
   '036_brownfield_land_revisions.sql',
   '037_brownfield_provider_coverage.sql',
+  '038_brownfield_revision_uniqueness_repair.sql',
 ];
 
 async function columnExists(table, column) {
