@@ -307,3 +307,19 @@ The Planning Data brownfield-land bulk files are regenerated objects behind Clou
 
 Do not stream live rows from HTTP straight into the database. Do not commit the national artifact to Git. Do not run a national import against `propertydb` or any other non-disposable database. Do not treat an artifact row count as a complete England site census, and do not use artifact download time to choose the effective site revision.
 
+---
+
+## Decision 018 — Brownfield provider LAD attribution is not site location
+
+**Decision**
+
+When a Planning Data organisation record exposes a supported England LAD district GSS (`E06`/`E07`/`E08`/`E09`) as `statistical-geography`, the platform may attribute that LAD to the **provider organisation** for Brownfield context. That attribution must remain explicitly labelled as provider geography. It must not be stored or presented as the site’s LAD, LSOA, or postcode location. Phase 3C organisation → LPA.reference coverage mapping stays a separate identity relation. Planning Data LPA codes (`E60…`) and other non-district families are not LAD.
+
+**Why**
+
+Brownfield site observations do not carry a canonical site LAD. Organisation statistical geography is available and often useful, but provider geography is not proof that every supplied site lies inside that district. National parks and development corporations show non-LAD statistical geography and must stay unresolved for LAD attribution rather than being forced into a district.
+
+**Consequence**
+
+Do not write LAD onto `brownfield_land_observations` as site geography. Do not overload `brownfield_organisation_lpa_links` as location. Do not treat provider→LAD attribution counts as England completeness. Do not build area Brownfield metrics or wire Brownfield into `areaEvidenceProfile` until a later phase explicitly accepts provider-attributed context under these limits.
+

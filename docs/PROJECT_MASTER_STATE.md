@@ -284,10 +284,34 @@ Retrieval took 631 ms. Parse and import took 17.9 s. Process RSS moved from abou
 
 One reader defect was fixed after the first live read: node-pg parses a PostgreSQL `DATE` as a local calendar date, and slicing `String(date)` produced values such as `Mon Dec 16`, which made defensible entry-dates look ambiguous. Dates are now formatted from that local calendar. Artifact provenance keeps the retrieval ISO string rather than the timestamp column's driver round-trip. The manifest `retrieved_at` column remains `timestamp without time zone`, so a raw driver read of that column can shift by the machine offset; the observation provenance string is the retrieval instant.
 
+## Brownfield land evidence — Phase 3H provider → LAD attribution
+
+Phase 3G concluded Brownfield sites do not carry a proven site LAD. Phase 3H adds a separate Provider → LAD attribution foundation. It classifies the organisation `statistical-geography` as a supported England LAD district GSS (`E06`/`E07`/`E08`/`E09` only). Planning Data LPA references (`E60…`) and other geography families are not LAD. Attribution is derived dynamically from official organisation records; no migration and no LAD column on site observations.
+
+Semantic limit (hard): this is the statistical geography of the **provider organisation**. It does **not** prove each site is located in that LAD. Phase 3C organisation → LPA.reference coverage mapping is unchanged and is not overloaded as site geography. `areaEvidenceProfile.v1` remains unwired. No area Brownfield metrics, PostGIS, or capacity-by-LAD were added.
+
+National diagnostic on the Phase 3F artifact SHA-256 `c245556c107096bea2f96fe2fae0b324dac29eb428f47f0a4469760a27b9f7f5` (40,099 data rows) plus the official Planning Data `local-authority` CSV and entity JSON for twelve non-local-authority providers:
+
+| Diagnostic | Providers | Observation rows |
+|---|---:|---:|
+| Distinct Brownfield organisation entities | 309 | — |
+| `PROVIDER_LAD_ATTRIBUTED` | 297 | 39,801 |
+| `STATISTICAL_GEOGRAPHY_NOT_LAD` | 12 | 297 |
+| `STATISTICAL_GEOGRAPHY_MISSING` | 0 | 0 |
+| `STATISTICAL_GEOGRAPHY_AMBIGUOUS` | 0 | 0 |
+| `ORGANISATION_UNRESOLVED` | 0 | 0 |
+| Rows with missing organisation-entity | — | 1 |
+
+The twelve non-LAD providers are development corporations and national park authorities (`E51…` / `E26…` codes). These counts are provider→LAD attribution diagnostics, not England completeness, LPA completeness, or site-location accuracy.
+
+Model B viability: **PARTIALLY_VIABLE**. Most providers and rows have a supported LAD statistical geography under an explicit non-location label, but a material minority of providers (and 297 rows) cannot be LAD-attributed without inventing geography.
+
 ## Persistent Known Limitations / Follow-ups
 
 - Production PostgreSQL is NOT VERIFIED. Phase 3F verified migrations 035–039 and one national import only on a disposable local PostgreSQL 16.11 cluster that was destroyed after the check.
 - Per-LPA Brownfield completeness is not established. The 40,099-row artifact is not a census of current Brownfield sites in England.
+- Provider→LAD attribution is not site location. National park and development-corporation providers remain non-LAD under the supported district rule.
+- Area Brownfield aggregation and PostGIS site geography are NOT VERIFIED / not implemented.
 - National production geography/crosswalk ingestion remains to be fully productionised/verified.
 - Release date validation should eventually reject impossible calendar dates.
 - Some third-party/commercial data licensing and retention conditions remain source-specific and require verification before production use.
