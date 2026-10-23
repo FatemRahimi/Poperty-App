@@ -353,6 +353,19 @@ function createMemoryBrownfieldLandStore() {
   };
 }
 
+function calendarDate(value) {
+  if (value == null || value === '') return null;
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    // node-pg parses DATE as a local calendar date, not UTC midnight.
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${value.getFullYear()}-${month}-${day}`;
+  }
+  const match = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : null;
+}
+
 function mapPostgresRow(row) {
   return {
     source: row.source,
@@ -370,9 +383,7 @@ function mapPostgresRow(row) {
     ownershipStatus: row.ownership_status,
     planningPermissionStatus: row.planning_permission_status,
     planningPermissionType: row.planning_permission_type,
-    planningPermissionDate: row.planning_permission_date
-      ? String(row.planning_permission_date).slice(0, 10)
-      : null,
+    planningPermissionDate: calendarDate(row.planning_permission_date),
     minimumNetDwellings: row.minimum_net_dwellings == null ? null : Number(row.minimum_net_dwellings),
     maximumNetDwellings: row.maximum_net_dwellings == null ? null : Number(row.maximum_net_dwellings),
     dwellingNature: row.dwelling_nature,
@@ -383,9 +394,9 @@ function mapPostgresRow(row) {
     longitude: row.longitude == null ? null : Number(row.longitude),
     geometryWkt: row.geometry_wkt,
     coordinateReferenceSystem: row.coordinate_reference_system,
-    entryDate: row.entry_date ? String(row.entry_date).slice(0, 10) : null,
-    startDate: row.start_date ? String(row.start_date).slice(0, 10) : null,
-    endDate: row.end_date ? String(row.end_date).slice(0, 10) : null,
+    entryDate: calendarDate(row.entry_date),
+    startDate: calendarDate(row.start_date),
+    endDate: calendarDate(row.end_date),
     notes: row.notes,
     sitePlanUrl: row.site_plan_url,
     releaseLabel: row.release_label,

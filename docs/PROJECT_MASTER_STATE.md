@@ -268,12 +268,26 @@ Artifact bytes are stored by SHA-256 and are not overwritten. `Last-Modified` an
 
 Checked again on 23 October 2026. `HEAD` of the CSV returned HTTP 200 with no redirect: `Content-Type: text/csv`, `Content-Length: 21805739`, `Last-Modified: Thu, 22 Oct 2026 01:04:45 GMT`, S3 multipart `ETag: "07f8ad71406f17e330081ebaf3badecc-3"`, via CloudFront and Amazon S3. A 2048-byte range was a CSV header containing `dataset`, `entity`, and `entry-date`. The page warns that the data may be incomplete, says the collector last ran on 2026-10-23 and new data was last found on 2026-10-23, and links an entity total of 40,183. No `datePublished` was present. `Last-Modified`, `ETag`, and the S3 version id are storage metadata, not a site entry-date and not an official release number. The page total was not imported and is not the CSV row count.
 
-National live artifact retrieval: NOT EXECUTED. National live database import: NOT EXECUTED. The local PostgreSQL role cannot `CREATE DATABASE`, and `propertydb` is refused. Fixture tests cover the importer.
+National live artifact retrieval: NOT EXECUTED in Phase 3E. National live database import: NOT EXECUTED in Phase 3E. The local PostgreSQL role cannot `CREATE DATABASE`, and `propertydb` is refused. Fixture tests cover the importer.
+
+## Brownfield land evidence — Phase 3F verification
+
+Verified on 23 October 2026 against an isolated disposable PostgreSQL 16.11 cluster on `127.0.0.1:55432`, database `property_phase3f_test`. That cluster was created with `initdb` for this check, contained no `propertydb`, and was empty before migrations 035–039. `propertydb` was not opened.
+
+The official CSV was unchanged from the same-day source check: HTTP 200, `Content-Type: text/csv`, `Content-Length: 21805739`, `Last-Modified: Thu, 22 Oct 2026 01:04:45 GMT`, ETag `"07f8ad71406f17e330081ebaf3badecc-3"`, no redirect. The dataset page still warns that the data may be incomplete and cites the Open Government Licence v3.0. The application retrieval path downloaded the file. SHA-256 `c245556c107096bea2f96fe2fae0b324dac29eb428f47f0a4469760a27b9f7f5`. Retrieval timestamp `2026-10-23T14:27:04.574Z`. The file is gitignored under `server/data/brownfield/`.
+
+The CSV had 40,099 data rows. All 40,099 were accepted and inserted. Rejected 0, unchanged 0, conflicts 0. SQL `COUNT(*)` was 40,099. That is the row count of this artifact, not a census of current Brownfield sites in England. Manifest id 1, import run id 1, status `SUCCEEDED`, `artifact_id` 1. Observation provenance stores that SHA-256, the source URL, and the retrieval timestamp. Replaying the same file returned `SKIPPED_AS_ALREADY_IMPORTED` and left observations, artifacts, and runs at 40,099 / 1 / 1.
+
+A later forced batch failure rolled back on real PostgreSQL: status `FAILED`, `inserted_count` 0, zero rows from that batch remained, and the national observation for entity 1700000 stayed queryable with entry-date `2024-12-16`. A controlled pair of fixture revisions with entry-dates `2024-03-01` and `2025-06-01` resolved to `2025-06-01` even when the later entry-date was imported first. A tied entry-date stayed `AMBIGUOUS`. Coverage tables stayed empty. No completeness percentage was calculated.
+
+Retrieval took 631 ms. Parse and import took 17.9 s. Process RSS moved from about 45 MB to about 364 MB. The single in-memory accepted-row batch completed. No COPY rewrite was added.
+
+One reader defect was fixed after the first live read: node-pg parses a PostgreSQL `DATE` as a local calendar date, and slicing `String(date)` produced values such as `Mon Dec 16`, which made defensible entry-dates look ambiguous. Dates are now formatted from that local calendar. Artifact provenance keeps the retrieval ISO string rather than the timestamp column's driver round-trip. The manifest `retrieved_at` column remains `timestamp without time zone`, so a raw driver read of that column can shift by the machine offset; the observation provenance string is the retrieval instant.
 
 ## Persistent Known Limitations / Follow-ups
 
-- LIVE POSTGRESQL INTEGRATION NOT VERIFIED.
-- National Brownfield artifact retrieval and database import were NOT EXECUTED. Per-LPA completeness is not established.
+- Production PostgreSQL is NOT VERIFIED. Phase 3F verified migrations 035–039 and one national import only on a disposable local PostgreSQL 16.11 cluster that was destroyed after the check.
+- Per-LPA Brownfield completeness is not established. The 40,099-row artifact is not a census of current Brownfield sites in England.
 - National production geography/crosswalk ingestion remains to be fully productionised/verified.
 - Release date validation should eventually reject impossible calendar dates.
 - Some third-party/commercial data licensing and retention conditions remain source-specific and require verification before production use.

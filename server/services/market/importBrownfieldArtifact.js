@@ -88,15 +88,18 @@ async function storeImmutableCopy(sourcePath, directory) {
   return { ...hashed, filePath: finalPath, reused: false };
 }
 
-function withArtifactProvenance(row, artifact) {
+function withArtifactProvenance(row, artifact, retrievedAt) {
+  const retrievalStamp = typeof retrievedAt === 'string' && retrievedAt
+    ? retrievedAt
+    : (artifact.retrieved_at || row.retrievedAt || null);
   return {
     ...row,
-    retrievedAt: artifact.retrieved_at || row.retrievedAt || null,
+    retrievedAt: retrievalStamp,
     provenance: {
       ...(row.provenance || {}),
       artifactSha256: artifact.sha256,
       artifactSourceUrl: artifact.source_url,
-      artifactRetrievedAt: artifact.retrieved_at,
+      artifactRetrievedAt: retrievalStamp,
     },
   };
 }
@@ -206,7 +209,7 @@ async function importBrownfieldArtifactFile({
     };
   }
   const result = await landStore.importAcceptedBatch({
-    rows: parsed.rows.map((row) => withArtifactProvenance(row, artifact)),
+    rows: parsed.rows.map((row) => withArtifactProvenance(row, artifact, retrievedAt)),
     rejectedCount: parsed.rejected.length,
     releaseLabel: BROWNFIELD_RELEASE_LABEL,
     retrievedAt,

@@ -484,6 +484,63 @@ function createTransactionalFakePg() {
     assert.strictEqual(afterAbandon.coverage.state, 'AVAILABLE');
   });
 
+  await test('postgres date values stay calendar dates and entry-date still selects', async () => {
+    const older = new Date(2024, 11, 16);
+    const newer = new Date(2025, 5, 1);
+    const rows = [older, newer].map((entryDate, index) => ({
+      source: 'MHCLG_PLANNING_DATA',
+      dataset: 'brownfield-land',
+      dataset_label: 'Brownfield land',
+      source_product: 'fixture',
+      record_kind: 'OFFICIAL_OBSERVATION',
+      geography_type: 'SITE',
+      geographic_scope: 'England',
+      source_entity_id: 1800001,
+      organisation_entity: 336,
+      reference: 'REF',
+      name: index === 0 ? 'Older' : 'Newer',
+      entry_date: entryDate,
+      start_date: null,
+      end_date: null,
+      planning_permission_date: null,
+      minimum_net_dwellings: index === 0 ? 4 : 9,
+      maximum_net_dwellings: index === 0 ? 4 : 9,
+      release_label: 'BROWNFIELD_LAND',
+      content_fingerprint: index === 0 ? 'a' : 'b',
+      provenance: { artifactSha256: 'abc' },
+      limitations: [],
+    }));
+    const run = {
+      id: 1,
+      status: 'SUCCEEDED',
+      inserted_count: 2,
+      unchanged_count: 0,
+      updated_count: 0,
+      finished_at: '2026-10-23T14:20:52.222Z',
+    };
+    const db = {
+      async query(sql) {
+        const text = compact(sql);
+        if (text.includes('COUNT(*)')) return { rows: [{ n: rows.length }], rowCount: 1 };
+        if (text.includes('FROM brownfield_land_import_runs')) {
+          return { rows: [run], rowCount: 1 };
+        }
+        if (text.includes('FROM brownfield_land_observations')) return { rows, rowCount: rows.length };
+        throw new Error(`unhandled_date_fake:${text.slice(0, 80)}`);
+      },
+    };
+    const store = createPostgresBrownfieldLandStore(db);
+    const evidence = await getOfficialBrownfieldLandEvidence({
+      brownfieldStore: store,
+      sourceEntityId: 1800001,
+    });
+    assert.strictEqual(evidence.status, 'SUFFICIENT');
+    assert.strictEqual(evidence.revisionSelection.selectionStatus, BROWNFIELD_SELECTION.RESOLVED);
+    assert.strictEqual(evidence.observations[0].entryDate, '2025-06-01');
+    assert.strictEqual(evidence.observations[0].minimumNetDwellings, 9);
+    assert.strictEqual(evidence.revisions.map((row) => row.entryDate).sort().join(','), '2024-12-16,2025-06-01');
+  });
+
   await test('migration repair and coverage stay separate from site import', async () => {
     const root = path.join(__dirname, '..');
     const repair = fs.readFileSync(path.join(root, 'db/migrations/038_brownfield_revision_uniqueness_repair.sql'), 'utf8');
