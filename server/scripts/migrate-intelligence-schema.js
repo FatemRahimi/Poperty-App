@@ -33,6 +33,7 @@ const MIGRATIONS = [
   '036_brownfield_land_revisions.sql',
   '037_brownfield_provider_coverage.sql',
   '038_brownfield_revision_uniqueness_repair.sql',
+  '039_brownfield_land_artifacts.sql',
 ];
 
 async function columnExists(table, column) {
@@ -91,6 +92,8 @@ async function run() {
     ['brownfield_lpa_identities', 'reference'],
     ['brownfield_provider_index', 'organisation_entity'],
     ['brownfield_organisation_lpa_links', 'mapping_status'],
+    ['brownfield_land_artifacts', 'sha256'],
+    ['brownfield_land_import_runs', 'artifact_id'],
   ];
 
   console.log('\nVerification:');

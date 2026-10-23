@@ -22,6 +22,13 @@ const BROWNFIELD_GEOGRAPHY_TYPE = 'SITE';
 const BROWNFIELD_SOURCE_URL = 'https://www.planning.data.gov.uk/dataset/brownfield-land';
 const BROWNFIELD_DOCS_URL = 'https://www.planning.data.gov.uk/docs';
 const BROWNFIELD_API_ENTITY_URL = 'https://www.planning.data.gov.uk/entity.json?dataset=brownfield-land';
+/**
+ * Bulk CSV linked from the official dataset page.
+ * files.planning.data.gov.uk is CloudFront in front of Amazon S3.
+ * Last-Modified is object-storage time. ETag is an HTTP validator, including
+ * S3 multipart tags. Neither is a dataset publication date or version number.
+ */
+const BROWNFIELD_BULK_CSV_URL = 'https://files.planning.data.gov.uk/dataset/brownfield-land.csv';
 
 const BROWNFIELD_ATTRIBUTION =
   'Contains public sector information licensed under the Open Government Licence v3.0. '
@@ -41,6 +48,7 @@ const BROWNFIELD_LIMITATIONS = Object.freeze([
   'Site geometry/point proximity does NOT imply impact on a property or area.',
   'No growth, rental-demand, regeneration, opportunity, or investment inference is supported by this dataset alone.',
   'IngestedAt / retrievedAt are retrieval or import times. They are not source publication dates.',
+  'A downloaded national artifact row count is the number of rows in that artifact. It is not a census of current Brownfield sites in England.',
   'Changed source content is retained as a distinct revision. The edition-family release label BROWNFIELD_LAND is not publication chronology and is not ordered lexically.',
   'Effective observation selection uses Planning Data entry-date only when present and unambiguous. Import order, ingest time, retrieval time, and database id are never used as publication chronology.',
   'When multiple changed revisions lack a defensible entry-date ordering, selection is AMBIGUOUS and no revision is presented as current fact.',
@@ -102,6 +110,7 @@ module.exports = {
   BROWNFIELD_SOURCE_URL,
   BROWNFIELD_DOCS_URL,
   BROWNFIELD_API_ENTITY_URL,
+  BROWNFIELD_BULK_CSV_URL,
   BROWNFIELD_ATTRIBUTION,
   BROWNFIELD_DWELLING_NATURE,
   BROWNFIELD_LIMITATIONS,

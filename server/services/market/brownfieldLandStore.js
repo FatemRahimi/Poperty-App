@@ -152,18 +152,28 @@ function createMemoryBrownfieldLandStore() {
       byKey.set(key, stored);
       return 'inserted';
     },
+    async successfulRunForArtifact(artifactId) {
+      if (artifactId == null) return null;
+      for (let index = runs.length - 1; index >= 0; index -= 1) {
+        const run = runs[index];
+        if (run.artifact_id === artifactId && String(run.status || '') === 'SUCCEEDED') return run;
+      }
+      return null;
+    },
     async importAcceptedBatch({
       rows = [],
       rejectedCount = 0,
       releaseLabel = BROWNFIELD_RELEASE_LABEL,
       retrievedAt = null,
       failAtIndex = null,
+      artifactId = null,
     } = {}) {
       const snapshot = new Map(byKey);
       const started = Date.now();
       const run = await this.startRun({
         release_label: releaseLabel,
         retrieved_at: retrievedAt,
+        artifact_id: artifactId == null ? null : artifactId,
       });
       const stats = {
         rows_processed: 0,
@@ -489,11 +499,22 @@ function createPostgresBrownfieldLandStore(db = null) {
         options,
       });
     },
+    async successfulRunForArtifact(artifactId) {
+      if (artifactId == null) return null;
+      const result = await database.query(
+        `SELECT * FROM brownfield_land_import_runs
+         WHERE artifact_id = $1 AND status = 'SUCCEEDED'
+         ORDER BY id DESC
+         LIMIT 1`,
+        [artifactId]
+      );
+      return result.rows[0] || null;
+    },
     async startRun(meta = {}) {
       const result = await database.query(
         `INSERT INTO brownfield_land_import_runs
-          (source, dataset, source_product, release_label, status, provenance, geographic_coverage, retrieved_at)
-         VALUES ($1, $2, $3, $4, 'STARTED', $5::jsonb, $6, $7)
+          (source, dataset, source_product, release_label, status, provenance, geographic_coverage, retrieved_at, artifact_id)
+         VALUES ($1, $2, $3, $4, 'STARTED', $5::jsonb, $6, $7, $8)
          RETURNING *`,
         [
           BROWNFIELD_SOURCE,
@@ -503,6 +524,7 @@ function createPostgresBrownfieldLandStore(db = null) {
           JSON.stringify(meta.provenance || BROWNFIELD_PROVENANCE),
           meta.geographic_coverage || BROWNFIELD_GEOGRAPHIC_SCOPE,
           meta.retrieved_at || meta.retrievedAt || null,
+          meta.artifact_id == null ? null : meta.artifact_id,
         ]
       );
       return result.rows[0];
@@ -544,6 +566,7 @@ function createPostgresBrownfieldLandStore(db = null) {
       releaseLabel = BROWNFIELD_RELEASE_LABEL,
       retrievedAt = null,
       failAtIndex = null,
+      artifactId = null,
     } = {}) {
       if (!database || typeof database.connect !== 'function') {
         throw new Error('brownfield_postgres_import_requires_connect');
@@ -555,8 +578,8 @@ function createPostgresBrownfieldLandStore(db = null) {
         await client.query('BEGIN');
         const startedRun = await client.query(
           `INSERT INTO brownfield_land_import_runs
-            (source, dataset, source_product, release_label, status, provenance, geographic_coverage, retrieved_at)
-           VALUES ($1, $2, $3, $4, 'STARTED', $5::jsonb, $6, $7)
+            (source, dataset, source_product, release_label, status, provenance, geographic_coverage, retrieved_at, artifact_id)
+           VALUES ($1, $2, $3, $4, 'STARTED', $5::jsonb, $6, $7, $8)
            RETURNING *`,
           [
             BROWNFIELD_SOURCE,
@@ -566,6 +589,7 @@ function createPostgresBrownfieldLandStore(db = null) {
             JSON.stringify(BROWNFIELD_PROVENANCE),
             BROWNFIELD_GEOGRAPHIC_SCOPE,
             retrievedAt || null,
+            artifactId == null ? null : artifactId,
           ]
         );
         const runId = startedRun.rows[0].id;
@@ -618,8 +642,8 @@ function createPostgresBrownfieldLandStore(db = null) {
           `INSERT INTO brownfield_land_import_runs
             (source, dataset, source_product, release_label, status, provenance, geographic_coverage,
              retrieved_at, failure_reason, rows_processed, inserted_count, unchanged_count,
-             rejected_count, conflict_count, finished_at, duration_ms)
-           VALUES ($1, $2, $3, $4, 'FAILED', $5::jsonb, $6, $7, $8, 0, 0, 0, $9, 0, CURRENT_TIMESTAMP, $10)
+             rejected_count, conflict_count, finished_at, duration_ms, artifact_id)
+           VALUES ($1, $2, $3, $4, 'FAILED', $5::jsonb, $6, $7, $8, 0, 0, 0, $9, 0, CURRENT_TIMESTAMP, $10, $11)
            RETURNING id`,
           [
             BROWNFIELD_SOURCE,
@@ -632,6 +656,7 @@ function createPostgresBrownfieldLandStore(db = null) {
             error.message,
             rejectedCount,
             Date.now() - started,
+            artifactId == null ? null : artifactId,
           ]
         );
         return {

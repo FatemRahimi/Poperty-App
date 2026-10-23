@@ -57,6 +57,9 @@ server/data/epb/
 **/mhclg-epb-audit*.json
 **/epb-backfill-audit*.json
 
+# Official Planning Data brownfield bulk artifacts (do not commit)
+server/data/brownfield/
+
 # Output of 'npm pack'
 *.tgz
 

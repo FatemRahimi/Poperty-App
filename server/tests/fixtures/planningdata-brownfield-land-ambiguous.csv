@@ -1,0 +1,3 @@
+dataset,end-date,entity,entry-date,geojson,geometry,name,organisation-entity,point,prefix,quality,reference,start-date,typology,brownfield-land,deliverable,hazardous-substances,hectares,maximum-net-dwellings,minimum-net-dwellings,notes,organisation,ownership-status,planning-permission-date,planning-permission-history,planning-permission-status,planning-permission-type,site,site-address,site-categories,site-plan-url
+brownfield-land,,1800005,2024-04-04,,,Ambiguous,,,brownfield-land,,REF-A,,geography,,,,,,,alpha,,,,,,,,,,
+brownfield-land,,1800005,2024-04-04,,,Ambiguous,,,brownfield-land,,REF-A,,geography,,,,,,6,beta,,,,,,,,,,

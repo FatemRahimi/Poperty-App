@@ -1,6 +1,6 @@
 # Property App — Product Decisions
 
-Last updated: 2026-10-19
+Last updated: 2026-10-23
 Branch context: `temp-branch`
 
 This file records durable product and architecture decisions and, importantly, why they were made. It is not a feature backlog. Code remains the implementation truth; `docs/PROJECT_MASTER_STATE.md` records current roadmap/status.
@@ -290,3 +290,20 @@ Long ChatGPT conversations are not a reliable project database, and raw conversa
 **Consequence**
 
 New conversations should recover project state from these files and independently verify relevant code/commits. Chat memory may assist continuity but must not be the sole project source of truth.
+
+---
+
+## Decision 017 — National official bulk datasets are content-addressed artifacts
+
+**Decision**
+
+A national official bulk dataset is imported only as an immutable, content-addressed artifact with provenance. Evidence consumption uses that artifact and the existing parser and atomic importer. The same URL is not treated as the same content. Retrieval metadata is not site chronology.
+
+**Why**
+
+The Planning Data brownfield-land bulk files are regenerated objects behind CloudFront and S3. `Last-Modified` and `ETag` describe the HTTP object, not a site's entry-date and not an official release number. A later download must not erase or silently replace an earlier artifact, and a failed import must not look like an absence of Brownfield land.
+
+**Consequence**
+
+Do not stream live rows from HTTP straight into the database. Do not commit the national artifact to Git. Do not run a national import against `propertydb` or any other non-disposable database. Do not treat an artifact row count as a complete England site census, and do not use artifact download time to choose the effective site revision.
+

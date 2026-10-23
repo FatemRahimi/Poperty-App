@@ -1,6 +1,6 @@
 # Property App — Project Master State
 
-Last updated: 2026-10-19
+Last updated: 2026-10-23
 Canonical working branch: `temp-branch`
 Repository: `FatemRahimi/Poperty-App`
 
@@ -258,9 +258,22 @@ Primary early monetisation hypothesis:
 
 Pricing and willingness-to-pay are NOT yet validated. A commercial validation gate with real target users should occur before extensive late-stage build-out; this is a validation discipline, not permission to replace the technical roadmap without evidence.
 
+## Brownfield land evidence — Phase 3E
+
+Phase 3A–3D remain in force: official site observations, revision-safe storage, provider/LPA coverage as a separate family, and atomic PostgreSQL import.
+
+Phase 3E adds a reproducible national artifact path. The official dataset page `https://www.planning.data.gov.uk/dataset/brownfield-land` links a bulk CSV at `https://files.planning.data.gov.uk/dataset/brownfield-land.csv` (CloudFront in front of Amazon S3). JSON, GeoJSON, and Parquet are also linked there. The importer uses the CSV and adapts each record into the existing entity parser, then the Phase 3D atomic batch.
+
+Artifact bytes are stored by SHA-256 and are not overwritten. `Last-Modified` and `ETag` are HTTP retrieval metadata, not a publication date or version. `retrievedAt` is not `entry-date`. An artifact row count is not a census of current Brownfield sites in England. The same artifact replays as `SKIPPED_AS_ALREADY_IMPORTED`. A changed artifact keeps the previous observation and still selects by source entry-date.
+
+Checked again on 23 October 2026. `HEAD` of the CSV returned HTTP 200 with no redirect: `Content-Type: text/csv`, `Content-Length: 21805739`, `Last-Modified: Thu, 22 Oct 2026 01:04:45 GMT`, S3 multipart `ETag: "07f8ad71406f17e330081ebaf3badecc-3"`, via CloudFront and Amazon S3. A 2048-byte range was a CSV header containing `dataset`, `entity`, and `entry-date`. The page warns that the data may be incomplete, says the collector last ran on 2026-10-23 and new data was last found on 2026-10-23, and links an entity total of 40,183. No `datePublished` was present. `Last-Modified`, `ETag`, and the S3 version id are storage metadata, not a site entry-date and not an official release number. The page total was not imported and is not the CSV row count.
+
+National live artifact retrieval: NOT EXECUTED. National live database import: NOT EXECUTED. The local PostgreSQL role cannot `CREATE DATABASE`, and `propertydb` is refused. Fixture tests cover the importer.
+
 ## Persistent Known Limitations / Follow-ups
 
 - LIVE POSTGRESQL INTEGRATION NOT VERIFIED.
+- National Brownfield artifact retrieval and database import were NOT EXECUTED. Per-LPA completeness is not established.
 - National production geography/crosswalk ingestion remains to be fully productionised/verified.
 - Release date validation should eventually reject impossible calendar dates.
 - Some third-party/commercial data licensing and retention conditions remain source-specific and require verification before production use.

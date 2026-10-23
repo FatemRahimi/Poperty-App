@@ -33,6 +33,7 @@ const MIGRATION_FILES = [
   '036_brownfield_land_revisions.sql',
   '037_brownfield_provider_coverage.sql',
   '038_brownfield_revision_uniqueness_repair.sql',
+  '039_brownfield_land_artifacts.sql',
 ];
 
 async function columnExists(table, column) {
@@ -121,6 +122,8 @@ async function ensureIntelligenceSchema() {
     || await obsoleteBrownfieldUnique()
     || !(await constraintExists('brownfield_land_observations_revision_identity'));
   const needsBrownfieldCoverage = !(await tableExists('brownfield_lpa_identities'));
+  const needsBrownfieldArtifacts = !(await tableExists('brownfield_land_artifacts'))
+    || !(await columnExists('brownfield_land_import_runs', 'artifact_id'));
 
   if (
     !needsSubjectId &&
@@ -148,7 +151,8 @@ async function ensureIntelligenceSchema() {
     !needsBrownfieldLand &&
     !needsBrownfieldRevisions &&
     !needsBrownfieldRevisionRepair &&
-    !needsBrownfieldCoverage
+    !needsBrownfieldCoverage &&
+    !needsBrownfieldArtifacts
   ) {
     return { applied: false, ok: true };
   }
@@ -283,6 +287,13 @@ async function ensureIntelligenceSchema() {
       await applySql('037_brownfield_provider_coverage.sql');
     } catch (err) {
       console.error('❌ Brownfield provider coverage schema could not be applied:', err.message);
+    }
+  }
+  if (needsBrownfieldArtifacts) {
+    try {
+      await applySql('039_brownfield_land_artifacts.sql');
+    } catch (err) {
+      console.error('❌ Brownfield artifact manifest schema could not be applied:', err.message);
     }
   }
 
