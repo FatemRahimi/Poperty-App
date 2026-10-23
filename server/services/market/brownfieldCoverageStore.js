@@ -177,6 +177,10 @@ function createMemoryBrownfieldCoverageStore() {
           && row.matchedLpaReference === reference)
         .sort((a, b) => a.organisationEntity - b.organisationEntity);
     },
+    async listOrganisations() {
+      return [...organisations.values()]
+        .sort((a, b) => a.organisationEntity - b.organisationEntity);
+    },
   };
 }
 
@@ -468,6 +472,15 @@ function createPostgresBrownfieldCoverageStore(db = null) {
          WHERE source = $1 AND mapping_status = 'ORGANISATION_LPA_MAPPED' AND matched_lpa_reference = $2
          ORDER BY organisation_entity`,
         [COVERAGE_SOURCE, reference]
+      );
+      return result.rows.map(mapOrganisationRow);
+    },
+    async listOrganisations() {
+      const result = await database.query(
+        `SELECT * FROM brownfield_organisation_lpa_links
+         WHERE source = $1
+         ORDER BY organisation_entity`,
+        [COVERAGE_SOURCE]
       );
       return result.rows.map(mapOrganisationRow);
     },

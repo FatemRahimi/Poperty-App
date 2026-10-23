@@ -306,12 +306,22 @@ The twelve non-LAD providers are development corporations and national park auth
 
 Model B viability: **PARTIALLY_VIABLE**. Most providers and rows have a supported LAD statistical geography under an explicit non-location label, but a material minority of providers (and 297 rows) cannot be LAD-attributed without inventing geography.
 
+## Brownfield land evidence — Phase 3I provider-attributed area evidence
+
+Standalone producer `getOfficialBrownfieldProviderAttributedAreaEvidence`. Input is a supported England LAD district GSS (`E06`–`E09` only). It selects organisations whose Phase 3H status is `PROVIDER_LAD_ATTRIBUTED` for that exact code, then applies the existing Phase 3B effective-observation selector.
+
+The aggregation groups Brownfield observations by the statistical geography of their provider organisation. It does not establish that each site is physically located in the requested LAD.
+
+Metrics: `resolvedProviderAttributedRecordCount`, `ambiguousRecordCount`, `resolvedEndedRecordCount`, `resolvedWithoutEndDateCount`, recorded minimum and maximum dwelling-capacity sums, and counts of records with and without those values. Missing capacity stays null and is not treated as zero. An end-date stays a register end-date, not completion. Ambiguous entities are excluded from factual sums and remain visible. A zero result means no resolved records were found through this method, not that no Brownfield land exists.
+
+`attributedProviderCount` is the number of provider organisations attributed to the LAD that have Brownfield observations in the queried store. Non-LAD providers and rows without `organisation_entity` are excluded and not assigned to a nearby LAD. No completeness percentage, planning-status taxonomy, temporal trend, score, or recommendation. Not wired into `areaEvidenceProfile.v1`. No migration and no PostGIS.
+
 ## Persistent Known Limitations / Follow-ups
 
 - Production PostgreSQL is NOT VERIFIED. Phase 3F verified migrations 035–039 and one national import only on a disposable local PostgreSQL 16.11 cluster that was destroyed after the check.
 - Per-LPA Brownfield completeness is not established. The 40,099-row artifact is not a census of current Brownfield sites in England.
 - Provider→LAD attribution is not site location. National park and development-corporation providers remain non-LAD under the supported district rule.
-- Area Brownfield aggregation and PostGIS site geography are NOT VERIFIED / not implemented.
+- Area Brownfield evidence in Phase 3I is provider-attributed context only. It is not site location and is not wired into areaEvidenceProfile. PostGIS site geography is not implemented.
 - National production geography/crosswalk ingestion remains to be fully productionised/verified.
 - Release date validation should eventually reject impossible calendar dates.
 - Some third-party/commercial data licensing and retention conditions remain source-specific and require verification before production use.

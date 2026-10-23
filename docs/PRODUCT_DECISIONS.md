@@ -321,5 +321,21 @@ Brownfield site observations do not carry a canonical site LAD. Organisation sta
 
 **Consequence**
 
-Do not write LAD onto `brownfield_land_observations` as site geography. Do not overload `brownfield_organisation_lpa_links` as location. Do not treat provider→LAD attribution counts as England completeness. Do not build area Brownfield metrics or wire Brownfield into `areaEvidenceProfile` until a later phase explicitly accepts provider-attributed context under these limits.
+Do not write LAD onto `brownfield_land_observations` as site geography. Do not overload `brownfield_organisation_lpa_links` as location. Do not treat provider→LAD attribution counts as England completeness. A later standalone producer may report provider-attributed context only under Decision 019. Do not wire that producer into `areaEvidenceProfile` until a separate integration phase.
+
+---
+
+## Decision 019 — LAD Brownfield evidence is provider-attributed context
+
+**Decision**
+
+The first area-level Brownfield evidence is a standalone producer that groups resolved effective observations by the provider organisation’s validated LAD statistical geography. The requested geography must be a supported England LAD district code. The result must say that this is not a count of sites physically located in the LAD. Zero results do not mean no Brownfield land exists. Missing dwelling capacity is not zero. Register end-dates are not completions. The producer stays outside `areaEvidenceProfile.v1`.
+
+**Why**
+
+Phase 3H showed most Brownfield providers carry a supported LAD code, and a material minority do not. That is enough for labelled provider-attributed context. It is not enough for site location, completeness, or investment interpretation.
+
+**Consequence**
+
+Do not name the record metric `siteCount`. Do not force non-LAD providers into a LAD. Do not add PostGIS, scores, rankings, or area-profile wiring in the same step as this producer.
 
