@@ -8,6 +8,7 @@ const {
   assessBrownfieldSchemaReadiness,
   obsoleteBrownfieldUnique: obsoleteBrownfieldUniqueOn,
 } = require('./brownfieldSchemaReadiness');
+const { assessListingSchemaReadiness } = require('./postgresOperationalReadiness');
 
 const MIGRATION_FILES = [
   '011_ai_intelligence.sql',
@@ -331,12 +332,8 @@ async function ensureIntelligenceSchema() {
     }
   }
 
-  const listingOk =
-    (await columnExists('ai_requests', 'subject_id')) &&
-    (await tableExists('listing_events')) &&
-    (await tableExists('pi_analyse_slots')) &&
-    (await tableExists('asset_classifications')) &&
-    (await tableExists('evidence_documents'));
+  const listing = await assessListingSchemaReadiness(pool);
+  const listingOk = listing.ok;
   const brownfield = await assessBrownfieldSchemaReadiness(pool);
   return reportSchemaReadiness({
     applied: true,
