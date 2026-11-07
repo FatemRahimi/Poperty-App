@@ -24,20 +24,10 @@ const {
 } = require('../../architecture/officialBrownfieldLandDataset');
 const { parseBrownfieldCsvFile, headerFromSample } = require('./brownfieldArtifactCsv');
 const { retrieveBrownfieldArtifact } = require('./retrieveBrownfieldArtifact');
-
-function assertSafeNationalDatabase(authorization) {
-  if (!authorization || authorization.confirmed !== true || authorization.disposable !== true) {
-    throw Object.assign(new Error('national_brownfield_import_not_authorized'), {
-      code: 'national_brownfield_import_not_authorized',
-    });
-  }
-  const databaseName = String(authorization.databaseName || '');
-  if (!databaseName || databaseName.toLowerCase() === 'propertydb') {
-    throw Object.assign(new Error('national_brownfield_import_refuses_unsafe_database'), {
-      code: 'national_brownfield_import_refuses_unsafe_database',
-    });
-  }
-}
+const {
+  assertSafeNationalDatabase,
+  assertSafeNationalBrownfieldImport,
+} = require('./brownfieldNationalImportSafety');
 
 async function hashFile(filePath) {
   const hash = crypto.createHash('sha256');
@@ -127,6 +117,7 @@ async function importBrownfieldArtifactFile({
   directory,
   landStore,
   artifactStore,
+  authorization = null,
   sourceUrl = BROWNFIELD_BULK_CSV_URL,
   resolvedUrl = null,
   contentType = 'text/csv',
@@ -141,6 +132,8 @@ async function importBrownfieldArtifactFile({
       code: 'brownfield_artifact_store_required',
     });
   }
+  // Reject unsafe PostgreSQL destinations before any filesystem copy or DB write.
+  assertSafeNationalBrownfieldImport({ authorization, landStore, artifactStore });
   const stored = await storeImmutableCopy(filePath, directory);
   const recorded = await artifactStore.insertRetrieved({
     source: BROWNFIELD_SOURCE,
@@ -231,7 +224,14 @@ async function importBrownfieldArtifactFile({
 }
 
 async function importOfficialNationalBrownfieldArtifact(options = {}) {
+  // Flag-level refusal first (missing auth / propertydb label), then real
+  // connection-identity check, then network retrieval — never the reverse.
   assertSafeNationalDatabase(options.authorization);
+  assertSafeNationalBrownfieldImport({
+    authorization: options.authorization,
+    landStore: options.landStore,
+    artifactStore: options.artifactStore,
+  });
   const retrieved = await retrieveBrownfieldArtifact({
     url: options.url || BROWNFIELD_BULK_CSV_URL,
     directory: options.directory,
@@ -243,6 +243,7 @@ async function importOfficialNationalBrownfieldArtifact(options = {}) {
     directory: options.directory,
     landStore: options.landStore,
     artifactStore: options.artifactStore,
+    authorization: options.authorization,
     sourceUrl: retrieved.sourceUrl,
     resolvedUrl: retrieved.resolvedUrl,
     contentType: retrieved.contentType,
@@ -256,6 +257,7 @@ async function importOfficialNationalBrownfieldArtifact(options = {}) {
 
 module.exports = {
   assertSafeNationalDatabase,
+  assertSafeNationalBrownfieldImport,
   importBrownfieldArtifactFile,
   importOfficialNationalBrownfieldArtifact,
 };

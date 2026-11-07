@@ -19,6 +19,10 @@ const {
   selectEffectiveBrownfieldObservation,
   compareRevisions,
 } = require('./brownfieldLandRevisionSelection');
+const {
+  sealMemoryBrownfieldStore,
+  sealPostgresBrownfieldStore,
+} = require('./brownfieldNationalImportSafety');
 
 function observationKey(row) {
   return [
@@ -93,7 +97,7 @@ function describeBrownfieldCoverage({
 function createMemoryBrownfieldLandStore() {
   const byKey = new Map();
   const runs = [];
-  return {
+  return sealMemoryBrownfieldStore({
     kind: 'memory',
     async latestRun() {
       return runs.length ? runs[runs.length - 1] : null;
@@ -350,7 +354,7 @@ function createMemoryBrownfieldLandStore() {
         datasetCoverage,
       };
     },
-  };
+  });
 }
 
 function calendarDate(value) {
@@ -483,7 +487,7 @@ function createPostgresBrownfieldLandStore(db = null) {
     return require('../../models/db');
   })();
 
-  return {
+  return sealPostgresBrownfieldStore({
     kind: 'postgres',
     async latestRun() {
       const result = await database.query(
@@ -810,7 +814,7 @@ function createPostgresBrownfieldLandStore(db = null) {
         datasetCoverage,
       };
     },
-  };
+  }, database);
 }
 
 module.exports = {

@@ -8,6 +8,10 @@ const {
   BROWNFIELD_DATASET_LABEL,
   BROWNFIELD_SOURCE_PRODUCT,
 } = require('../../architecture/officialBrownfieldLandDataset');
+const {
+  sealMemoryBrownfieldStore,
+  sealPostgresBrownfieldStore,
+} = require('./brownfieldNationalImportSafety');
 
 function artifactRecord(fields) {
   return {
@@ -34,7 +38,7 @@ function createMemoryBrownfieldArtifactStore() {
   const bySha = new Map();
   const byId = new Map();
   let nextId = 1;
-  return {
+  return sealMemoryBrownfieldStore({
     kind: 'memory',
     async findBySha(sha256) {
       return bySha.get(sha256) || null;
@@ -57,14 +61,14 @@ function createMemoryBrownfieldArtifactStore() {
       if (artifact) artifact.status = status;
       return artifact || null;
     },
-  };
+  });
 }
 
 function createPostgresBrownfieldArtifactStore(db) {
   if (!db || typeof db.query !== 'function') {
     throw new Error('brownfield_artifact_store_requires_query');
   }
-  return {
+  return sealPostgresBrownfieldStore({
     kind: 'postgres',
     async findBySha(sha256) {
       const result = await db.query(
@@ -113,7 +117,7 @@ function createPostgresBrownfieldArtifactStore(db) {
       );
       return result.rows[0] || null;
     },
-  };
+  }, db);
 }
 
 module.exports = {

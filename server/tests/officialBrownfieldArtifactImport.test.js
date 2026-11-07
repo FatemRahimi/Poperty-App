@@ -408,6 +408,29 @@ const TINY_CSV = [
     assert.strictEqual(calls, 0);
   });
 
+  await test('direct postgres file import cannot bypass national authorization', async () => {
+    const directory = tempDir();
+    const db = {
+      options: { host: '127.0.0.1', database: 'propertydb' },
+      async query() {
+        throw new Error('query_must_not_run');
+      },
+    };
+    const { createPostgresBrownfieldLandStore } = require('../services/market/brownfieldLandStore');
+    const { createPostgresBrownfieldArtifactStore } = require('../services/market/brownfieldArtifactStore');
+    await assert.rejects(
+      () => importBrownfieldArtifactFile({
+        filePath: MIN_CSV,
+        directory,
+        landStore: createPostgresBrownfieldLandStore(db),
+        artifactStore: createPostgresBrownfieldArtifactStore(db),
+        authorization: { confirmed: true, disposable: true, databaseName: 'property_phase3e_test' },
+      }),
+      (error) => error.code === 'national_brownfield_import_refuses_unsafe_database'
+    );
+    fs.rmSync(directory, { recursive: true, force: true });
+  });
+
   await test('coverage stays separate and downloaded artifacts are gitignored', async () => {
     const coverage = fs.readFileSync(path.join(__dirname, '../services/market/officialBrownfieldCoverage.js'), 'utf8');
     const importer = fs.readFileSync(path.join(__dirname, '../services/market/importBrownfieldArtifact.js'), 'utf8');
