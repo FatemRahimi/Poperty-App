@@ -74,7 +74,21 @@ io.on('connection', (socket) => {
 
 (async () => {
   try {
-    await ensureIntelligenceSchema();
+    const schema = await ensureIntelligenceSchema();
+    // Do not exit the process: listing/PI can continue, but Brownfield gaps
+    // must never be treated as silent success.
+    if (schema && schema.ok === false) {
+      if (schema.listingOk === false) {
+        console.error('❌ Property Intelligence listing schema readiness returned ok:false');
+      }
+      if (schema.brownfieldOk === false) {
+        const missing = (schema.brownfield && schema.brownfield.missing) || [];
+        console.error(
+          '❌ Brownfield schema readiness returned ok:false. Missing:',
+          missing.join(', ') || 'unspecified'
+        );
+      }
+    }
   } catch (err) {
     console.error('⚠️ Intelligence schema check failed:', err.message);
   }

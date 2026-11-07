@@ -4,6 +4,10 @@
 const fs = require('fs');
 const path = require('path');
 const pool = require('../models/db');
+const {
+  assessBrownfieldSchemaReadiness,
+  obsoleteBrownfieldUnique: obsoleteBrownfieldUniqueOn,
+} = require('./brownfieldSchemaReadiness');
 
 const MIGRATION_FILES = [
   '011_ai_intelligence.sql',
@@ -71,19 +75,33 @@ async function constraintExists(name) {
 }
 
 async function obsoleteBrownfieldUnique() {
-  const result = await pool.query(
-    `SELECT 1
-     FROM pg_constraint c
-     JOIN pg_class t ON t.oid = c.conrelid
-     JOIN pg_namespace n ON n.oid = t.relnamespace
-     WHERE n.nspname = 'public'
-       AND t.relname = 'brownfield_land_observations'
-       AND c.contype = 'u'
-       AND pg_get_constraintdef(c.oid) LIKE '%source_entity_id%'
-       AND pg_get_constraintdef(c.oid) LIKE '%release_label%'
-       AND pg_get_constraintdef(c.oid) NOT LIKE '%content_fingerprint%'`
-  );
-  return result.rows.length > 0;
+  return obsoleteBrownfieldUniqueOn(pool);
+}
+
+function reportSchemaReadiness({ applied, listingOk, brownfield }) {
+  const brownfieldOk = !!(brownfield && brownfield.ok);
+  const ok = listingOk && brownfieldOk;
+  if (listingOk) {
+    console.log('✅ Property Intelligence listing event schema ready');
+  } else {
+    console.error('❌ Failed to apply listing intelligence schema — run: npm run migrate:intelligence');
+  }
+  if (brownfieldOk) {
+    console.log('✅ Brownfield schema (035–039) ready');
+  } else {
+    const missing = (brownfield && brownfield.missing) || ['unknown'];
+    console.error(
+      '❌ Brownfield schema not ready — run: npm run migrate:intelligence. Missing:',
+      missing.join(', ')
+    );
+  }
+  return {
+    applied,
+    ok,
+    listingOk,
+    brownfieldOk,
+    brownfield,
+  };
 }
 
 async function applySql(file) {
@@ -154,7 +172,23 @@ async function ensureIntelligenceSchema() {
     !needsBrownfieldCoverage &&
     !needsBrownfieldArtifacts
   ) {
-    return { applied: false, ok: true };
+    const brownfield = await assessBrownfieldSchemaReadiness(pool);
+    // Preserve quiet success when nothing needed applying; still refuse a
+    // false-positive ok if Brownfield objects are actually missing.
+    if (!brownfield.ok) {
+      return reportSchemaReadiness({
+        applied: false,
+        listingOk: true,
+        brownfield,
+      });
+    }
+    return {
+      applied: false,
+      ok: true,
+      listingOk: true,
+      brownfieldOk: true,
+      brownfield,
+    };
   }
 
   console.log('🔧 Property Intelligence schema update required — applying migrations...');
@@ -297,18 +331,23 @@ async function ensureIntelligenceSchema() {
     }
   }
 
-  const ok =
+  const listingOk =
     (await columnExists('ai_requests', 'subject_id')) &&
     (await tableExists('listing_events')) &&
     (await tableExists('pi_analyse_slots')) &&
     (await tableExists('asset_classifications')) &&
     (await tableExists('evidence_documents'));
-  if (ok) {
-    console.log('✅ Property Intelligence listing event schema ready');
-  } else {
-    console.error('❌ Failed to apply listing intelligence schema — run: npm run migrate:intelligence');
-  }
-  return { applied: true, ok };
+  const brownfield = await assessBrownfieldSchemaReadiness(pool);
+  return reportSchemaReadiness({
+    applied: true,
+    listingOk,
+    brownfield,
+  });
 }
 
-module.exports = { ensureIntelligenceSchema, columnExists, tableExists };
+module.exports = {
+  ensureIntelligenceSchema,
+  columnExists,
+  tableExists,
+  assessBrownfieldSchemaReadiness,
+};

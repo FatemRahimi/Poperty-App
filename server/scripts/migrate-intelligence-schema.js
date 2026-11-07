@@ -6,6 +6,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const pool = require('../models/db');
+const { assessBrownfieldSchemaReadiness } = require('../db/brownfieldSchemaReadiness');
 
 const MIGRATIONS = [
   '011_ai_intelligence.sql',
@@ -129,6 +130,15 @@ async function run() {
     const ok = indexes.has(name);
     console.log(`  ${ok ? '✓' : '✗'} index ${name}`);
     if (!ok) process.exitCode = 1;
+  }
+
+  const brownfield = await assessBrownfieldSchemaReadiness(pool);
+  console.log(`  ${brownfield.ok ? '✓' : '✗'} brownfield schema 035–039`);
+  if (!brownfield.ok) {
+    process.exitCode = 1;
+    brownfield.missing.forEach((item) => {
+      console.log(`    ✗ ${item}`);
+    });
   }
 
   await pool.end();

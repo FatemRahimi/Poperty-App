@@ -546,6 +546,7 @@ function createTransactionalFakePg() {
     const repair = fs.readFileSync(path.join(root, 'db/migrations/038_brownfield_revision_uniqueness_repair.sql'), 'utf8');
     const revision = fs.readFileSync(path.join(root, 'db/migrations/036_brownfield_land_revisions.sql'), 'utf8');
     const ensure = fs.readFileSync(path.join(root, 'db/ensureIntelligenceSchema.js'), 'utf8');
+    const readiness = fs.readFileSync(path.join(root, 'db/brownfieldSchemaReadiness.js'), 'utf8');
     const storeSource = fs.readFileSync(path.join(root, 'services/market/brownfieldLandStore.js'), 'utf8');
     const coverage = fs.readFileSync(path.join(root, 'services/market/officialBrownfieldCoverage.js'), 'utf8');
     assert.ok(repair.includes('NOT LIKE \'%content_fingerprint%\''));
@@ -553,7 +554,8 @@ function createTransactionalFakePg() {
     assert.ok(!/\bCOMMIT\b/.test(repair));
     assert.ok(!/\bCOMMIT\b/.test(revision));
     assert.ok(revision.includes('DROP CONSTRAINT brownfield_land_observations_source_source_entity_id_release_label_key'));
-    assert.ok(ensure.includes('obsoleteBrownfieldUnique'));
+    assert.ok(readiness.includes('obsoleteBrownfieldUnique'));
+    assert.ok(ensure.includes('assessBrownfieldSchemaReadiness'));
     assert.ok(ensure.includes('038_brownfield_revision_uniqueness_repair.sql'));
     assert.ok(storeSource.includes('ON CONFLICT (source, source_entity_id, release_label, content_fingerprint) DO NOTHING'));
     assert.ok(storeSource.includes('RETURNING id'));
